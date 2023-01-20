@@ -20,14 +20,13 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.apache.qpid.server.QpidException;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
@@ -50,7 +49,7 @@ public class ReferenceCountingTest extends UnitTestBase
     private TestMemoryMessageStore _store;
 
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _store = new TestMemoryMessageStore();
@@ -60,7 +59,7 @@ public class ReferenceCountingTest extends UnitTestBase
      * Check that when the reference count is decremented the message removes itself from the store
      */
     @Test
-    public void testMessageGetsRemoved() throws QpidException
+    public void testMessageGetsRemoved()
     {
         ContentHeaderBody chb = createPersistentContentHeader();
 
@@ -76,11 +75,11 @@ public class ReferenceCountingTest extends UnitTestBase
 
         MessageReference ref = message.newReference();
 
-        assertEquals((long) 1, (long) getStoreMessageCount());
+        assertEquals(1, (long) getStoreMessageCount());
 
         ref.release();
 
-        assertEquals((long) 0, (long) getStoreMessageCount());
+        assertEquals(0, (long) getStoreMessageCount());
     }
 
     private int getStoreMessageCount()
@@ -99,7 +98,7 @@ public class ReferenceCountingTest extends UnitTestBase
     }
 
     @Test
-    public void testMessageRemains() throws QpidException
+    public void testMessageRemains()
     {
 
         MessagePublishInfo info = new MessagePublishInfo(null, false, false, null);
@@ -117,10 +116,10 @@ public class ReferenceCountingTest extends UnitTestBase
 
         MessageReference ref = message.newReference();
 
-        assertEquals((long) 1, (long) getStoreMessageCount());
+        assertEquals(1, (long) getStoreMessageCount());
         MessageReference ref2 = message.newReference();
         ref.release();
-        assertEquals((long) 1, (long) getStoreMessageCount());
+        assertEquals(1, (long) getStoreMessageCount());
     }
 
     private TransactionLogResource createTransactionLogResource(final String queueName)
@@ -169,10 +168,5 @@ public class ReferenceCountingTest extends UnitTestBase
                 return storedMessage;
             }
         };
-    }
-
-    public static junit.framework.Test suite()
-    {
-        return new junit.framework.TestSuite(ReferenceCountingTest.class);
     }
 }

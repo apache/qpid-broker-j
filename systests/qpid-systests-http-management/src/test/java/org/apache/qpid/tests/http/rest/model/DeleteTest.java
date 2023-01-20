@@ -22,14 +22,11 @@ package org.apache.qpid.tests.http.rest.model;
 
 import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.tests.http.HttpRequestConfig;
@@ -43,7 +40,7 @@ public class DeleteTest extends HttpTestBase
     private static final String QUEUE1_URL = String.format("queue/%s", QUEUE1_NAME);
     private static final String QUEUE2_URL = String.format("queue/%s", QUEUE2_NAME);
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(QUEUE1_NAME);

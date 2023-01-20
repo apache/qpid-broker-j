@@ -18,6 +18,11 @@
  */
 package org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -28,14 +33,10 @@ import org.apache.qpid.server.security.limit.ConnectionSlot;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.mockito.Mockito;
 
 public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
 {
@@ -43,7 +44,7 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
 
     private Registry _registry;
 
-    @Before
+    @BeforeAll
     public void setUp()
     {
         _registry = new Registry();
@@ -103,8 +104,7 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
         }
         catch (SoleConnectionEnforcementPolicyException e)
         {
-            assertEquals(
-                    "Single connection with container ID 'C' is required due to sole connection enforcement policy 'refuse-connection'",
+            assertEquals("Single connection with container ID 'C' is required due to sole connection enforcement policy 'refuse-connection'",
                     e.getMessage());
 
             assertEquals(2, e.getExistingConnections().size());
@@ -137,8 +137,7 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
         }
         catch (SoleConnectionEnforcementPolicyException e)
         {
-            assertEquals(
-                    "Single connection with container ID 'C' is required due to sole connection enforcement policy 'close-existing'",
+            assertEquals("Single connection with container ID 'C' is required due to sole connection enforcement policy 'close-existing'",
                     e.getMessage());
 
             assertEquals(1, e.getExistingConnections().size());
@@ -215,8 +214,7 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
         }
         catch (SoleConnectionEnforcementPolicyException e)
         {
-            assertEquals(
-                    "Single connection with container ID 'C' is required due to sole connection enforcement policy 'close-existing'",
+            assertEquals("Single connection with container ID 'C' is required due to sole connection enforcement policy 'close-existing'",
                     e.getMessage());
 
             assertEquals(1, e.getExistingConnections().size());
@@ -254,8 +252,7 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
         }
         catch (SoleConnectionEnforcementPolicyException e)
         {
-            assertEquals(
-                    "Single connection with container ID 'C' is required due to sole connection enforcement policy 'refuse-connection'",
+            assertEquals("Single connection with container ID 'C' is required due to sole connection enforcement policy 'refuse-connection'",
                     e.getMessage());
 
             assertEquals(1, e.getExistingConnections().size());

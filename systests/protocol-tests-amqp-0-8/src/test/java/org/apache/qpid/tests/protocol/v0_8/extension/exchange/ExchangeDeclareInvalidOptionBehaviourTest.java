@@ -20,18 +20,12 @@
 package org.apache.qpid.tests.protocol.v0_8.extension.exchange;
 
 import static org.apache.qpid.tests.utils.BrokerAdmin.KIND_BROKER_J;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Collections;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
-import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
-import org.apache.qpid.server.protocol.v0_8.transport.ExchangeBoundOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ExchangeDeclareOkBody;
 import org.apache.qpid.tests.protocol.v0_8.FrameTransport;
 import org.apache.qpid.tests.protocol.v0_8.Interaction;
@@ -60,8 +54,6 @@ public class ExchangeDeclareInvalidOptionBehaviourTest extends BrokerAdminUsingT
                        .declareArguments(Collections.singletonMap("foo", "bar"))
                        .declare()
                        .consumeResponse(ExchangeDeclareOkBody.class);
-
-
         }
     }
 }

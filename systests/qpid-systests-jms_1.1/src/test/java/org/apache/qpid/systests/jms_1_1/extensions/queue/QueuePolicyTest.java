@@ -23,11 +23,11 @@ package org.apache.qpid.systests.jms_1_1.extensions.queue;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,14 +42,13 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.systests.JmsTestBase;
 
 public class QueuePolicyTest extends JmsTestBase
 {
-
     @Test
     public void testRejectPolicyMessageDepth() throws Exception
     {
@@ -90,7 +89,7 @@ public class QueuePolicyTest extends JmsTestBase
             Session secondSession = secondConnection.createSession(true, Session.SESSION_TRANSACTED);
             MessageConsumer consumer = secondSession.createConsumer(destination);
             Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message  is not received", receivedMessage);
+            assertNotNull(receivedMessage, "Message  is not received");
             secondSession.commit();
 
             MessageProducer secondProducer = secondSession.createProducer(destination);
@@ -121,12 +120,12 @@ public class QueuePolicyTest extends JmsTestBase
             connection.start();
 
             TextMessage receivedMessage = (TextMessage) consumer.receive(getReceiveTimeout());
-            assertNotNull("The consumer should receive the receivedMessage with body='Test2'", receivedMessage);
-            assertEquals("Unexpected first message", "Test2", receivedMessage.getText());
+            assertNotNull(receivedMessage, "The consumer should receive the receivedMessage with body='Test2'");
+            assertEquals("Test2", receivedMessage.getText(), "Unexpected first message");
 
             receivedMessage = (TextMessage) consumer.receive(getReceiveTimeout());
-            assertNotNull("The consumer should receive the receivedMessage with body='Test3'", receivedMessage);
-            assertEquals("Unexpected second message", "Test3", receivedMessage.getText());
+            assertNotNull(receivedMessage, "The consumer should receive the receivedMessage with body='Test3'");
+            assertEquals("Test3", receivedMessage.getText(), "Unexpected second message");
         }
         finally
         {
@@ -137,10 +136,10 @@ public class QueuePolicyTest extends JmsTestBase
     @Test
     public void testRoundtripWithFlowToDisk() throws Exception
     {
-        assumeThat("Test requires persistent store", getBrokerAdmin().supportsRestart(), is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart(), "Test requires persistent store");
 
         String queueName = getTestName();
-        final Map<String, Object> arguments = new HashMap<String, Object>();
+        final Map<String, Object> arguments = new HashMap<>();
         arguments.put(org.apache.qpid.server.model.Queue.OVERFLOW_POLICY, OverflowPolicy.FLOW_TO_DISK.name());
         arguments.put(org.apache.qpid.server.model.Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 0L);
         createEntityUsingAmqpManagement(queueName, "org.apache.qpid.Queue", arguments);
@@ -162,15 +161,16 @@ public class QueuePolicyTest extends JmsTestBase
             // make sure we are flowing to disk
             Map<String, Object> statistics2 = getVirtualHostStatistics("bytesEvacuatedFromMemory");
             Long bytesEvacuatedFromMemory = (Long) statistics2.get("bytesEvacuatedFromMemory");
-            assertTrue("Message was not evacuated from memory",
-                       bytesEvacuatedFromMemory > originalBytesEvacuatedFromMemory);
+            assertTrue(bytesEvacuatedFromMemory > originalBytesEvacuatedFromMemory,
+                    "Message was not evacuated from memory");
 
             MessageConsumer consumer = session.createConsumer(queue);
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("Did not receive message", receivedMessage);
+            assertNotNull(receivedMessage, "Did not receive message");
             assertThat("Unexpected message type", receivedMessage, is(instanceOf(TextMessage.class)));
-            assertEquals("Unexpected message content", message.getText(), ((TextMessage) receivedMessage).getText());
+            assertEquals(message.getText(), ((TextMessage) receivedMessage).getText(),
+                    "Unexpected message content");
         }
         finally
         {

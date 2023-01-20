@@ -48,21 +48,13 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
 {
     public static final String TEST_SINGLETON_TYPE = "testsingleton";
 
-    private static final Principal SYSTEM_PRINCIPAL = new Principal() {
-        @Override
-        public String getName()
-        {
-            return "TEST";
-        }
-    };
-    private static final Subject SYSTEM_SUBJECT = new Subject(true,
-                                                       Collections.singleton(SYSTEM_PRINCIPAL),
-                                                       Collections.emptySet(),
-                                                       Collections.emptySet());
+    private static final Principal SYSTEM_PRINCIPAL = () -> "TEST";
+    private static final Subject SYSTEM_SUBJECT =
+            new Subject(true, Set.of(SYSTEM_PRINCIPAL), Set.of(), Set.of());
 
     public static final int DERIVED_VALUE = -100;
     private final PreferenceStore _preferenceStore =
-            new NoopPreferenceStoreFactoryService().createInstance(null, Collections.<String, Object>emptyMap());
+            new NoopPreferenceStoreFactoryService().createInstance(null, Map.of());
 
     private final Deque<HashSet<String>> _lastReportedSetAttributes = new ArrayDeque<>();
 

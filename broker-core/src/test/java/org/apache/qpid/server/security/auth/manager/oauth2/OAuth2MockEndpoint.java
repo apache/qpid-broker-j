@@ -21,6 +21,7 @@
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 class OAuth2MockEndpoint
 {
     private final Map<String, String> _expectedParameters = new HashMap<>();
+
     private HttpServletResponse _servletResponse;
     private String _expectedMethod;
     private String _responseString;
@@ -38,35 +40,31 @@ class OAuth2MockEndpoint
     private String _redirectUrlString;
     private boolean _needsAuth;
 
-    public void handleRequest(HttpServletRequest request, HttpServletResponse response) throws IOException
+    public void handleRequest(final HttpServletRequest request, final HttpServletResponse response) throws IOException
     {
         _servletResponse = response;
         response.setContentType("application/json");
         if (_needsAuth)
         {
-            String expected = "Basic " + Base64.getEncoder().encodeToString((OAuth2AuthenticationProviderImplTest.TEST_CLIENT_ID + ":" + OAuth2AuthenticationProviderImplTest.TEST_CLIENT_SECRET).getBytes(
-                    OAuth2AuthenticationProviderImplTest.UTF8));
-            doAssertEquals("Authorization required",
-                           expected,
-                           request.getHeader("Authorization"));
+            final String expected = "Basic " +
+                    Base64.getEncoder().encodeToString((OAuth2AuthenticationProviderImplTest.TEST_CLIENT_ID + ":" +
+                            OAuth2AuthenticationProviderImplTest.TEST_CLIENT_SECRET).getBytes(StandardCharsets.UTF_8));
+            doAssertEquals("Authorization required", expected, request.getHeader("Authorization"));
         }
         if (_expectedMethod != null)
         {
             doAssertEquals("Request uses unexpected HTTP method", _expectedMethod, request.getMethod());
         }
-        if (_expectedParameters != null)
+        final Map<String, String[]> parameters = request.getParameterMap();
+        for (final String expectedParameter : _expectedParameters.keySet())
         {
-            Map<String, String[]> parameters = request.getParameterMap();
-            for (String expectedParameter : _expectedParameters.keySet())
-            {
-                doAssertTrue(String.format("Request is missing parameter '%s'", expectedParameter),
-                             parameters.containsKey(expectedParameter));
-                String[] parameterValues = parameters.get(expectedParameter);
-                doAssertEquals(String.format("Request has parameter '%s' specified more than once", expectedParameter),
-                               1, parameterValues.length);
-                doAssertEquals(String.format("Request parameter '%s' has unexpected value", expectedParameter),
-                               _expectedParameters.get(expectedParameter), parameterValues[0]);
-            }
+            doAssertTrue(String.format("Request is missing parameter '%s'", expectedParameter),
+                    parameters.containsKey(expectedParameter));
+            final String[] parameterValues = parameters.get(expectedParameter);
+            doAssertEquals(String.format("Request has parameter '%s' specified more than once", expectedParameter),
+                    1, parameterValues.length);
+            doAssertEquals(String.format("Request parameter '%s' has unexpected value", expectedParameter),
+                    _expectedParameters.get(expectedParameter), parameterValues[0]);
         }
         if (_redirectUrlString != null)
         {
@@ -82,7 +80,7 @@ class OAuth2MockEndpoint
         }
     }
 
-    public void putExpectedParameter(String key, String value)
+    public void putExpectedParameter(final String key, final String value)
     {
         _expectedParameters.put(key, value);
     }
@@ -102,15 +100,10 @@ class OAuth2MockEndpoint
         _responseCode = responseCode;
     }
 
-    public void setResponse(int code, String message)
+    public void setResponse(final int code, final String message)
     {
         setResponseCode(code);
         setResponseString(message);
-    }
-
-    public void setRedirectUrlString(final String redirectUrlString)
-    {
-        _redirectUrlString = redirectUrlString;
     }
 
     public void setNeedsAuth(final boolean needsAuth)
@@ -118,7 +111,7 @@ class OAuth2MockEndpoint
         this._needsAuth = needsAuth;
     }
 
-    private void doAssertEquals(String msg, Object expected, Object actual) throws IOException
+    private void doAssertEquals(final String msg, final Object expected, final Object actual) throws IOException
     {
         if ((expected == null && actual != null) || (expected != null && !expected.equals(actual)))
         {
@@ -126,7 +119,7 @@ class OAuth2MockEndpoint
         }
     }
 
-    private void doAssertTrue(String msg, boolean condition) throws IOException
+    private void doAssertTrue(final String msg, final boolean condition) throws IOException
     {
         if (!condition)
         {
@@ -134,11 +127,11 @@ class OAuth2MockEndpoint
         }
     }
 
-    private void sendError(String errorDescription) throws IOException
+    private void sendError(final String errorDescription) throws IOException
     {
         _servletResponse.setStatus(500);
-        String responseString = String.format("{\"error\":\"test_failure\","
-                                              + "\"error_description\":\"%s\"}", errorDescription);
+        final String responseString = String.format("{\"error\":\"test_failure\",\"error_description\":\"%s\"}",
+                errorDescription);
         _servletResponse.getOutputStream().write(responseString.getBytes());
         throw new AssertionError(responseString);
     }

@@ -39,13 +39,13 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
     }
 
     @Override
-    public TestMessageMetaData createMetaData(QpidByteBuffer buf)
+    public TestMessageMetaData createMetaData(final QpidByteBuffer buf)
     {
         return TestMessageMetaData.FACTORY.createMetaData(buf);
     }
 
     @Override
-    public ServerMessage<TestMessageMetaData> createMessage(StoredMessage<TestMessageMetaData> msg)
+    public ServerMessage<TestMessageMetaData> createMessage(final StoredMessage<TestMessageMetaData> msg)
     {
         return new TestServerMessage(msg);
     }
@@ -57,7 +57,7 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
     }
 
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
         return o != null && o.getClass() == getClass();
     }
@@ -68,12 +68,11 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         return V0_8;
     }
 
-
     private static class TestServerMessage implements ServerMessage<TestMessageMetaData>
     {
         private final StoredMessage<TestMessageMetaData> _storedMsg;
 
-        private final MessageReference<ServerMessage> _messageReference = new MessageReference<ServerMessage>()
+        private final MessageReference<ServerMessage<?>> _messageReference = new MessageReference<>()
         {
 
             @Override
@@ -83,7 +82,7 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
             }
 
             @Override
-            public ServerMessage getMessage()
+            public ServerMessage<?> getMessage()
             {
                 return TestServerMessage.this;
             }
@@ -111,11 +110,10 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
 
         @Override
-        public QpidByteBuffer getContent(int offset, int length)
+        public QpidByteBuffer getContent(final int offset, final int length)
         {
             return null;
         }
-
 
         @Override
         public Object getConnectionReference()
@@ -203,13 +201,13 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
 
         @Override
-        public MessageReference newReference()
+        public MessageReference<?> newReference()
         {
             return _messageReference;
         }
 
         @Override
-        public MessageReference newReference(final TransactionLogResource object)
+        public MessageReference<?> newReference(final TransactionLogResource object)
         {
             return _messageReference;
         }
@@ -236,7 +234,7 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
 
         @Override
-        public boolean equals(Object obj)
+        public boolean equals(final Object obj)
         {
             if (this == obj)
             {
@@ -250,21 +248,12 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
             {
                 return false;
             }
-            TestServerMessage other = (TestServerMessage) obj;
+            final TestServerMessage other = (TestServerMessage) obj;
             if (_storedMsg == null)
             {
-                if (other._storedMsg != null)
-                {
-                    return false;
-                }
+                return other._storedMsg == null;
             }
-            else if (!_storedMsg.equals(other._storedMsg))
-            {
-                return false;
-            }
-            return true;
+            else return _storedMsg.equals(other._storedMsg);
         }
-
-
     }
 }

@@ -21,6 +21,7 @@ package org.apache.qpid.disttest.controller;
 
 import static org.apache.qpid.disttest.PerfTestConstants.COMMAND_RESPONSE_TIMEOUT;
 import static org.apache.qpid.disttest.PerfTestConstants.REGISTRATION_TIMEOUT;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -42,26 +43,12 @@ import org.apache.qpid.disttest.message.RegisterClientCommand;
 import org.apache.qpid.disttest.message.Response;
 import org.apache.qpid.disttest.message.StopClientCommand;
 
-import org.junit.Assert;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ControllerTest extends UnitTestBase
 {
@@ -71,7 +58,7 @@ public class ControllerTest extends UnitTestBase
     private ControllerJmsDelegate _respondingJmsDelegate;
     private ClientRegistry _clientRegistry;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _respondingJmsDelegate = mock(ControllerJmsDelegate.class);
@@ -86,16 +73,12 @@ public class ControllerTest extends UnitTestBase
         _controller.setConfig(configWithOneClient);
         _controller.setClientRegistry(_clientRegistry);
 
-        doAnswer(new Answer<Void>()
+        doAnswer((Answer<Void>) invocation -> 
         {
-            @Override
-            public Void answer(InvocationOnMock invocation) throws Throwable
-            {
-                final String clientName = (String)invocation.getArguments()[0];
-                final Command command = (Command)invocation.getArguments()[1];
-                _controller.processStopClientResponse(new Response(clientName, command.getType()));
-                return null;
-            }
+            final String clientName = (String)invocation.getArguments()[0];
+            final Command command = (Command)invocation.getArguments()[1];
+            _controller.processStopClientResponse(new Response(clientName, command.getType()));
+            return null;
         }).when(_respondingJmsDelegate).sendCommandToClient(anyString(), isA(Command.class));
     }
 

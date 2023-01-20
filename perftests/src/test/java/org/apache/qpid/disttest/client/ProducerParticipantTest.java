@@ -32,22 +32,10 @@ import org.apache.qpid.disttest.jms.ClientJmsDelegate;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.apache.qpid.disttest.message.ParticipantResult;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ProducerParticipantTest extends UnitTestBase
 {
@@ -60,7 +48,6 @@ public class ProducerParticipantTest extends UnitTestBase
     private static final String CLIENT_NAME = "CLIENT_NAME";
     private static final int PAYLOAD_SIZE_PER_MESSAGE = 1024;
 
-
     private final Message _mockMessage = mock(Message.class);
     private final CreateProducerCommand _command = new CreateProducerCommand();
     private ClientJmsDelegate _delegate;
@@ -68,7 +55,7 @@ public class ProducerParticipantTest extends UnitTestBase
     /** used to check start/end time of results */
     private long _testStartTime;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _delegate = mock(ClientJmsDelegate.class);
@@ -76,7 +63,7 @@ public class ProducerParticipantTest extends UnitTestBase
         _command.setSessionName(SESSION_NAME1);
         _command.setParticipantName(PARTICIPANT_NAME1);
         _command.setRate(1000);
-        _command.setMaximumDuration((long) MAXIMUM_DURATION);
+        _command.setMaximumDuration(MAXIMUM_DURATION);
 
         when(_delegate.sendNextMessage(isA(CreateProducerCommand.class))).thenReturn(_mockMessage);
         when(_delegate.calculatePayloadSizeFrom(_mockMessage)).thenReturn(PAYLOAD_SIZE_PER_MESSAGE);
@@ -92,14 +79,10 @@ public class ProducerParticipantTest extends UnitTestBase
     {
         _producer.startDataCollection();
         final ParticipantResult[] result = new ParticipantResult[1];
-        ResultReporter resultReporter = new ResultReporter()
+        ResultReporter resultReporter = theResult ->
         {
-            @Override
-            public void reportResult(final ParticipantResult theResult)
-            {
-                result[0] = theResult;
-                _producer.stopTestAsync();
-            }
+            result[0] = theResult;
+            _producer.stopTestAsync();
         };
         _producer.startTest(CLIENT_NAME, resultReporter);
         assertExpectedProducerResults(result[0],

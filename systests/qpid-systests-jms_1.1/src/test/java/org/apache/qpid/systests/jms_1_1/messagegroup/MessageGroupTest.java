@@ -23,10 +23,10 @@ package org.apache.qpid.systests.jms_1_1.messagegroup;
 import static javax.jms.Session.AUTO_ACKNOWLEDGE;
 import static javax.jms.Session.CLIENT_ACKNOWLEDGE;
 import static javax.jms.Session.SESSION_TRANSACTED;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,7 +43,8 @@ import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,26 +144,26 @@ public class MessageGroupTest extends JmsTestBase
 
             consumerConnection.start();
             Message cs1Received = consumer1.receive(getReceiveTimeout());
-            assertNotNull("Consumer 1 should have received first message", cs1Received);
+            assertNotNull(cs1Received, "Consumer 1 should have received first message");
 
             Message cs2Received = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Consumer 2 should have received first message", cs2Received);
+            assertNotNull(cs2Received, "Consumer 2 should have received first message");
 
             cs2Received.acknowledge();
 
             Message cs2Received2 = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Consumer 2 should have received second message", cs2Received2);
-            assertEquals("Differing groups", cs2Received2.getStringProperty(groupKey),
-                         cs2Received.getStringProperty(groupKey));
+            assertNotNull(cs2Received2, "Consumer 2 should have received second message");
+            assertEquals(cs2Received2.getStringProperty(groupKey), cs2Received.getStringProperty(groupKey),
+                    "Differing groups");
 
             cs1Received.acknowledge();
             Message cs1Received2 = consumer1.receive(getReceiveTimeout());
 
-            assertNotNull("Consumer 1 should have received second message", cs1Received2);
-            assertEquals("Differing groups", cs1Received2.getStringProperty(groupKey),
-                         cs1Received.getStringProperty(groupKey));
+            assertNotNull(cs1Received2, "Consumer 1 should have received second message");
+            assertEquals(cs1Received2.getStringProperty(groupKey), cs1Received.getStringProperty(groupKey),
+                    "Differing groups");
 
             cs1Received2.acknowledge();
             cs2Received2.acknowledge();
@@ -239,39 +240,35 @@ public class MessageGroupTest extends JmsTestBase
             MessageConsumer consumer2 = cs2.createConsumer(queue);
 
             Message cs1Received = consumer1.receive(getReceiveTimeout());
-            assertNotNull("Consumer 1 should have received first message", cs1Received);
-            assertEquals("incorrect message received", 1, cs1Received.getIntProperty("msg"));
+            assertNotNull(cs1Received, "Consumer 1 should have received first message");
+            assertEquals(1, cs1Received.getIntProperty("msg"), "incorrect message received");
 
             Message cs2Received = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Consumer 2 should have received first message", cs2Received);
-            assertEquals("incorrect message received", 3, cs2Received.getIntProperty("msg"));
+            assertNotNull(cs2Received, "Consumer 2 should have received first message");
+            assertEquals(3, cs2Received.getIntProperty("msg"), "incorrect message received");
             cs2.commit();
 
             Message cs2Received2 = consumer2.receive(getReceiveTimeout());
 
-            assertNull("Consumer 2 should not yet have received a second message", cs2Received2);
+            assertNull(cs2Received2, "Consumer 2 should not yet have received a second message");
 
             consumer1.close();
 
             cs1.commit();
             Message cs2Received3 = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Consumer 2 should have received second message", cs2Received3);
-            assertEquals("Unexpected group",
-                         "ONE",
-                         cs2Received3.getStringProperty(groupKey));
-            assertEquals("incorrect message received", 2, cs2Received3.getIntProperty("msg"));
+            assertNotNull(cs2Received3, "Consumer 2 should have received second message");
+            assertEquals("ONE", cs2Received3.getStringProperty(groupKey), "Unexpected group");
+            assertEquals(2, cs2Received3.getIntProperty("msg"), "incorrect message received");
 
             cs2.commit();
 
             Message cs2Received4 = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Consumer 2 should have received third message", cs2Received4);
-            assertEquals("Unexpected group",
-                         "ONE",
-                         cs2Received4.getStringProperty(groupKey));
-            assertEquals("incorrect message received", 4, cs2Received4.getIntProperty("msg"));
+            assertNotNull(cs2Received4, "Consumer 2 should have received third message");
+            assertEquals("ONE", cs2Received4.getStringProperty(groupKey), "Unexpected group");
+            assertEquals(4, cs2Received4.getIntProperty("msg"), "incorrect message received");
             cs2.commit();
 
             assertNull(consumer2.receive(getReceiveTimeout()));
@@ -349,17 +346,17 @@ public class MessageGroupTest extends JmsTestBase
             MessageConsumer consumer2 = cs2.createConsumer(queue);
 
             Message cs1Received = consumer1.receive(getReceiveTimeout());
-            assertNotNull("Consumer 1 should have received its first message", cs1Received);
-            assertEquals("incorrect message received", 1, cs1Received.getIntProperty("msg"));
+            assertNotNull(cs1Received, "Consumer 1 should have received its first message");
+            assertEquals(1, cs1Received.getIntProperty("msg"), "incorrect message received");
 
             Message received = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Consumer 2 should have received its first message", received);
-            assertEquals("incorrect message received", 3, received.getIntProperty("msg"));
+            assertNotNull(received, "Consumer 2 should have received its first message");
+            assertEquals(3, received.getIntProperty("msg"), "incorrect message received");
 
             Message received2 = consumer2.receive(getReceiveTimeout());
 
-            assertNull("Consumer 2 should not yet have received second message", received2);
+            assertNull(received2, "Consumer 2 should not yet have received second message");
 
             consumer1.close();
             cs1.close();
@@ -367,33 +364,27 @@ public class MessageGroupTest extends JmsTestBase
 
             received = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Consumer 2 should now have received second message", received);
-            assertEquals("Unexpected group",
-                         "ONE",
-                         received.getStringProperty(groupKey));
-            assertEquals("incorrect message received", 1, received.getIntProperty("msg"));
-            assertTrue("Expected second message to be marked as redelivered " + received.getIntProperty("msg"),
-                       received.getJMSRedelivered());
+            assertNotNull(received, "Consumer 2 should now have received second message");
+            assertEquals("ONE", received.getStringProperty(groupKey), "Unexpected group");
+            assertEquals(1, received.getIntProperty("msg"), "incorrect message received");
+            assertTrue(received.getJMSRedelivered(),
+                    "Expected second message to be marked as redelivered " + received.getIntProperty("msg"));
 
             cs2.commit();
 
             received = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Consumer 2 should have received a third message", received);
-            assertEquals("Unexpected group",
-                         "ONE",
-                         received.getStringProperty(groupKey));
-            assertEquals("incorrect message received", 2, received.getIntProperty("msg"));
+            assertNotNull(received, "Consumer 2 should have received a third message");
+            assertEquals("ONE", received.getStringProperty(groupKey), "Unexpected group");
+            assertEquals(2, received.getIntProperty("msg"), "incorrect message received");
 
             cs2.commit();
 
             received = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Consumer 2 should have received a fourth message", received);
-            assertEquals("Unexpected group",
-                         "ONE",
-                         received.getStringProperty(groupKey));
-            assertEquals("incorrect message received", 4, received.getIntProperty("msg"));
+            assertNotNull(received, "Consumer 2 should have received a fourth message");
+            assertEquals("ONE", received.getStringProperty(groupKey), "Unexpected group");
+            assertEquals(4, received.getIntProperty("msg"), "incorrect message received");
 
             cs2.commit();
 
@@ -452,19 +443,19 @@ public class MessageGroupTest extends JmsTestBase
             MessageConsumer consumer2 = cs2.createConsumer(queue);
 
             Message cs1Received = consumer1.receive(getReceiveTimeout());
-            assertNotNull("Consumer 1 should have received its first message", cs1Received);
-            assertEquals("incorrect message received", 1, cs1Received.getIntProperty("msg"));
+            assertNotNull(cs1Received, "Consumer 1 should have received its first message");
+            assertEquals(1, cs1Received.getIntProperty("msg"), "incorrect message received");
 
             Message cs2Received = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Consumer 2 should have received its first message", cs2Received);
-            assertEquals("incorrect message received", 2, cs2Received.getIntProperty("msg"));
+            assertNotNull(cs2Received, "Consumer 2 should have received its first message");
+            assertEquals(2, cs2Received.getIntProperty("msg"), "incorrect message received");
 
             cs1.commit();
 
             cs1Received = consumer1.receive(getReceiveTimeout());
-            assertNotNull("Consumer 1 should have received its second message", cs1Received);
-            assertEquals("incorrect message received", 3, cs1Received.getIntProperty("msg"));
+            assertNotNull(cs1Received, "Consumer 1 should have received its second message");
+            assertEquals(3, cs1Received.getIntProperty("msg"), "incorrect message received");
 
             // We expect different behaviours from "shared groups": here the assignment of a subscription to a group
             // is terminated when there are no outstanding delivered but unacknowledged messages.  In contrast, with a
@@ -475,8 +466,8 @@ public class MessageGroupTest extends JmsTestBase
                 cs2.commit();
                 cs2Received = consumer2.receive(getReceiveTimeout());
 
-                assertNotNull("Consumer 2 should have received its second message", cs2Received);
-                assertEquals("incorrect message received", 4, cs2Received.getIntProperty("msg"));
+                assertNotNull(cs2Received, "Consumer 2 should have received its second message");
+                assertEquals(4, cs2Received.getIntProperty("msg"), "incorrect message received");
 
                 cs2.commit();
             }
@@ -485,13 +476,13 @@ public class MessageGroupTest extends JmsTestBase
                 cs2.commit();
                 cs2Received = consumer2.receive(getReceiveTimeout());
 
-                assertNull("Consumer 2 should not have received a second message", cs2Received);
+                assertNull(cs2Received, "Consumer 2 should not have received a second message");
 
                 cs1.commit();
 
                 cs1Received = consumer1.receive(getReceiveTimeout());
-                assertNotNull("Consumer 1 should have received its third message", cs1Received);
-                assertEquals("incorrect message received", 4, cs1Received.getIntProperty("msg"));
+                assertNotNull(cs1Received, "Consumer 1 should have received its third message");
+                assertEquals(4, cs1Received.getIntProperty("msg"), "incorrect message received");
             }
         }
         finally
@@ -553,12 +544,11 @@ public class MessageGroupTest extends JmsTestBase
                 producerConnection.close();
             }
 
-            assertTrue("Mesages not all received in the allowed timeframe",
-                       groupingTestMessageListener.waitForLatch(30));
-            assertEquals("Unexpected concurrent processing of messages for the group",
-                         0,
-                         groupingTestMessageListener.getConcurrentProcessingCases());
-            assertNull("Unexpected throwable in message listeners", groupingTestMessageListener.getThrowable());
+            assertTrue(groupingTestMessageListener.waitForLatch(30),
+                    "Mesages not all received in the allowed timeframe");
+            assertEquals(0, groupingTestMessageListener.getConcurrentProcessingCases(),
+                    "Unexpected concurrent processing of messages for the group");
+            assertNull(groupingTestMessageListener.getThrowable(), "Unexpected throwable in message listeners");
         }
         finally
         {

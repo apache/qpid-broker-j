@@ -21,21 +21,21 @@
 
 package org.apache.qpid.server.virtualhostnode;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -55,17 +55,16 @@ public class RedirectingVirtualHostNodeTest extends UnitTestBase
 {
     private static final String TEST_VIRTUAL_HOST_NODE_NAME = "testNode";
 
-    private final UUID _nodeId = UUID.randomUUID();
     private Broker<?> _broker;
     private TaskExecutor _taskExecutor;
-    private AmqpPort _port;
+    private AmqpPort<?> _port;
 
-    @Before
+    @BeforeEach
+    @SuppressWarnings("unchecked")
     public void setUp() throws Exception
     {
-
         _broker = BrokerTestHelper.createBrokerMock();
-        SystemConfig<?> systemConfig = (SystemConfig<?>) _broker.getParent();
+        final SystemConfig<?> systemConfig = (SystemConfig<?>) _broker.getParent();
         when(systemConfig.getObjectFactory()).thenReturn(new ConfiguredObjectFactoryImpl(mock(Model.class)));
 
         _taskExecutor = new CurrentThreadTaskExecutor();
@@ -73,79 +72,72 @@ public class RedirectingVirtualHostNodeTest extends UnitTestBase
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
 
-        AuthenticationProvider dummyAuthProvider = mock(AuthenticationProvider.class);
+        final AuthenticationProvider<?> dummyAuthProvider = mock(AuthenticationProvider.class);
         when(dummyAuthProvider.getName()).thenReturn("dummy");
-        when(dummyAuthProvider.getId()).thenReturn(UUID.randomUUID());
-        when(dummyAuthProvider.getMechanisms()).thenReturn(Arrays.asList("PLAIN"));
-        when(_broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Collections.singleton(dummyAuthProvider));
+        when(dummyAuthProvider.getId()).thenReturn(randomUUID());
+        when(dummyAuthProvider.getMechanisms()).thenReturn(List.of("PLAIN"));
+        when(_broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Set.of(dummyAuthProvider));
 
         final Map<String, Object> attributes = new HashMap<>();
         attributes.put(Port.NAME, getTestName());
         attributes.put(Port.PORT, 0);
         attributes.put(Port.AUTHENTICATION_PROVIDER, "dummy");
         attributes.put(Port.TYPE, "AMQP");
-        _port = (AmqpPort) _broker.getObjectFactory().create(Port.class, attributes, _broker);
+        _port = (AmqpPort<?>) _broker.getObjectFactory().create(Port.class, attributes, _broker);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
-        {
-            _taskExecutor.stopImmediately();
-        }
-        finally
-        {
-        }
+        _taskExecutor.stopImmediately();
+    }
+
+    @AfterAll
+    public void afterAll()
+    {
+        when(_broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Set.of());
     }
 
     @Test
-    public void testRedirectingVHNHasRedirectingVHToo() throws Exception
+    @SuppressWarnings("unchecked")
+    public void testRedirectingVHNHasRedirectingVHToo()
     {
         final Map<String, Object> attributes = createVirtualHostNodeAttributes();
 
-        RedirectingVirtualHostNode node =
-                (RedirectingVirtualHostNode) _broker.getObjectFactory().create(VirtualHostNode.class,
-                                                                               attributes,
-                                                                               _broker);
-        assertEquals("Unexpected number of virtualhost children",
-                            (long) 1,
-                            (long) node.getChildren(VirtualHost.class).size());
+        final RedirectingVirtualHostNode<?> node =
+                (RedirectingVirtualHostNode<?>) _broker.getObjectFactory().create(VirtualHostNode.class, attributes,
+                _broker);
+        assertEquals(1, (long) node.getChildren(VirtualHost.class).size(),
+                "Unexpected number of virtualhost children");
 
         final boolean condition =
                 node.getChildren(VirtualHost.class).iterator().next() instanceof RedirectingVirtualHost;
-        assertTrue("Virtualhost child is of unexpected type", condition);
+        assertTrue(condition, "Virtualhost child is of unexpected type");
     }
 
     @Test
-    public void testStopAndRestartVHN() throws Exception
+    @SuppressWarnings("unchecked")
+    public void testStopAndRestartVHN()
     {
         final Map<String, Object> attributes = createVirtualHostNodeAttributes();
 
-        RedirectingVirtualHostNode node =
-                (RedirectingVirtualHostNode) _broker.getObjectFactory().create(VirtualHostNode.class,
-                                                                               attributes,
-                                                                               _broker);
-        assertEquals("Unexpected number of virtualhost children before stop",
-                            (long) 1,
-                            (long) node.getChildren(VirtualHost.class).size());
+        final RedirectingVirtualHostNode<?> node =
+                (RedirectingVirtualHostNode<?>) _broker.getObjectFactory().create(VirtualHostNode.class, attributes,
+                _broker);
+        assertEquals(1, (long) node.getChildren(VirtualHost.class).size(),
+                "Unexpected number of virtualhost children before stop");
         node.stop();
-        assertEquals("Unexpected number of virtualhost children after stop",
-                            (long) 0,
-                            (long) node.getChildren(VirtualHost.class).size());
+        assertEquals(0, (long) node.getChildren(VirtualHost.class).size(),
+                "Unexpected number of virtualhost children after stop");
         node.start();
-        assertEquals("Unexpected number of virtualhost children after restart",
-                            (long) 1,
-                            (long) node.getChildren(VirtualHost.class).size());
+        assertEquals(1, (long) node.getChildren(VirtualHost.class).size(),
+                "Unexpected number of virtualhost children after restart");
     }
 
     private Map<String, Object> createVirtualHostNodeAttributes()
     {
-        final Map<String, Object> attributes = new HashMap<>();
-        attributes.put(VirtualHostNode.TYPE, RedirectingVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE);
-        attributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME);
-        attributes.put(RedirectingVirtualHostNode.REDIRECTS, Collections.singletonMap(_port, "myalternativehostname"));
-        return attributes;
+        return Map.of(VirtualHostNode.TYPE, RedirectingVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE,
+                VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME,
+                RedirectingVirtualHostNode.REDIRECTS, Map.of(_port, "myalternativehostname"));
     }
-
 }

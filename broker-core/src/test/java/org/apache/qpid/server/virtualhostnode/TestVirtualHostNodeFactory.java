@@ -34,10 +34,9 @@ public class TestVirtualHostNodeFactory extends AbstractConfiguredObjectTypeFact
     }
 
     @Override
-    public TestVirtualHostNode createInstance(Map<String, Object> attributes, ConfiguredObject<?> parent)
+    public TestVirtualHostNode createInstance(final Map<String, Object> attributes, final ConfiguredObject<?> parent)
     {
-        Broker<?> broker = (Broker<?>) parent;
+        final Broker<?> broker = (Broker<?>) parent;
         return new TestVirtualHostNode(broker, attributes);
     }
-
 }

@@ -22,7 +22,7 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test MST Log Messages
@@ -33,9 +33,9 @@ public class MessageStoreMessagesTest extends AbstractTestMessages
     public void testMessageStoreCreated()
     {
         _logMessage = MessageStoreMessages.CREATED();
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Created"};
+        final String[] expected = {"Created"};
 
         validateLogMessage(log, "MST-1001", expected);
     }
@@ -43,12 +43,12 @@ public class MessageStoreMessagesTest extends AbstractTestMessages
     @Test
     public void testMessageStoreStoreLocation()
     {
-        String location = "/path/to/the/message/store.files";
+        final String location = "/path/to/the/message/store.files";
 
         _logMessage = MessageStoreMessages.STORE_LOCATION(location);
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Store location :", location};
+        final String[] expected = {"Store location :", location};
 
         validateLogMessage(log, "MST-1002", expected);
     }
@@ -57,9 +57,9 @@ public class MessageStoreMessagesTest extends AbstractTestMessages
     public void testMessageStoreClosed()
     {
         _logMessage = MessageStoreMessages.CLOSED();
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Closed"};
+        final String[] expected = {"Closed"};
 
         validateLogMessage(log, "MST-1003", expected);
     }
@@ -68,9 +68,9 @@ public class MessageStoreMessagesTest extends AbstractTestMessages
     public void testMessageStoreRecoveryStart()
     {
         _logMessage = MessageStoreMessages.RECOVERY_START();
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Recovery Start"};
+        final String[] expected = {"Recovery Start"};
 
         validateLogMessage(log, "MST-1004", expected);
     }

@@ -26,8 +26,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 import java.util.Map;
@@ -43,8 +43,9 @@ import javax.jms.Queue;
 import javax.jms.Session;
 
 import com.google.common.util.concurrent.SettableFuture;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.JmsTestBase;
@@ -55,10 +56,10 @@ public class TransactionTimeoutTest extends JmsTestBase
 
     private final ExceptionCatchingListener _listener = new ExceptionCatchingListener();
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
-        assumeThat(getBrokerAdmin().isManagementSupported(), is(true));
+        assumeTrue(getBrokerAdmin().isManagementSupported());
     }
 
     @Test

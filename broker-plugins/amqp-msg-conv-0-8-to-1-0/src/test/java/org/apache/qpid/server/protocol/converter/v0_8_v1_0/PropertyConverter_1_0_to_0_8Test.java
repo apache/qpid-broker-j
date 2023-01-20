@@ -20,10 +20,10 @@
 package org.apache.qpid.server.protocol.converter.v0_8_v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -32,16 +32,14 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
@@ -74,8 +72,8 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
     private NamedAddressSpace _namedAddressSpace;
     private MessageConverter_1_0_to_v0_8 _messageConverter;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeAll
+    public void setUp()
     {
         _namedAddressSpace = mock(NamedAddressSpace.class);
         when(_namedAddressSpace.getLocalAddress(anyString())).then(returnsFirstArg());
@@ -94,9 +92,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected content encoding",
-                            contentEncoding,
-                            convertedProperties.getEncoding().toString());
+        assertEquals(contentEncoding, convertedProperties.getEncoding().toString(), "Unexpected content encoding");
 
     }
 
@@ -133,7 +129,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
         final Map<String, Object> headers = convertedProperties.getHeadersAsMap();
-        assertEquals("Unexpected headers", properties, new HashMap<>(headers));
+        assertEquals(properties, new HashMap<>(headers), "Unexpected headers");
     }
 
     @Test
@@ -149,8 +145,8 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
         final Map<String, Object> headers = convertedProperties.getHeadersAsMap();
-        assertEquals("Unexpected headers size", (long) properties.size(), (long) headers.size());
-        assertEquals("Unexpected headers", properties.get(key), UUID.fromString((String) headers.get(key)));
+        assertEquals(properties.size(), (long) headers.size(), "Unexpected headers size");
+        assertEquals(properties.get(key), UUID.fromString((String) headers.get(key)), "Unexpected headers");
     }
 
     @Test
@@ -166,8 +162,8 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
         final Map<String, Object> headers = convertedProperties.getHeadersAsMap();
-        assertEquals("Unexpected headers size", (long) properties.size(), (long) headers.size());
-        assertEquals("Unexpected headers", properties.get(key), new Date((Long) headers.get(key)));
+        assertEquals(properties.size(), (long) headers.size(), "Unexpected headers size");
+        assertEquals(properties.get(key), new Date((Long) headers.get(key)), "Unexpected headers");
     }
 
     @Test
@@ -182,10 +178,10 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
         final Map<String, Object> headers = convertedProperties.getHeadersAsMap();
-        assertEquals("Unexpected qpid.subject is missing from headers", subject, headers.get("qpid.subject"));
-        assertEquals("Unexpected type", subject, convertedProperties.getType().toString());
+        assertEquals(subject, headers.get("qpid.subject"), "Unexpected qpid.subject is missing from headers");
+        assertEquals(subject, convertedProperties.getType().toString(), "Unexpected type");
         final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
-        assertEquals("Unexpected routing-key", subject, messagePublishInfo.getRoutingKey().toString());
+        assertEquals(subject, messagePublishInfo.getRoutingKey().toString(), "Unexpected routing-key");
     }
 
     @Test
@@ -217,9 +213,8 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected deliveryMode",
-                            (long) BasicContentHeaderProperties.PERSISTENT,
-                            (long) convertedProperties.getDeliveryMode());
+        assertEquals(BasicContentHeaderProperties.PERSISTENT, (long) convertedProperties.getDeliveryMode(),
+                "Unexpected deliveryMode");
     }
 
     @Test
@@ -232,9 +227,8 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected deliveryMode",
-                            (long) BasicContentHeaderProperties.NON_PERSISTENT,
-                            (long) convertedProperties.getDeliveryMode());
+        assertEquals(BasicContentHeaderProperties.NON_PERSISTENT, (long) convertedProperties.getDeliveryMode(),
+                "Unexpected deliveryMode");
     }
 
     @Test
@@ -248,7 +242,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected priority", (long) priority, (long) convertedProperties.getPriority());
+        assertEquals(priority, (long) convertedProperties.getPriority(), "Unexpected priority");
     }
 
     @Test
@@ -262,9 +256,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected correlationId",
-                            correlationId,
-                            convertedProperties.getCorrelationId().toString());
+        assertEquals(correlationId, convertedProperties.getCorrelationId().toString(), "Unexpected correlationId");
     }
 
     @Test
@@ -297,9 +289,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected correlationId",
-                            correlationId.toString(),
-                            convertedProperties.getCorrelationId().toString());
+        assertEquals(correlationId.toString(), convertedProperties.getCorrelationId().toString(), "Unexpected correlationId");
     }
 
     @Test
@@ -313,9 +303,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected correlationId",
-                            correlationId.toString(),
-                            convertedProperties.getCorrelationId().toString());
+        assertEquals(correlationId.toString(), convertedProperties.getCorrelationId().toString(), "Unexpected correlationId");
     }
 
     @Test
@@ -330,9 +318,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected correlationId",
-                            testCorrelationId,
-                            convertedProperties.getCorrelationId().toString());
+        assertEquals(testCorrelationId, convertedProperties.getCorrelationId().toString(), "Unexpected correlationId");
     }
 
     @Test
@@ -347,8 +333,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertTrue("Unexpected correlationId",
-                          Arrays.equals(testCorrelationId, convertedProperties.getCorrelationId().getBytes()));
+        assertArrayEquals(testCorrelationId, convertedProperties.getCorrelationId().getBytes(), "Unexpected correlationId");
 
     }
 
@@ -372,7 +357,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testReplyToConversionWhenQueueIsSpecified() throws IOException
+    public void testReplyToConversionWhenQueueIsSpecified()
     {
         final String replyTo = "myTestQueue";
         final Queue queue = mock(Queue.class);
@@ -387,11 +372,11 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
 
-        assertEquals("Unexpected reply-to", "direct:////" + replyTo, convertedProperties.getReplyToAsString());
+        assertEquals("direct:////" + replyTo, convertedProperties.getReplyToAsString(), "Unexpected reply-to");
     }
 
     @Test
-    public void testReplyToConversionWhenExchangeIsSpecified() throws IOException
+    public void testReplyToConversionWhenExchangeIsSpecified()
     {
         final String replyTo = "myTestExchange";
         final Exchange exchange = mock(Exchange.class);
@@ -407,13 +392,11 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
 
-        assertEquals("Unexpected reply-to",
-                            "fanout://" + replyTo + "//",
-                            convertedProperties.getReplyToAsString());
+        assertEquals("fanout://" + replyTo + "//", convertedProperties.getReplyToAsString(), "Unexpected reply-to");
     }
 
     @Test
-    public void testReplyToConversionWhenExchangeAndRoutingKeyAreSpecified() throws IOException
+    public void testReplyToConversionWhenExchangeAndRoutingKeyAreSpecified()
     {
         final String exchangeName = "testExchnageName";
         final String routingKey = "testRoutingKey";
@@ -431,13 +414,12 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
 
-        assertEquals("Unexpected reply-to",
-                            "topic://" + exchangeName + "//?routingkey='" + routingKey + "'",
-                            convertedProperties.getReplyToAsString());
+        assertEquals("topic://" + exchangeName + "//?routingkey='" + routingKey + "'", convertedProperties.getReplyToAsString(),
+                "Unexpected reply-to");
     }
 
     @Test
-    public void testReplyToConversionWhenExchangeAndRoutingKeyAreSpecifiedAndGlobalPrefixIsUsed() throws IOException
+    public void testReplyToConversionWhenExchangeAndRoutingKeyAreSpecifiedAndGlobalPrefixIsUsed()
     {
         final String exchangeName = "testExchnageName";
         final String routingKey = "testRoutingKey";
@@ -457,13 +439,12 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
 
-        assertEquals("Unexpected reply-to",
-                            "topic://" + exchangeName + "//?routingkey='" + routingKey + "'",
-                            convertedProperties.getReplyToAsString());
+        assertEquals("topic://" + exchangeName + "//?routingkey='" + routingKey + "'", convertedProperties.getReplyToAsString(),
+                "Unexpected reply-to");
     }
 
     @Test
-    public void testReplyToConversionWhenReplyToCannotBeResolved() throws IOException
+    public void testReplyToConversionWhenReplyToCannotBeResolved()
     {
         final String replyTo = "direct://amq.direct//test?routingkey='test'";
 
@@ -475,9 +456,8 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
 
-        assertEquals("Unexpected reply-to",
-                            "direct:////?routingkey='" + replyTo + "'",
-                            convertedProperties.getReplyToAsString());
+        assertEquals("direct:////?routingkey='" + replyTo + "'", convertedProperties.getReplyToAsString(),
+                "Unexpected reply-to");
     }
 
     @Test
@@ -493,7 +473,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected expiration", expectedExpiration, convertedProperties.getExpiration());
+        assertEquals(expectedExpiration, convertedProperties.getExpiration(), "Unexpected expiration");
     }
 
     @Test
@@ -509,7 +489,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected expiration", expiryTime, convertedProperties.getExpiration());
+        assertEquals(expiryTime, convertedProperties.getExpiration(), "Unexpected expiration");
     }
 
     @Test
@@ -537,7 +517,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected expiration", absoluteExpiryTime, convertedProperties.getExpiration());
+        assertEquals(absoluteExpiryTime, convertedProperties.getExpiration(), "Unexpected expiration");
     }
 
     @Test
@@ -551,7 +531,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected messageId", messageId, convertedProperties.getMessageId().toString());
+        assertEquals(messageId, convertedProperties.getMessageId().toString(), "Unexpected messageId");
     }
 
     @Test
@@ -565,7 +545,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertNull("Unexpected messageId", convertedProperties.getMessageId());
+        assertNull(convertedProperties.getMessageId(), "Unexpected messageId");
     }
 
     @Test
@@ -579,7 +559,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected messageId", messageId.toString(), convertedProperties.getMessageId().toString());
+        assertEquals(messageId.toString(), convertedProperties.getMessageId().toString(), "Unexpected messageId");
     }
 
     @Test
@@ -593,7 +573,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected messageId", messageId.toString(), convertedProperties.getMessageId().toString());
+        assertEquals(messageId.toString(), convertedProperties.getMessageId().toString(), "Unexpected messageId");
     }
 
     @Test
@@ -607,7 +587,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected messageId", messageId, convertedProperties.getMessageId().toString());
+        assertEquals(messageId, convertedProperties.getMessageId().toString(), "Unexpected messageId");
     }
 
     @Test
@@ -621,8 +601,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertTrue("Unexpected messageId",
-                          Arrays.equals(messageId, convertedProperties.getMessageId().getBytes()));
+        assertArrayEquals(messageId, convertedProperties.getMessageId().getBytes(), "Unexpected messageId");
     }
 
     @Test
@@ -636,8 +615,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertTrue("Unexpected messageId",
-                          Arrays.equals(messageId, convertedProperties.getMessageId().getBytes()));
+        assertArrayEquals(messageId, convertedProperties.getMessageId().getBytes(), "Unexpected messageId");
     }
 
     @Test
@@ -658,7 +636,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected timestamp", timestamp, convertedProperties.getTimestamp());
+        assertEquals(timestamp, convertedProperties.getTimestamp(), "Unexpected timestamp");
     }
 
     @Test
@@ -670,7 +648,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected timestamp", arrivalTime, convertedProperties.getTimestamp());
+        assertEquals(arrivalTime, convertedProperties.getTimestamp(), "Unexpected timestamp");
     }
 
     @Test
@@ -684,7 +662,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertEquals("Unexpected user-id", userId, convertedProperties.getUserIdAsString());
+        assertEquals(userId, convertedProperties.getUserIdAsString(), "Unexpected user-id");
     }
 
     @Test
@@ -698,7 +676,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertNull("Unexpected user-id", convertedProperties.getUserId());
+        assertNull(convertedProperties.getUserId(), "Unexpected user-id");
     }
 
     @Test
@@ -712,7 +690,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
         final AMQMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
-        assertTrue("Unexpected user-id", Arrays.equals(userId, convertedProperties.getUserId().getBytes()));
+        assertArrayEquals(userId, convertedProperties.getUserId().getBytes(), "Unexpected user-id");
     }
 
     @Test
@@ -727,7 +705,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
         Map<String, Object> headers = convertedProperties.getHeadersAsMap();
-        assertEquals("Unexpected group-id", testGroupId, headers.get("JMSXGroupID"));
+        assertEquals(testGroupId, headers.get("JMSXGroupID"), "Unexpected group-id");
     }
 
     @Test
@@ -742,7 +720,7 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         BasicContentHeaderProperties convertedProperties = convertedMessage.getContentHeaderBody().getProperties();
         Map<String, Object> headers = convertedProperties.getHeadersAsMap();
-        assertEquals("Unexpected group-id", testGroupSequence, headers.get("JMSXGroupSeq"));
+        assertEquals(testGroupSequence, headers.get("JMSXGroupSeq"), "Unexpected group-id");
     }
 
 
@@ -783,8 +761,8 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
 
-        assertEquals("Unexpected exchange", testExchange, messagePublishInfo.getExchange().toString());
-        assertEquals("Unexpected routing key", testRoutingKey, messagePublishInfo.getRoutingKey().toString());
+        assertEquals(testExchange, messagePublishInfo.getExchange().toString(), "Unexpected exchange");
+        assertEquals(testRoutingKey, messagePublishInfo.getRoutingKey().toString(), "Unexpected routing key");
     }
 
     @Test
@@ -803,8 +781,8 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
 
-        assertEquals("Unexpected exchange", testExchange, messagePublishInfo.getExchange().toString());
-        assertEquals("Unexpected routing key", "", messagePublishInfo.getRoutingKey().toString());
+        assertEquals(testExchange, messagePublishInfo.getExchange().toString(), "Unexpected exchange");
+        assertEquals("", messagePublishInfo.getRoutingKey().toString(), "Unexpected routing key");
     }
 
     @Test
@@ -825,8 +803,8 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
 
-        assertEquals("Unexpected exchange", testExchange, messagePublishInfo.getExchange().toString());
-        assertEquals("Unexpected routing key", testRoutingKey, messagePublishInfo.getRoutingKey().toString());
+        assertEquals(testExchange, messagePublishInfo.getExchange().toString(), "Unexpected exchange");
+        assertEquals(testRoutingKey, messagePublishInfo.getRoutingKey().toString(), "Unexpected routing key");
     }
 
     @Test
@@ -845,8 +823,8 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
 
-        assertEquals("Unexpected exchange", "", messagePublishInfo.getExchange().toString());
-        assertEquals("Unexpected routing key", testQueue, messagePublishInfo.getRoutingKey().toString());
+        assertEquals("", messagePublishInfo.getExchange().toString(), "Unexpected exchange");
+        assertEquals(testQueue, messagePublishInfo.getRoutingKey().toString(), "Unexpected routing key");
     }
 
     @Test
@@ -861,8 +839,8 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
 
-        assertEquals("Unexpected exchange", "", messagePublishInfo.getExchange().toString());
-        assertEquals("Unexpected routing key", globalAddress, messagePublishInfo.getRoutingKey().toString());
+        assertEquals("", messagePublishInfo.getExchange().toString(), "Unexpected exchange");
+        assertEquals(globalAddress, messagePublishInfo.getRoutingKey().toString(), "Unexpected routing key");
     }
 
     @Test
@@ -884,8 +862,8 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
 
-        assertEquals("Unexpected exchange", "", messagePublishInfo.getExchange().toString());
-        assertEquals("Unexpected routing key", queueName, messagePublishInfo.getRoutingKey().toString());
+        assertEquals("", messagePublishInfo.getExchange().toString(), "Unexpected exchange");
+        assertEquals(queueName, messagePublishInfo.getRoutingKey().toString(), "Unexpected routing key");
     }
 
     @Test
@@ -944,8 +922,8 @@ public class PropertyConverter_1_0_to_0_8Test extends UnitTestBase
 
         final MessagePublishInfo messagePublishInfo = convertedMessage.getMessagePublishInfo();
 
-        assertEquals("Unexpected exchange", "", messagePublishInfo.getExchange().toString());
-        assertEquals("Unexpected routing key", testDestination, messagePublishInfo.getRoutingKey().toString());
+        assertEquals("", messagePublishInfo.getExchange().toString(), "Unexpected exchange");
+        assertEquals(testDestination, messagePublishInfo.getRoutingKey().toString(), "Unexpected routing key");
     }
 
     private Message_1_0 createTestMessage(final Header header)

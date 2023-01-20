@@ -20,20 +20,20 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.nio.ByteBuffer;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public class StringTypeConstructorTest
 {
-
     @Test
     public void construct() throws Exception
     {

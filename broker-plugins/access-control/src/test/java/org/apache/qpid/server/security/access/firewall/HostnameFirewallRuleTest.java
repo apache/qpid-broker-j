@@ -18,8 +18,10 @@
  */
 package org.apache.qpid.server.security.access.firewall;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +30,7 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 
 import com.google.common.collect.ImmutableSet;
+
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.access.config.FirewallRule;
 import org.apache.qpid.server.security.access.config.LegacyOperation;
@@ -35,8 +38,8 @@ import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.RulePredicate;
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -48,14 +51,14 @@ public class HostnameFirewallRuleTest extends UnitTestBase
 
     private HostnameFirewallRule _HostnameFirewallRule;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _addressNotInRule = InetAddress.getByName("127.0.0.1");
     }
 
     @Test
-    public void testSingleHostname() throws Exception
+    public void testSingleHostname()
     {
         String hostnameInRule = "hostnameInRule";
         InetAddress addressWithMatchingHostname = mock(InetAddress.class);
@@ -68,7 +71,7 @@ public class HostnameFirewallRuleTest extends UnitTestBase
     }
 
     @Test
-    public void testSingleHostnameWildcard() throws Exception
+    public void testSingleHostnameWildcard()
     {
         String hostnameInRule = ".*FOO.*";
         InetAddress addressWithMatchingHostname = mock(InetAddress.class);
@@ -81,7 +84,7 @@ public class HostnameFirewallRuleTest extends UnitTestBase
     }
 
     @Test
-    public void testMultipleHostnames() throws Exception
+    public void testMultipleHostnames()
     {
         String[] hostnamesInRule = new String[] {"hostnameInRule1", "hostnameInRule2"};
 
@@ -106,14 +109,14 @@ public class HostnameFirewallRuleTest extends UnitTestBase
         HostnameFirewallRule rule = new HostnameFirewallRule(hostname1, hostname2);
         HostnameFirewallRule equalRule = new HostnameFirewallRule(hostname1, hostname2);
 
-        assertTrue(rule.equals(rule));
-        assertTrue(rule.equals(equalRule));
-        assertTrue(equalRule.equals(rule));
+        assertEquals(rule, rule);
+        assertEquals(rule, equalRule);
+        assertEquals(equalRule, rule);
 
-        assertTrue(rule.hashCode() == equalRule.hashCode());
+        assertEquals(rule.hashCode(), equalRule.hashCode());
 
-        assertFalse("Different hostnames should cause rules to be unequal",
-                           rule.equals(new HostnameFirewallRule(hostname1, "different-hostname")));
+        assertNotEquals(rule, new HostnameFirewallRule(hostname1, "different-hostname"),
+                "Different hostnames should cause rules to be unequal");
 
     }
 

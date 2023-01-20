@@ -19,24 +19,21 @@
 
 package org.apache.qpid.server.store;
 
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.text.NumberFormat;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.model.Broker;
@@ -46,292 +43,237 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
 {
-    private VirtualHostNode<?> _virtualHostNode;
+    private static final Map<String, Object> ROOT_ATTRIBUTES = Map.of("modelVersion", "6.1", "name", "root");
+
     private VirtualHostStoreUpgraderAndRecoverer _upgraderAndRecoverer;
     private DurableConfigurationStore _store;
 
-    @Before
+    @BeforeEach
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void setUp() throws Exception
     {
-
         final Broker broker = mock(Broker.class);
-        _virtualHostNode = mock(VirtualHostNode.class);
-        when(_virtualHostNode.getParent()).thenReturn(broker);
+        final VirtualHostNode<?> virtualHostNode = mock(VirtualHostNode.class);
+        when(virtualHostNode.getParent()).thenReturn(broker);
         _store = mock(DurableConfigurationStore.class);
-        _upgraderAndRecoverer = new VirtualHostStoreUpgraderAndRecoverer(_virtualHostNode);
+        _upgraderAndRecoverer = new VirtualHostStoreUpgraderAndRecoverer(virtualHostNode);
     }
 
     @Test
-    public void testUpgradeFlowControlFrom_6_1() throws Exception
+    @SuppressWarnings("unchecked")
+    public void testUpgradeFlowControlFrom_6_1()
     {
-        Map<String, Object> rootAttributes = new HashMap<>();
-        rootAttributes.put("modelVersion", "6.1");
-        rootAttributes.put("name", "root");
-        ConfiguredObjectRecord rootRecord =
-                new ConfiguredObjectRecordImpl(UUID.randomUUID(), "VirtualHost", rootAttributes);
-        Map<String, Object> queueAttributes = new HashMap<>();
-        queueAttributes.put("name", "queue");
-        queueAttributes.put("queueFlowControlSizeBytes", 1000);
-        queueAttributes.put("queueFlowResumeSizeBytes", 700);
-        ConfiguredObjectRecord queueRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Queue", queueAttributes,
-                                                                            Collections.singletonMap(rootRecord.getType(),
-                                                                                                     rootRecord.getId()));
-        List<ConfiguredObjectRecord> records = Arrays.asList(rootRecord, queueRecord);
-        List<ConfiguredObjectRecord> upgradedRecords =
+        final ConfiguredObjectRecord rootRecord =
+                new ConfiguredObjectRecordImpl(randomUUID(), "VirtualHost", ROOT_ATTRIBUTES);
+        final Map<String, Object> queueAttributes = Map.of("name", "queue",
+                "queueFlowControlSizeBytes", 1000,
+                "queueFlowResumeSizeBytes", 700);
+        final ConfiguredObjectRecord queueRecord = new ConfiguredObjectRecordImpl(randomUUID(), "Queue", queueAttributes,
+                Map.of(rootRecord.getType(), rootRecord.getId()));
+        final List<ConfiguredObjectRecord> records = List.of(rootRecord, queueRecord);
+        final List<ConfiguredObjectRecord> upgradedRecords =
                 _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
 
-        ConfiguredObjectRecord upgradedQueueRecord = findRecordById(queueRecord.getId(), upgradedRecords);
-        assertNotNull("Upgraded queue record not found ", upgradedQueueRecord);
+        final ConfiguredObjectRecord upgradedQueueRecord = findRecordById(queueRecord.getId(), upgradedRecords);
+        assertNotNull(upgradedQueueRecord, "Upgraded queue record not found ");
 
-        Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
-        assertNotNull("Upgraded attributes not found", upgradedAttributes);
+        final Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
+        assertNotNull(upgradedAttributes, "Upgraded attributes not found");
 
-        assertEquals("Unexpected maximumQueueDepthBytes", 1000, upgradedAttributes.get("maximumQueueDepthBytes"));
+        assertEquals(1000, upgradedAttributes.get("maximumQueueDepthBytes"), "Unexpected maximumQueueDepthBytes");
 
-        NumberFormat formatter = NumberFormat.getInstance();
+        final NumberFormat formatter = NumberFormat.getInstance();
         formatter.setMinimumFractionDigits(2);
 
-        assertEquals("Unexpected queue.queueFlowResumeLimit",
-                            formatter.format(70L),
-                            ((Map<String, String>) upgradedAttributes.get("context")).get("queue.queueFlowResumeLimit"));
+        assertEquals(formatter.format(70L), ((Map<String, String>) upgradedAttributes.get("context"))
+                .get("queue.queueFlowResumeLimit"), "Unexpected queue.queueFlowResumeLimit");
 
-        assertEquals("Unexpected overflowPolicy",
-                            OverflowPolicy.PRODUCER_FLOW_CONTROL.name(),
-                            String.valueOf(upgradedAttributes.get("overflowPolicy")));
+        assertEquals(OverflowPolicy.PRODUCER_FLOW_CONTROL.name(), String.valueOf(upgradedAttributes.get("overflowPolicy")),
+                "Unexpected overflowPolicy");
     }
 
     @Test
-    public void testUpgradeQueueAlternateExchangeFrom_6_1() throws Exception
+    public void testUpgradeQueueAlternateExchangeFrom_6_1()
     {
-        Map<String, Object> rootAttributes = new HashMap<>();
-        rootAttributes.put("modelVersion", "6.1");
-        rootAttributes.put("name", "root");
-        ConfiguredObjectRecord rootRecord =
-                new ConfiguredObjectRecordImpl(UUID.randomUUID(), "VirtualHost", rootAttributes);
-        Map<String, Object> queueAttributes = new HashMap<>();
-        queueAttributes.put("name", "queue");
-        queueAttributes.put("alternateExchange", "testExchange");
+        final ConfiguredObjectRecord rootRecord =
+                new ConfiguredObjectRecordImpl(randomUUID(), "VirtualHost", ROOT_ATTRIBUTES);
+        final Map<String, Object> queueAttributes = Map.of("name", "queue",
+                "alternateExchange", "testExchange");
 
-        ConfiguredObjectRecord queueRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Queue", queueAttributes,
-                                                                            Collections.singletonMap(rootRecord.getType(),
-                                                                                                     rootRecord.getId()));
+        final ConfiguredObjectRecord queueRecord = new ConfiguredObjectRecordImpl(randomUUID(), "Queue", queueAttributes,
+                Map.of(rootRecord.getType(), rootRecord.getId()));
 
-        final Map<String, Object> exchangeAttributes = new HashMap<>();
-        exchangeAttributes.put("name", "testExchange");
-        ConfiguredObjectRecord exchangeRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Exchange", exchangeAttributes,
-                                                                               Collections.singletonMap(rootRecord.getType(),
-                                                                                                     rootRecord.getId()));
-        List<ConfiguredObjectRecord> records = Arrays.asList(rootRecord, queueRecord, exchangeRecord);
-        List<ConfiguredObjectRecord> upgradedRecords =
-                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
-
-        ConfiguredObjectRecord upgradedQueueRecord = findRecordById(queueRecord.getId(), upgradedRecords);
-        assertNotNull("Upgraded queue record not found ", upgradedQueueRecord);
-
-        Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
-        assertNotNull("Upgraded attributes not found", upgradedAttributes);
-
-        assertTrue("Attribute 'alternateBinding' was not added",
-                          upgradedAttributes.containsKey("alternateBinding"));
-        assertEquals("Unexpected alternateBinding",
-                            new HashMap<>(Collections.singletonMap("destination", "testExchange")),
-                            new HashMap<>(((Map<String, String>) upgradedAttributes.get("alternateBinding"))));
-        assertFalse("Attribute 'alternateExchange' was not removed",
-                           upgradedAttributes.containsKey("alternateExchange"));
-
-    }
-
-    @Test
-    public void testUpgradeExchangeAlternateExchangeFrom_6_1() throws Exception
-    {
-        Map<String, Object> rootAttributes = new HashMap<>();
-        rootAttributes.put("modelVersion", "6.1");
-        rootAttributes.put("name", "root");
-        ConfiguredObjectRecord rootRecord =
-                new ConfiguredObjectRecordImpl(UUID.randomUUID(), "VirtualHost", rootAttributes);
-
-        final Map<String, Object> alternateExchangeAttributes = new HashMap<>();
-        alternateExchangeAttributes.put("name", "testExchange");
-        ConfiguredObjectRecord alternateExchangeRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Exchange", alternateExchangeAttributes,
-                                                                               Collections.singletonMap(rootRecord.getType(),
-                                                                                                        rootRecord.getId()));
-
-        Map<String, Object> exchangeAttributes = new HashMap<>();
-        exchangeAttributes.put("name", "exchange");
-        exchangeAttributes.put("alternateExchange", "testExchange");
-
-        ConfiguredObjectRecord exchangeRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Exchange", exchangeAttributes,
-                                                                            Collections.singletonMap(rootRecord.getType(),
-                                                                                                     rootRecord.getId()));
-
-        List<ConfiguredObjectRecord> records = Arrays.asList(rootRecord, exchangeRecord, alternateExchangeRecord);
-        List<ConfiguredObjectRecord> upgradedRecords =
-                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
-
-        ConfiguredObjectRecord upgradedQueueRecord = findRecordById(exchangeRecord.getId(), upgradedRecords);
-        assertNotNull("Upgraded exchange record not found ", upgradedQueueRecord);
-
-        Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
-        assertNotNull("Upgraded attributes not found", upgradedAttributes);
-
-        assertTrue("Attribute 'alternateBinding' was not added",
-                          upgradedAttributes.containsKey("alternateBinding"));
-        assertEquals("Unexpected alternateBinding",
-                            new HashMap<>(Collections.singletonMap("destination", "testExchange")),
-                            new HashMap<>(((Map<String, String>) upgradedAttributes.get("alternateBinding"))));
-        assertFalse("Attribute 'alternateExchange' was not removed",
-                           upgradedAttributes.containsKey("alternateExchange"));
-    }
-    @Test
-    public void testUpgradeExchangeAlternateExchangeSpecifiedWithUUIDFrom_6_1() throws Exception
-    {
-        Map<String, Object> rootAttributes = new HashMap<>();
-        rootAttributes.put("modelVersion", "6.1");
-        rootAttributes.put("name", "root");
-        ConfiguredObjectRecord rootRecord =
-                new ConfiguredObjectRecordImpl(UUID.randomUUID(), "VirtualHost", rootAttributes);
-
-        final Map<String, Object> alternateExchangeAttributes = new HashMap<>();
-        alternateExchangeAttributes.put("name", "testExchange");
-        UUID alternateExchangeId = UUID.randomUUID();
-        ConfiguredObjectRecord alternateExchangeRecord = new ConfiguredObjectRecordImpl(alternateExchangeId, "Exchange", alternateExchangeAttributes,
-                                                                                        Collections.singletonMap(rootRecord.getType(),
-                                                                                                                 rootRecord.getId()));
-        Map<String, Object> exchangeAttributes = new HashMap<>();
-        exchangeAttributes.put("name", "exchange");
-        exchangeAttributes.put("alternateExchange", alternateExchangeId.toString());
-
-        ConfiguredObjectRecord exchangeRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Exchange", exchangeAttributes,
-                                                                               Collections.singletonMap(rootRecord.getType(),
-                                                                                                        rootRecord.getId()));
-
-        List<ConfiguredObjectRecord> records = Arrays.asList(rootRecord, exchangeRecord, alternateExchangeRecord);
-        List<ConfiguredObjectRecord> upgradedRecords =
-                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
-
-        ConfiguredObjectRecord upgradedQueueRecord = findRecordById(exchangeRecord.getId(), upgradedRecords);
-        assertNotNull("Upgraded exchange record not found ", upgradedQueueRecord);
-
-        Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
-        assertNotNull("Upgraded attributes not found", upgradedAttributes);
-
-        assertTrue("Attribute 'alternateBinding' was not added",
-                          upgradedAttributes.containsKey("alternateBinding"));
-        assertEquals("Unexpected alternateBinding",
-                            new HashMap<>(Collections.singletonMap("destination", "testExchange")),
-                            new HashMap<>(((Map<String, String>) upgradedAttributes.get("alternateBinding"))));
-        assertFalse("Attribute 'alternateExchange' was not removed",
-                           upgradedAttributes.containsKey("alternateExchange"));
-    }
-
-    @Test
-    public void testUpgradeQueueSharedMessageGroupsFrom_6_1() throws Exception
-    {
-        Map<String, Object> rootAttributes = new HashMap<>();
-        rootAttributes.put("modelVersion", "6.1");
-        rootAttributes.put("name", "root");
-        ConfiguredObjectRecord rootRecord =
-                new ConfiguredObjectRecordImpl(UUID.randomUUID(), "VirtualHost", rootAttributes);
-        Map<String, Object> queueAttributes = new HashMap<>();
-        queueAttributes.put("messageGroupKey", "myheader");
-        queueAttributes.put("messageGroupSharedGroups", true);
-
-        ConfiguredObjectRecord queueRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Queue", queueAttributes,
-                                                                            Collections.singletonMap(rootRecord.getType(),
-                                                                                                     rootRecord.getId()));
-
-        final Map<String, Object> exchangeAttributes = new HashMap<>();
-        exchangeAttributes.put("name", "testExchange");
-        ConfiguredObjectRecord exchangeRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Exchange", exchangeAttributes,
-                                                                               Collections.singletonMap(rootRecord.getType(),
-                                                                                                        rootRecord.getId()));
-        List<ConfiguredObjectRecord> records = Arrays.asList(rootRecord, queueRecord, exchangeRecord);
-        List<ConfiguredObjectRecord> upgradedRecords =
-                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
-
-        ConfiguredObjectRecord upgradedQueueRecord = findRecordById(queueRecord.getId(), upgradedRecords);
-        assertNotNull("Upgraded queue record not found ", upgradedQueueRecord);
-
-        Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
-        assertNotNull("Upgraded attributes not found", upgradedAttributes);
-
-        assertFalse("Attribute 'messageGroupKey' was not removed",
-                           upgradedAttributes.containsKey("messageGroupKey"));
-        assertFalse("Attribute 'messageGroupSharedGroups' was not removed",
-                           upgradedAttributes.containsKey("messageGroupSharedGroups"));
-
-        assertTrue("Attribute 'messageGroupKeyOverride' was not added",
-                          upgradedAttributes.containsKey("messageGroupKeyOverride"));
-        assertEquals("Unexpected messageGroupKeyOverride",
-                            "myheader",
-                            upgradedAttributes.get("messageGroupKeyOverride"));
-        assertTrue("Attribute 'messageGroupType' was not added",
-                          upgradedAttributes.containsKey("messageGroupType"));
-        assertEquals("Unexpected messageGroupType", "SHARED_GROUPS", upgradedAttributes.get("messageGroupType"));
-    }
-
-    @Test
-    public void testUpgradeQueueStandardMessageGroupsFrom_6_1() throws Exception
-    {
-        Map<String, Object> rootAttributes = new HashMap<>();
-        rootAttributes.put("modelVersion", "6.1");
-        rootAttributes.put("name", "root");
-        ConfiguredObjectRecord rootRecord =
-                new ConfiguredObjectRecordImpl(UUID.randomUUID(), "VirtualHost", rootAttributes);
-        Map<String, Object> queueAttributes = new HashMap<>();
-        queueAttributes.put("messageGroupKey", "JMSXGroupId");
-        queueAttributes.put("messageGroupSharedGroups", false);
-
-        ConfiguredObjectRecord queueRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Queue", queueAttributes,
-                                                                            Collections.singletonMap(rootRecord.getType(),
-                                                                                                     rootRecord.getId()));
-
-        final Map<String, Object> exchangeAttributes = new HashMap<>();
-        exchangeAttributes.put("name", "testExchange");
-        ConfiguredObjectRecord exchangeRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Exchange", exchangeAttributes,
-                                                                               Collections.singletonMap(rootRecord.getType(),
-                                                                                                        rootRecord.getId()));
-        List<ConfiguredObjectRecord> records = Arrays.asList(rootRecord, queueRecord, exchangeRecord);
-        List<ConfiguredObjectRecord> upgradedRecords =
-                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
-
-        ConfiguredObjectRecord upgradedQueueRecord = findRecordById(queueRecord.getId(), upgradedRecords);
-        assertNotNull("Upgraded queue record not found ", upgradedQueueRecord);
-
-        Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
-        assertNotNull("Upgraded attributes not found", upgradedAttributes);
-
-        assertFalse("Attribute 'messageGroupKey' was not removed",
-                           upgradedAttributes.containsKey("messageGroupKey"));
-        assertFalse("Attribute 'messageGroupSharedGroups' was not removed",
-                           upgradedAttributes.containsKey("messageGroupSharedGroups"));
-        assertFalse("Attribute 'messageGroupKeyOverride' was added",
-                           upgradedAttributes.containsKey("messageGroupKeyOverride"));
-
-        assertTrue("Attribute 'messageGroupType' was not added",
-                          upgradedAttributes.containsKey("messageGroupType"));
-        assertEquals("Unexpected messageGroupType", "STANDARD", upgradedAttributes.get("messageGroupType"));
-    }
-
-    @Test
-    public void testContextVariableUpgradeForTLSProtocolsSetOnVirtualHost() throws Exception
-    {
-        final Map<String, String> context = new HashMap<>();
-        context.put("qpid.security.tls.protocolWhiteList", ".*");
-        context.put("qpid.security.tls.protocolBlackList", "Ssl.*");
-
-        final Map<String, Object> rootAttributes = new HashMap<>();
-        rootAttributes.put("modelVersion", "8.0");
-        rootAttributes.put("name", "root");
-        rootAttributes.put("context", context);
-        final ConfiguredObjectRecord rootRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
-                                                                                 "VirtualHost",
-                                                                                 rootAttributes);
+        final Map<String, Object> exchangeAttributes = Map.of("name", "testExchange");
+        final ConfiguredObjectRecord exchangeRecord = new ConfiguredObjectRecordImpl(randomUUID(), "Exchange", exchangeAttributes,
+                Map.of(rootRecord.getType(), rootRecord.getId()));
+        final List<ConfiguredObjectRecord> records = List.of(rootRecord, queueRecord, exchangeRecord);
         final List<ConfiguredObjectRecord> upgradedRecords =
-                _upgraderAndRecoverer.upgrade(_store,
-                                              Collections.singletonList(rootRecord),
-                                              "VirtualHost",
-                                              "modelVersion");
+                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
+
+        final ConfiguredObjectRecord upgradedQueueRecord = findRecordById(queueRecord.getId(), upgradedRecords);
+        assertNotNull(upgradedQueueRecord, "Upgraded queue record not found ");
+
+        final Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
+        assertNotNull(upgradedAttributes, "Upgraded attributes not found");
+
+        assertTrue(upgradedAttributes.containsKey("alternateBinding"), "Attribute 'alternateBinding' was not added");
+        assertEquals(Map.of("destination", "testExchange"), upgradedAttributes.get("alternateBinding"),
+                "Unexpected alternateBinding");
+        assertFalse(upgradedAttributes.containsKey("alternateExchange"), "Attribute 'alternateExchange' was not removed");
+    }
+
+    @Test
+    public void testUpgradeExchangeAlternateExchangeFrom_6_1()
+    {
+        final ConfiguredObjectRecord rootRecord =
+                new ConfiguredObjectRecordImpl(randomUUID(), "VirtualHost", ROOT_ATTRIBUTES);
+
+        final Map<String, Object> alternateExchangeAttributes = new HashMap<>();
+        alternateExchangeAttributes.put("name", "testExchange");
+        final ConfiguredObjectRecord alternateExchangeRecord = new ConfiguredObjectRecordImpl(randomUUID(), "Exchange", alternateExchangeAttributes,
+                Map.of(rootRecord.getType(), rootRecord.getId()));
+
+        final Map<String, Object> exchangeAttributes = Map.of("name", "exchange",
+                "alternateExchange", "testExchange");
+
+        final ConfiguredObjectRecord exchangeRecord = new ConfiguredObjectRecordImpl(randomUUID(), "Exchange", exchangeAttributes,
+                Map.of(rootRecord.getType(), rootRecord.getId()));
+
+        final List<ConfiguredObjectRecord> records = List.of(rootRecord, exchangeRecord, alternateExchangeRecord);
+        final List<ConfiguredObjectRecord> upgradedRecords =
+                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
+
+        final ConfiguredObjectRecord upgradedQueueRecord = findRecordById(exchangeRecord.getId(), upgradedRecords);
+        assertNotNull(upgradedQueueRecord, "Upgraded exchange record not found ");
+
+        final Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
+        assertNotNull(upgradedAttributes, "Upgraded attributes not found");
+
+        assertTrue(upgradedAttributes.containsKey("alternateBinding"), "Attribute 'alternateBinding' was not added");
+        assertEquals(Map.of("destination", "testExchange"), upgradedAttributes.get("alternateBinding"),
+                "Unexpected alternateBinding");
+        assertFalse(upgradedAttributes.containsKey("alternateExchange"), "Attribute 'alternateExchange' was not removed");
+    }
+    @Test
+    public void testUpgradeExchangeAlternateExchangeSpecifiedWithUUIDFrom_6_1()
+    {
+        final ConfiguredObjectRecord rootRecord =
+                new ConfiguredObjectRecordImpl(randomUUID(), "VirtualHost", ROOT_ATTRIBUTES);
+
+        final Map<String, Object> alternateExchangeAttributes = Map.of("name", "testExchange");
+        final UUID alternateExchangeId = randomUUID();
+        final ConfiguredObjectRecord alternateExchangeRecord = new ConfiguredObjectRecordImpl(alternateExchangeId, "Exchange", alternateExchangeAttributes,
+                Map.of(rootRecord.getType(), rootRecord.getId()));
+        final Map<String, Object> exchangeAttributes = Map.of("name", "exchange",
+                "alternateExchange", alternateExchangeId.toString());
+
+        final ConfiguredObjectRecord exchangeRecord = new ConfiguredObjectRecordImpl(randomUUID(), "Exchange", exchangeAttributes,
+                Map.of(rootRecord.getType(), rootRecord.getId()));
+
+        final List<ConfiguredObjectRecord> records = List.of(rootRecord, exchangeRecord, alternateExchangeRecord);
+        final List<ConfiguredObjectRecord> upgradedRecords =
+                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
+
+        final ConfiguredObjectRecord upgradedQueueRecord = findRecordById(exchangeRecord.getId(), upgradedRecords);
+        assertNotNull(upgradedQueueRecord, "Upgraded exchange record not found ");
+
+        final Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
+        assertNotNull(upgradedAttributes, "Upgraded attributes not found");
+
+        assertTrue(upgradedAttributes.containsKey("alternateBinding"), "Attribute 'alternateBinding' was not added");
+        assertEquals(Map.of("destination", "testExchange"), upgradedAttributes.get("alternateBinding"),
+                "Unexpected alternateBinding");
+        assertFalse(upgradedAttributes.containsKey("alternateExchange"),
+                "Attribute 'alternateExchange' was not removed");
+    }
+
+    @Test
+    public void testUpgradeQueueSharedMessageGroupsFrom_6_1()
+    {
+        final ConfiguredObjectRecord rootRecord =
+                new ConfiguredObjectRecordImpl(randomUUID(), "VirtualHost", ROOT_ATTRIBUTES);
+        final Map<String, Object> queueAttributes = Map.of("messageGroupKey", "myheader",
+                "messageGroupSharedGroups", true);
+
+        final ConfiguredObjectRecord queueRecord = new ConfiguredObjectRecordImpl(randomUUID(), "Queue", queueAttributes,
+                Map.of(rootRecord.getType(), rootRecord.getId()));
+
+        final Map<String, Object> exchangeAttributes = Map.of("name", "testExchange");
+        final ConfiguredObjectRecord exchangeRecord = new ConfiguredObjectRecordImpl(randomUUID(), "Exchange", exchangeAttributes,
+                Map.of(rootRecord.getType(), rootRecord.getId()));
+        final List<ConfiguredObjectRecord> records = List.of(rootRecord, queueRecord, exchangeRecord);
+        final List<ConfiguredObjectRecord> upgradedRecords =
+                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
+
+        final ConfiguredObjectRecord upgradedQueueRecord = findRecordById(queueRecord.getId(), upgradedRecords);
+        assertNotNull(upgradedQueueRecord, "Upgraded queue record not found ");
+
+        final Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
+        assertNotNull(upgradedAttributes, "Upgraded attributes not found");
+
+        assertFalse(upgradedAttributes.containsKey("messageGroupKey"),
+                "Attribute 'messageGroupKey' was not removed");
+        assertFalse(upgradedAttributes.containsKey("messageGroupSharedGroups"),
+                "Attribute 'messageGroupSharedGroups' was not removed");
+
+        assertTrue(upgradedAttributes.containsKey("messageGroupKeyOverride"),
+                "Attribute 'messageGroupKeyOverride' was not added");
+        assertEquals("myheader", upgradedAttributes.get("messageGroupKeyOverride"),
+                "Unexpected messageGroupKeyOverride");
+        assertTrue(upgradedAttributes.containsKey("messageGroupType"),
+                "Attribute 'messageGroupType' was not added");
+        assertEquals("SHARED_GROUPS", upgradedAttributes.get("messageGroupType"),
+                "Unexpected messageGroupType");
+    }
+
+    @Test
+    public void testUpgradeQueueStandardMessageGroupsFrom_6_1()
+    {
+        final ConfiguredObjectRecord rootRecord =
+                new ConfiguredObjectRecordImpl(randomUUID(), "VirtualHost", ROOT_ATTRIBUTES);
+        final Map<String, Object> queueAttributes = Map.of("messageGroupKey", "JMSXGroupId",
+                "messageGroupSharedGroups", false);
+
+        final ConfiguredObjectRecord queueRecord = new ConfiguredObjectRecordImpl(randomUUID(), "Queue", queueAttributes,
+                Map.of(rootRecord.getType(), rootRecord.getId()));
+
+        final Map<String, Object> exchangeAttributes = Map.of("name", "testExchange");
+        final ConfiguredObjectRecord exchangeRecord = new ConfiguredObjectRecordImpl(randomUUID(), "Exchange", exchangeAttributes,
+                Map.of(rootRecord.getType(), rootRecord.getId()));
+        final List<ConfiguredObjectRecord> records = List.of(rootRecord, queueRecord, exchangeRecord);
+        final List<ConfiguredObjectRecord> upgradedRecords =
+                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
+
+        final ConfiguredObjectRecord upgradedQueueRecord = findRecordById(queueRecord.getId(), upgradedRecords);
+        assertNotNull(upgradedQueueRecord, "Upgraded queue record not found ");
+
+        final Map<String, Object> upgradedAttributes = upgradedQueueRecord.getAttributes();
+        assertNotNull(upgradedAttributes, "Upgraded attributes not found");
+
+        assertFalse(upgradedAttributes.containsKey("messageGroupKey"),
+                "Attribute 'messageGroupKey' was not removed");
+        assertFalse(upgradedAttributes.containsKey("messageGroupSharedGroups"),
+                "Attribute 'messageGroupSharedGroups' was not removed");
+        assertFalse(upgradedAttributes.containsKey("messageGroupKeyOverride"),
+                "Attribute 'messageGroupKeyOverride' was added");
+
+        assertTrue(upgradedAttributes.containsKey("messageGroupType"),
+                "Attribute 'messageGroupType' was not added");
+        assertEquals("STANDARD", upgradedAttributes.get("messageGroupType"), "Unexpected messageGroupType");
+    }
+
+    @Test
+    public void testContextVariableUpgradeForTLSProtocolsSetOnVirtualHost()
+    {
+        final Map<String, String> context = Map.of("qpid.security.tls.protocolWhiteList", ".*",
+                "qpid.security.tls.protocolBlackList", "Ssl.*");
+        final Map<String, Object> rootAttributes = Map.of("modelVersion", "8.0",
+                "name", "root",
+                "context", context);
+        final ConfiguredObjectRecord rootRecord =
+                new ConfiguredObjectRecordImpl(randomUUID(), "VirtualHost", rootAttributes);
+        final List<ConfiguredObjectRecord> upgradedRecords =
+                _upgraderAndRecoverer.upgrade(_store, List.of(rootRecord), "VirtualHost", "modelVersion");
 
         final Map<String, Object> newContext = getContextForRecordWithGivenId(rootRecord.getId(), upgradedRecords);
         assertEquals(".*", newContext.get(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST));
@@ -339,21 +281,18 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
     }
 
     @Test
-    public void testContextVariableUpgradeForTLSCipherSuitesSetOnVirtualHostAccessControlProvider() throws Exception
+    public void testContextVariableUpgradeForTLSCipherSuitesSetOnVirtualHostAccessControlProvider()
     {
-        final Map<String, Object> rootAttributes = new HashMap<>();
-        rootAttributes.put("modelVersion", "8.0");
-        rootAttributes.put("name", "root");
+        final Map<String, Object> rootAttributes = Map.of("modelVersion", "8.0","name", "root");
         final ConfiguredObjectRecord rootRecord =
-                new ConfiguredObjectRecordImpl(UUID.randomUUID(), "VirtualHost", rootAttributes);
+                new ConfiguredObjectRecordImpl(randomUUID(), "VirtualHost", rootAttributes);
 
-        final Map<String, String> context = new HashMap<>();
-        context.put("qpid.security.tls.cipherSuiteWhiteList", ".*");
-        context.put("qpid.security.tls.cipherSuiteBlackList", "Ssl.*");
+        final Map<String, String> context = Map.of("qpid.security.tls.cipherSuiteWhiteList", ".*",
+                "qpid.security.tls.cipherSuiteBlackList", "Ssl.*");
         final ConfiguredObjectRecord accessControlProviderRecord =
                 createMockRecordForGivenCategoryTypeAndContext("VirtualHostAccessControlProvider", "test", context);
 
-        final List<ConfiguredObjectRecord> records = Arrays.asList(rootRecord, accessControlProviderRecord);
+        final List<ConfiguredObjectRecord> records = List.of(rootRecord, accessControlProviderRecord);
         final List<ConfiguredObjectRecord> upgradedRecords =
                 _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
 
@@ -363,16 +302,9 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
         assertEquals("Ssl.*", newContext.get(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST));
     }
 
-    private ConfiguredObjectRecord findRecordById(UUID id, List<ConfiguredObjectRecord> records)
+    private ConfiguredObjectRecord findRecordById(final UUID id, final List<ConfiguredObjectRecord> records)
     {
-        for (ConfiguredObjectRecord record : records)
-        {
-            if (id.equals(record.getId()))
-            {
-                return record;
-            }
-        }
-        return null;
+        return records.stream().filter(record -> record.getId().equals(id)).findFirst().orElse(null);
     }
 
     private ConfiguredObjectRecord createMockRecordForGivenCategoryTypeAndContext(final String category,
@@ -380,12 +312,11 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
                                                                                   final Map<String, String> context)
     {
         final ConfiguredObjectRecord record = mock(ConfiguredObjectRecord.class);
-        when(record.getId()).thenReturn(UUID.randomUUID());
+        when(record.getId()).thenReturn(randomUUID());
         when(record.getType()).thenReturn(category);
-        final Map<String, Object> attributes = new HashMap<>();
-        attributes.put("name", getTestName());
-        attributes.put("type", type);
-        attributes.put("context", context);
+        final Map<String, Object> attributes = Map.of("name", getTestName(),
+                "type", type,
+                "context", context);
         when(record.getAttributes()).thenReturn(attributes);
         return record;
     }
@@ -404,5 +335,4 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
         final Map<String, Object> contextMap = (Map<String, Object>) context;
         return contextMap;
     }
-
 }

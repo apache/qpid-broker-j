@@ -20,27 +20,21 @@
  */
 package org.apache.qpid.server.txn;
 
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 
 /**
  * Mock Server Message allowing its persistent flag to be controlled from test.
  */
-class MockServerMessage implements ServerMessage
+class MockServerMessage<T extends StorableMessageMetaData> implements ServerMessage<T>
 {
-    /**
-     * 
-     */
     private final boolean persistent;
 
-    /**
-     * @param persistent
-     */
     MockServerMessage(boolean persistent)
     {
         this.persistent = persistent;
@@ -53,13 +47,13 @@ class MockServerMessage implements ServerMessage
     }
 
     @Override
-    public MessageReference newReference()
+    public MessageReference<?> newReference()
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MessageReference newReference(final TransactionLogResource object)
+    public MessageReference<?> newReference(final TransactionLogResource object)
     {
         throw new UnsupportedOperationException();
     }
@@ -107,7 +101,7 @@ class MockServerMessage implements ServerMessage
     }
 
     @Override
-    public StoredMessage getStoredMessage()
+    public StoredMessage<T> getStoredMessage()
     {
         throw new UnsupportedOperationException();
     }
@@ -131,7 +125,7 @@ class MockServerMessage implements ServerMessage
     }
 
     @Override
-    public QpidByteBuffer getContent(int offset, int length)
+    public QpidByteBuffer getContent(final int offset, final int length)
     {
         throw new UnsupportedOperationException();
     }

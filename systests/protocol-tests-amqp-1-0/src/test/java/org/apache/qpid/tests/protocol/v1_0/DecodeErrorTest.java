@@ -27,14 +27,14 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.StringWriter;
@@ -77,8 +77,8 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
                        .assertLatestResponse(Flow.class,
-                                             flow -> assumeThat(flow.getLinkCredit(),
-                                                                is(greaterThan(UnsignedInteger.ZERO))));
+                                             flow -> assumeTrue(is(greaterThan(UnsignedInteger.ZERO))
+                                                     .matches(flow.getLinkCredit())));
 
             try(final QpidByteBuffer payload = buildInvalidMessage())
             {

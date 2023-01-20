@@ -18,8 +18,10 @@
  */
 package org.apache.qpid.server.security.access.firewall;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +30,7 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 
 import com.google.common.collect.ImmutableSet;
+
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.access.config.FirewallRule;
 import org.apache.qpid.server.security.access.config.LegacyOperation;
@@ -35,8 +38,8 @@ import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.RulePredicate;
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -52,7 +55,7 @@ public class NetworkFirewallRuleTest extends UnitTestBase
 
     private NetworkFirewallRule _networkFirewallRule;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _addressNotInRule = InetAddress.getByName(LOCALHOST_IP);
@@ -126,14 +129,14 @@ public class NetworkFirewallRuleTest extends UnitTestBase
         NetworkFirewallRule rule = new NetworkFirewallRule(LOCALHOST_IP, OTHER_IP_1);
         NetworkFirewallRule equalRule = new NetworkFirewallRule(LOCALHOST_IP, OTHER_IP_1);
 
-        assertTrue(rule.equals(rule));
-        assertTrue(rule.equals(equalRule));
-        assertTrue(equalRule.equals(rule));
+        assertEquals(rule, rule);
+        assertEquals(rule, equalRule);
+        assertEquals(equalRule, rule);
 
-        assertTrue(rule.hashCode() == equalRule.hashCode());
+        assertEquals(rule.hashCode(), equalRule.hashCode());
 
-        assertFalse("Different networks should cause rules to be unequal",
-                           rule.equals(new NetworkFirewallRule(LOCALHOST_IP, OTHER_IP_2)));
+        assertNotEquals(rule, new NetworkFirewallRule(LOCALHOST_IP, OTHER_IP_2),
+                "Different networks should cause rules to be unequal");
 
     }
 

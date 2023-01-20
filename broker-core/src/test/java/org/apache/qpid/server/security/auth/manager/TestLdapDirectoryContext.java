@@ -24,15 +24,13 @@ import static org.mockito.Mockito.mock;
 import java.util.Hashtable;
 
 import javax.naming.Context;
-import javax.naming.NamingException;
 import javax.naming.directory.DirContext;
 
 public class TestLdapDirectoryContext implements javax.naming.spi.InitialContextFactory
 {
     @Override
-    public Context getInitialContext(final Hashtable<?, ?> environment) throws NamingException
+    public Context getInitialContext(final Hashtable<?, ?> environment)
     {
-        return (DirContext)mock(DirContext.class);
+        return mock(DirContext.class);
     }
-
 }

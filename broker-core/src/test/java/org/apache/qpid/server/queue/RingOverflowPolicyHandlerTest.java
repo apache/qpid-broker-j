@@ -27,8 +27,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
@@ -51,14 +51,14 @@ public class RingOverflowPolicyHandlerTest extends UnitTestBase
     private EventLogger _eventLogger;
     private LogSubject _subject;
 
-    @Before
+    @BeforeEach
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void setUp() throws Exception
     {
         _eventLogger = mock(EventLogger.class);
         _subject = mock(LogSubject.class);
 
         final Transaction tx = mock(Transaction.class);
-
         final MessageStore messageStore = mock(MessageStore.class);
         when(messageStore.newTransaction()).thenReturn(tx);
 
@@ -77,9 +77,9 @@ public class RingOverflowPolicyHandlerTest extends UnitTestBase
     }
 
     @Test
-    public void testCheckOverflowWhenOverfullBytes() throws Exception
+    public void testCheckOverflowWhenOverfullBytes()
     {
-        QueueEntry lastEntry = createLastEntry();
+        final QueueEntry lastEntry = createLastEntry();
         when(_queue.getLeastSignificantOldestEntry()).thenReturn(lastEntry, (QueueEntry) null);
         when(_queue.getQueueDepthBytes()).thenReturn(10L, 4L);
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(5L);
@@ -88,15 +88,15 @@ public class RingOverflowPolicyHandlerTest extends UnitTestBase
         _ringOverflowPolicyHandler.checkOverflow(null);
 
         verify(lastEntry).delete();
-        LogMessage dropped = QueueMessages.DROPPED(1L, 4, 1, 5,-1);
+        final LogMessage dropped = QueueMessages.DROPPED(1L, 4, 1, 5,-1);
         verify(_eventLogger).message(same(_subject), argThat(new LogMessageMatcher(dropped)));
         verifyNoMoreInteractions(_eventLogger);
     }
 
     @Test
-    public void testCheckOverflowWhenOverfullMessages() throws Exception
+    public void testCheckOverflowWhenOverfullMessages()
     {
-        QueueEntry lastEntry = createLastEntry();
+        final QueueEntry lastEntry = createLastEntry();
         when(_queue.getLeastSignificantOldestEntry()).thenReturn(lastEntry, (QueueEntry) null);
         when(_queue.getQueueDepthMessages()).thenReturn(10, 5);
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(5L);
@@ -105,15 +105,15 @@ public class RingOverflowPolicyHandlerTest extends UnitTestBase
         _ringOverflowPolicyHandler.checkOverflow(null);
 
         verify(lastEntry).delete();
-        LogMessage dropped = QueueMessages.DROPPED(1, 4, 5, -1,5);
+        final LogMessage dropped = QueueMessages.DROPPED(1, 4, 5, -1,5);
         verify(_eventLogger).message(same(_subject), argThat(new LogMessageMatcher(dropped)));
         verifyNoMoreInteractions(_eventLogger);
     }
 
     @Test
-    public void testCheckOverflowWhenUnderfullBytes() throws Exception
+    public void testCheckOverflowWhenUnderfullBytes()
     {
-        QueueEntry lastEntry = createLastEntry();
+        final QueueEntry lastEntry = createLastEntry();
         when(_queue.getQueueDepthBytes()).thenReturn(5L);
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(5L);
         when(_queue.getQueueDepthMessages()).thenReturn(3);
@@ -125,9 +125,9 @@ public class RingOverflowPolicyHandlerTest extends UnitTestBase
     }
 
     @Test
-    public void testCheckOverflowWhenUnderfullMessages() throws Exception
+    public void testCheckOverflowWhenUnderfullMessages()
     {
-        QueueEntry lastEntry = createLastEntry();
+        final QueueEntry lastEntry = createLastEntry();
         when(_queue.getQueueDepthMessages()).thenReturn(5);
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(5L);
         when(_queue.getQueueDepthBytes()).thenReturn(10L);
@@ -140,10 +140,10 @@ public class RingOverflowPolicyHandlerTest extends UnitTestBase
 
     private QueueEntry createLastEntry()
     {
-        AMQMessageHeader oldestMessageHeader = mock(AMQMessageHeader.class);
-        ServerMessage oldestMessage = mock(ServerMessage.class);
+        final AMQMessageHeader oldestMessageHeader = mock(AMQMessageHeader.class);
+        final ServerMessage<?> oldestMessage = mock(ServerMessage.class);
         when(oldestMessage.getMessageHeader()).thenReturn(oldestMessageHeader);
-        QueueEntry oldestEntry = mock(QueueEntry.class);
+        final QueueEntry oldestEntry = mock(QueueEntry.class);
         when(oldestEntry.getMessage()).thenReturn(oldestMessage);
         when(oldestEntry.acquireOrSteal(null)).thenReturn(true);
         return oldestEntry;

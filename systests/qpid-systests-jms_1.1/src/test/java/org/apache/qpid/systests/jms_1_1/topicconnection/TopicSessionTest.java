@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.systests.jms_1_1.topicconnection;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import javax.jms.Queue;
 import javax.jms.Session;
@@ -29,7 +29,7 @@ import javax.jms.TopicConnection;
 import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -121,5 +121,4 @@ public class TopicSessionTest extends JmsTestBase
             connection.close();
         }
     }
-
 }

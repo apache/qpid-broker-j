@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -36,16 +36,15 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentMatcher;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
@@ -61,16 +60,16 @@ import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings("rawtypes")
 public class AsynchronousMessageStoreRecovererTest extends UnitTestBase
 {
-    private QueueManagingVirtualHost _virtualHost;
+    private QueueManagingVirtualHost<?> _virtualHost;
     private MessageStore _store;
     private MessageStore.MessageStoreReader _storeReader;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
         _virtualHost = mock(QueueManagingVirtualHost.class);
         _store = mock(MessageStore.class);
         _storeReader = mock(MessageStore.MessageStoreReader.class);
@@ -81,73 +80,67 @@ public class AsynchronousMessageStoreRecovererTest extends UnitTestBase
     }
 
     @Test
-    public void testExceptionOnRecovery() throws Exception
+    public void testExceptionOnRecovery()
     {
-        ServerScopedRuntimeException exception = new ServerScopedRuntimeException("test");
+        final ServerScopedRuntimeException exception = new ServerScopedRuntimeException("test");
         doThrow(exception).when(_storeReader).visitMessageInstances(any(TransactionLogResource.class),
-                                                                                             any(MessageInstanceHandler.class));
-        Queue<?> queue = mock(Queue.class);
-        when(_virtualHost.getChildren(eq(Queue.class))).thenReturn(Collections.singleton(queue));
+                any(MessageInstanceHandler.class));
+        final Queue<?> queue = mock(Queue.class);
+        when(_virtualHost.getChildren(eq(Queue.class))).thenReturn(Set.of(queue));
 
-        AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
-        ListenableFuture<Void> result = recoverer.recover(_virtualHost);
-        try
-        {
-            result.get();
-            fail("ServerScopedRuntimeException should be rethrown");
-        }
-        catch(ExecutionException e)
-        {
-            assertEquals("Unexpected cause", exception, e.getCause());
-        }
+        final AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
+        final ListenableFuture<Void> result = recoverer.recover(_virtualHost);
+        final ExecutionException thrown = assertThrows(ExecutionException.class,
+                result::get,
+                "ServerScopedRuntimeException should be rethrown");
+        assertEquals(exception, thrown.getCause(), "Unexpected cause");
     }
 
     @Test
     public void testRecoveryEmptyQueue() throws Exception
     {
-        Queue<?> queue = mock(Queue.class);
-        when(_virtualHost.getChildren(eq(Queue.class))).thenReturn(Collections.singleton(queue));
+        final Queue<?> queue = mock(Queue.class);
+        when(_virtualHost.getChildren(eq(Queue.class))).thenReturn(Set.of(queue));
 
-        AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
-        ListenableFuture<Void> result = recoverer.recover(_virtualHost);
+        final AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
+        final ListenableFuture<Void> result = recoverer.recover(_virtualHost);
         assertNull(result.get());
     }
 
     @Test
     public void testRecoveryWhenLastRecoveryMessageIsConsumedBeforeRecoveryCompleted() throws Exception
     {
-        Queue<?> queue = mock(Queue.class);
-        when(queue.getId()).thenReturn(UUID.randomUUID());
-        when(_virtualHost.getChildren(eq(Queue.class))).thenReturn(Collections.singleton(queue));
+        final Queue<?> queue = mock(Queue.class);
+        when(queue.getId()).thenReturn(randomUUID());
+        when(_virtualHost.getChildren(eq(Queue.class))).thenReturn(Set.of(queue));
         when(_store.getNextMessageId()).thenReturn(3L);
         when(_store.newTransaction()).thenReturn(mock(Transaction.class));
 
         final List<StoredMessage<?>> testMessages = new ArrayList<>();
-        StoredMessage<?> storedMessage = createTestMessage(1L);
+        final StoredMessage<?> storedMessage = createTestMessage(1L);
         testMessages.add(storedMessage);
-        StoredMessage<?> orphanedMessage = createTestMessage(2L);
+        final StoredMessage<?> orphanedMessage = createTestMessage(2L);
         testMessages.add(orphanedMessage);
 
-        StoredMessage newMessage = createTestMessage(4L);
+        final StoredMessage<?> newMessage = createTestMessage(4L);
         testMessages.add(newMessage);
 
         final MessageEnqueueRecord messageEnqueueRecord = mock(MessageEnqueueRecord.class);
-        UUID id = queue.getId();
+        final UUID id = queue.getId();
         when(messageEnqueueRecord.getQueueId()).thenReturn(id);
         when(messageEnqueueRecord.getMessageNumber()).thenReturn(1L);
 
-        MockStoreReader storeReader = new MockStoreReader(Collections.singletonList(messageEnqueueRecord), testMessages);
+        final MockStoreReader storeReader = new MockStoreReader(Collections.singletonList(messageEnqueueRecord), testMessages);
         when(_store.newMessageStoreReader()).thenReturn(storeReader);
 
-        AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
-        ListenableFuture<Void> result = recoverer.recover(_virtualHost);
+        final AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
+        final ListenableFuture<Void> result = recoverer.recover(_virtualHost);
         assertNull(result.get());
 
         verify(orphanedMessage, times(1)).remove();
         verify(newMessage, times(0)).remove();
-        verify(queue).recover(argThat((ArgumentMatcher<ServerMessage>) serverMessage -> serverMessage.getMessageNumber()
-                                                                                        == storedMessage.getMessageNumber()),
-                              same(messageEnqueueRecord));
+        verify(queue).recover(argThat(serverMessage ->
+                serverMessage.getMessageNumber() == storedMessage.getMessageNumber()), same(messageEnqueueRecord));
     }
 
     private StoredMessage<?> createTestMessage(final long messageNumber)
@@ -164,7 +157,7 @@ public class AsynchronousMessageStoreRecovererTest extends UnitTestBase
         private final List<MessageEnqueueRecord> _messageEnqueueRecords;
         private final List<StoredMessage<?>> _messages;
 
-        private MockStoreReader(final List<MessageEnqueueRecord> messageEnqueueRecords, List<StoredMessage<?>> messages)
+        private MockStoreReader(final List<MessageEnqueueRecord> messageEnqueueRecords, final List<StoredMessage<?>> messages)
         {
             _messageEnqueueRecords = messageEnqueueRecords;
             _messages = messages;
@@ -173,7 +166,7 @@ public class AsynchronousMessageStoreRecovererTest extends UnitTestBase
         @Override
         public void visitMessages(final MessageHandler handler) throws StoreException
         {
-            for (StoredMessage message: _messages)
+            for (StoredMessage<?> message: _messages)
             {
                 handler.handle(message);
             }
@@ -182,15 +175,15 @@ public class AsynchronousMessageStoreRecovererTest extends UnitTestBase
         @Override
         public void visitMessageInstances(final MessageInstanceHandler handler) throws StoreException
         {
-            for(MessageEnqueueRecord record: _messageEnqueueRecords)
+            for (MessageEnqueueRecord record: _messageEnqueueRecords)
             {
                 handler.handle(record);
             }
         }
 
         @Override
-        public void visitMessageInstances(final TransactionLogResource queue, final MessageInstanceHandler handler)
-                    throws StoreException
+        public void visitMessageInstances(final TransactionLogResource queue,
+                                          final MessageInstanceHandler handler) throws StoreException
         {
             visitMessageInstances(handler);
         }
@@ -204,7 +197,7 @@ public class AsynchronousMessageStoreRecovererTest extends UnitTestBase
         @Override
         public StoredMessage<?> getMessage(final long messageId)
         {
-            for(StoredMessage<?> message: _messages)
+            for (final StoredMessage<?> message: _messages)
             {
                 if (message.getMessageNumber() == messageId)
                 {

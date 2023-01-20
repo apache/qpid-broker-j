@@ -30,8 +30,9 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -47,8 +48,8 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.AmqpManagementFacade;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -56,8 +57,7 @@ import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class SpawnBrokerAdminTest extends UnitTestBase
 {
-
-    @BeforeClass
+    @BeforeAll
     public static void appendLocalClassPath() throws Exception
     {
         String file = System.getProperty(SYSTEST_PROPERTY_BUILD_CLASSPATH_FILE);
@@ -65,11 +65,8 @@ public class SpawnBrokerAdminTest extends UnitTestBase
         // append test classpath in order to locate logback configuration for spawn broker
         final String appendedClasspath = System.getProperty("path.separator")
                                          + System.getProperty("java.class.path");
-        Files.write(new File(file).toPath(),
-                    appendedClasspath.getBytes(UTF_8),
-                    APPEND);
+        Files.write(new File(file).toPath(), appendedClasspath.getBytes(UTF_8), APPEND);
     }
-
 
     @Test
     public void beforeTestClass() throws Exception
@@ -193,7 +190,6 @@ public class SpawnBrokerAdminTest extends UnitTestBase
         }
     }
 
-
     @Test
     public void createQueue() throws Exception
     {
@@ -312,7 +308,7 @@ public class SpawnBrokerAdminTest extends UnitTestBase
         {
             admin.beforeTestClass(SpawnBrokerAdminTest.class);
             admin.beforeTestMethod(SpawnBrokerAdminTest.class, getClass().getMethod("restart"));
-            assumeThat(admin.supportsRestart(), is(equalTo(true)));
+            assumeTrue(admin.supportsRestart());
             InetSocketAddress brokerAddress = admin.getBrokerAddress(BrokerAdmin.PortType.AMQP);
             admin.createQueue(getTestName());
             Connection connection = getJmsProvider()

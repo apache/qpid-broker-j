@@ -20,18 +20,17 @@
 
 package org.apache.qpid.server.security.auth.sasl.oauth2;
 
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
@@ -45,10 +44,11 @@ public class OAuth2NegotiatorTest extends UnitTestBase
             ("user=xxx\1auth=Bearer " + VALID_TOKEN + "\1host=localhost\1\1").getBytes();
     private static final byte[] RESPONSE_WITH_NO_TOKEN = "host=localhost\1\1".getBytes();
     private static final byte[] RESPONSE_WITH_MALFORMED_AUTH = "auth=wibble\1\1".getBytes();
+
     private OAuth2Negotiator _negotiator;
     private OAuth2AuthenticationProvider<?> _authenticationProvider;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _authenticationProvider = mock(OAuth2AuthenticationProvider.class);
@@ -56,70 +56,65 @@ public class OAuth2NegotiatorTest extends UnitTestBase
     }
 
     @Test
-    public void testHandleResponse_ResponseHasAuthOnly() throws Exception
+    public void testHandleResponse_ResponseHasAuthOnly()
     {
         doHandleResponseWithValidResponse(VALID_RESPONSE);
     }
 
     @Test
-    public void testHandleResponse_ResponseAuthAndOthers() throws Exception
+    public void testHandleResponse_ResponseAuthAndOthers()
     {
         doHandleResponseWithValidResponse(VALID_TOKEN_WITH_CRUD);
     }
 
     @Test
-    public void testHandleResponse_ResponseAuthAbsent() throws Exception
+    public void testHandleResponse_ResponseAuthAbsent()
     {
-        AuthenticationResult actualResult = _negotiator.handleResponse(RESPONSE_WITH_NO_TOKEN);
-        assertEquals("Unexpected result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            actualResult.getStatus());
+        final AuthenticationResult actualResult = _negotiator.handleResponse(RESPONSE_WITH_NO_TOKEN);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, actualResult.getStatus(),
+                "Unexpected result status");
 
-        assertNull("Unexpected result principal", actualResult.getMainPrincipal());
+        assertNull(actualResult.getMainPrincipal(), "Unexpected result principal");
     }
 
     @Test
-    public void testHandleResponse_ResponseAuthMalformed() throws Exception
+    public void testHandleResponse_ResponseAuthMalformed()
     {
-        AuthenticationResult actualResult = _negotiator.handleResponse(RESPONSE_WITH_MALFORMED_AUTH);
-        assertEquals("Unexpected result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            actualResult.getStatus());
-        assertNull("Unexpected result principal", actualResult.getMainPrincipal());
+        final AuthenticationResult actualResult = _negotiator.handleResponse(RESPONSE_WITH_MALFORMED_AUTH);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, actualResult.getStatus(),
+                "Unexpected result status");
+        assertNull(actualResult.getMainPrincipal(), "Unexpected result principal");
     }
 
     private void doHandleResponseWithValidResponse(final byte[] validResponse)
     {
         final AuthenticationResult expectedResult = mock(AuthenticationResult.class);
         when(_authenticationProvider.authenticateViaAccessToken(eq(VALID_TOKEN), any())).thenReturn(expectedResult);
-        AuthenticationResult actualResult = _negotiator.handleResponse(validResponse);
-        assertEquals("Unexpected result", expectedResult, actualResult);
+        final AuthenticationResult actualResult = _negotiator.handleResponse(validResponse);
+        assertEquals(expectedResult, actualResult, "Unexpected result");
 
         verify(_authenticationProvider).authenticateViaAccessToken(eq(VALID_TOKEN), any());
 
-        AuthenticationResult secondResult = _negotiator.handleResponse(validResponse);
-        assertEquals("Unexpected second result status",
-                            AuthenticationResult.AuthenticationStatus.ERROR,
-                            secondResult.getStatus());
+        final AuthenticationResult secondResult = _negotiator.handleResponse(validResponse);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, secondResult.getStatus(),
+                "Unexpected second result status");
     }
 
     @Test
-    public void testHandleNoInitialResponse() throws Exception
+    public void testHandleNoInitialResponse()
     {
         final AuthenticationResult result = _negotiator.handleResponse(new byte[0]);
-        assertEquals("Unexpected authentication status",
-                            AuthenticationResult.AuthenticationStatus.CONTINUE,
-                            result.getStatus());
-        assertArrayEquals("Unexpected authentication challenge", new byte[0], result.getChallenge());
+        assertEquals(AuthenticationResult.AuthenticationStatus.CONTINUE, result.getStatus(),
+                "Unexpected authentication status");
+        assertArrayEquals(new byte[0], result.getChallenge(), "Unexpected authentication challenge");
     }
 
     @Test
-    public void testHandleNoInitialResponseNull() throws Exception
+    public void testHandleNoInitialResponseNull()
     {
         final AuthenticationResult result = _negotiator.handleResponse(null);
-        assertEquals("Unexpected authentication status",
-                            AuthenticationResult.AuthenticationStatus.CONTINUE,
-                            result.getStatus());
-        assertArrayEquals("Unexpected authentication challenge", new byte[0], result.getChallenge());
+        assertEquals(AuthenticationResult.AuthenticationStatus.CONTINUE, result.getStatus(),
+                "Unexpected authentication status");
+        assertArrayEquals(new byte[0], result.getChallenge(), "Unexpected authentication challenge");
     }
 }

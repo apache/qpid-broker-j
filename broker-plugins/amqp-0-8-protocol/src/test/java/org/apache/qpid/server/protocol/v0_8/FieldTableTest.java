@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,7 +33,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -166,7 +166,7 @@ public class FieldTableTest extends UnitTestBase
 
     /** Check that a nested field table parameter correctly encodes and decodes to a byte buffer. */
     @Test
-    public void testNestedFieldTable() throws AMQFrameDecodingException
+    public void testNestedFieldTable()
     {
         byte[] testBytes = new byte[] { 0, 1, 2, 3, 4, 5 };
 
@@ -199,7 +199,7 @@ public class FieldTableTest extends UnitTestBase
 
         // Extract the table back from the buffer again.
         FieldTable extractedOuterTable = EncodingUtils.readFieldTable(buf);
-        assertNotNull("Unexpected outer table", extractedOuterTable);
+        assertNotNull(extractedOuterTable, "Unexpected outer table");
 
         FieldTable extractedTable = (FieldTable)extractedOuterTable.get("innerTable");
 
@@ -231,14 +231,13 @@ public class FieldTableTest extends UnitTestBase
         }
         catch (AMQPInvalidClassException aice)
         {
-            assertEquals("Non primitive values are not allowed to be set",
-                         AMQPInvalidClassException.INVALID_OBJECT_MSG + Exception.class,
-                         aice.getMessage());
+            assertEquals(AMQPInvalidClassException.INVALID_OBJECT_MSG + Exception.class, aice.getMessage(),
+                    "Non primitive values are not allowed to be set");
         }
     }
 
     @Test
-    public void testValues() throws Exception
+    public void testValues()
     {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("bool", true);
@@ -556,7 +555,7 @@ public class FieldTableTest extends UnitTestBase
         final FieldTable fieldTable = new FieldTable(buf);
         assertEquals(1, fieldTable.size());
         fieldTable.validate();
-        assertTrue("Expected key is not found", fieldTable.containsKey("testKey"));
+        assertTrue(fieldTable.containsKey("testKey"), "Expected key is not found");
     }
 
     private FieldTable buildMalformedFieldTable()
@@ -578,10 +577,4 @@ public class FieldTableTest extends UnitTestBase
             assertEquals(expected[index], actual[index]);
         }
     }
-
-    public static junit.framework.Test suite()
-    {
-        return new junit.framework.TestSuite(FieldTableTest.class);
-    }
-
 }

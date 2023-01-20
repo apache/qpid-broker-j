@@ -20,12 +20,12 @@
  */
 package org.apache.qpid.server.query.engine.parsing.factory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.math.BigDecimal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContext;
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContextHolder;
@@ -36,7 +36,6 @@ import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
  */
 public class NumberExpressionFactoryTest
 {
-
     @Test()
     public void fromDecimal()
     {

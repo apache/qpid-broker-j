@@ -31,7 +31,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
@@ -40,13 +41,19 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class NotificationCheckTest extends UnitTestBase
 {
-
     private final ServerMessage<?> _message = mock(ServerMessage.class);
     private final Queue<?> _queue = mock(Queue.class);
-    private final QueueNotificationListener _listener = mock(QueueNotificationListener .class);
+
+    private QueueNotificationListener _listener;
+
+    @BeforeEach
+    public void setUp()
+    {
+        _listener = mock(QueueNotificationListener .class);
+    }
 
     @Test
-    public void testMessageCountAlertFires() throws Exception
+    public void testMessageCountAlertFires()
     {
         when(_queue.getAlertThresholdQueueDepthMessages()).thenReturn(1000L);
         when(_queue.getQueueDepthMessages()).thenReturn(999, 1000, 1001);
@@ -62,7 +69,7 @@ public class NotificationCheckTest extends UnitTestBase
     }
 
     @Test
-    public void testMessageSizeAlertFires() throws Exception
+    public void testMessageSizeAlertFires()
     {
         when(_queue.getAlertThresholdMessageSize()).thenReturn(1024L);
         when(_message.getSizeIncludingHeader()).thenReturn(1023L, 1024L, 1025L);
@@ -78,9 +85,9 @@ public class NotificationCheckTest extends UnitTestBase
     }
 
     @Test
-    public void testMessageAgeAlertFires() throws Exception
+    public void testMessageAgeAlertFires()
     {
-        long now = System.currentTimeMillis();
+        final long now = System.currentTimeMillis();
         when(_queue.getAlertThresholdMessageAge()).thenReturn(1000L);
         when(_queue.getOldestMessageArrivalTime()).thenReturn(now, now - 15000);
 
@@ -93,7 +100,7 @@ public class NotificationCheckTest extends UnitTestBase
     }
 
     @Test
-    public void testQueueDepthAlertFires() throws Exception
+    public void testQueueDepthAlertFires()
     {
         when(_queue.getAlertThresholdQueueDepthBytes()).thenReturn(1024L);
         when(_queue.getQueueDepthBytes()).thenReturn(1023L, 1024L, 2048L);

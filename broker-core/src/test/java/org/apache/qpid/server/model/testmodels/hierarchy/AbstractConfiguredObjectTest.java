@@ -19,17 +19,17 @@
 
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -39,7 +39,8 @@ import java.util.concurrent.ExecutionException;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
@@ -57,6 +58,7 @@ import org.apache.qpid.test.utils.UnitTestBase;
  * Tests behaviour of AbstractConfiguredObjects when hierarchies of objects are used together.
  * Responsibilities to include adding/removing of children and correct firing of listeners.
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class AbstractConfiguredObjectTest extends UnitTestBase
 {
     private final Model _model = TestModel.getInstance();
@@ -65,10 +67,8 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     public void testCreateCategoryDefault()
     {
         final String objectName = "testCreateCategoryDefault";
-        Map<String, Object> attributes = Collections.singletonMap(ConfiguredObject.NAME, objectName);
-
-        TestCar object = _model.getObjectFactory().create(TestCar.class, attributes, null);
-
+        final Map<String, Object> attributes = Map.of(ConfiguredObject.NAME, objectName);
+        final TestCar object = _model.getObjectFactory().create(TestCar.class, attributes, null);
         assertEquals(objectName, object.getName());
         assertEquals(TestStandardCarImpl.TEST_STANDARD_CAR_TYPE, object.getType());
         final boolean condition = object instanceof TestStandardCar;
@@ -79,45 +79,30 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     public void testCreateUnrecognisedType()
     {
         final String objectName = "testCreateCategoryDefault";
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(ConfiguredObject.NAME, objectName);
-        attributes.put(ConfiguredObject.TYPE, "notatype");
-
-        try
-        {
-            _model.getObjectFactory().create(TestCar.class, attributes, null);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException ice)
-        {
-            // PASS
-        }
+        final Map<String, Object> attributes = Map.of(ConfiguredObject.NAME, objectName,
+                ConfiguredObject.TYPE, "notatype");
+        assertThrows(IllegalConfigurationException.class,
+                () -> _model.getObjectFactory().create(TestCar.class, attributes, null),
+                "Exception not thrown");
     }
 
     @Test
     public void testCreateCarWithEngine()
     {
         final String carName = "myCar";
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, carName);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
-
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
-
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, carName,
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        
         assertEquals(carName, car.getName());
+        assertEquals(0, (long) car.getChildren(TestEngine.class).size());
 
-        assertEquals((long) 0, (long) car.getChildren(TestEngine.class).size());
+        final String engineName = "myEngine";
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, engineName,
+                ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        final TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
-        String engineName = "myEngine";
-
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, engineName);
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
-
-        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
-
-        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
-
+        assertEquals(1, (long) car.getChildren(TestEngine.class).size());
         assertEquals(engineName, engine.getName());
         assertEquals(TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE, engine.getType());
     }
@@ -125,23 +110,19 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     @Test
     public void testGetChildren_NewChild()
     {
-        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"), null);
-
-        String engineName = "myEngine";
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, engineName);
-
-        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, Map.of(ConfiguredObject.NAME, "myCar"), null);
+        final String engineName = "myEngine";
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, engineName);
+        final TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
         // Check we can observe the new child from the parent
-
-        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
+        assertEquals(1, (long) car.getChildren(TestEngine.class).size());
         assertEquals(engine, car.getChildById(TestEngine.class, engine.getId()));
         assertEquals(engine, car.getChildByName(TestEngine.class, engine.getName()));
 
-        ListenableFuture attainedChild = car.getAttainedChildByName(TestEngine.class, engine.getName());
+        final ListenableFuture attainedChild = car.getAttainedChildByName(TestEngine.class, engine.getName());
         assertNotNull(attainedChild);
-        assertTrue("Engine should have already attained state", attainedChild.isDone());
+        assertTrue(attainedChild.isDone(), "Engine should have already attained state");
     }
 
     @Test
@@ -150,61 +131,61 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         final TestCar car = recoverParentAndChild();
 
         // Check we can observe the recovered child from the parent
-        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
-        TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
+        assertEquals(1, (long) car.getChildren(TestEngine.class).size());
+
+        final TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
 
         assertEquals(engine, car.getChildById(TestEngine.class, engine.getId()));
         assertEquals(engine, car.getChildByName(TestEngine.class, engine.getName()));
 
-        ListenableFuture attainedChild = car.getAttainedChildByName(TestEngine.class, engine.getName());
+        final ListenableFuture attainedChild = car.getAttainedChildByName(TestEngine.class, engine.getName());
         assertNotNull(attainedChild);
-        assertFalse("Engine should not have yet attained state", attainedChild.isDone());
+        assertFalse(attainedChild.isDone(), "Engine should not have yet attained state");
 
         car.open();
 
-        assertTrue("Engine should have now attained state", attainedChild.isDone());
+        assertTrue(attainedChild.isDone(), "Engine should have now attained state");
         assertEquals(engine, attainedChild.get());
     }
 
     @Test
     public void testOpenAwaitsChildToAttainState() throws Exception
     {
-        SettableFuture<Void> engineStateChangeControllingFuture = SettableFuture.create();
-
+        final SettableFuture<Void> engineStateChangeControllingFuture = SettableFuture.create();
         final TestCar car = recoverParentAndChild();
 
         // Check we can observe the recovered child from the parent
-        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
-        TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
+        assertEquals(1, (long) car.getChildren(TestEngine.class).size());
+        final TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
         engine.setStateChangeFuture(engineStateChangeControllingFuture);
 
-        ListenableFuture carFuture = car.openAsync();
-        assertFalse("car open future has completed before engine has attained state", carFuture.isDone());
+        final ListenableFuture carFuture = car.openAsync();
+        assertFalse(carFuture.isDone(), "car open future has completed before engine has attained state");
 
         engineStateChangeControllingFuture.set(null);
 
-        assertTrue("car open future has not completed", carFuture.isDone());
+        assertTrue(carFuture.isDone(), "car open future has not completed");
         carFuture.get();
     }
 
     @Test
     public void testOpenAwaitsChildToAttainState_ChildStateChangeAsyncErrors() throws Exception
     {
-        SettableFuture<Void> engineStateChangeControllingFuture = SettableFuture.create();
+        final SettableFuture<Void> engineStateChangeControllingFuture = SettableFuture.create();
 
         final TestCar car = recoverParentAndChild();
 
         // Check we can observe the recovered child from the parent
-        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
-        TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
+        assertEquals(1, (long) car.getChildren(TestEngine.class).size());
+        final TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
         engine.setStateChangeFuture(engineStateChangeControllingFuture);
 
-        ListenableFuture carFuture = car.openAsync();
-        assertFalse("car open future has completed before engine has attained state", carFuture.isDone());
+        final ListenableFuture carFuture = car.openAsync();
+        assertFalse(carFuture.isDone(), "car open future has completed before engine has attained state");
 
         engineStateChangeControllingFuture.setException(new RuntimeException("child attain state exception"));
 
-        assertTrue("car open future has not completed", carFuture.isDone());
+        assertTrue(carFuture.isDone(), "car open future has not completed");
         carFuture.get();
 
         assertEquals(State.ERRORED, engine.getState());
@@ -216,14 +197,14 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         final TestCar car = recoverParentAndChild();
 
         // Check we can observe the recovered child from the parent
-        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
-        TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
+        assertEquals(1, (long) car.getChildren(TestEngine.class).size());
+        final TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
 
         engine.setStateChangeException(new RuntimeException("child attain state exception"));
 
-        ListenableFuture carFuture = car.openAsync();
+        final ListenableFuture carFuture = car.openAsync();
 
-        assertTrue("car open future has not completed", carFuture.isDone());
+        assertTrue(carFuture.isDone(), "car open future has not completed");
         carFuture.get();
 
         assertEquals(State.ERRORED, engine.getState());
@@ -232,130 +213,88 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     @Test
     public void testCreateAwaitsAttainState()
     {
-        SettableFuture<Void> stateChangeFuture = SettableFuture.create();
-
-        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.singletonMap(ConfiguredObject.NAME, "myCar"), null);
-
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, "myEngine");
-        engineAttributes.put(TestEngine.STATE_CHANGE_FUTURE, stateChangeFuture);
-
-        ListenableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
-        assertFalse("create child has completed before state change completes", engine.isDone());
+        final SettableFuture<Void> stateChangeFuture = SettableFuture.create();
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, Map.of(ConfiguredObject.NAME, "myCar"), null);
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, "myEngine",
+                TestEngine.STATE_CHANGE_FUTURE, stateChangeFuture);
+        final ListenableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
+        assertFalse(engine.isDone(), "create child has completed before state change completes");
 
         stateChangeFuture.set(null);
 
-        assertTrue("create child has not completed", engine.isDone());
+        assertTrue(engine.isDone(), "create child has not completed");
     }
 
     @Test
-    public void testCreateAwaitsAttainState_StateChangeAsyncErrors() throws Exception
+    public void testCreateAwaitsAttainState_StateChangeAsyncErrors()
     {
-        SettableFuture stateChangeFuture = SettableFuture.create();
-        RuntimeException stateChangeException = new RuntimeException("state change error");
-
-        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"), null);
-
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, "myEngine");
-        engineAttributes.put(TestEngine.STATE_CHANGE_FUTURE, stateChangeFuture);
-
-        ListenableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
-        assertFalse("create child has completed before state change completes", engine.isDone());
+        final SettableFuture stateChangeFuture = SettableFuture.create();
+        final RuntimeException stateChangeException = new RuntimeException("state change error");
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, Map.of(ConfiguredObject.NAME, "myCar"), null);
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, "myEngine",
+                TestEngine.STATE_CHANGE_FUTURE, stateChangeFuture);
+        final ListenableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
+        assertFalse(engine.isDone(), "create child has completed before state change completes");
 
         stateChangeFuture.setException(stateChangeException);
 
-        assertTrue("create child has not completed", engine.isDone());
-        try
-        {
-            engine.get();
-            fail("Exception not thrown");
-        }
-        catch (ExecutionException ee)
-        {
-            assertSame(stateChangeException, ee.getCause());
-        }
-
-        assertEquals("Failed engine should not be registered with parent",
-                            (long) 0,
-                            (long) car.getChildren(TestEngine.class).size());
-
+        assertTrue(engine.isDone(), "create child has not completed");
+        final ExecutionException ee = assertThrows(ExecutionException.class, engine::get, "Exception not thrown");
+        assertSame(stateChangeException, ee.getCause());
+        assertEquals(0, (long) car.getChildren(TestEngine.class).size(),
+                     "Failed engine should not be registered with parent");
     }
 
     @Test
-    public void testCreateAwaitsAttainState_StateChangeSyncErrors() throws Exception
+    public void testCreateAwaitsAttainState_StateChangeSyncErrors()
     {
-        RuntimeException stateChangeException = new RuntimeException("state change error");
-
-        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"), null);
-
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, "myEngine");
-        engineAttributes.put(TestEngine.STATE_CHANGE_EXCEPTION, stateChangeException);
-
-        ListenableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
-        assertTrue("create child has not completed", engine.isDone());
-
-        try
-        {
-            engine.get();
-            fail("Exception not thrown");
-        }
-        catch (ExecutionException ee)
-        {
-            assertSame(stateChangeException, ee.getCause());
-        }
-
-        assertEquals("Failed engine should not be registered with parent",
-                            (long) 0,
-                            (long) car.getChildren(TestEngine.class).size());
+        final RuntimeException stateChangeException = new RuntimeException("state change error");
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, Map.of(ConfiguredObject.NAME, "myCar"), null);
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, "myEngine",
+                TestEngine.STATE_CHANGE_EXCEPTION, stateChangeException);
+        final ListenableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
+        assertTrue(engine.isDone(), "create child has not completed");
+        final ExecutionException ee = assertThrows(ExecutionException.class, engine::get, "Exception not thrown");
+        assertSame(stateChangeException, ee.getCause());
+        assertEquals(0, (long) car.getChildren(TestEngine.class).size(),
+                     "Failed engine should not be registered with parent");
     }
 
     @Test
     public void testCloseAwaitsChildCloseCompletion()
     {
-        SettableFuture<Void> engineCloseControllingFuture = SettableFuture.create();
-
-        TestCar car = _model.getObjectFactory().create(TestCar.class,
-                                                       Collections.singletonMap(ConfiguredObject.NAME,
-                                                                                "myCar"), null);
-
-        String engineName = "myEngine";
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, engineName);
-        engineAttributes.put(TestEngine.BEFORE_CLOSE_FUTURE, engineCloseControllingFuture);
-
-        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
-
-        ListenableFuture carListenableFuture = car.closeAsync();
-        assertFalse("car close future has completed before engine closed", carListenableFuture.isDone());
-        assertSame("engine deregistered from car too early",
-                          engine,
-                          car.getChildById(TestEngine.class, engine.getId()));
+        final SettableFuture<Void> engineCloseControllingFuture = SettableFuture.create();
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, Map.of(ConfiguredObject.NAME, "myCar"), null);
+        final String engineName = "myEngine";
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, engineName,
+                TestEngine.BEFORE_CLOSE_FUTURE, engineCloseControllingFuture);
+        final TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+        final ListenableFuture carListenableFuture = car.closeAsync();
+        assertFalse(carListenableFuture.isDone(), "car close future has completed before engine closed");
+        assertSame(engine, car.getChildById(TestEngine.class, engine.getId()),
+                   "engine deregistered from car too early");
 
 
         engineCloseControllingFuture.set(null);
 
-        assertTrue("car close future has not completed", carListenableFuture.isDone());
-        assertNull("engine not deregistered", car.getChildById(TestEngine.class, engine.getId()));
+        assertTrue(carListenableFuture.isDone(), "car close future has not completed");
+        assertNull(car.getChildById(TestEngine.class, engine.getId()), "engine not deregistered");
     }
 
     @Test
     public void testGlobalContextDefault()
     {
         final String carName = "myCar";
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, carName);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, carName,
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        assertTrue(car.getContextKeys(true).contains(TestCar.TEST_CONTEXT_VAR),
+                "context var not in contextKeys");
 
-        assertTrue("context var not in contextKeys", car.getContextKeys(true).contains(TestCar.TEST_CONTEXT_VAR));
-
-        String expected = "a value";
-        assertEquals("Context variable has unexpected value",
-                            expected,
-                            car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR));
+        final String expected = "a value";
+        assertEquals(expected, car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR),
+                "Context variable has unexpected value");
 
     }
 
@@ -363,27 +302,20 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     public void testGlobalContextDefaultWithThisRef()
     {
         final String carName = "myCar";
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, carName);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, carName,
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        assertEquals("a value myCar", car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_THIS_REF),
+                     "Context variable has unexpected value");
 
-        assertEquals("Context variable has unexpected value",
-                            "a value myCar",
-                            car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_THIS_REF));
+        final String engineName = "myEngine";
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, engineName,
+                ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        final TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
-        String engineName = "myEngine";
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, engineName);
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
-
-
-        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
-
-        assertEquals("Context variable has unexpected value",
-                            "a value myEngine",
-                            engine.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_THIS_REF));
+        assertEquals("a value myEngine", engine.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_THIS_REF),
+                "Context variable has unexpected value");
     }
 
     @Test
@@ -391,55 +323,42 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     {
         final String contentVarName = "contentVar";
         final String carName = "myCar";
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, carName);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
-        carAttributes.put(ConfiguredObject.CONTEXT, Collections.singletonMap(contentVarName, "name ${this:name}"));
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, carName,
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE,
+                ConfiguredObject.CONTEXT, Map.of(contentVarName, "name ${this:name}"));
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        assertEquals("name myCar", car.getContextValue(String.class, contentVarName),
+                     "Context variable has unexpected value");
 
-        assertEquals("Context variable has unexpected value",
-                            "name myCar",
-                            car.getContextValue(String.class, contentVarName));
-
-        String engineName = "myEngine";
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, engineName);
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
-
-        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+        final String engineName = "myEngine";
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, engineName,
+                ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        final TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
         // TODO: we have different behaviour depending on whether the variable is a  global context default or hierarchy context variable.
-        assertEquals("Context variable has unexpected value",
-                            "name myCar",
-                            engine.getContextValue(String.class, contentVarName));
+        assertEquals("name myCar", engine.getContextValue(String.class, contentVarName),
+                "Context variable has unexpected value");
     }
 
     @Test
     public void testGlobalContextDefaultWithAncestorRef()
     {
         final String carName = "myCar";
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, carName);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, carName,
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        final String expected = "a value " + carName;
+        assertEquals(expected, car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_ANCESTOR_REF),
+                                "Context variable has unexpected value");
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        final String engineName = "myEngine";
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, engineName,
+                ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        final TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
-        String expected = "a value " + carName;
-        assertEquals("Context variable has unexpected value",
-                            expected,
-                            car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_ANCESTOR_REF));
-
-        String engineName = "myEngine";
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, engineName);
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
-
-        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
-
-        assertEquals("Context variable has unexpected value",
-                            expected,
-                            engine.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_ANCESTOR_REF));
+        assertEquals(expected, engine.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR_WITH_ANCESTOR_REF),
+                "Context variable has unexpected value");
     }
 
     @Test
@@ -447,45 +366,39 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     {
         final String contentVarName = "contentVar";
         final String carName = "myCar";
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, carName);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
-        carAttributes.put(ConfiguredObject.CONTEXT, Collections.singletonMap(contentVarName, "name ${ancestor:testcar:name}"));
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, carName,
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE,
+                ConfiguredObject.CONTEXT, Map.of(contentVarName, "name ${ancestor:testcar:name}"));
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        assertEquals("Context variable has unexpected value",
-                            "name myCar",
-                            car.getContextValue(String.class, contentVarName));
+        assertEquals("name myCar", car.getContextValue(String.class, contentVarName),
+                     "Context variable has unexpected value");
 
-        String engineName = "myEngine";
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, engineName);
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        final String engineName = "myEngine";
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, engineName,
+                ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
 
-        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+        final TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
-        assertEquals("Context variable has unexpected value",
-                            "name myCar",
-                            engine.getContextValue(String.class, contentVarName));
+        assertEquals("name myCar", engine.getContextValue(String.class, contentVarName),
+                "Context variable has unexpected value");
     }
 
     @Test
     public void testUserPreferencesCreatedOnEngineCreation()
     {
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, "myCar");
-        carAttributes.put(ConfiguredObject.TYPE, TestStandardCarImpl.TEST_STANDARD_CAR_TYPE);
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, "myCar",
+                ConfiguredObject.TYPE, TestStandardCarImpl.TEST_STANDARD_CAR_TYPE);
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, "myEngine");
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, "myEngine",
+                ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
 
-        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+        final TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
-        assertNotNull("Unexpected user preferences", engine.getUserPreferences());
+        assertNotNull(engine.getUserPreferences(), "Unexpected user preferences");
     }
 
     @Test
@@ -503,254 +416,196 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     @Test
     public void testParentDeletePropagatesToChild()
     {
-        TestCar car = _model.getObjectFactory().create(TestCar.class,
-                                                       Collections.singletonMap(ConfiguredObject.NAME, "car"), null);
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, Map.of(ConfiguredObject.NAME, "car"), null);
 
-        TestEngine engine = (TestEngine) car.createChild(TestEngine.class,
-                                                         Collections.singletonMap(ConfiguredObject.NAME, "engine"));
+        final TestEngine engine = (TestEngine) car.createChild(TestEngine.class, Map.of(ConfiguredObject.NAME, "engine"));
 
         final StateChangeCapturingListener listener = new StateChangeCapturingListener();
         engine.addChangeListener(listener);
 
-        assertEquals("Unexpected child state before parent delete", State.ACTIVE, engine.getState());
+        assertEquals(State.ACTIVE, engine.getState(), "Unexpected child state before parent delete");
 
         car.delete();
 
-        assertEquals("Unexpected child state after parent delete", State.DELETED, engine.getState());
+        assertEquals(State.DELETED, engine.getState(), "Unexpected child state after parent delete");
         final List<State> newStates = listener.getNewStates();
-        assertEquals("Child heard an unexpected number of state chagnes", (long) 1, (long) newStates.size());
-        assertEquals("Child heard listener has unexpected state", State.DELETED, newStates.get(0));
+        assertEquals(1, (long) newStates.size(), "Child heard an unexpected number of state chagnes");
+        assertEquals(State.DELETED, newStates.get(0), "Child heard listener has unexpected state");
     }
 
     @Test
     public void testParentDeleteValidationFailureLeavesChildreIntact()
     {
-        TestCar car = _model.getObjectFactory().create(TestCar.class,
-                                                       Collections.singletonMap(ConfiguredObject.NAME, "car"), null);
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, Map.of(ConfiguredObject.NAME, "car"), null);
 
-        TestEngine engine = (TestEngine) car.createChild(TestEngine.class,
-                                                         Collections.singletonMap(ConfiguredObject.NAME, "engine"));
+        final TestEngine engine = (TestEngine) car.createChild(TestEngine.class, Map.of(ConfiguredObject.NAME, "engine"));
 
         final StateChangeCapturingListener listener = new StateChangeCapturingListener();
         engine.addChangeListener(listener);
 
-        assertEquals("Unexpected child state before parent delete", State.ACTIVE, engine.getState());
+        assertEquals(State.ACTIVE, engine.getState(), "Unexpected child state before parent delete");
 
         car.setRejectStateChange(true);
-        try
-        {
-            car.delete();
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // PASS
-        }
 
-        assertEquals("Unexpected child state after failed parent deletion", State.ACTIVE, engine.getState());
+        assertThrows(IllegalConfigurationException.class, car::delete, "Exception not thrown");
+
+        assertEquals(State.ACTIVE, engine.getState(), "Unexpected child state after failed parent deletion");
         final List<State> newStates = listener.getNewStates();
-        assertEquals("Child heard an unexpected number of state changes", (long) 0, (long) newStates.size());
+        assertEquals(0, (long) newStates.size(), "Child heard an unexpected number of state changes");
     }
 
     @Test
     public void testDeleteConfiguredObjectReferredFromAttribute()
     {
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, "car");
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
-        TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, "car",
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        Map<String, Object> instrumentPanelAttributes = new HashMap<>();
-        instrumentPanelAttributes.put(ConfiguredObject.NAME, "instrumentPanel");
-        instrumentPanelAttributes.put(ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
-        TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
+        final Map<String, Object> instrumentPanelAttributes = Map.of(ConfiguredObject.NAME, "instrumentPanel",
+                ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
+        final TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
 
-        Map<String, Object> sensorAttributes = new HashMap<>();
-        sensorAttributes.put(ConfiguredObject.NAME, "sensor");
-        sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
-        TestSensor sensor = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
+        final Map<String, Object> sensorAttributes = Map.of(ConfiguredObject.NAME, "sensor",
+                ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
+        final TestSensor sensor = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
 
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, "engine");
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
-        engineAttributes.put("temperatureSensor", sensor.getName());
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, "engine",
+                ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE,
+                "temperatureSensor", sensor.getName());
         car1.createChild(TestEngine.class, engineAttributes);
 
-        try
-        {
-            sensor.delete();
-            fail("Referred sensor cannot be deleted");
-        }
-        catch (IntegrityViolationException e)
-        {
-            // pass
-        }
+        assertThrows(IntegrityViolationException.class, sensor::delete, "Referred sensor cannot be deleted");
     }
 
     @Test
     public void testDeleteConfiguredObjectReferredFromCollection()
     {
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, "car");
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
-        TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, "car",
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        Map<String, Object> instrumentPanelAttributes = new HashMap<>();
-        instrumentPanelAttributes.put(ConfiguredObject.NAME, "instrumentPanel");
-        instrumentPanelAttributes.put(ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
-        TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
+        final Map<String, Object> instrumentPanelAttributes = Map.of(ConfiguredObject.NAME, "instrumentPanel",
+                ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
+        final TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
 
-        Map<String, Object> sensorAttributes = new HashMap<>();
-        sensorAttributes.put(ConfiguredObject.NAME, "sensor1");
-        sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
-        TestSensor sensor1 = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
+        Map<String, Object> sensorAttributes = Map.of(ConfiguredObject.NAME, "sensor1",
+                ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
+        final TestSensor sensor1 = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
 
-        sensorAttributes = new HashMap<>();
-        sensorAttributes.put(ConfiguredObject.NAME, "sensor2");
-        sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
-        TestSensor sensor2 = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
+        sensorAttributes = Map.of(ConfiguredObject.NAME, "sensor2",
+                ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
+        final TestSensor sensor2 = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
 
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, "engine");
-        engineAttributes.put(ConfiguredObject.TYPE, TestPetrolEngineImpl.TEST_PETROL_ENGINE_TYPE);
-        engineAttributes.put("temperatureSensors", new String[]{sensor1.getName(), sensor2.getName()});
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, "engine",
+                ConfiguredObject.TYPE, TestPetrolEngineImpl.TEST_PETROL_ENGINE_TYPE,
+                "temperatureSensors", new String[]{sensor1.getName(), sensor2.getName()});
         car1.createChild(TestEngine.class, engineAttributes);
 
-        try
-        {
-            sensor1.delete();
-            fail("Referred sensor cannot be deleted");
-        }
-        catch (IntegrityViolationException e)
-        {
-            // pass
-        }
+        assertThrows(IntegrityViolationException.class, sensor1::delete, "Referred sensor cannot be deleted");
     }
 
     @Test
     public void testDeleteConfiguredObject()
     {
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, "car");
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
-        TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, "car",
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        Map<String, Object> instrumentPanelAttributes = new HashMap<>();
-        instrumentPanelAttributes.put(ConfiguredObject.NAME, "instrumentPanel");
-        instrumentPanelAttributes.put(ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
-        TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
+        final Map<String, Object> instrumentPanelAttributes = Map.of(ConfiguredObject.NAME, "instrumentPanel",
+                ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
+        final TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
 
-        Map<String, Object> sensorAttributes = new HashMap<>();
-        sensorAttributes.put(ConfiguredObject.NAME, "sensor1");
-        sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
-        TestSensor sensor1 = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
+        final Map<String, Object> sensorAttributes = Map.of(ConfiguredObject.NAME, "sensor1",
+                ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
+        final TestSensor sensor1 = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
 
-        assertEquals("Unexpected number of sensors after creation",
-                            (long) 1,
-                            (long) instrumentPanel.getChildren(TestSensor.class).size());
+        assertEquals(1, (long) instrumentPanel.getChildren(TestSensor.class).size(),
+                "Unexpected number of sensors after creation");
 
         sensor1.delete();
 
-        assertEquals("Unexpected number of sensors after deletion",
-                            (long) 0,
-                            (long) instrumentPanel.getChildren(TestSensor.class).size());
+        assertEquals(0, (long) instrumentPanel.getChildren(TestSensor.class).size(),
+                "Unexpected number of sensors after deletion");
     }
 
     @Test
     public void testDeleteConfiguredObjectWithReferredChildren()
     {
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, "car");
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
-        TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, "car",
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        Map<String, Object> instrumentPanelAttributes = new HashMap<>();
-        instrumentPanelAttributes.put(ConfiguredObject.NAME, "instrumentPanel");
-        instrumentPanelAttributes.put(ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
-        TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
+        final Map<String, Object> instrumentPanelAttributes = Map.of(ConfiguredObject.NAME, "instrumentPanel",
+                ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
+        final TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
 
-        Map<String, Object> sensorAttributes = new HashMap<>();
-        sensorAttributes.put(ConfiguredObject.NAME, "sensor");
-        sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
-        TestSensor sensor = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
+        final Map<String, Object> sensorAttributes = Map.of(ConfiguredObject.NAME, "sensor",
+                ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
+        final TestSensor sensor = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
 
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, "engine");
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
-        engineAttributes.put("temperatureSensor", sensor.getName());
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, "engine",
+                ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE,
+                "temperatureSensor", sensor.getName());
         car1.createChild(TestEngine.class, engineAttributes);
 
-        try
-        {
-            instrumentPanel.delete();
-            fail("Instrument panel cannot be deleted as it has referenced children");
-        }
-        catch (IntegrityViolationException e)
-        {
-            // pass
-        }
+        assertThrows(IntegrityViolationException.class, instrumentPanel::delete,
+                "Instrument panel cannot be deleted as it has referenced children");
     }
 
     @Test
     public void testDeleteConfiguredObjectWithChildrenReferringEachOther()
     {
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, "car");
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
-        TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, "car",
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final TestCar car1 = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
-        Map<String, Object> instrumentPanelAttributes = new HashMap<>();
-        instrumentPanelAttributes.put(ConfiguredObject.NAME, "instrumentPanel");
-        instrumentPanelAttributes.put(ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
-        TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
+        final Map<String, Object> instrumentPanelAttributes = Map.of(ConfiguredObject.NAME, "instrumentPanel",
+                ConfiguredObject.TYPE, TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE);
+        final TestInstrumentPanel instrumentPanel = (TestInstrumentPanel) car1.createChild(TestInstrumentPanel.class, instrumentPanelAttributes);
 
-        Map<String, Object> sensorAttributes = new HashMap<>();
-        sensorAttributes.put(ConfiguredObject.NAME, "sensor");
-        sensorAttributes.put(ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
-        TestSensor sensor = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
+        final Map<String, Object> sensorAttributes = Map.of(ConfiguredObject.NAME, "sensor",
+                ConfiguredObject.TYPE, TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE);
+        final TestSensor sensor = (TestSensor) instrumentPanel.createChild(TestSensor.class, sensorAttributes);
 
-        Map<String, Object> gaugeAttributes = new HashMap<>();
-        gaugeAttributes.put(ConfiguredObject.NAME, "gauge");
-        gaugeAttributes.put(ConfiguredObject.TYPE, TestTemperatureGaugeImpl.TEST_TEMPERATURE_GAUGE_TYPE);
-        gaugeAttributes.put("sensor", "sensor");
-        TestGauge gauge = (TestGauge) instrumentPanel.createChild(TestGauge.class, gaugeAttributes);
+        final Map<String, Object> gaugeAttributes = Map.of(ConfiguredObject.NAME, "gauge",
+                ConfiguredObject.TYPE, TestTemperatureGaugeImpl.TEST_TEMPERATURE_GAUGE_TYPE,
+                "sensor", "sensor");
+        final TestGauge gauge = (TestGauge) instrumentPanel.createChild(TestGauge.class, gaugeAttributes);
 
         instrumentPanel.delete();
 
-        assertEquals("Unexpected sensor state", State.DELETED, sensor.getState());
-        assertEquals("Unexpected gauge state", State.DELETED, gauge.getState());
+        assertEquals(State.DELETED, sensor.getState(), "Unexpected sensor state");
+        assertEquals(State.DELETED, gauge.getState(), "Unexpected gauge state");
     }
 
     private void doDuplicateChildCheck(final String attrToDuplicate)
     {
         final String carName = "myCar";
 
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, carName);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, carName,
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
 
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
-        assertEquals((long) 0, (long) car.getChildren(TestEngine.class).size());
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
+        assertEquals(0, (long) car.getChildren(TestEngine.class).size());
 
-        String engineName = "myEngine";
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, engineName);
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        final String engineName = "myEngine";
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, engineName,
+                ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
 
-        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
-        assertEquals((long) 1, (long) car.getChildren(TestEngine.class).size());
+        final TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+        assertEquals(1, (long) car.getChildren(TestEngine.class).size());
 
-        Map<String, Object> secondEngineNameAttribute = new HashMap<>();
+        final Map<String, Object> secondEngineNameAttribute = new HashMap<>();
         secondEngineNameAttribute.put(ConfiguredObject.TYPE, TestPetrolEngineImpl.TEST_PETROL_ENGINE_TYPE);
 
         if (attrToDuplicate.equals(ConfiguredObject.NAME))
         {
-            String secondEngineName = "myEngine";
+            final String secondEngineName = "myEngine";
             secondEngineNameAttribute.put(ConfiguredObject.NAME, secondEngineName);
         }
         else
         {
-            String secondEngineName = "myPetrolEngine";
+            final String secondEngineName = "myPetrolEngine";
             secondEngineNameAttribute.put(ConfiguredObject.ID, engine.getId());
             secondEngineNameAttribute.put(ConfiguredObject.NAME, secondEngineName);
         }
@@ -771,9 +626,8 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
             assertEquals(ConfiguredObject.ID, attrToDuplicate);
         }
 
-        assertEquals("Unexpected number of children after rejected duplicate",
-                            (long) 1,
-                            (long) car.getChildren(TestEngine.class).size());
+        assertEquals(1, (long) car.getChildren(TestEngine.class).size(),
+                "Unexpected number of children after rejected duplicate");
         assertSame(engine, car.getChildById(TestEngine.class, engine.getId()));
         assertSame(engine, car.getChildByName(TestEngine.class, engine.getName()));
     }
@@ -782,20 +636,19 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     private TestCar recoverParentAndChild()
     {
         final SystemConfig mockSystemConfig = mock(SystemConfig.class);
-        when(mockSystemConfig.getId()).thenReturn(UUID.randomUUID());
+        when(mockSystemConfig.getId()).thenReturn(randomUUID());
         when(mockSystemConfig.getModel()).thenReturn(TestModel.getInstance());
 
         final String carName = "myCar";
-        final Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, carName);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, carName,
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
 
-        ConfiguredObjectRecord carCor = new ConfiguredObjectRecord()
+        final ConfiguredObjectRecord carCor = new ConfiguredObjectRecord()
         {
             @Override
             public UUID getId()
             {
-                return UUID.randomUUID();
+                return randomUUID();
             }
 
             @Override
@@ -813,23 +666,22 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
             @Override
             public Map<String, UUID> getParents()
             {
-                return Collections.singletonMap(SystemConfig.class.getSimpleName(), mockSystemConfig.getId());
+                return Map.of(SystemConfig.class.getSimpleName(), mockSystemConfig.getId());
             }
         };
 
         final TestCar car = (TestCar) _model.getObjectFactory().recover(carCor, mockSystemConfig).resolve();
 
-        String engineName = "myEngine";
-        final Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, engineName);
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        final String engineName = "myEngine";
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, engineName,
+                ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
 
-        ConfiguredObjectRecord engineCor = new ConfiguredObjectRecord()
+        final ConfiguredObjectRecord engineCor = new ConfiguredObjectRecord()
         {
             @Override
             public UUID getId()
             {
-                return UUID.randomUUID();
+                return randomUUID();
             }
 
             @Override
@@ -847,7 +699,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
             @Override
             public Map<String, UUID> getParents()
             {
-                return Collections.singletonMap(TestCar.class.getSimpleName(), car.getId());
+                return Map.of(TestCar.class.getSimpleName(), car.getId());
             }
         };
 

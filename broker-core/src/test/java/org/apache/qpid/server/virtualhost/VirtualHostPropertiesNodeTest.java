@@ -18,15 +18,15 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.EnumSet;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -38,15 +38,16 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TestMemoryMessageStore;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class VirtualHostPropertiesNodeTest extends UnitTestBase
 {
     private VirtualHostPropertiesNode _virtualHostPropertiesNode;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        VirtualHost vhost = mock(VirtualHost.class);
-        MessageStore messageStore = new TestMemoryMessageStore();
+        final VirtualHost<?> vhost = mock(VirtualHost.class);
+        final MessageStore messageStore = new TestMemoryMessageStore();
         when(vhost.getMessageStore()).thenReturn(messageStore);
 
         _virtualHostPropertiesNode = new VirtualHostPropertiesNode(vhost);
@@ -59,9 +60,9 @@ public class VirtualHostPropertiesNodeTest extends UnitTestBase
         final ConsumerTarget target = mock(ConsumerTarget.class);
         when(target.allocateCredit(any(ServerMessage.class))).thenReturn(true);
 
-        MessageInstanceConsumer consumer = _virtualHostPropertiesNode.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
+        final MessageInstanceConsumer consumer = _virtualHostPropertiesNode.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
         final MessageContainer messageContainer = consumer.pullMessage();
-        assertNotNull("Could not pull message from VirtualHostPropertyNode", messageContainer);
+        assertNotNull(messageContainer, "Could not pull message from VirtualHostPropertyNode");
         if (messageContainer.getMessageReference() != null)
         {
             messageContainer.getMessageReference().release();

@@ -30,8 +30,8 @@ import static org.hamcrest.Matchers.oneOf;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -54,7 +54,7 @@ import org.apache.qpid.tests.utils.ConfigItem;
 public class MultiTransferTest extends BrokerAdminUsingTestBase
 {
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);

@@ -23,7 +23,7 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;
 
-@ManagedObject(category = true, defaultType = TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE)
+@ManagedObject(defaultType = TestDigitalInstrumentPanelImpl.TEST_DIGITAL_INSTRUMENT_PANEL_TYPE)
 public interface TestInstrumentPanel<X extends TestInstrumentPanel<X>> extends ConfiguredObject<X>
 {
 }

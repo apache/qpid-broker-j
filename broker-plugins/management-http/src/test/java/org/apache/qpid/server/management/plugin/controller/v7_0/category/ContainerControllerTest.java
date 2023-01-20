@@ -20,15 +20,14 @@
  */
 package org.apache.qpid.server.management.plugin.controller.v7_0.category;
 
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.controller.CategoryController;
 import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObject;
@@ -41,7 +40,7 @@ public class ContainerControllerTest extends UnitTestBase
     private LegacyCategoryControllerFactory _factory;
     private LegacyManagementController _nextVersionManagementController;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _nextVersionManagementController = mock(LegacyManagementController.class);

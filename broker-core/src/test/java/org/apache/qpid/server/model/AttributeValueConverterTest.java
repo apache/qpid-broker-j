@@ -21,22 +21,18 @@
 package org.apache.qpid.server.model;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static org.apache.qpid.server.model.AttributeValueConverter.getConverter;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import java.text.ParseException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,8 +41,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.testmodels.hierarchy.TestCar;
 import org.apache.qpid.server.model.testmodels.hierarchy.TestModel;
@@ -76,10 +72,9 @@ public class AttributeValueConverterTest extends UnitTestBase
     private final Map<String, Object> _attributes = new HashMap<>();
     private final Map<String, String> _context = new HashMap<>();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
         _attributes.put(ConfiguredObject.NAME, "objectName");
         _attributes.put(ConfiguredObject.CONTEXT, _context);
     }
@@ -99,17 +94,17 @@ public class AttributeValueConverterTest extends UnitTestBase
         assertNull(nullMap);
 
         Map<String, String> emptyMap = mapConverter.convert("{ }", object);
-        assertEquals(emptyMap(), emptyMap);
+        assertEquals(Map.of(), emptyMap);
 
         Map<String, String> map = mapConverter.convert("{\"a\" : \"b\"}", object);
-        assertEquals(singletonMap("a", "b"), map);
+        assertEquals(Map.of("a", "b"), map);
 
         Map<String, String> mapFromInterpolatedVar = mapConverter.convert("${simpleMap}", object);
-        assertEquals(singletonMap("a", "b"), mapFromInterpolatedVar);
+        assertEquals(Map.of("a", "b"), mapFromInterpolatedVar);
 
         Map<String, String> mapFromInterpolatedVarWithInterpolatedContents =
                 mapConverter.convert("${mapWithInterpolatedContents}", object);
-        assertEquals(singletonMap("mykey1", "b"), mapFromInterpolatedVarWithInterpolatedContents);
+        assertEquals(Map.of("mykey1", "b"), mapFromInterpolatedVarWithInterpolatedContents);
 
         try
         {
@@ -123,7 +118,7 @@ public class AttributeValueConverterTest extends UnitTestBase
     }
 
     @Test
-    public void testDateConverter() throws Exception
+    public void testDateConverter()
     {
         final long nowMillis = System.currentTimeMillis();
         final Date now = new Date(nowMillis);
@@ -132,27 +127,23 @@ public class AttributeValueConverterTest extends UnitTestBase
 
         AttributeValueConverter<Date> converter = getConverter(Date.class, Date.class);
 
-        assertNull("Cannot convert null", converter.convert(null, object));
+        assertNull(converter.convert(null, object), "Cannot convert null");
 
-        assertEquals("Cannot convert date expressed as Date", now, converter.convert(now, object));
+        assertEquals(now, converter.convert(now, object), "Cannot convert date expressed as Date");
 
-        assertEquals("Cannot convert date expressed as Number",
-                            new Date(nowMillis),
-                            converter.convert(nowMillis, object));
+        assertEquals(new Date(nowMillis), converter.convert(nowMillis, object),
+                "Cannot convert date expressed as Number");
 
-        assertEquals("Cannot convert date expressed as String containing Number",
-                            new Date(nowMillis),
-                            converter.convert("" + nowMillis, object));
+        assertEquals(new Date(nowMillis), converter.convert("" + nowMillis, object),
+                "Cannot convert date expressed as String containing Number");
 
         final String iso8601DateTime = "1970-01-01T00:00:01Z";
-        assertEquals("Cannot convert date expressed as ISO8601 date time",
-                            new Date(1000),
-                            converter.convert(iso8601DateTime, object));
+        assertEquals(new Date(1000), converter.convert(iso8601DateTime, object),
+                "Cannot convert date expressed as ISO8601 date time");
 
         final String iso8601Date = "1970-01-02";
-        assertEquals("Cannot convert date expressed as ISO8601 date",
-                            new Date(TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)),
-                            converter.convert(iso8601Date, object));
+        assertEquals(new Date(TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)), converter.convert(iso8601Date, object),
+                "Cannot convert date expressed as ISO8601 date");
 
         try
         {
@@ -182,12 +173,12 @@ public class AttributeValueConverterTest extends UnitTestBase
         assertTrue(emptyCollection.isEmpty());
 
         Collection<String> collection = collectionConverter.convert("[\"a\",  \"b\"]", object);
-        assertEquals((long) 2, (long) collection.size());
+        assertEquals(2, (long) collection.size());
         assertTrue(collection.contains("a"));
         assertTrue(collection.contains("b"));
 
         Collection<String> collectionFromInterpolatedVar = collectionConverter.convert("${simpleCollection}", object);
-        assertEquals((long) 2, (long) collectionFromInterpolatedVar.size());
+        assertEquals(2, (long) collectionFromInterpolatedVar.size());
         assertTrue(collectionFromInterpolatedVar.contains("a"));
         assertTrue(collectionFromInterpolatedVar.contains("b"));
 
@@ -271,22 +262,23 @@ public class AttributeValueConverterTest extends UnitTestBase
     }
 
     @Test
-    public void testBase64EncodedCertificateConverter() throws ParseException
+    public void testBase64EncodedCertificateConverter()
     {
         ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
         AttributeValueConverter<Certificate> certificateConverter = getConverter(Certificate.class, Certificate.class);
         Certificate certificate = certificateConverter.convert(BASE_64_ENCODED_CERTIFICATE, object);
         final boolean condition = certificate instanceof X509Certificate;
-        assertTrue("Unexpected certificate", condition);
+        assertTrue(condition, "Unexpected certificate");
         X509Certificate x509Certificate = (X509Certificate)certificate;
         assertEquals("CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA",
-                            x509Certificate.getSubjectX500Principal().getName());
+                x509Certificate.getSubjectX500Principal().getName());
 
-        assertEquals("CN=MyRootCA,O=ACME,ST=Ontario,C=CA", x509Certificate.getIssuerX500Principal().getName());
+        assertEquals("CN=MyRootCA,O=ACME,ST=Ontario,C=CA",
+                x509Certificate.getIssuerX500Principal().getName());
     }
 
     @Test
-    public void testPEMCertificateConverter() throws ParseException
+    public void testPEMCertificateConverter()
     {
         ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes, null);
         AttributeValueConverter<Certificate> certificateConverter = getConverter(Certificate.class, Certificate.class);
@@ -302,11 +294,12 @@ public class AttributeValueConverterTest extends UnitTestBase
 
         Certificate certificate = certificateConverter.convert(pemCertificate.toString(), object);
         final boolean condition = certificate instanceof X509Certificate;
-        assertTrue("Unexpected certificate", condition);
+        assertTrue(condition, "Unexpected certificate");
         X509Certificate x509Certificate = (X509Certificate)certificate;
         assertEquals("CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA",
-                            x509Certificate.getSubjectX500Principal().getName());
-        assertEquals("CN=MyRootCA,O=ACME,ST=Ontario,C=CA", x509Certificate.getIssuerX500Principal().getName());
+                x509Certificate.getSubjectX500Principal().getName());
+        assertEquals("CN=MyRootCA,O=ACME,ST=Ontario,C=CA",
+                x509Certificate.getIssuerX500Principal().getName());
     }
 
     @Test
@@ -320,24 +313,23 @@ public class AttributeValueConverterTest extends UnitTestBase
         final String expectedStringValue = "mystringvalue";
         final Integer expectedIntegerValue = 31;
         final int expectedIntegerPrimitiveValue = 32;
-        final Map<String, Object> input = new HashMap<>();
-        input.put("string", expectedStringValue);
-        input.put("integer", expectedIntegerValue);
-        input.put("int", expectedIntegerPrimitiveValue);
+        final Map<String, Object> input = Map.of("string", expectedStringValue,
+                "integer", expectedIntegerValue,
+                "int", expectedIntegerPrimitiveValue);
 
         final TestManagedAttributeValue value = converter.convert(input, object);
 
         assertEquals(expectedStringValue, value.getString());
         assertEquals(expectedIntegerValue, value.getInteger());
-        assertEquals((long) expectedIntegerPrimitiveValue, (long) value.getInt());
-        assertNull(expectedStringValue, value.getAnotherString());
+        assertEquals(expectedIntegerPrimitiveValue, (long) value.getInt());
+        assertNull(value.getAnotherString(), expectedStringValue);
 
-        final TestManagedAttributeValue nullValues = converter.convert(Collections.emptyMap(), object);
+        final TestManagedAttributeValue nullValues = converter.convert(Map.of(), object);
 
         assertNull(nullValues.getString());
         assertNull(nullValues.getInteger());
-        assertEquals((long) 0, (long) nullValues.getInt());
-        assertNull(expectedStringValue, nullValues.getAnotherString());
+        assertEquals(0, (long) nullValues.getInt());
+        assertNull(nullValues.getAnotherString(), expectedStringValue);
     }
 
     @ManagedAttributeValueType
@@ -359,20 +351,20 @@ public class AttributeValueConverterTest extends UnitTestBase
 
         Object elephant = new Object();
 
-        final Map<String, String> map = Collections.singletonMap("string", "mystring");
-        final Map<String, String> mapWithSameContent = Collections.singletonMap("string", "mystring");
-        final Map<String, String> mapWithDifferentContent = Collections.singletonMap("string", "mydifferentstring");
+        final Map<String, String> map = Map.of("string", "mystring");
+        final Map<String, String> mapWithSameContent = Map.of("string", "mystring");
+        final Map<String, String> mapWithDifferentContent = Map.of("string", "mydifferentstring");
 
         final SimpleTestManagedAttributeValue value = converter.convert(map, object);
         final SimpleTestManagedAttributeValue same = converter.convert(map, object);
         final SimpleTestManagedAttributeValue sameContent = converter.convert(mapWithSameContent, object);
         final SimpleTestManagedAttributeValue differentContent = converter.convert(mapWithDifferentContent, object);
 
-        assertFalse(value.equals(elephant));
-        assertTrue(value.equals(value));
-        assertTrue(value.equals(same));
-        assertTrue(sameContent.equals(value));
-        assertFalse(differentContent.equals(value));
+        assertNotEquals(value, elephant);
+        assertEquals(value, value);
+        assertEquals(value, same);
+        assertEquals(sameContent, value);
+        assertNotEquals(differentContent, value);
     }
 
     @ManagedAttributeValueType
@@ -391,12 +383,12 @@ public class AttributeValueConverterTest extends UnitTestBase
 
         Object elephant = new Object();
 
-        final Map<String, String> map = Collections.singletonMap("string", "mystring");
+        final Map<String, String> map = Map.of("string", "mystring");
 
         final SimpleTestManagedAttributeValueWithFactory value = converter.convert(map, object);
 
-        assertTrue(value.getClass().equals(SimpleTestManagedAttributeValueWithFactoryImpl.class));
-        assertTrue(value.getString().equals("mystring"));
+        assertEquals(value.getClass(), SimpleTestManagedAttributeValueWithFactoryImpl.class);
+        assertEquals("mystring", value.getString());
     }
 
 

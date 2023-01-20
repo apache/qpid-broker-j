@@ -21,11 +21,10 @@
 package org.apache.qpid.server.transport;
 
 import static org.apache.qpid.test.utils.JvmVendor.IBM;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.condition.JRE.JAVA_11;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,10 +33,10 @@ import java.io.ByteArrayInputStream;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.security.KeyStore;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -47,7 +46,9 @@ import javax.net.ssl.TrustManagerFactory;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +59,7 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class TCPandSSLTransportTest extends UnitTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(TCPandSSLTransportTest.class);
@@ -105,157 +107,93 @@ public class TCPandSSLTransportTest extends UnitTestBase
             + "EwvRkU1MesliLg4y3UqDoV6ooHB4ClE2aKmIdbVB/eP1QrEEkey93ptt1z5fLk1l408AkXQtzyw7"
             + "9WC+xnZta0IoYC/vO29IVsok";
     @Test
-    public void testNoSSLv3SupportOnSSLOnlyPort() throws Exception
+    public void testNoSSLv3SupportOnSSLOnlyPort()
     {
-        assumeThat("The IBM JDK has different TLS defaults", getJvmVendor(), is(not(equalTo(IBM))));
-        try
-        {
-            checkHandshakeWithTlsProtocol("SSLv3", Transport.SSL);
-            fail("Should not be able to connect using SSLv3");
-        }
-        catch(SSLHandshakeException e)
-        {
-            // pass
-        }
+        assumeFalse(Objects.equals(getJvmVendor(), IBM), "The IBM JDK has different TLS defaults");
+        assertThrows(SSLHandshakeException.class,
+                () -> checkHandshakeWithTlsProtocol("SSLv3", Transport.SSL),
+                "Should not be able to connect using SSLv3");
     }
 
     @Test
-    public void testNoSSLv3SupportOnSharedPort() throws Exception
+    public void testNoSSLv3SupportOnSharedPort()
     {
-        assumeThat("The IBM JDK has different TLS defaults", getJvmVendor(), is(not(equalTo(IBM))));
-        try
-        {
-            checkHandshakeWithTlsProtocol("SSLv3", Transport.TCP, Transport.SSL);
-            fail("Should not be able to connect using SSLv3");
-        }
-        catch(SSLHandshakeException e)
-        {
-            // pass
-        }
+        assumeFalse(Objects.equals(getJvmVendor(), IBM), "The IBM JDK has different TLS defaults");
+        assertThrows(SSLHandshakeException.class,
+                () -> checkHandshakeWithTlsProtocol("SSLv3", Transport.TCP, Transport.SSL),
+                "Should not be able to connect using SSLv3");
     }
 
     @Test
-    public void testNoTLSv1SupportOnSSLOnlyPort() throws Exception
+    public void testNoTLSv1SupportOnSSLOnlyPort()
     {
-        try
-        {
-            checkHandshakeWithTlsProtocol("TLSv1", Transport.SSL);
-            fail("Should not be able to connect using TLSv1");
-        }
-        catch(SSLHandshakeException e)
-        {
-            // pass
-        }
+        assertThrows(SSLHandshakeException.class,
+                () -> checkHandshakeWithTlsProtocol("TLSv1", Transport.SSL),
+                "Should not be able to connect using TLSv1");
     }
 
     @Test
-    public void testNoTLSv1SupportOnSharedPort() throws Exception
+    public void testNoTLSv1SupportOnSharedPort()
     {
-        try
-        {
-            checkHandshakeWithTlsProtocol("TLSv1", Transport.TCP, Transport.SSL);
-            fail("Should not be able to connect using TLSv1");
-        }
-        catch(SSLHandshakeException e)
-        {
-            // pass
-        }
+        assertThrows(SSLHandshakeException.class,
+                () -> checkHandshakeWithTlsProtocol("TLSv1", Transport.TCP, Transport.SSL),
+                "Should not be able to connect using TLSv1");
     }
 
     @Test
-    public void testNoTLSv1_1SupportOnSSLOnlyPort() throws Exception
+    public void testNoTLSv1_1SupportOnSSLOnlyPort()
     {
-        try
-        {
-            checkHandshakeWithTlsProtocol("TLSv1.1", Transport.SSL);
-            fail("Should not be able to connect using TLSv1.1");
-        }
-        catch(SSLHandshakeException e)
-        {
-            // pass
-        }
+        assertThrows(SSLHandshakeException.class,
+                () -> checkHandshakeWithTlsProtocol("TLSv1.1", Transport.SSL),
+                "Should not be able to connect using TLSv1.1");
     }
 
     @Test
-    public void testNoTLSv1_1SupportOnSharedPort() throws Exception
+    public void testNoTLSv1_1SupportOnSharedPort()
     {
-        try
-        {
-            checkHandshakeWithTlsProtocol("TLSv1.1", Transport.TCP, Transport.SSL);
-            fail("Should not be able to connect using TLSv1.1");
-        }
-        catch(SSLHandshakeException e)
-        {
-            // pass
-        }
+        assertThrows(SSLHandshakeException.class,
+                () -> checkHandshakeWithTlsProtocol("TLSv1.1", Transport.TCP, Transport.SSL),
+                "Should not be able to connect using TLSv1.1");
     }
 
     @Test
-    public void testTLSv1_2SupportOnSSLOnlyPort() throws Exception
+    public void testTLSv1_2SupportOnSSLOnlyPort()
     {
-        try
-        {
-            checkHandshakeWithTlsProtocol("TLSv1.2", Transport.SSL);
-        }
-        catch(SSLHandshakeException e)
-        {
-            LOGGER.error("Should be able to connect using TLSv1.2", e);
-            fail("Should be able to connect using TLSv1.2");
-        }
+        assertDoesNotThrow(() -> checkHandshakeWithTlsProtocol("TLSv1.2", Transport.SSL),
+                "Should be able to connect using TLSv1.2");
     }
 
     @Test
-    public void testTLSv1_2SupportOnSharedPort() throws Exception
+    public void testTLSv1_2SupportOnSharedPort()
     {
-        try
-        {
-            checkHandshakeWithTlsProtocol("TLSv1.2", Transport.TCP, Transport.SSL);
-        }
-        catch(SSLHandshakeException e)
-        {
-            LOGGER.error("Should be able to connect using TLSv1.2", e);
-            fail("Should be able to connect using TLSv1.2");
-        }
+        assertDoesNotThrow(() -> checkHandshakeWithTlsProtocol("TLSv1.2", Transport.TCP, Transport.SSL),
+                "Should be able to connect using TLSv1.2");
     }
 
     @Test
-    public void testTLSv1_3SupportOnSSLOnlyPort() throws Exception
+    @EnabledForJreRange(min = JAVA_11)
+    public void testTLSv1_3SupportOnSSLOnlyPort()
     {
-        assumeThat("Java 11 or above is required", isJava11OrAbove(), is(true));
-        try
-        {
-            checkHandshakeWithTlsProtocol("TLSv1.3", Transport.SSL);
-        }
-        catch(SSLHandshakeException e)
-        {
-            LOGGER.error("Should be able to connect using TLSv1.3", e);
-            fail("Should be able to connect using TLSv1.3");
-        }
+        assertDoesNotThrow(() -> checkHandshakeWithTlsProtocol("TLSv1.3", Transport.SSL),
+                "Should be able to connect using TLSv1.3");
     }
 
     @Test
-    public void testTLSv1_3SupportOnSharedPort() throws Exception
+    @EnabledForJreRange(min = JAVA_11)
+    public void testTLSv1_3SupportOnSharedPort()
     {
-        assumeThat("Java 11 or above is required", isJava11OrAbove(), is(true));
-        try
-        {
-            checkHandshakeWithTlsProtocol("TLSv1.3", Transport.TCP, Transport.SSL);
-        }
-        catch(SSLHandshakeException e)
-        {
-            LOGGER.error("Should be able to connect using TLSv1.3", e);
-            fail("Should be able to connect using TLSv1.3");
-        }
+        assertDoesNotThrow(() -> checkHandshakeWithTlsProtocol("TLSv1.3", Transport.TCP, Transport.SSL),
+                "Should be able to connect using TLSv1.3");
     }
 
-
-    private void checkHandshakeWithTlsProtocol(String clientProtocol, final Transport... transports) throws Exception
+    private void checkHandshakeWithTlsProtocol(final String clientProtocol,
+                                               final Transport... transports) throws Exception
     {
-        KeyStore keyStore = KeyStore.getInstance("JKS");
+        final KeyStore keyStore = KeyStore.getInstance("JKS");
         keyStore.load(new ByteArrayInputStream(Base64.getDecoder().decode(KEYSTORE_STRING)), "password".toCharArray());
 
         final SSLContext sslContext = SSLContext.getInstance("TLS");
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        final KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         kmf.init(keyStore, "password".toCharArray());
 
         sslContext.init(kmf.getKeyManagers(), null, null);
@@ -275,33 +213,28 @@ public class TCPandSSLTransportTest extends UnitTestBase
         when(port.getContextValue(Boolean.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING)).thenReturn(false);
         when(port.getContextValue(Integer.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_WARN_THRESHOLD)).thenReturn(1000);
         when(port.getContextValue(Integer.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD)).thenReturn(1005);
-        ObjectMapper mapper = new ObjectMapper();
-        JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, String.class);
-        List<String> allowList = mapper.readValue(Broker.DEFAULT_SECURITY_TLS_PROTOCOL_ALLOW_LIST, type);
-        List<String> denyList = mapper.readValue(Broker.DEFAULT_SECURITY_TLS_PROTOCOL_DENY_LIST, type);
+        final ObjectMapper mapper = new ObjectMapper();
+        final JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, String.class);
+        final List<String> allowList = mapper.readValue(Broker.DEFAULT_SECURITY_TLS_PROTOCOL_ALLOW_LIST, type);
+        final List<String> denyList = mapper.readValue(Broker.DEFAULT_SECURITY_TLS_PROTOCOL_DENY_LIST, type);
         when(port.getTlsProtocolDenyList()).thenReturn(denyList);
         when(port.getTlsProtocolAllowList()).thenReturn(allowList);
         final Broker broker = mock(Broker.class);
         when(broker.getEventLogger()).thenReturn(mock(EventLogger.class));
         when(port.getParent()).thenReturn(broker);
 
-        TCPandSSLTransport transport = new TCPandSSLTransport(new HashSet<>(Arrays.asList(transports)),
-                                                              port,
-                                                              new HashSet<>(Arrays.asList(Protocol.AMQP_0_8,
-                                                                                          Protocol.AMQP_0_9,
-                                                                                          Protocol.AMQP_0_9_1,
-                                                                                          Protocol.AMQP_0_10,
-                                                                                          Protocol.AMQP_1_0)),
-                                                              Protocol.AMQP_0_9_1);
+        final TCPandSSLTransport transport = new TCPandSSLTransport(Set.of(transports), port,
+                Set.of(Protocol.AMQP_0_8, Protocol.AMQP_0_9, Protocol.AMQP_0_9_1, Protocol.AMQP_0_10,Protocol.AMQP_1_0),
+                Protocol.AMQP_0_9_1);
 
         transport.start();
-        SSLContext clientContext = SSLContext.getInstance("TLS");
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        final SSLContext clientContext = SSLContext.getInstance("TLS");
+        final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         tmf.init(keyStore);
 
         clientContext.init(null, tmf.getTrustManagers(), null);
 
-        try (SSLSocket sslSocket = (SSLSocket) clientContext.getSocketFactory()
+        try (final SSLSocket sslSocket = (SSLSocket) clientContext.getSocketFactory()
                 .createSocket(InetAddress.getLoopbackAddress(), transport.getAcceptingPort()))
         {
             sslSocket.setEnabledProtocols(new String[]{clientProtocol});
@@ -310,20 +243,6 @@ public class TCPandSSLTransportTest extends UnitTestBase
         finally
         {
             transport.close();
-        }
-    }
-
-    private boolean isJava11OrAbove()
-    {
-        try
-        {
-            // introduced in java 11
-            Class.forName("java.net.http.HttpClient");
-            return true;
-        }
-        catch (ClassNotFoundException e)
-        {
-            return false;
         }
     }
 }

@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.systests.jms_1_1.selector;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
@@ -35,7 +35,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -95,16 +95,17 @@ public class SelectorTest extends JmsTestBase
             connection.start();
 
             Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNotNull("Message matching selector should be received", receivedMessage);
+            assertNotNull(receivedMessage, "Message matching selector should be received");
 
             message.setStringProperty("testproperty", "hello"); // "hello" % 5 would cause a runtime error
             producer.send(message);
             receivedMessage = consumer.receive(getReceiveTimeout());
-            assertNull("Message causing runtime selector error should not be received", receivedMessage);
+            assertNull(receivedMessage, "Message causing runtime selector error should not be received");
 
             MessageConsumer consumerWithoutSelector = session.createConsumer(queue);
             receivedMessage = consumerWithoutSelector.receive(getReceiveTimeout());
-            assertNotNull("Message that previously caused a runtime error should be consumable by another consumer", receivedMessage);
+            assertNotNull(receivedMessage,
+                    "Message that previously caused a runtime error should be consumable by another consumer");
         }
         finally
         {
@@ -136,7 +137,8 @@ public class SelectorTest extends JmsTestBase
             MessageConsumer consumer = session.createConsumer(queue, String.format("JMSMessageID = '%s'", secondMessage.getJMSMessageID()));
 
             Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertEquals("Unexpected message received", secondMessage.getJMSMessageID(), receivedMessage.getJMSMessageID());
+            assertEquals(secondMessage.getJMSMessageID(), receivedMessage.getJMSMessageID(),
+                    "Unexpected message received");
         }
         finally
         {
@@ -164,7 +166,8 @@ public class SelectorTest extends JmsTestBase
             MessageConsumer consumer = session.createConsumer(queue, "JMSDeliveryMode = 'PERSISTENT'");
 
             Message receivedMessage = consumer.receive(getReceiveTimeout());
-            assertEquals("Unexpected message received", secondMessage.getJMSMessageID(), receivedMessage.getJMSMessageID());
+            assertEquals(secondMessage.getJMSMessageID(), receivedMessage.getJMSMessageID(),
+                    "Unexpected message received");
         }
         finally
         {

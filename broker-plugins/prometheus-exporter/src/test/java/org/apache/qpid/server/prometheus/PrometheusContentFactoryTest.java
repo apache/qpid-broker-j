@@ -42,8 +42,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Content;
@@ -60,7 +60,7 @@ public class PrometheusContentFactoryTest
     private ConfiguredObject _root;
     private PrometheusContentFactory _prometheusContentFactory;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         final Model model = TestModel.getInstance();

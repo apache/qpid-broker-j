@@ -18,8 +18,12 @@
  */
 package org.apache.qpid.server.user.connection.limits.outcome;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
@@ -30,9 +34,6 @@ import org.apache.qpid.server.user.connection.limits.logging.ConnectionLimitEven
 import org.apache.qpid.server.user.connection.limits.logging.FullConnectionLimitEventLogger;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 public class AcceptRegistrationTest extends UnitTestBase
 {
     private org.apache.qpid.server.logging.EventLogger _eventLogger;
@@ -40,7 +41,7 @@ public class AcceptRegistrationTest extends UnitTestBase
     private ConnectionLimitEventLogger _rejectLogger;
     private ConnectionSlot _slot;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _eventLogger = Mockito.mock(org.apache.qpid.server.logging.EventLogger.class);

@@ -19,29 +19,17 @@
  */
 package org.apache.qpid.disttest.controller.config;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import javax.jms.DeliveryMode;
 import javax.jms.Message;
 
-import org.junit.Assert;
-
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ProducerConfigTest extends UnitTestBase
 {
@@ -56,8 +44,8 @@ public class ProducerConfigTest extends UnitTestBase
     public void testConfigProvidesJmsDefaults()
     {
         CreateProducerCommand p = new ProducerConfig().createCommand("session1");
-        assertEquals((long) Message.DEFAULT_DELIVERY_MODE, (long) p.getDeliveryMode());
-        assertEquals((long) Message.DEFAULT_PRIORITY, (long) p.getPriority());
+        assertEquals(Message.DEFAULT_DELIVERY_MODE, p.getDeliveryMode());
+        assertEquals(Message.DEFAULT_PRIORITY, p.getPriority());
         assertEquals(Message.DEFAULT_TIME_TO_LIVE, p.getTimeToLive());
     }
 
@@ -70,14 +58,14 @@ public class ProducerConfigTest extends UnitTestBase
 
         CreateProducerCommand command = producerConfig.createCommand("name");
 
-        assertEquals((long) 123, command.getMaximumDuration());
+        assertEquals(123, command.getMaximumDuration());
     }
 
     @Test
     public void testMessageSizeDefault()
     {
         CreateProducerCommand producer = new ProducerConfig().createCommand("session1");
-        assertEquals("Unexpected default message size", (long) 1024, (long) producer.getMessageSize());
+        assertEquals(1024, producer.getMessageSize(), "Unexpected default message size");
     }
 
     @Test
@@ -87,7 +75,7 @@ public class ProducerConfigTest extends UnitTestBase
         setTestSystemProperty(ProducerConfig.MESSAGE_SIZE_OVERRIDE_SYSTEM_PROPERTY, String.valueOf(overriddenMessageSize));
 
         CreateProducerCommand producer2 = new ProducerConfig().createCommand("session1");
-        assertEquals("Unexpected message size", overriddenMessageSize, (long) producer2.getMessageSize());
+        assertEquals(overriddenMessageSize, producer2.getMessageSize(), "Unexpected message size");
     }
 
     @Test
@@ -122,13 +110,13 @@ public class ProducerConfigTest extends UnitTestBase
         assertEquals("session1", command.getSessionName());
         assertEquals("producer1", command.getParticipantName());
         assertEquals(destination, command.getDestinationName());
-        assertEquals((long) numberOfMessages, command.getNumberOfMessages());
-        assertEquals((long) batchSize, (long) command.getBatchSize());
+        assertEquals(numberOfMessages, command.getNumberOfMessages());
+        assertEquals(batchSize, command.getBatchSize());
         assertEquals(maximumDuration, command.getMaximumDuration());
 
-        assertEquals((long) DeliveryMode.NON_PERSISTENT, (long) command.getDeliveryMode());
-        assertEquals((long) messageSize, (long) command.getMessageSize());
-        assertEquals((long) priority, (long) command.getPriority());
+        assertEquals(DeliveryMode.NON_PERSISTENT, (long) command.getDeliveryMode());
+        assertEquals(messageSize, command.getMessageSize());
+        assertEquals(priority, command.getPriority());
         assertEquals(timeToLive, command.getTimeToLive());
         assertEquals(interval, command.getInterval());
         assertEquals(providerName, command.getMessageProviderName());

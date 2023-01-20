@@ -22,7 +22,7 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.Outcome;
 
@@ -56,10 +56,8 @@ public class QueueMessagesTest extends AbstractTestMessages
     {
         _logMessage = QueueMessages.DELETE("test", String.valueOf(Outcome.SUCCESS));
         final List<Object> log = performLog();
-
         final String[] expected = {"Delete : \"test\" : SUCCESS"};
 
         validateLogMessage(log, "QUE-1002", expected);
     }
-
 }

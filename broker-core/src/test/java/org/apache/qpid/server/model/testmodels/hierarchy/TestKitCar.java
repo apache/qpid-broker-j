@@ -36,5 +36,6 @@ public interface TestKitCar<X extends TestKitCar<X>> extends TestCar<X>
     Map<String,Object> getParameters();
 
     @ManagedAttribute
+    @SuppressWarnings("unused")
     TestEngine getAlternateEngine();
 }

@@ -26,5 +26,6 @@ import org.apache.qpid.server.model.ManagedObject;
 public interface TestElecEngine<X extends TestElecEngine<X>> extends TestEngine<X>, TestRechargeable
 {
     @ManagedAttribute
+    @SuppressWarnings("unused")
     TestSensor<?> getTemperatureSensor();
 }

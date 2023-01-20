@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.model.adapter;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,8 +31,8 @@ import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -40,9 +40,9 @@ import java.util.concurrent.TimeoutException;
 
 import javax.security.auth.Subject;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
@@ -67,6 +67,7 @@ import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhostnode.TestVirtualHostNode;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes"})
 public class BrokerImplTest extends UnitTestBase
 {
     private TaskExecutorImpl _taskExecutor;
@@ -74,10 +75,9 @@ public class BrokerImplTest extends UnitTestBase
     private BrokerImpl _brokerImpl;
     private PreferenceStore _preferenceStore;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
 
@@ -91,167 +91,142 @@ public class BrokerImplTest extends UnitTestBase
         when(_systemConfig.createPreferenceStore()).thenReturn(_preferenceStore);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
+        if (_brokerImpl != null)
         {
-            if (_brokerImpl != null)
-            {
-                _brokerImpl.close();
-            }
-
-            if (_taskExecutor != null)
-            {
-                _taskExecutor.stopImmediately();
-            }
-
+            _brokerImpl.close();
         }
-        finally
+
+        if (_taskExecutor != null)
         {
+            _taskExecutor.stopImmediately();
         }
     }
 
     @Test
-    public void testAssignTargetSizes_NoQueueDepth() throws Exception
+    public void testAssignTargetSizes_NoQueueDepth()
     {
         doAssignTargetSizeTest(new long[] {0, 0}, 1024 * 1024 * 1024);
     }
 
     @Test
-    public void testAssignTargetSizes_OneQueue() throws Exception
+    public void testAssignTargetSizes_OneQueue()
     {
         doAssignTargetSizeTest(new long[] {37}, 1024 * 1024 * 1024);
     }
 
     @Test
-    public void testAssignTargetSizes_ThreeQueues() throws Exception
+    public void testAssignTargetSizes_ThreeQueues()
     {
         doAssignTargetSizeTest(new long[] {37, 47, 0}, 1024 * 1024 * 1024);
     }
 
     @Test
-    public void testAssignTargetSizes_QueuesOversize() throws Exception
+    public void testAssignTargetSizes_QueuesOversize()
     {
-        int flowToDiskThreshold = 1024 * 1024 * 1024;
-        doAssignTargetSizeTest(new long[] {flowToDiskThreshold / 2, flowToDiskThreshold / 2 , 1024},
-                               flowToDiskThreshold);
+        final int flowToDiskThreshold = 1024 * 1024 * 1024;
+        doAssignTargetSizeTest(new long[] {flowToDiskThreshold / 2, flowToDiskThreshold / 2 , 1024}, flowToDiskThreshold);
     }
 
     @Test
-    public void testAssignTargetSizesWithHighQueueDepthAndMemoryLimit() throws Exception
+    public void testAssignTargetSizesWithHighQueueDepthAndMemoryLimit()
     {
-        long flowToDiskThreshold = 3L * 1024 * 1024 * 1024;
+        final long flowToDiskThreshold = 3L * 1024 * 1024 * 1024;
         doAssignTargetSizeTest(new long[] {4L * 1024 * 1024 * 1024, 0, 0 , 0}, flowToDiskThreshold);
     }
 
     @Test
     public void testNetworkBufferSize()
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(Broker.NAME, "Broker");
-        attributes.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
-        attributes.put(Broker.DURABLE, true);
+        final Map<String, Object> attributes = Map.of(Broker.NAME, "Broker",
+                Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION,
+                Broker.DURABLE, true,
+                Broker.CONTEXT, Map.of(Broker.NETWORK_BUFFER_SIZE, Broker.MINIMUM_NETWORK_BUFFER_SIZE - 1));
 
         // testing successful case is not possible because of the static nature of QpidByteBuffer which *should* be unrelated
 
         // testing unsuccessful case
-        attributes.put(Broker.CONTEXT, Collections.singletonMap(Broker.NETWORK_BUFFER_SIZE, Broker.MINIMUM_NETWORK_BUFFER_SIZE - 1));
         _brokerImpl = new BrokerImpl(attributes, _systemConfig);
         _brokerImpl.open();
-        assertEquals("Broker open should fail with network buffer size less then minimum",
-                            State.ERRORED,
-                            _brokerImpl.getState());
+        assertEquals(State.ERRORED, _brokerImpl.getState(),
+                "Broker open should fail with network buffer size less then minimum");
 
-        assertEquals("Unexpected buffer size",
-                            (long) Broker.DEFAULT_NETWORK_BUFFER_SIZE,
-                            (long) _brokerImpl.getNetworkBufferSize());
-
+        assertEquals(Broker.DEFAULT_NETWORK_BUFFER_SIZE, (long) _brokerImpl.getNetworkBufferSize(),
+                "Unexpected buffer size");
     }
 
     @Test
-    public void testPurgeUser() throws Exception
+    public void testPurgeUser()
     {
         final String testUsername = "testUser";
         final String testPassword = "testPassword";
 
         // setup broker
-        Map<String, Object> brokerAttributes = new HashMap<>();
-        brokerAttributes.put("name", "Broker");
-        brokerAttributes.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
-        brokerAttributes.put(Broker.DURABLE, true);
+        final Map<String, Object> brokerAttributes = Map.of("name", "Broker",
+                Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION,
+                Broker.DURABLE, true);
         _brokerImpl = new BrokerImpl(brokerAttributes, _systemConfig);
         _brokerImpl.open();
 
         // setup auth provider with testuser
-        final Map<String, Object> authProviderAttributes = new HashMap<>();
-        authProviderAttributes.put(ConfiguredObject.NAME, "testAuthProvider");
-        authProviderAttributes.put(ConfiguredObject.TYPE, "Simple");
-        SimpleAuthenticationManager authenticationProvider = new SimpleAuthenticationManager(authProviderAttributes, _brokerImpl);
+        final Map<String, Object> authProviderAttributes = Map.of(ConfiguredObject.NAME, "testAuthProvider",
+                ConfiguredObject.TYPE, "Simple");
+        final SimpleAuthenticationManager authenticationProvider = new SimpleAuthenticationManager(authProviderAttributes, _brokerImpl);
         authenticationProvider.create();
         authenticationProvider.addUser(testUsername, testPassword);
 
         // setup preference owned by testuser
-        final Map<String, Object> preferenceAttributes = new HashMap<>();
-        UUID preferenceId = UUID.randomUUID();
-        preferenceAttributes.put(Preference.ID_ATTRIBUTE, preferenceId);
-        preferenceAttributes.put(Preference.NAME_ATTRIBUTE, "testPref");
-        preferenceAttributes.put(Preference.TYPE_ATTRIBUTE, "X-testPrefType");
-        preferenceAttributes.put(Preference.VALUE_ATTRIBUTE, Collections.EMPTY_MAP);
-        Subject testUserSubject = new Subject();
+        final UUID preferenceId = randomUUID();
+        final Map<String, Object> preferenceAttributes = Map.of(Preference.ID_ATTRIBUTE, preferenceId,
+                Preference.NAME_ATTRIBUTE, "testPref",
+                Preference.TYPE_ATTRIBUTE, "X-testPrefType",
+                Preference.VALUE_ATTRIBUTE, Collections.EMPTY_MAP);
+        final Subject testUserSubject = new Subject();
         testUserSubject.getPrincipals()
                        .add(new AuthenticatedPrincipal(new UsernamePrincipal(testUsername, authenticationProvider)));
         testUserSubject.setReadOnly();
         final Collection<Preference> preferences =
-                Collections.singleton(PreferenceFactory.fromAttributes(_brokerImpl, preferenceAttributes));
-        Subject.doAs(testUserSubject, new PrivilegedAction<Void>()
+                Set.of(PreferenceFactory.fromAttributes(_brokerImpl, preferenceAttributes));
+        Subject.doAs(testUserSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
+            try
             {
-                try
-                {
-                    _brokerImpl.getUserPreferences().updateOrAppend(preferences).get(10, TimeUnit.SECONDS);
-                }
-                catch (InterruptedException | ExecutionException | TimeoutException e)
-                {
-                    e.printStackTrace();
-                    fail("Failed to put preference:");
-                }
-                return null;
+                _brokerImpl.getUserPreferences().updateOrAppend(preferences).get(10, TimeUnit.SECONDS);
             }
+            catch (InterruptedException | ExecutionException | TimeoutException e)
+            {
+                e.printStackTrace();
+                fail("Failed to put preference:");
+            }
+            return null;
         });
 
         // test pre-conditions
-        Collection<Preference> preferencesBeforePurge = getPreferencesAs(testUserSubject);
-        assertEquals("Unexpected number of preferences before userPurge",
-                            (long) 1,
-                            (long) preferencesBeforePurge.size());
-        assertEquals("Unexpected preference before userPurge",
-                            preferenceId,
-                            preferencesBeforePurge.iterator().next().getId());
+        final Collection<Preference> preferencesBeforePurge = getPreferencesAs(testUserSubject);
+        assertEquals(1, (long) preferencesBeforePurge.size(),
+                "Unexpected number of preferences before userPurge");
+        assertEquals(preferenceId, preferencesBeforePurge.iterator().next().getId(),
+                "Unexpected preference before userPurge");
 
-        assertTrue("User was not valid before userPurge",
-                          authenticationProvider.getUsers().containsKey(testUsername));
+        assertTrue(authenticationProvider.getUsers().containsKey(testUsername),
+                "User was not valid before userPurge");
 
         _brokerImpl.purgeUser(authenticationProvider, testUsername);
 
         // test post-conditions
-        Collection<Preference> preferencesAfterPurge = getPreferencesAs(testUserSubject);
-        assertEquals("Preferences were not deleted during userPurge",
-                            Collections.EMPTY_SET,
-                            preferencesAfterPurge);
-        assertEquals("User was not deleted from authentication Provider",
-                            Collections.EMPTY_MAP,
-                            authenticationProvider.getUsers());
-        verify(_preferenceStore).replace(Collections.singleton(preferenceId), Collections.EMPTY_SET);
+        final Collection<Preference> preferencesAfterPurge = getPreferencesAs(testUserSubject);
+        assertEquals(Set.of(), preferencesAfterPurge, "Preferences were not deleted during userPurge");
+        assertEquals(Collections.EMPTY_MAP, authenticationProvider.getUsers(),
+                "User was not deleted from authentication Provider");
+        verify(_preferenceStore).replace(Set.of(preferenceId), Set.of());
     }
 
     @Test
     public void resetStatistics()
     {
-        final Map<String, Object> brokerAttributes = Map.of(
-                "name", "Broker",
+        final Map<String, Object> brokerAttributes = Map.of("name", "Broker",
                 Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION,
                 Broker.DURABLE, true);
         _brokerImpl = new BrokerImpl(brokerAttributes, _systemConfig);
@@ -283,75 +258,66 @@ public class BrokerImplTest extends UnitTestBase
 
     private Collection<Preference> getPreferencesAs(final Subject testUserSubject)
     {
-        return Subject.doAs(testUserSubject, new PrivilegedAction<Collection<Preference>>()
+        return Subject.doAs(testUserSubject, (PrivilegedAction<Collection<Preference>>) () ->
+        {
+            Collection<Preference> preferences = null;
+            try
             {
-                @Override
-                public Collection<Preference> run()
-                {
-                    Collection<Preference> preferences = null;
-                    try
-                    {
-                        preferences = _brokerImpl.getUserPreferences().getPreferences().get(10, TimeUnit.SECONDS);
-                    }
-                    catch (InterruptedException | ExecutionException | TimeoutException e)
-                    {
-                        e.printStackTrace();
-                        fail("Failed to put preference:");
-                    }
-                    return preferences;
-                }
-            });
+                preferences = _brokerImpl.getUserPreferences().getPreferences().get(10, TimeUnit.SECONDS);
+            }
+            catch (InterruptedException | ExecutionException | TimeoutException e)
+            {
+                e.printStackTrace();
+                fail("Failed to put preference:");
+            }
+            return preferences;
+        });
     }
 
     private void doAssignTargetSizeTest(final long[] virtualHostQueueSizes, final long flowToDiskThreshold)
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put("name", "Broker");
-        attributes.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
-        attributes.put(Broker.DURABLE, true);
-        attributes.put("context", Collections.singletonMap(Broker.BROKER_FLOW_TO_DISK_THRESHOLD, flowToDiskThreshold));
+        final Map<String, Object> attributes = Map.of("name", "Broker",
+                Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION,
+                Broker.DURABLE, true,
+                "context", Map.of(Broker.BROKER_FLOW_TO_DISK_THRESHOLD, flowToDiskThreshold));
         _brokerImpl = new BrokerImpl(attributes, _systemConfig);
         _brokerImpl.open();
-        assertEquals("Unexpected broker state", State.ACTIVE, _brokerImpl.getState());
+        assertEquals(State.ACTIVE, _brokerImpl.getState(), "Unexpected broker state");
 
-        for(int i=0; i < virtualHostQueueSizes.length; i++)
+        for (int i = 0; i < virtualHostQueueSizes.length; i++)
         {
             createVhnWithVh(_brokerImpl, i, virtualHostQueueSizes[i]);
         }
 
         long totalAssignedTargetSize = 0;
-        for(VirtualHostNode<?> vhn : _brokerImpl.getVirtualHostNodes())
+        for (final VirtualHostNode<?> vhn : _brokerImpl.getVirtualHostNodes())
         {
-            VirtualHost<?> virtualHost = vhn.getVirtualHost();
-            if(virtualHost instanceof QueueManagingVirtualHost)
+            final VirtualHost<?> virtualHost = vhn.getVirtualHost();
+            if (virtualHost instanceof QueueManagingVirtualHost)
             {
-                long targetSize = ((QueueManagingVirtualHost<?>)virtualHost).getTargetSize();
-                assertTrue("A virtualhost's target size cannot be zero", targetSize > 0);
+                final long targetSize = ((QueueManagingVirtualHost<?>)virtualHost).getTargetSize();
+                assertTrue(targetSize > 0, "A virtualhost's target size cannot be zero");
                 totalAssignedTargetSize += targetSize;
             }
         }
 
-        long diff = Math.abs(flowToDiskThreshold - totalAssignedTargetSize);
-        long tolerance = _brokerImpl.getVirtualHostNodes().size() * 2;
-        assertTrue(String.format("Assigned target size not within expected tolerance. Diff %d Tolerance %d", diff, tolerance),
-                          diff < tolerance);
+        final long diff = Math.abs(flowToDiskThreshold - totalAssignedTargetSize);
+        final long tolerance = _brokerImpl.getVirtualHostNodes().size() * 2L;
+        assertTrue(diff < tolerance,
+                String.format("Assigned target size not within expected tolerance. Diff %d Tolerance %d", diff, tolerance));
     }
 
-    private void createVhnWithVh(final BrokerImpl brokerImpl, int nameSuffix, final long totalQueueSize)
+    private void createVhnWithVh(final BrokerImpl brokerImpl, final int nameSuffix, final long totalQueueSize)
     {
-        final Map<String, Object> vhnAttributes = new HashMap<>();
-        vhnAttributes.put(VirtualHostNode.TYPE, TestVirtualHostNode.VIRTUAL_HOST_NODE_TYPE);
-        vhnAttributes.put(VirtualHostNode.NAME, "testVhn" + nameSuffix);
-
+        final Map<String, Object> vhnAttributes = Map.of(VirtualHostNode.TYPE, TestVirtualHostNode.VIRTUAL_HOST_NODE_TYPE,
+                VirtualHostNode.NAME, "testVhn" + nameSuffix);
         final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
-        TestVirtualHostNode vhn = new TestVirtualHostNode(brokerImpl, vhnAttributes, store);
+        final TestVirtualHostNode vhn = new TestVirtualHostNode(brokerImpl, vhnAttributes, store);
         vhn.create();
 
-
-        final Map<String, Object> vhAttributes = new HashMap<>();
-        vhAttributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
-        vhAttributes.put(VirtualHost.NAME, "testVh" + nameSuffix);
-        TestMemoryVirtualHost vh = new TestMemoryVirtualHost(vhAttributes, vhn)
+        final Map<String, Object> vhAttributes = Map.of(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE,
+                VirtualHost.NAME, "testVh" + nameSuffix);
+        final TestMemoryVirtualHost vh = new TestMemoryVirtualHost(vhAttributes, vhn)
         {
             @Override
             public long getTotalDepthOfQueuesBytes()

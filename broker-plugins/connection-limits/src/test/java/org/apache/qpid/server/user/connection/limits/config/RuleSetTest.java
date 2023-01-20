@@ -18,6 +18,12 @@
  */
 package org.apache.qpid.server.user.connection.limits.config;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.security.Principal;
 import java.time.Duration;
 import java.time.Instant;
@@ -29,8 +35,9 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.Mockito;
 
 import org.apache.qpid.server.logging.EventLogger;
@@ -42,12 +49,6 @@ import org.apache.qpid.server.security.limit.ConnectionSlot;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.user.connection.limits.config.RuleSet.Builder;
 import org.apache.qpid.test.utils.UnitTestBase;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class RuleSetTest extends UnitTestBase
 {
@@ -71,7 +72,7 @@ public class RuleSetTest extends UnitTestBase
 
     private Principal _principal;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _eventLogger = Mockito.mock(EventLogger.class);

@@ -22,12 +22,11 @@ package org.apache.qpid.systests.jms_1_1.extensions.queue;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,7 +43,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Protocol;
@@ -52,7 +51,6 @@ import org.apache.qpid.systests.Utils;
 
 public class ProducerFlowControlTest extends OverflowPolicyTestBase
 {
-
     @Test
     public void testCapacityExceededCausesBlock() throws Exception
     {
@@ -72,10 +70,9 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
             // try to send 5 messages (should block after 4)
             MessageSender messageSender = sendMessagesAsync(producer, producerSession, 5);
 
-            assertTrue("Flow is not stopped", awaitAttributeValue(queueName, "queueFlowStopped", true, 5000));
-            assertEquals("Incorrect number of message sent before blocking",
-                         4,
-                         messageSender.getNumberOfSentMessages());
+            assertTrue(awaitAttributeValue(queueName, "queueFlowStopped", true, 5000), "Flow is not stopped");
+            assertEquals(4, messageSender.getNumberOfSentMessages(),
+                    "Incorrect number of message sent before blocking");
 
             Connection consumerConnection = getConnection();
             try
@@ -85,21 +82,20 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
                 consumerConnection.start();
 
                 Message message = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message is not received", message);
+                assertNotNull(message, "Message is not received");
 
-                assertFalse("Flow is not stopped", awaitAttributeValue(queueName, "queueFlowStopped", false, 1000));
+                assertFalse(awaitAttributeValue(queueName, "queueFlowStopped", false, 1000),
+                        "Flow is not stopped");
 
-                assertEquals("Message incorrectly sent after one message received",
-                             4,
-                             messageSender.getNumberOfSentMessages());
+                assertEquals(4, messageSender.getNumberOfSentMessages(),
+                        "Message incorrectly sent after one message received");
 
                 Message message2 = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message is not received", message2);
-                assertTrue("Message sending is not finished", messageSender.getSendLatch()
-                                                                           .await(1000, TimeUnit.MILLISECONDS));
-                assertEquals("Message not sent after two messages received",
-                             5,
-                             messageSender.getNumberOfSentMessages());
+                assertNotNull(message2, "Message is not received");
+                assertTrue(messageSender.getSendLatch().await(1000, TimeUnit.MILLISECONDS),
+                        "Message sending is not finished");
+                assertEquals(5, messageSender.getNumberOfSentMessages(),
+                        "Message not sent after two messages received");
             }
             finally
             {
@@ -129,11 +125,11 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
             // try to send 5 messages (should block after 4)
             MessageSender messageSender = sendMessagesAsync(producer, producerSession, 5);
 
-            assertTrue("Flow is not stopped", awaitAttributeValue(queueName, "queueFlowStopped", true, 5000));
+            assertTrue(awaitAttributeValue(queueName, "queueFlowStopped", true, 5000),
+                    "Flow is not stopped");
 
-            assertEquals("Incorrect number of message sent before blocking",
-                         4,
-                         messageSender.getNumberOfSentMessages());
+            assertEquals(4, messageSender.getNumberOfSentMessages(),
+                    "Incorrect number of message sent before blocking");
 
             Connection consumerConnection = getConnection();
             try
@@ -143,14 +139,13 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
                 consumerConnection.start();
 
                 Message message = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message is not received", message);
+                assertNotNull(message, "Message is not received");
 
-                assertTrue("Message sending is not finished",
-                           messageSender.getSendLatch().await(1000, TimeUnit.MILLISECONDS));
+                assertTrue(messageSender.getSendLatch().await(1000, TimeUnit.MILLISECONDS),
+                        "Message sending is not finished");
 
-                assertEquals("Message incorrectly sent after one message received",
-                             5,
-                             messageSender.getNumberOfSentMessages());
+                assertEquals(5, messageSender.getNumberOfSentMessages(),
+                        "Message incorrectly sent after one message received");
             }
             finally
             {
@@ -172,7 +167,7 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
 
         //set new values that will cause flow control to be active, and the queue to become overfull after 1 message is sent
         setFlowLimits(queueName, messageSize / 2, messageSize / 2);
-        assertFalse("Queue should not be overfull", isFlowStopped(queueName));
+        assertFalse(isFlowStopped(queueName), "Queue should not be overfull");
 
         Connection producerConnection = getConnectionBuilder().setSyncPublish(true).build();
         try
@@ -183,25 +178,28 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
             // try to send 2 messages (should block after 1)
             final MessageSender sender = sendMessagesAsync(producer, producerSession, 2);
 
-            assertTrue("Flow is not stopped", awaitAttributeValue(queueName, "queueFlowStopped", true, 2000));
+            assertTrue(awaitAttributeValue(queueName, "queueFlowStopped", true, 2000),
+                    "Flow is not stopped");
 
-            assertEquals("Incorrect number of message sent before blocking", 1, sender.getNumberOfSentMessages());
+            assertEquals(1, sender.getNumberOfSentMessages(),
+                    "Incorrect number of message sent before blocking");
 
             int queueDepthBytes = getQueueDepthBytes(queueName);
             //raise the attribute values, causing the queue to become underfull and allow the second message to be sent.
             setFlowLimits(queueName, queueDepthBytes * 2 + queueDepthBytes / 2, queueDepthBytes + queueDepthBytes / 2);
 
-            assertTrue("Flow is stopped", awaitAttributeValue(queueName, "queueFlowStopped", false, 2000));
-            assertTrue("Second message was not sent after changing limits",
-                       awaitStatisticsValue(queueName, "queueDepthMessages", 2, 2000));
-            assertFalse("Queue should not be overfull", isFlowStopped(queueName));
+            assertTrue(awaitAttributeValue(queueName, "queueFlowStopped", false, 2000), "Flow is stopped");
+            assertTrue(awaitStatisticsValue(queueName, "queueDepthMessages", 2, 2000),
+                    "Second message was not sent after changing limits");
+            assertFalse(isFlowStopped(queueName), "Queue should not be overfull");
 
             // try to send another message to block flow
             final MessageSender sender2 = sendMessagesAsync(producer, producerSession, 1);
 
-            assertTrue("Flow is stopped", awaitAttributeValue(queueName, "queueFlowStopped", true, 2000));
-            assertEquals("Incorrect number of message sent before blocking", 1, sender2.getNumberOfSentMessages());
-            assertTrue("Queue should be overfull", isFlowStopped(queueName));
+            assertTrue(awaitAttributeValue(queueName, "queueFlowStopped", true, 2000), "Flow is stopped");
+            assertEquals(1, sender2.getNumberOfSentMessages(),
+                    "Incorrect number of message sent before blocking");
+            assertTrue(isFlowStopped(queueName), "Queue should be overfull");
 
             Connection consumerConnection = getConnection();
             try
@@ -211,14 +209,15 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
                 consumerConnection.start();
 
                 Message message = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message is not received", message);
+                assertNotNull(message, "Message is not received");
 
                 message = consumer.receive(getReceiveTimeout());
-                assertNotNull("Second message is not received", message);
+                assertNotNull(message, "Second message is not received");
 
-                assertTrue("Flow is stopped", awaitAttributeValue(queueName, "queueFlowStopped", false, 2000));
+                assertTrue(awaitAttributeValue(queueName, "queueFlowStopped", false, 2000),
+                        "Flow is stopped");
 
-                assertNotNull("Should have received second message", consumer.receive(getReceiveTimeout()));
+                assertNotNull(consumer.receive(getReceiveTimeout()), "Should have received second message");
             }
             finally
             {
@@ -248,7 +247,7 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
             // try to send 2 messages (should block after 1)
             sendMessagesAsync(producer, producerSession, 2);
 
-            assertTrue("Flow is not stopped", awaitAttributeValue(queueName, "queueFlowStopped", true, 2000));
+            assertTrue(awaitAttributeValue(queueName, "queueFlowStopped", true, 2000), "Flow is not stopped");
 
             Connection consumerConnection = getConnection();
             try
@@ -258,10 +257,10 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
                 consumerConnection.start();
 
                 Message message = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message is not received", message);
+                assertNotNull(message, "Message is not received");
 
                 message = consumer.receive(getReceiveTimeout());
-                assertNotNull("Second message is not received", message);
+                assertNotNull(message, "Second message is not received");
             }
             finally
             {
@@ -293,15 +292,15 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
             // try to send 5 messages (should block after 4)
             final MessageSender sender = sendMessagesAsync(producer, producerSession, 5);
 
-            assertTrue("Flow is not stopped", awaitAttributeValue(queueName, "queueFlowStopped", true, 5000));
+            assertTrue(awaitAttributeValue(queueName, "queueFlowStopped", true, 5000), "Flow is not stopped");
 
-            assertEquals("Incorrect number of message sent before blocking", 4, sender.getNumberOfSentMessages());
+            assertEquals(4, sender.getNumberOfSentMessages(), "Incorrect number of message sent before blocking");
 
             deleteEntityUsingAmqpManagement(queueName, "org.apache.qpid.Queue");
 
             createQueue(queueName);
 
-            assertEquals("Unexpected queue depth", 0, getQueueDepthBytes(queueName));
+            assertEquals(0, getQueueDepthBytes(queueName), "Unexpected queue depth");
         }
         finally
         {
@@ -312,13 +311,14 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
     @Test
     public void testEnforceFlowControlOnNewConnection() throws Exception
     {
-        assumeThat(getProtocol(), is(equalTo(Protocol.AMQP_1_0)));
+        assumeTrue(is(equalTo(Protocol.AMQP_1_0)).matches(getProtocol()));
         final Queue testQueue = createQueueWithOverflowPolicy(getTestName(), OverflowPolicy.PRODUCER_FLOW_CONTROL, 0, 1, 0);
         final Connection producerConnection1 = getConnectionBuilder().setSyncPublish(true).build();
         try
         {
             Utils.sendMessages(producerConnection1, testQueue, 2);
-            assertTrue("Flow is not stopped", awaitAttributeValue(testQueue.getQueueName(), "queueFlowStopped", true, 5000));
+            assertTrue(awaitAttributeValue(testQueue.getQueueName(), "queueFlowStopped", true, 5000),
+                    "Flow is not stopped");
         }
         finally
         {
@@ -332,10 +332,10 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
             final MessageProducer producer = producerSession.createProducer(testQueue);
             final MessageSender messageSender = sendMessagesAsync(producer, producerSession, 1);
 
-            assertTrue("Flow is not stopped", awaitAttributeValue(testQueue.getQueueName(), "queueFlowStopped", true, 5000));
-            assertEquals("Incorrect number of message sent before blocking",
-                         0,
-                         messageSender.getNumberOfSentMessages());
+            assertTrue(awaitAttributeValue(testQueue.getQueueName(), "queueFlowStopped", true, 5000),
+                    "Flow is not stopped");
+            assertEquals(0, messageSender.getNumberOfSentMessages(),
+                    "Incorrect number of message sent before blocking");
 
             final Connection consumerConnection = getConnection();
             try
@@ -345,12 +345,12 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
                 consumerConnection.start();
 
                 Message message = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message is not received", message);
+                assertNotNull(message, "Message is not received");
 
                 Message message2 = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message is not received", message2);
-                assertTrue("Message sending is not finished", messageSender.getSendLatch()
-                                                                           .await(getReceiveTimeout(), TimeUnit.MILLISECONDS));
+                assertNotNull(message2, "Message is not received");
+                assertTrue(messageSender.getSendLatch().await(getReceiveTimeout(), TimeUnit.MILLISECONDS),
+                        "Message sending is not finished");
             }
             finally
             {
@@ -539,6 +539,4 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
             }
         }
     }
-
-
 }

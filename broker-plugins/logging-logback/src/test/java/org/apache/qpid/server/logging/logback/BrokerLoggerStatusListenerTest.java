@@ -30,8 +30,9 @@ import java.io.IOError;
 import java.io.IOException;
 
 import ch.qos.logback.core.status.Status;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.SystemConfig;
@@ -43,12 +44,12 @@ public class BrokerLoggerStatusListenerTest extends UnitTestBase
     private BrokerFileLogger<?> _fileLogger;
     private SystemConfig<?> _systemConfig;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _fileLogger = mock(BrokerFileLogger.class);
         _systemConfig = mock(SystemConfig.class);
-        EventLogger eventLogger = mock(EventLogger.class);
+        final EventLogger eventLogger = mock(EventLogger.class);
         when(_systemConfig.getEventLogger()).thenReturn(eventLogger);
         _statusListener = new BrokerLoggerStatusListener(_fileLogger, _systemConfig, BrokerFileLogger.BROKER_FAIL_ON_LOGGER_IO_ERROR, IOException.class, IOError.class);
         when(_fileLogger.getContextValue(Boolean.class, BrokerFileLogger.BROKER_FAIL_ON_LOGGER_IO_ERROR)).thenReturn(true);
@@ -57,7 +58,7 @@ public class BrokerLoggerStatusListenerTest extends UnitTestBase
     @Test
     public void testAddStatusEventForIOError()
     {
-        Status event = createEvent(new IOError(new IOException("Mocked: No disk space left")), Status.ERROR);
+        final Status event = createEvent(new IOError(new IOException("Mocked: No disk space left")), Status.ERROR);
         _statusListener.addStatusEvent(event);
 
         verify(_systemConfig).closeAsync();
@@ -66,7 +67,7 @@ public class BrokerLoggerStatusListenerTest extends UnitTestBase
     @Test
     public void testAddStatusEventForIOErrorWithFailOnLoggerIOErrorDisabled()
     {
-        Status event = createEvent(new IOError(new IOException("Mocked: No disk space left")), Status.ERROR);
+        final Status event = createEvent(new IOError(new IOException("Mocked: No disk space left")), Status.ERROR);
         when(_fileLogger.getContextValue(Boolean.class, BrokerFileLogger.BROKER_FAIL_ON_LOGGER_IO_ERROR)).thenReturn(false);
         _statusListener.addStatusEvent(event);
 
@@ -76,7 +77,7 @@ public class BrokerLoggerStatusListenerTest extends UnitTestBase
     @Test
     public void testAddStatusEventForIOException()
     {
-        Status event = createEvent(new IOException("Mocked: No disk space left"), Status.ERROR);
+        final Status event = createEvent(new IOException("Mocked: No disk space left"), Status.ERROR);
         _statusListener.addStatusEvent(event);
 
         verify(_systemConfig).closeAsync();
@@ -85,7 +86,7 @@ public class BrokerLoggerStatusListenerTest extends UnitTestBase
     @Test
     public void testAddStatusEventForIOExceptionReportedAsWarning()
     {
-        Status event = createEvent(new IOException("Mocked: No disk space left"), Status.WARN);
+        final Status event = createEvent(new IOException("Mocked: No disk space left"), Status.WARN);
         _statusListener.addStatusEvent(event);
 
         verify(_systemConfig, never()).closeAsync();
@@ -94,15 +95,15 @@ public class BrokerLoggerStatusListenerTest extends UnitTestBase
     @Test
     public void testAddStatusEventForNonIOException()
     {
-        Status event = createEvent(new RuntimeException("Mocked: No disk space left"), Status.ERROR);
+        final Status event = createEvent(new RuntimeException("Mocked: No disk space left"), Status.ERROR);
         _statusListener.addStatusEvent(event);
 
         verify(_systemConfig, never()).closeAsync();
     }
 
-    private Status createEvent(Throwable throwable, int status)
+    private Status createEvent(final Throwable throwable, final int status)
     {
-        Status event = mock(Status.class);
+        final Status event = mock(Status.class);
         when(event.getThrowable()).thenReturn(throwable);
         when(event.getEffectiveLevel()).thenReturn(status);
         return event;

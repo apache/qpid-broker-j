@@ -18,12 +18,11 @@
  */
 package org.apache.qpid.server.security.auth;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.security.Principal;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.junit.Assert;
 
 /**
  * Helper class for testing that sets of principals contain {@link AuthenticatedPrincipal}'s that wrap
@@ -31,24 +30,20 @@ import org.junit.Assert;
  */
 public class AuthenticatedPrincipalTestHelper
 {
-    public static void assertOnlyContainsWrapped(Principal wrappedPrincipal, Set<Principal> principals)
+    public static void assertOnlyContainsWrapped(final Principal wrappedPrincipal, final Set<Principal> principals)
     {
-        assertOnlyContainsWrappedAndSecondaryPrincipals(wrappedPrincipal, Collections.<Principal>emptySet(), principals);
+        assertOnlyContainsWrappedAndSecondaryPrincipals(wrappedPrincipal, Set.of(), principals);
     }
 
-
-    public static void assertOnlyContainsWrappedAndSecondaryPrincipals(
-            Principal      expectedWrappedPrincipal,
-            Set<Principal> expectedSecondaryPrincipals,
-            Set<Principal> actualPrincipals)
+    public static void assertOnlyContainsWrappedAndSecondaryPrincipals(final Principal expectedWrappedPrincipal,
+                                                                       final Set<Principal> expectedSecondaryPrincipals,
+                                                                       final Set<Principal> actualPrincipals)
     {
-        Assert.assertEquals("Principal set should contain one principal " + "but the principal set is: " + actualPrincipals,
-                1 + expectedSecondaryPrincipals.size(),
-                actualPrincipals.size());
+        assertEquals(1 + expectedSecondaryPrincipals.size(), actualPrincipals.size(),
+                "Principal set should contain one principal " + "but the principal set is: " + actualPrincipals);
 
-        Set<Principal> expectedSet = new HashSet<Principal>(expectedSecondaryPrincipals);
+        final Set<Principal> expectedSet = new HashSet<>(expectedSecondaryPrincipals);
         expectedSet.add(new AuthenticatedPrincipal(expectedWrappedPrincipal));
-
-        Assert.assertEquals(expectedSet, actualPrincipals);
+        assertEquals(expectedSet, actualPrincipals);
     }
 }

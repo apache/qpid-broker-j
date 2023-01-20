@@ -26,11 +26,9 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
-@ManagedObject( category = false,
-        type = TestTemperatureGaugeImpl.TEST_TEMPERATURE_GAUGE_TYPE)
+@ManagedObject(category = false, type = TestTemperatureGaugeImpl.TEST_TEMPERATURE_GAUGE_TYPE)
 public class TestTemperatureGaugeImpl extends TestAbstractGaugeImpl<TestTemperatureGaugeImpl> implements TestGauge<TestTemperatureGaugeImpl>
 {
-
     public static final String TEST_TEMPERATURE_GAUGE_TYPE = "temperature";
 
     @ManagedAttributeField
@@ -41,7 +39,6 @@ public class TestTemperatureGaugeImpl extends TestAbstractGaugeImpl<TestTemperat
     {
         super(parent, attributes);
     }
-
 
     @Override
     public TestSensor<?> getSensor()

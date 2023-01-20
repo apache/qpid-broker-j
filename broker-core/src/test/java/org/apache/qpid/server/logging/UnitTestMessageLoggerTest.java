@@ -20,14 +20,13 @@
  */
 package org.apache.qpid.server.logging;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-
 
 /**
  * Test: UnitTestMessageLoggerTest
@@ -46,60 +45,56 @@ public class UnitTestMessageLoggerTest extends UnitTestBase
     @Test
     public void testRawMessage()
     {
-        UnitTestMessageLogger logger = new UnitTestMessageLogger();
+        final UnitTestMessageLogger logger = new UnitTestMessageLogger();
 
-        assertEquals("Messages logged before test start", (long) 0, (long) logger.getLogMessages().size());
+        assertEquals(0, (long) logger.getLogMessages().size(), "Messages logged before test start");
 
         // Log a message
         logger.rawMessage(TEST_MESSAGE, TEST_HIERARCHY);
 
-        List<Object> messages = logger.getLogMessages();
+        final List<Object> messages = logger.getLogMessages();
 
-        assertEquals("Expected to have 1 messages logged", (long) 1, (long) messages.size());
+        assertEquals(1, (long) messages.size(), "Expected to have 1 messages logged");
 
-        assertEquals("First message not what was logged", TEST_MESSAGE, messages.get(0));
+        assertEquals(TEST_MESSAGE, messages.get(0), "First message not what was logged");
     }
 
     @Test
     public void testRawMessageWithThrowable()
     {
-        UnitTestMessageLogger logger = new UnitTestMessageLogger();
+        final UnitTestMessageLogger logger = new UnitTestMessageLogger();
 
-        assertEquals("Messages logged before test start", (long) 0, (long) logger.getLogMessages().size());
+        assertEquals(0, (long) logger.getLogMessages().size(), "Messages logged before test start");
 
         // Log a message
-        Throwable throwable = new Throwable(TEST_THROWABLE);
+        final Throwable throwable = new Throwable(TEST_THROWABLE);
 
         logger.rawMessage(TEST_MESSAGE, throwable, TEST_HIERARCHY);
 
-        List<Object> messages = logger.getLogMessages();
+        final List<Object> messages = logger.getLogMessages();
 
-        assertEquals("Expected to have 2 entries", (long) 2, (long) messages.size());
+        assertEquals(2, (long) messages.size(), "Expected to have 2 entries");
 
-        assertEquals("Message text not what was logged", TEST_MESSAGE, messages.get(0));
+        assertEquals(TEST_MESSAGE, messages.get(0), "Message text not what was logged");
 
-        assertEquals("Message throwable not what was logged",
-                            TEST_THROWABLE,
-                            ((Throwable) messages.get(1)).getMessage());
-
+        assertEquals(TEST_THROWABLE, ((Throwable) messages.get(1)).getMessage(),
+                "Message throwable not what was logged");
     }
 
     @Test
     public void testClear()
     {
-        UnitTestMessageLogger logger = new UnitTestMessageLogger();
+        final UnitTestMessageLogger logger = new UnitTestMessageLogger();
 
-        assertEquals("Messages logged before test start", (long) 0, (long) logger.getLogMessages().size());
+        assertEquals(0, (long) logger.getLogMessages().size(), "Messages logged before test start");
 
         // Log a message
         logger.rawMessage(TEST_MESSAGE, null, TEST_HIERARCHY);
 
-        assertEquals("Expected to have 1 messages logged", (long) 1, (long) logger.getLogMessages().size());
+        assertEquals(1, (long) logger.getLogMessages().size(), "Expected to have 1 messages logged");
 
         logger.clearLogMessages();
 
-        assertEquals("Expected to have no messages after a clear",
-                            (long) 0,
-                            (long) logger.getLogMessages().size());
+        assertEquals(0, (long) logger.getLogMessages().size(), "Expected to have no messages after a clear");
     }
 }

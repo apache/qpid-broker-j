@@ -21,29 +21,31 @@
 package org.apache.qpid.server.model.testmodels.singleton;
 
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.awaitPreferenceFuture;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -68,24 +70,23 @@ public class PreferencesTest extends UnitTestBase
     private Subject _testSubject;
     private TaskExecutor _preferenceTaskExecutor;
 
-    @Before
+    @BeforeEach
+    @SuppressWarnings("unchecked")
     public void setUp() throws Exception
     {
         final String objectName = getTestName();
         _testObject = _model.getObjectFactory()
-                            .create(TestSingleton.class,
-                                    Collections.<String, Object>singletonMap(ConfiguredObject.NAME, objectName), null);
+                .create(TestSingleton.class, Map.of(ConfiguredObject.NAME, objectName), null);
 
         _preferenceTaskExecutor = new CurrentThreadTaskExecutor();
         _preferenceTaskExecutor.start();
         PreferenceStore preferenceStore = mock(PreferenceStore.class);
-        _testObject.setUserPreferences(new UserPreferencesImpl(
-                _preferenceTaskExecutor, _testObject, preferenceStore, Collections.<Preference>emptySet()
-        ));
+        _testObject.setUserPreferences(new UserPreferencesImpl(_preferenceTaskExecutor, _testObject, preferenceStore,
+                Set.of()));
         _testSubject = TestPrincipalUtils.createTestSubject(TEST_USERNAME);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         _preferenceTaskExecutor.stop();
@@ -102,7 +103,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         updateOrAppendAs(_testSubject, p);
         assertPreferences(_testSubject, p);
@@ -120,7 +121,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         updateOrAppendAs(testSubject2, p);
         assertPreferences(testSubject2, p);
@@ -140,7 +141,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
 
         updateOrAppendAs(_testSubject, testUserPreference);
 
@@ -153,7 +154,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL2_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
 
         Subject testSubject2 = TestPrincipalUtils.createTestSubject(TEST_USERNAME2);
         updateOrAppendAs(testSubject2, testUser2Preference);
@@ -173,7 +174,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         final Preference p2 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
@@ -183,7 +184,7 @@ public class PreferencesTest extends UnitTestBase
                 "newDescription",
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         updateOrAppendAs(_testSubject, p1);
         updateOrAppendAs(_testSubject, p2);
@@ -202,7 +203,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         updateOrAppendAs(_testSubject, p1);
 
@@ -214,7 +215,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         try
         {
@@ -238,7 +239,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         updateOrAppendAs(_testSubject, p1);
 
@@ -250,7 +251,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         try
         {
@@ -274,7 +275,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         final Preference p2 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
                 null,
@@ -283,7 +284,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         try
         {
@@ -297,7 +298,7 @@ public class PreferencesTest extends UnitTestBase
     }
 
     @Test
-    public void testProhibitPreferenceStealing() throws Exception
+    public void testProhibitPreferenceStealing()
     {
         final String testGroupName = "testGroup";
         Subject user1Subject = TestPrincipalUtils.createTestSubject(TEST_USERNAME, testGroupName);
@@ -309,47 +310,44 @@ public class PreferencesTest extends UnitTestBase
                 "prefname",
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
-                Collections.singleton(TestPrincipalUtils.getTestPrincipalSerialization(testGroupName)),
-                Collections.<String,Object>emptyMap());
+                Set.of(TestPrincipalUtils.getTestPrincipalSerialization(testGroupName)),
+                Map.of());
         final Preference originalPreference = PreferenceFactory.fromAttributes(_testObject, preferenceAttributes);
         updateOrAppendAs(user1Subject, originalPreference);
 
 
         Subject user2Subject = TestPrincipalUtils.createTestSubject(TEST_USERNAME2, testGroupName);
-        Subject.doAs(user2Subject, new PrivilegedAction<Void>()
+        Subject.doAs(user2Subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
+            final ListenableFuture<Set<Preference>> visiblePreferencesFuture = _testObject.getUserPreferences().getVisiblePreferences();
+            final Set<Preference> visiblePreferences = awaitPreferenceFuture(visiblePreferencesFuture);
+
+            assertEquals(1, (long) visiblePreferences
+                    .size(), "Unexpected number of visible preferences");
+
+            final Map<String, Object> replacementAttributes =
+                    Map.of(Preference.OWNER_ATTRIBUTE, TEST_PRINCIPAL2_SERIALIZATION);
+
+            try
             {
-                final ListenableFuture<Set<Preference>> visiblePreferencesFuture = _testObject.getUserPreferences().getVisiblePreferences();
-                final Set<Preference> visiblePreferences = PreferenceTestHelper.awaitPreferenceFuture(visiblePreferencesFuture);
-
-                assertEquals("Unexpected number of visible preferences", (long) 1, (long) visiblePreferences
-                        .size());
-
-                final Preference target = visiblePreferences.iterator().next();
-                Map<String, Object> replacementAttributes = new HashMap(target.getAttributes());
-                replacementAttributes.put(Preference.OWNER_ATTRIBUTE, TEST_PRINCIPAL2_SERIALIZATION);
-
-                try
-                {
-                    awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Arrays.asList(PreferenceFactory.fromAttributes(_testObject, replacementAttributes))));
-                    fail("The stealing of a preference must be prohibited");
-                }
-                catch (IllegalArgumentException e)
-                {
-                    // pass
-                }
-
-                return null;
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(List.of(PreferenceFactory.fromAttributes(
+                        _testObject,
+                        replacementAttributes))));
+                fail("The stealing of a preference must be prohibited");
             }
+            catch (IllegalArgumentException e)
+            {
+                // pass
+            }
+
+            return null;
         });
 
         assertPreferences(user1Subject, originalPreference);
     }
 
     @Test
-    public void testProhibitDuplicateId() throws Exception
+    public void testProhibitDuplicateId()
     {
         final String prefType = "X-testType";
         final String prefName = "prop1";
@@ -362,7 +360,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
 
         updateOrAppendAs(_testSubject, testUserPreference);
 
@@ -376,7 +374,7 @@ public class PreferencesTest extends UnitTestBase
                         "new preference",
                         TEST_PRINCIPAL2_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         try
         {
             updateOrAppendAs(user2Subject, testUserPreference2);
@@ -389,14 +387,10 @@ public class PreferencesTest extends UnitTestBase
 
         try
         {
-            Subject.doAs(user2Subject, new PrivilegedAction<Void>()
+            Subject.doAs(user2Subject, (PrivilegedAction<Void>) () ->
             {
-                @Override
-                public Void run()
-                {
-                    awaitPreferenceFuture(_testObject.getUserPreferences().replace(Arrays.asList(testUserPreference2)));
-                    return null;
-                }
+                awaitPreferenceFuture(_testObject.getUserPreferences().replace(List.of(testUserPreference2)));
+                return null;
             });
             fail("duplicate id should be prohibited");
         }
@@ -407,14 +401,11 @@ public class PreferencesTest extends UnitTestBase
 
         try
         {
-            Subject.doAs(user2Subject, new PrivilegedAction<Void>()
+            Subject.doAs(user2Subject, (PrivilegedAction<Void>) () ->
             {
-                @Override
-                public Void run()
-                {
-                    awaitPreferenceFuture(_testObject.getUserPreferences().replaceByType(testUserPreference.getType(), Arrays.asList(testUserPreference2)));
-                    return null;
-                }
+                awaitPreferenceFuture(_testObject.getUserPreferences().replaceByType(testUserPreference.getType(),
+                                                                                     List.of(testUserPreference2)));
+                return null;
             });
             fail("duplicate id should be prohibited");
         }
@@ -426,14 +417,10 @@ public class PreferencesTest extends UnitTestBase
 
         try
         {
-            Subject.doAs(user2Subject, new PrivilegedAction<Void>()
+            Subject.doAs(user2Subject, (PrivilegedAction<Void>) () ->
             {
-                @Override
-                public Void run()
-                {
-                    awaitPreferenceFuture(_testObject.getUserPreferences().replaceByTypeAndName(testUserPreference.getType(), testUserPreference.getName(), testUserPreference2));
-                    return null;
-                }
+                awaitPreferenceFuture(_testObject.getUserPreferences().replaceByTypeAndName(testUserPreference.getType(), testUserPreference.getName(), testUserPreference2));
+                return null;
             });
             fail("duplicate id should be prohibited");
         }
@@ -458,7 +445,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL2_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         updateOrAppendAs(testSubject2, unaffectedPreference);
 
         final Preference p1 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -469,7 +456,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         updateOrAppendAs(_testSubject, p1);
 
@@ -481,16 +468,12 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_testObject.getUserPreferences().replace(Collections.singleton(p2)));
-                return null;
-            }
+            awaitPreferenceFuture(_testObject.getUserPreferences().replace(Set.of(p2)));
+            return null;
         });
 
         assertPreferences(_testSubject, p2);
@@ -498,7 +481,7 @@ public class PreferencesTest extends UnitTestBase
     }
 
     @Test
-    public void testDeleteAll() throws Exception
+    public void testDeleteAll()
     {
         final Preference p1 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
@@ -508,7 +491,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         final Preference p2 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
                 null,
@@ -517,24 +500,20 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         updateOrAppendAs(_testSubject, p1, p2);
 
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_testObject.getUserPreferences().delete(null, null, null));
-                Set<Preference> result = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
-                assertEquals("Unexpected number of preferences", (long) 0, (long) result.size());
-                return null;
-            }
+            awaitPreferenceFuture(_testObject.getUserPreferences().delete(null, null, null));
+            Set<Preference> result = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
+            assertEquals(0, (long) result.size(), "Unexpected number of preferences");
+            return null;
         });
     }
 
     @Test
-    public void testDeleteByType() throws Exception
+    public void testDeleteByType()
     {
         final String deleteType = "X-type-1";
         final Preference deletePreference =
@@ -546,7 +525,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         String unaffectedType = "X-type-2";
         final Preference unaffectedPreference =
                 PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -557,23 +536,19 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference);
 
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_testObject.getUserPreferences().delete(deleteType, null, null));
-                return null;
-            }
+            awaitPreferenceFuture(_testObject.getUserPreferences().delete(deleteType, null, null));
+            return null;
         });
         assertPreferences(_testSubject, unaffectedPreference);
     }
 
     @Test
-    public void testDeleteByTypeAndName() throws Exception
+    public void testDeleteByTypeAndName()
     {
         final String deleteType = "X-type-1";
         final String deletePropertyName = "propName";
@@ -586,7 +561,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         final Preference unaffectedPreference1 =
                 PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                         null,
@@ -596,7 +571,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         String unaffectedType = "X-type-2";
         final Preference unaffectedPreference2 =
                 PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -607,23 +582,19 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference1, unaffectedPreference2);
 
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_testObject.getUserPreferences().delete(deleteType, deletePropertyName, null));
-                return null;
-            }
+            awaitPreferenceFuture(_testObject.getUserPreferences().delete(deleteType, deletePropertyName, null));
+            return null;
         });
         assertPreferences(_testSubject, unaffectedPreference1, unaffectedPreference2);
     }
 
     @Test
-    public void testDeleteById() throws Exception
+    public void testDeleteById()
     {
         final String deleteType = "X-type-1";
         final Preference deletePreference =
@@ -635,7 +606,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         final Preference unaffectedPreference1 =
                 PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                         null,
@@ -645,7 +616,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         String unaffectedType = "X-type-2";
         final Preference unaffectedPreference2 =
                 PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -656,23 +627,19 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference1, unaffectedPreference2);
 
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_testObject.getUserPreferences().delete(null, null, deletePreference.getId()));
-                return null;
-            }
+            awaitPreferenceFuture(_testObject.getUserPreferences().delete(null, null, deletePreference.getId()));
+            return null;
         });
         assertPreferences(_testSubject, unaffectedPreference1, unaffectedPreference2);
     }
 
     @Test
-    public void testDeleteByTypeAndId() throws Exception
+    public void testDeleteByTypeAndId()
     {
         final String deleteType = "X-type-1";
         final Preference deletePreference =
@@ -684,7 +651,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         final Preference unaffectedPreference1 =
                 PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                         null,
@@ -694,7 +661,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         String unaffectedType = "X-type-2";
         final Preference unaffectedPreference2 =
                 PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -705,23 +672,19 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference1, unaffectedPreference2);
 
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_testObject.getUserPreferences().delete(deleteType, null, deletePreference.getId()));
-                return null;
-            }
+            awaitPreferenceFuture(_testObject.getUserPreferences().delete(deleteType, null, deletePreference.getId()));
+            return null;
         });
         assertPreferences(_testSubject, unaffectedPreference1, unaffectedPreference2);
     }
 
     @Test
-    public void testDeleteByTypeAndNameAndId() throws Exception
+    public void testDeleteByTypeAndNameAndId()
     {
         final String deleteType = "X-type-1";
         final String deletePropertyName = "propName";
@@ -734,7 +697,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         final Preference unaffectedPreference1 =
                 PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                         null,
@@ -744,7 +707,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         String unaffectedType = "X-type-2";
         final Preference unaffectedPreference2 =
                 PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -755,40 +718,32 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference1, unaffectedPreference2);
 
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_testObject.getUserPreferences().delete(deleteType, deletePropertyName, deletePreference.getId()));
-                return null;
-            }
+            awaitPreferenceFuture(_testObject.getUserPreferences().delete(deleteType, deletePropertyName, deletePreference.getId()));
+            return null;
         });
         assertPreferences(_testSubject, unaffectedPreference1, unaffectedPreference2);
     }
 
     @Test
-    public void testDeleteByNameWithoutType() throws Exception
+    public void testDeleteByNameWithoutType()
     {
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
+            try
             {
-                try
-                {
-                    awaitPreferenceFuture(_testObject.getUserPreferences().delete(null, "test", null));
-                    fail("delete by name without type should not be allowed");
-                }
-                catch (IllegalArgumentException e)
-                {
-                    // pass
-                }
-                return null;
+                awaitPreferenceFuture(_testObject.getUserPreferences().delete(null, "test", null));
+                fail("delete by name without type should not be allowed");
             }
+            catch (IllegalArgumentException e)
+            {
+                // pass
+            }
+            return null;
         });
     }
 
@@ -806,7 +761,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL2_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         updateOrAppendAs(testSubject2, unaffectedPreference);
 
         final Preference p1 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -817,17 +772,13 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         updateOrAppendAs(_testSubject, p1);
 
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_testObject.getUserPreferences().replace(Collections.<Preference>emptySet()));
-                return null;
-            }
+            awaitPreferenceFuture(_testObject.getUserPreferences().replace(Set.of()));
+            return null;
         });
 
         assertPreferences(_testSubject);
@@ -850,7 +801,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL2_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         updateOrAppendAs(testSubject2, unaffectedPreference);
 
         final Preference p1 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -861,7 +812,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         final Preference p2 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
                 null,
@@ -870,17 +821,13 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         updateOrAppendAs(_testSubject, p1, p2);
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_testObject.getUserPreferences().replaceByType(preferenceType, Collections.<Preference>emptySet()));
-                return null;
-            }
+            awaitPreferenceFuture(_testObject.getUserPreferences().replaceByType(preferenceType, Set.of()));
+            return null;
         });
 
         assertPreferences(_testSubject, p2);
@@ -902,7 +849,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL2_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
 
         updateOrAppendAs(testSubject2, unaffectedPreference);
 
@@ -914,7 +861,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         final Preference p2 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
@@ -924,17 +871,13 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         updateOrAppendAs(_testSubject, p1, p2);
 
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_testObject.getUserPreferences().replaceByTypeAndName(preferenceType, "propName", null));
-                return null;
-            }
+            awaitPreferenceFuture(_testObject.getUserPreferences().replaceByTypeAndName(preferenceType, "propName", null));
+            return null;
         });
 
         assertPreferences(_testSubject, p2);
@@ -956,7 +899,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL2_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
 
         updateOrAppendAs(testSubject2, unaffectedPreference);
 
@@ -968,7 +911,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         final Preference p2 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
                 null,
@@ -977,7 +920,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         final Preference p3 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
                 null,
@@ -986,17 +929,13 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         updateOrAppendAs(_testSubject, p1, p2);
 
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_testObject.getUserPreferences().replaceByType(replaceType, Collections.singleton(p3)));
-                return null;
-            }
+            awaitPreferenceFuture(_testObject.getUserPreferences().replaceByType(replaceType, Set.of(p3)));
+            return null;
         });
 
         assertPreferences(_testSubject, p2, p3);
@@ -1018,7 +957,7 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL2_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
 
         updateOrAppendAs(testSubject2, unaffectedPreference);
 
@@ -1030,7 +969,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         final Preference p1b = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
                 null,
@@ -1039,7 +978,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         final Preference p2 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
@@ -1049,7 +988,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         final Preference p3 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
@@ -1059,17 +998,13 @@ public class PreferencesTest extends UnitTestBase
                 "new description",
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         updateOrAppendAs(_testSubject, p1, p1b, p2);
 
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_testObject.getUserPreferences().replaceByTypeAndName(replaceType, "propName", p3));
-                return null;
-            }
+            awaitPreferenceFuture(_testObject.getUserPreferences().replaceByTypeAndName(replaceType, "propName", p3));
+            return null;
         });
 
         assertPreferences(_testSubject, p1b, p2, p3);
@@ -1091,8 +1026,8 @@ public class PreferencesTest extends UnitTestBase
                 "propName1",
                 "shared with group",
                 TEST_PRINCIPAL2_SERIALIZATION,
-                Collections.singleton(TestPrincipalUtils.getTestPrincipalSerialization(testGroupName)),
-                Collections.<String, Object>emptyMap()));
+                Set.of(TestPrincipalUtils.getTestPrincipalSerialization(testGroupName)),
+                Map.of()));
 
         final Preference notSharedPreference = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
@@ -1102,7 +1037,7 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL2_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         updateOrAppendAs(sharer, sharedPreference, notSharedPreference);
 
@@ -1114,29 +1049,25 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
 
         updateOrAppendAs(nonSharer, nonSharersPrivatePref);
 
-        Subject.doAs(nonSharer, new PrivilegedAction<Void>()
+        Subject.doAs(nonSharer, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
+            Set<Preference> retrievedPreferences =
+                    awaitPreferenceFuture(_testObject.getUserPreferences().getVisiblePreferences());
+            assertEquals(2, (long) retrievedPreferences.size(), "Unexpected number of preferences");
+
+            Set<UUID> visibleIds = new HashSet<>(retrievedPreferences.size());
+            for (Preference preference : retrievedPreferences)
             {
-                Set<Preference> retrievedPreferences =
-                        awaitPreferenceFuture(_testObject.getUserPreferences().getVisiblePreferences());
-                assertEquals("Unexpected number of preferences", (long) 2, (long) retrievedPreferences.size());
-
-                Set<UUID> visibleIds = new HashSet<>(retrievedPreferences.size());
-                for (Preference preference : retrievedPreferences)
-                {
-                    visibleIds.add(preference.getId());
-                }
-                assertTrue("Owned preference not visible", visibleIds.contains(nonSharersPrivatePref.getId()));
-                assertTrue("Shared preference not visible", visibleIds.contains(sharedPreference.getId()));
-
-                return null;
+                visibleIds.add(preference.getId());
             }
+            assertTrue(visibleIds.contains(nonSharersPrivatePref.getId()), "Owned preference not visible");
+            assertTrue(visibleIds.contains(sharedPreference.getId()), "Shared preference not visible");
+
+            return null;
         });
     }
 
@@ -1154,8 +1085,8 @@ public class PreferencesTest extends UnitTestBase
                         "propName1",
                         null,
                         TEST_PRINCIPAL2_SERIALIZATION,
-                        Collections.singleton(TestPrincipalUtils.getTestPrincipalSerialization(testGroupName)),
-                        Collections.<String, Object>emptyMap()));
+                        Set.of(TestPrincipalUtils.getTestPrincipalSerialization(testGroupName)),
+                        Map.of()));
 
         Subject peerSubject = TestPrincipalUtils.createTestSubject(TEST_USERNAME2, testGroupName);
         updateOrAppendAs(peerSubject, sharedPreference);
@@ -1169,23 +1100,18 @@ public class PreferencesTest extends UnitTestBase
                         null,
                         TEST_PRINCIPAL_SERIALIZATION,
                         null,
-                        Collections.<String, Object>emptyMap()));
+                        Map.of()));
         updateOrAppendAs(testSubjectWithGroup, testUserPreference);
 
-        Subject.doAs(testSubjectWithGroup, new PrivilegedAction<Void>()
+        Subject.doAs(testSubjectWithGroup, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                Set<Preference> retrievedPreferences =
-                        awaitPreferenceFuture(_testObject.getUserPreferences().getVisiblePreferences());
-                assertEquals("Unexpected number of preferences", (long) 2, (long) retrievedPreferences.size());
-                assertTrue("Preference of my peer did not exist in visible set",
-                                  retrievedPreferences.contains(sharedPreference));
-                assertTrue("My preference did not exist in visible set",
-                                  retrievedPreferences.contains(testUserPreference));
-                return null;
-            }
+            Set<Preference> retrievedPreferences =
+                    awaitPreferenceFuture(_testObject.getUserPreferences().getVisiblePreferences());
+            assertEquals(2, (long) retrievedPreferences.size(), "Unexpected number of preferences");
+            assertTrue(retrievedPreferences.contains(sharedPreference),
+                       "Preference of my peer did not exist in visible set");
+            assertTrue(retrievedPreferences.contains(testUserPreference), "My preference did not exist in visible set");
+            return null;
         });
     }
 
@@ -1202,15 +1128,14 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         Thread.sleep(1);
         Date afterUpdate = new Date();
         Date lastUpdatedDate = p1.getLastUpdatedDate();
-        assertTrue(String.format("LastUpdated date is too early. Expected : after %s  Found : %s",
-                                        beforeUpdate,
-                                        lastUpdatedDate), beforeUpdate.before(lastUpdatedDate));
-        assertTrue(String.format("LastUpdated date is too late. Expected : before %s  Found : %s", afterUpdate, lastUpdatedDate),
-                          afterUpdate.after(lastUpdatedDate));
+        assertTrue(beforeUpdate.before(lastUpdatedDate),
+                String.format("LastUpdated date is too early. Expected : after %s  Found : %s", beforeUpdate, lastUpdatedDate));
+        assertTrue(afterUpdate.after(lastUpdatedDate),
+                String.format("LastUpdated date is too late. Expected : before %s  Found : %s", afterUpdate, lastUpdatedDate));
     }
 
 
@@ -1227,19 +1152,18 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         Thread.sleep(1);
         Date afterCreation = new Date();
         Date createdDate = p1.getCreatedDate();
-        assertTrue(String.format("Creation date is too early. Expected : after %s  Found : %s",
-                                        beforeCreation,
-                                        createdDate), beforeCreation.before(createdDate));
-        assertTrue(String.format("Creation date is too late. Expected : before %s  Found : %s", afterCreation, createdDate),
-                          afterCreation.after(createdDate));
+        assertTrue(beforeCreation.before(createdDate),
+                String.format("Creation date is too early. Expected : after %s  Found : %s", beforeCreation, createdDate));
+        assertTrue(afterCreation.after(createdDate),
+                String.format("Creation date is too late. Expected : before %s  Found : %s", afterCreation, createdDate));
     }
 
     @Test
-    public void testLastUpdatedDateIsImmutable() throws Exception
+    public void testLastUpdatedDateIsImmutable()
     {
         final Preference p1 = PreferenceFactory.fromAttributes(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
@@ -1249,57 +1173,42 @@ public class PreferencesTest extends UnitTestBase
                 null,
                 TEST_PRINCIPAL_SERIALIZATION,
                 null,
-                Collections.<String, Object>emptyMap()));
+                Map.of()));
         Date lastUpdatedDate = p1.getLastUpdatedDate();
         lastUpdatedDate.setTime(0);
         Date lastUpdatedDate2 = p1.getLastUpdatedDate();
-        assertTrue("Creation date is not immutable.", lastUpdatedDate2.getTime() != 0);
+        assertTrue(lastUpdatedDate2.getTime() != 0, "Creation date is not immutable.");
     }
 
     private void updateOrAppendAs(final Subject testSubject, final Preference... testUserPreference)
     {
-        Subject.doAs(testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Arrays.asList(testUserPreference)));
-                return null;
-            }
+            awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Arrays.asList(testUserPreference)));
+            return null;
         });
     }
 
     private void assertPreferences(final Subject subject, final Preference... expectedPreferences)
     {
-        Subject.doAs(subject, new PrivilegedAction<Void>()
+        Subject.doAs(subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                Collection<Preference> retrievedPreferences =
-                        awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
-                assertEquals("Unexpected number of preferences",
-                                    (long) expectedPreferences.length,
-                                    (long) retrievedPreferences.size());
-                Map<UUID, Preference> retrievedPreferencesMap = new HashMap<>(retrievedPreferences.size());
-                for (Preference retrievedPreference : retrievedPreferences)
-                {
-                    retrievedPreferencesMap.put(retrievedPreference.getId(), retrievedPreference);
-                }
-                for (Preference expectedPreference : expectedPreferences)
-                {
-                    Preference retrievedPreference = retrievedPreferencesMap.get(expectedPreference.getId());
-                    assertNotNull("Expected id '" + expectedPreference.getId() + "' not found",
-                                         retrievedPreference);
+            final Collection<Preference> retrievedPreferences =
+                    awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
+            assertEquals(expectedPreferences.length, (long) retrievedPreferences.size(), "Unexpected number of preferences");
+            final Map<UUID, Preference> retrievedPreferencesMap = retrievedPreferences.stream()
+                    .collect(Collectors.toMap(Preference::getId, Function.identity()));
 
-                    assertEquals("Unexpected name", expectedPreference.getName(), retrievedPreference.getName());
-                    assertEquals("Unexpected type", expectedPreference.getType(), retrievedPreference.getType());
-                    assertEquals("Unexpected description",
-                                        expectedPreference.getDescription(),
-                                        retrievedPreference.getDescription());
-                }
-                return null;
+            for (final Preference expectedPreference : expectedPreferences)
+            {
+                final Preference retrievedPreference = retrievedPreferencesMap.get(expectedPreference.getId());
+                assertNotNull(retrievedPreference, "Expected id '" + expectedPreference.getId() + "' not found");
+
+                assertEquals(expectedPreference.getName(), retrievedPreference.getName(), "Unexpected name");
+                assertEquals(expectedPreference.getType(), retrievedPreference.getType(), "Unexpected type");
+                assertEquals(expectedPreference.getDescription(), retrievedPreference.getDescription(), "Unexpected description");
             }
+            return null;
         });
     }
 }

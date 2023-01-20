@@ -18,9 +18,9 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,9 +33,10 @@ import java.util.List;
 import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.Futures;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -63,20 +64,18 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class ServerSessionTest extends UnitTestBase
 {
-
     private VirtualHost<?> _virtualHost;
     private CurrentThreadTaskExecutor _taskExecutor;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        BrokerTestHelper.setUp();
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
         _virtualHost = BrokerTestHelper.createVirtualHost(getTestName(), this);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
@@ -88,22 +87,15 @@ public class ServerSessionTest extends UnitTestBase
         }
         finally
         {
-            try
+            if (_taskExecutor != null)
             {
-                if (_taskExecutor != null)
-                {
-                    _taskExecutor.stop();
-                }
-            }
-            finally
-            {
-                BrokerTestHelper.tearDown();
+                _taskExecutor.stop();
             }
         }
     }
 
     @Test
-    public void testOverlargeMessageTest() throws Exception
+    public void testOverlargeMessageTest()
     {
         final Broker<?> broker = mock(Broker.class);
         when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0L);
@@ -154,12 +146,11 @@ public class ServerSessionTest extends UnitTestBase
         xfr.setBody(QpidByteBuffer.wrap(body1));
         delegate.messageTransfer(session, xfr);
 
-        assertFalse("No methods invoked - expecting at least 1", invokedMethods.isEmpty());
+        assertFalse(invokedMethods.isEmpty(), "No methods invoked - expecting at least 1");
         Method firstInvoked = invokedMethods.get(0);
         final boolean condition = firstInvoked instanceof ExecutionException;
-        assertTrue("First invoked method not execution error", condition);
-        assertEquals(ExecutionErrorCode.RESOURCE_LIMIT_EXCEEDED,
-                            ((ExecutionException)firstInvoked).getErrorCode());
+        assertTrue(condition, "First invoked method not execution error");
+        assertEquals(ExecutionErrorCode.RESOURCE_LIMIT_EXCEEDED, ((ExecutionException)firstInvoked).getErrorCode());
 
 
         invokedMethods.clear();
@@ -170,7 +161,7 @@ public class ServerSessionTest extends UnitTestBase
         xfr.setBody(QpidByteBuffer.wrap(body));
         delegate.messageTransfer(session, xfr);
 
-        assertTrue("Methods invoked when not expecting any", invokedMethods.isEmpty());
+        assertTrue(invokedMethods.isEmpty(), "Methods invoked when not expecting any");
     }
 
     public AmqpPort createMockPort()
@@ -183,6 +174,4 @@ public class ServerSessionTest extends UnitTestBase
         when(port.getModel()).thenReturn(BrokerModel.getInstance());
         return port;
     }
-
-
 }

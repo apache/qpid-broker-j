@@ -19,12 +19,11 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions.queue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -46,7 +45,8 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.naming.NamingException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,9 +100,9 @@ public class SortedQueueTest extends JmsTestBase
             for (String value : VALUES_SORTED)
             {
                 Message received = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message is not received", received);
-                assertEquals("Received message with unexpected sorted key value", value,
-                             received.getStringProperty(TEST_SORT_KEY));
+                assertNotNull(received, "Message is not received");
+                assertEquals(value, received.getStringProperty(TEST_SORT_KEY),
+                        "Received message with unexpected sorted key value");
             }
         }
         finally
@@ -143,9 +143,9 @@ public class SortedQueueTest extends JmsTestBase
             consumer.setMessageListener(listener);
             consumerConnection.start();
             sendMessages(queue);
-            assertTrue("Messages were not received during expected time",
-                       receiveLatch.await(getReceiveTimeout() * NUMBER_OF_MESSAGES, TimeUnit.MILLISECONDS));
-            assertNull("Unexpected exception in message listener", listener.getException());
+            assertTrue(receiveLatch.await(getReceiveTimeout() * NUMBER_OF_MESSAGES, TimeUnit.MILLISECONDS),
+                    "Messages were not received during expected time");
+            assertNull(listener.getException(), "Unexpected exception in message listener");
 
             // make sure that all received messages are acknowledged before closing the session/connection
             // otherwise session close can timeout for auto-ack
@@ -190,8 +190,8 @@ public class SortedQueueTest extends JmsTestBase
             {
                 producerConnection.close();
             }
-            assertTrue("Messages were not received during expected time",
-                       receiveLatch.await(getReceiveTimeout() * NUMBER_OF_MESSAGES, TimeUnit.MILLISECONDS));
+            assertTrue(receiveLatch.await(getReceiveTimeout() * NUMBER_OF_MESSAGES, TimeUnit.MILLISECONDS),
+                    "Messages were not received during expected time");
         }
         finally
         {
@@ -235,15 +235,15 @@ public class SortedQueueTest extends JmsTestBase
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
                 final Message received = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message is not received", received);
-                assertEquals("Received message with unexpected sorted key value", "samesortkeyvalue",
-                             received.getStringProperty(TEST_SORT_KEY));
-                assertEquals("Received message with unexpected message value", "Message Text:" + i,
-                             ((TextMessage) received).getText());
+                assertNotNull(received, "Message is not received");
+                assertEquals("samesortkeyvalue", received.getStringProperty(TEST_SORT_KEY),
+                        "Received message with unexpected sorted key value");
+                assertEquals("Message Text:" + i, ((TextMessage) received).getText(),
+                        "Received message with unexpected message value");
             }
 
             Message received = consumer.receive(getReceiveTimeout() / 4);
-            assertNull("Unexpected message received", received);
+            assertNull(received, "Unexpected message received");
         }
         finally
         {
@@ -290,13 +290,13 @@ public class SortedQueueTest extends JmsTestBase
             for (int i = 0; i < messageNumber; i++)
             {
                 final Message received = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message is not received", received);
-                assertEquals("Received message with unexpected sorted key value", SUBSET_KEYS[i / 10],
-                             received.getStringProperty(TEST_SORT_KEY));
+                assertNotNull(received, "Message is not received");
+                assertEquals(SUBSET_KEYS[i / 10], received.getStringProperty(TEST_SORT_KEY),
+                        "Received message with unexpected sorted key value");
             }
 
             Message received = consumer.receive(getReceiveTimeout() / 4);
-            assertNull("Unexpected message received", received);
+            assertNull(received, "Unexpected message received");
         }
         finally
         {
@@ -417,8 +417,8 @@ public class SortedQueueTest extends JmsTestBase
             throws Exception
     {
         final Message received = assertReceiveMessage(consumer);
-        assertEquals("Received message with unexpected sorted key value", expectedKey,
-                     received.getStringProperty(TEST_SORT_KEY));
+        assertEquals(expectedKey, received.getStringProperty(TEST_SORT_KEY),
+                "Received message with unexpected sorted key value");
         return received;
     }
 
@@ -426,7 +426,7 @@ public class SortedQueueTest extends JmsTestBase
             throws JMSException
     {
         final Message received = consumer.receive(getReceiveTimeout());
-        assertNotNull("Received message is unexpectedly null", received);
+        assertNotNull(received, "Received message is unexpectedly null");
         return received;
     }
 

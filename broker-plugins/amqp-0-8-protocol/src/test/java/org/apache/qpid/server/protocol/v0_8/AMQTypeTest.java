@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -52,7 +52,7 @@ public class AMQTypeTest extends UnitTestBase
         buf.flip();
 
         T read = (T) AMQTypedValue.readFromBuffer(buf).getValue();
-        assertEquals("Unexpected round trip value", value, read);
+        assertEquals(value, read, "Unexpected round trip value");
         buf.dispose();
     }
 }

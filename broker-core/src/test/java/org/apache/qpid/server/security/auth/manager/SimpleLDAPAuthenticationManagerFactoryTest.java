@@ -19,20 +19,19 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -45,57 +44,55 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class SimpleLDAPAuthenticationManagerFactoryTest extends UnitTestBase
 {
     private final ConfiguredObjectFactory _factory = BrokerModel.getInstance().getObjectFactory();
-    private final Map<String, Object> _configuration = new HashMap<String, Object>();
-    private final Broker _broker = BrokerTestHelper.createBrokerMock();
+    private final Map<String, Object> _configuration = new HashMap<>();
+    private final Broker<?> _broker = BrokerTestHelper.createBrokerMock();
+    private final TrustStore<?> _trustStore = mock(TrustStore.class);
 
-    private final TrustStore _trustStore = mock(TrustStore.class);
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
         when(_trustStore.getName()).thenReturn("mytruststore");
-        when(_trustStore.getId()).thenReturn(UUID.randomUUID());
+        when(_trustStore.getId()).thenReturn(randomUUID());
+        _configuration.clear();
+        _configuration.put(AuthenticationProvider.ID, randomUUID());
+        _configuration.put(AuthenticationProvider.NAME, getClass().getName());
+    }
 
-        _configuration.put(AuthenticationProvider.ID, UUID.randomUUID());
-        _configuration.put(AuthenticationProvider.NAME, getTestName());
+    @AfterAll
+    public void tearDown()
+    {
+        when(_broker.getChildren(eq(TrustStore.class))).thenReturn(List.of());
     }
 
     @Test
-    public void testLdapCreated() throws Exception
+    @SuppressWarnings("unchecked")
+    public void testLdapCreated()
     {
         _configuration.put(AuthenticationProvider.TYPE, SimpleLDAPAuthenticationManager.PROVIDER_TYPE);
         _configuration.put("providerUrl", "ldaps://example.com:636/");
         _configuration.put("searchContext", "dc=example");
         _configuration.put("searchFilter", "(uid={0})");
         _configuration.put("ldapContextFactory", TestLdapDirectoryContext.class.getName());
-
         _factory.create(AuthenticationProvider.class, _configuration, _broker);
     }
 
     @Test
-    public void testLdapsWhenTrustStoreNotFound() throws Exception
+    @SuppressWarnings("unchecked")
+    public void testLdapsWhenTrustStoreNotFound()
     {
-        when(_broker.getChildren(eq(TrustStore.class))).thenReturn(Collections.singletonList(_trustStore));
-
+        when(_broker.getChildren(eq(TrustStore.class))).thenReturn(List.of(_trustStore));
         _configuration.put(AuthenticationProvider.TYPE, SimpleLDAPAuthenticationManager.PROVIDER_TYPE);
         _configuration.put("providerUrl", "ldaps://example.com:636/");
         _configuration.put("searchContext", "dc=example");
         _configuration.put("searchFilter", "(uid={0})");
         _configuration.put("trustStore", "notfound");
 
-        try
-        {
-            _factory.create(AuthenticationProvider.class, _configuration, _broker);
-            fail("Exception not thrown");
-        }
-        catch(IllegalArgumentException e)
-        {
-            // PASS
-            assertTrue("Message does not include underlying issue ", e.getMessage().contains("name 'notfound'"));
-            assertTrue("Message does not include the attribute name", e.getMessage().contains("trustStore"));
-            assertTrue("Message does not include the expected type", e.getMessage().contains("TrustStore"));
-        }
-    }
+        final IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> _factory.create(AuthenticationProvider.class, _configuration, _broker),
+                "Exception not thrown");
 
+        assertTrue(thrown.getMessage().contains("name 'notfound'"), "Message does not include underlying issue ");
+        assertTrue(thrown.getMessage().contains("trustStore"), "Message does not include the attribute name");
+        assertTrue(thrown.getMessage().contains("TrustStore"), "Message does not include the expected type");
+    }
 }

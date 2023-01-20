@@ -20,14 +20,14 @@
  */
 package org.apache.qpid.server.query.engine.parsing.factory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContext;
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContextHolder;
@@ -42,7 +42,7 @@ import org.apache.qpid.server.query.engine.parsing.expression.literal.NullLitera
  */
 public class UnaryExpressionFactoryTest
 {
-    @Before()
+    @BeforeEach()
     public void setUp()
     {
         EvaluationContext ctx = EvaluationContextHolder.getEvaluationContext();

@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -36,8 +36,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.MessageInstance;
@@ -73,7 +73,7 @@ public class ConsumerTarget_1_0Test extends UnitTestBase
     private ConsumerTarget_1_0 _consumerTarget;
     private SendingLinkEndpoint _sendingLinkEndpoint;
 
-    @Before
+    @BeforeAll
     public void setUp() throws Exception
     {
         final AMQPConnection_1_0 connection = mock(AMQPConnection_1_0.class);
@@ -134,9 +134,9 @@ public class ConsumerTarget_1_0Test extends UnitTestBase
             }
         }
 
-        assertNotNull("Header is not found", sentHeader);
-        assertNotNull("Ttl is not set", sentHeader.getTtl());
-        assertTrue("Unexpected ttl", sentHeader.getTtl().longValue() <= 1000);
+        assertNotNull(sentHeader, "Header is not found");
+        assertNotNull(sentHeader.getTtl(), "Ttl is not set");
+        assertTrue(sentHeader.getTtl().longValue() <= 1000, "Unexpected ttl");
     }
 
     private Message_1_0 createTestMessage(final Header header, long arrivalTime)

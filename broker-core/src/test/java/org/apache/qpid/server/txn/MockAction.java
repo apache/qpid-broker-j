@@ -33,7 +33,7 @@ class MockAction implements ServerTransaction.EnqueueAction, ServerTransaction.A
     private boolean _postCommitFired = false;
 
     @Override
-    public void postCommit(MessageEnqueueRecord... records)
+    public void postCommit(final MessageEnqueueRecord... records)
     {
         _postCommitFired = true;
     }

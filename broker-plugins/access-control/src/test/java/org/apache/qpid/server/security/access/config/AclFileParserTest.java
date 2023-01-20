@@ -18,9 +18,9 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -32,7 +32,8 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.nio.CharBuffer;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.Mockito;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -270,20 +271,20 @@ public class AclFileParserTest extends UnitTestBase
     public void testValidConfig() throws Exception
     {
         RuleSet ruleSet = writeACLConfig("CONFIG defaultdefer=true");
-        assertEquals("Unexpected number of rules", 0, ruleSet.size());
-        assertEquals("Unexpected default outcome", Result.DEFER, ruleSet.getDefault());
+        assertEquals(0, ruleSet.size(), "Unexpected number of rules");
+        assertEquals(Result.DEFER, ruleSet.getDefault(), "Unexpected default outcome");
 
         ruleSet = writeACLConfig("CONFIG defaultdeny=true");
-        assertEquals("Unexpected number of rules", 0, ruleSet.size());
-        assertEquals("Unexpected default outcome", Result.DENIED, ruleSet.getDefault());
+        assertEquals(0, ruleSet.size(), "Unexpected number of rules");
+        assertEquals(Result.DENIED, ruleSet.getDefault(), "Unexpected default outcome");
 
         ruleSet = writeACLConfig("CONFIG defaultallow=true");
-        assertEquals("Unexpected number of rules", 0, ruleSet.size());
-        assertEquals("Unexpected default outcome", Result.ALLOWED, ruleSet.getDefault());
+        assertEquals(0, ruleSet.size(), "Unexpected number of rules");
+        assertEquals(Result.ALLOWED, ruleSet.getDefault(), "Unexpected default outcome");
 
         ruleSet = writeACLConfig("CONFIG defaultdefer=false defaultallow=true defaultdeny=false df=false");
-        assertEquals("Unexpected number of rules", 0, ruleSet.size());
-        assertEquals("Unexpected default outcome", Result.ALLOWED, ruleSet.getDefault());
+        assertEquals(0, ruleSet.size(), "Unexpected number of rules");
+        assertEquals(Result.ALLOWED, ruleSet.getDefault(), "Unexpected default outcome");
     }
 
     /**
@@ -296,10 +297,10 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals(1, rules.size());
 
         final Rule rule = rules.get(0);
-        assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", LegacyOperation.ACCESS, rule.getOperation());
-        assertEquals("Rule has unexpected object type", ObjectType.VIRTUALHOST, rule.getObjectType());
-        assertEquals("Rule has unexpected predicates", EMPTY, rule.getPredicates());
+        assertEquals("user1", rule.getIdentity(), "Rule has unexpected identity");
+        assertEquals(LegacyOperation.ACCESS, rule.getOperation(), "Rule has unexpected operation");
+        assertEquals(ObjectType.VIRTUALHOST, rule.getObjectType(), "Rule has unexpected object type");
+        assertEquals(EMPTY, rule.getPredicates(), "Rule has unexpected predicates");
     }
 
     /**
@@ -312,14 +313,14 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals(1, rules.size());
 
         final Rule rule = rules.get(0);
-        assertEquals("Rule has unexpected identity", "all", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", LegacyOperation.CREATE, rule.getOperation());
-        assertEquals("Rule has unexpected object type", ObjectType.EXCHANGE, rule.getObjectType());
+        assertEquals("all", rule.getIdentity(), "Rule has unexpected identity");
+        assertEquals(LegacyOperation.CREATE, rule.getOperation(), "Rule has unexpected operation");
+        assertEquals(ObjectType.EXCHANGE, rule.getObjectType(), "Rule has unexpected object type");
         final AclRulePredicates expectedPredicates =
                 new AclRulePredicatesBuilder()
                         .put(Property.NAME, "value")
                         .build();
-        assertEquals("Rule has unexpected predicates", expectedPredicates, rule.getPredicates());
+        assertEquals(expectedPredicates, rule.getPredicates(), "Rule has unexpected predicates");
     }
 
     /**
@@ -332,14 +333,14 @@ public class AclFileParserTest extends UnitTestBase
 
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
-        assertEquals("Rule has unexpected identity", "all", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", LegacyOperation.CREATE, rule.getOperation());
-        assertEquals("Rule has unexpected object type", ObjectType.EXCHANGE, rule.getObjectType());
+        assertEquals("all", rule.getIdentity(), "Rule has unexpected identity");
+        assertEquals(LegacyOperation.CREATE, rule.getOperation(), "Rule has unexpected operation");
+        assertEquals(ObjectType.EXCHANGE, rule.getObjectType(), "Rule has unexpected object type");
         final AclRulePredicates expectedPredicates =
                 new AclRulePredicatesBuilder()
                         .put(Property.NAME, "value")
                         .build();
-        assertEquals("Rule has unexpected predicates", expectedPredicates, rule.getPredicates());
+        assertEquals(expectedPredicates, rule.getPredicates(), "Rule has unexpected predicates");
     }
 
     /**
@@ -352,15 +353,15 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals(1, rules.size());
 
         final Rule rule = rules.get(0);
-        assertEquals("Rule has unexpected identity", "admin", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", LegacyOperation.DELETE, rule.getOperation());
-        assertEquals("Rule has unexpected object type", ObjectType.QUEUE, rule.getObjectType());
+        assertEquals("admin", rule.getIdentity(), "Rule has unexpected identity");
+        assertEquals(LegacyOperation.DELETE, rule.getOperation(), "Rule has unexpected operation");
+        assertEquals(ObjectType.QUEUE, rule.getObjectType(), "Rule has unexpected object type");
         final AclRulePredicates expectedPredicates =
                 new AclRulePredicatesBuilder()
                         .put(Property.NAME, "name1")
                         .put(Property.OWNER, "owner1")
                         .build();
-        assertEquals("Rule has unexpected operation", expectedPredicates, rule.getPredicates());
+        assertEquals(expectedPredicates, rule.getPredicates(), "Rule has unexpected operation");
     }
 
     /**
@@ -376,28 +377,28 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals(3, rules.size());
 
         final Rule rule1 = rules.get(0);
-        assertEquals("Rule has unexpected identity", "all", rule1.getIdentity());
-        assertEquals("Rule has unexpected operation", LegacyOperation.CREATE, rule1.getOperation());
-        assertEquals("Rule has object type", ObjectType.EXCHANGE, rule1.getObjectType());
+        assertEquals("all", rule1.getIdentity(), "Rule has unexpected identity");
+        assertEquals(LegacyOperation.CREATE, rule1.getOperation(), "Rule has unexpected operation");
+        assertEquals(ObjectType.EXCHANGE, rule1.getObjectType(), "Rule has object type");
         final AclRulePredicates expectedPredicates1 =
                 new AclRulePredicatesBuilder()
                         .put(Property.ROUTING_KEY, "news.#")
                         .build();
-        assertEquals("Rule has unexpected predicates", expectedPredicates1, rule1.getPredicates());
+        assertEquals(expectedPredicates1, rule1.getPredicates(), "Rule has unexpected predicates");
 
         final Rule rule2 = rules.get(1);
         final AclRulePredicates expectedPredicates2 =
                 new AclRulePredicatesBuilder()
                         .put(Property.ROUTING_KEY, "news.co.#")
                         .build();
-        assertEquals("Rule has unexpected predicates", expectedPredicates2, rule2.getPredicates());
+        assertEquals(expectedPredicates2, rule2.getPredicates(), "Rule has unexpected predicates");
 
         final Rule rule3 = rules.get(2);
         final AclRulePredicates expectedPredicates3 =
                 new AclRulePredicatesBuilder()
                         .put(Property.ROUTING_KEY, "*.co.medellin")
                         .build();
-        assertEquals("Rule has unexpected predicates", expectedPredicates3, rule3.getPredicates());
+        assertEquals(expectedPredicates3, rule3.getPredicates(), "Rule has unexpected predicates");
     }
 
     @Test
@@ -413,21 +414,21 @@ public class AclFileParserTest extends UnitTestBase
                 new AclRulePredicatesBuilder()
                         .put(Property.ROUTING_KEY, "*.co.medellin")
                         .build();
-        assertEquals("Rule has unexpected predicates", expectedPredicates1, rule1.getPredicates());
+        assertEquals(expectedPredicates1, rule1.getPredicates(), "Rule has unexpected predicates");
 
         final Rule rule3 = rules.get(1);
         final AclRulePredicates expectedPredicates3 =
                 new AclRulePredicatesBuilder()
                         .put(Property.ROUTING_KEY, "news.co.#")
                         .build();
-        assertEquals("Rule has unexpected predicates", expectedPredicates3, rule3.getPredicates());
+        assertEquals(expectedPredicates3, rule3.getPredicates(), "Rule has unexpected predicates");
 
         final Rule rule5 = rules.get(2);
-        assertEquals("Rule has unexpected identity", "all", rule5.getIdentity());
-        assertEquals("Rule has unexpected operation", LegacyOperation.CREATE, rule5.getOperation());
-        assertEquals("Rule has unexpected object type", ObjectType.EXCHANGE, rule5.getObjectType());
+        assertEquals("all", rule5.getIdentity(), "Rule has unexpected identity");
+        assertEquals(LegacyOperation.CREATE, rule5.getOperation(), "Rule has unexpected operation");
+        assertEquals(ObjectType.EXCHANGE, rule5.getObjectType(), "Rule has unexpected object type");
         final AclRulePredicates expectedPredicates5 = new AclRulePredicatesBuilder().build();
-        assertEquals("Rule has unexpected predicates", expectedPredicates5, rule5.getPredicates());
+        assertEquals(expectedPredicates5, rule5.getPredicates(), "Rule has unexpected predicates");
     }
 
     @Test
@@ -464,14 +465,14 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals(1, rules.size());
 
         final Rule rule = rules.get(0);
-        assertEquals("Rule has unexpected identity", "User1", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", LegacyOperation.BIND, rule.getOperation());
-        assertEquals("Rule has unexpected object type", ObjectType.EXCHANGE, rule.getObjectType());
+        assertEquals("User1", rule.getIdentity(), "Rule has unexpected identity");
+        assertEquals(LegacyOperation.BIND, rule.getOperation(), "Rule has unexpected operation");
+        assertEquals(ObjectType.EXCHANGE, rule.getObjectType(), "Rule has unexpected object type");
         final AclRulePredicates expectedPredicates =
                 new AclRulePredicatesBuilder()
                         .put(Property.NAME, "AmQ.dIrect")
                         .build();
-        assertEquals("Rule has unexpected predicates", expectedPredicates, rule.getPredicates());
+        assertEquals(expectedPredicates, rule.getPredicates(), "Rule has unexpected predicates");
     }
 
     /**
@@ -488,10 +489,10 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals(1, rules.size());
 
         final Rule rule = rules.get(0);
-        assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", LegacyOperation.ACCESS, rule.getOperation());
-        assertEquals("Rule has unexpected object type", ObjectType.VIRTUALHOST, rule.getObjectType());
-        assertEquals("Rule has unexpected predicates", EMPTY, rule.getPredicates());
+        assertEquals("user1", rule.getIdentity(), "Rule has unexpected identity");
+        assertEquals(LegacyOperation.ACCESS, rule.getOperation(), "Rule has unexpected operation");
+        assertEquals(ObjectType.VIRTUALHOST, rule.getObjectType(), "Rule has unexpected object type");
+        assertEquals(EMPTY, rule.getPredicates(), "Rule has unexpected predicates");
     }
 
     /**
@@ -504,10 +505,10 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals(1, rules.size());
 
         final Rule rule = rules.get(0);
-        assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", LegacyOperation.ACCESS, rule.getOperation());
-        assertEquals("Rule has unexpected object type", ObjectType.VIRTUALHOST, rule.getObjectType());
-        assertEquals("Rule has unexpected predicates", EMPTY, rule.getPredicates());
+        assertEquals("user1", rule.getIdentity(), "Rule has unexpected identity");
+        assertEquals(LegacyOperation.ACCESS, rule.getOperation(), "Rule has unexpected operation");
+        assertEquals(ObjectType.VIRTUALHOST, rule.getObjectType(), "Rule has unexpected object type");
+        assertEquals(EMPTY, rule.getPredicates(), "Rule has unexpected predicates");
     }
 
     @Test
@@ -517,10 +518,10 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals(1, rules.size());
 
         final Rule rule = rules.get(0);
-        assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", LegacyOperation.ACCESS, rule.getOperation());
-        assertEquals("Rule has unexpected object type", ObjectType.VIRTUALHOST, rule.getObjectType());
-        assertEquals("Rule has unexpected predicates", EMPTY, rule.getPredicates());
+        assertEquals("user1", rule.getIdentity(), "Rule has unexpected identity");
+        assertEquals(LegacyOperation.ACCESS, rule.getOperation(), "Rule has unexpected operation");
+        assertEquals(ObjectType.VIRTUALHOST, rule.getObjectType(), "Rule has unexpected object type");
+        assertEquals(EMPTY, rule.getPredicates(), "Rule has unexpected predicates");
     }
 
     /**
@@ -534,10 +535,10 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals(1, rules.size());
 
         final Rule rule = rules.get(0);
-        assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", LegacyOperation.ACCESS, rule.getOperation());
-        assertEquals("Rule has unexpected object type", ObjectType.VIRTUALHOST, rule.getObjectType());
-        assertEquals("Rule has unexpected predicates", EMPTY, rule.getPredicates());
+        assertEquals("user1", rule.getIdentity(), "Rule has unexpected identity");
+        assertEquals(LegacyOperation.ACCESS, rule.getOperation(), "Rule has unexpected operation");
+        assertEquals(ObjectType.VIRTUALHOST, rule.getObjectType(), "Rule has unexpected object type");
+        assertEquals(EMPTY, rule.getPredicates(), "Rule has unexpected predicates");
     }
 
     @Test
@@ -706,10 +707,10 @@ public class AclFileParserTest extends UnitTestBase
     {
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
-        assertEquals("Rule has unexpected identity", username, rule.getIdentity());
-        assertEquals("Rule has unexpected operation", operation, rule.getOperation());
-        assertEquals("Rule has unexpected object type", objectType, rule.getObjectType());
-        assertEquals("Rule has unexpected predicates", predicates, rule.getPredicates());
+        assertEquals(username, rule.getIdentity(), "Rule has unexpected identity");
+        assertEquals(operation, rule.getOperation(), "Rule has unexpected operation");
+        assertEquals(objectType, rule.getObjectType(), "Rule has unexpected object type");
+        assertEquals(predicates, rule.getPredicates(), "Rule has unexpected predicates");
     }
 
     @Test

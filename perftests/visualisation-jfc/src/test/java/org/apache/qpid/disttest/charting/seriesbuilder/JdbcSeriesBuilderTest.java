@@ -31,22 +31,10 @@ import java.util.Collections;
 
 import org.apache.qpid.disttest.charting.definition.SeriesDefinition;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class JdbcSeriesBuilderTest extends UnitTestBase
 {
@@ -60,7 +48,7 @@ public class JdbcSeriesBuilderTest extends UnitTestBase
 
     private File _testTempDir;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         when(_seriesWalkerCallback.getNumberOfDimensions()).thenReturn(2);
@@ -69,7 +57,7 @@ public class JdbcSeriesBuilderTest extends UnitTestBase
     }
 
     @Test
-    public void testBuildOneSeries() throws Exception
+    public void testBuildOneSeries()
     {
         SeriesDefinition seriesDefinition = createTestSeriesDefinition();
 
@@ -110,12 +98,11 @@ public class JdbcSeriesBuilderTest extends UnitTestBase
         return definition;
     }
 
-    private File createTestTemporaryDirectory() throws Exception
+    private File createTestTemporaryDirectory()
     {
         File tmpDir = new File(System.getProperty("java.io.tmpdir"), "testdef" + System.nanoTime());
         tmpDir.mkdirs();
         tmpDir.deleteOnExit();
         return tmpDir;
     }
-
 }

@@ -20,19 +20,21 @@
  */
 package org.apache.qpid.server.txn;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
@@ -44,7 +46,6 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.txn.MockStoreTransaction.TransactionState;
 import org.apache.qpid.test.utils.UnitTestBase;
-
 
 /**
  * A unit test ensuring that AutoCommitTransaction creates a separate transaction for
@@ -60,19 +61,16 @@ public class AutoCommitTransactionTest extends UnitTestBase
     private BaseQueue _queue;
     private List<BaseQueue> _queues;
     private Collection<MessageInstance> _queueEntries;
-    private ServerMessage _message;
+    private ServerMessage<?> _message;
     private MockAction _action;
     private MockStoreTransaction _storeTransaction;
 
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
         _storeTransaction = createTestStoreTransaction(false);
         _transactionLog = MockStoreTransaction.createTestTransactionLog(_storeTransaction);
         _action = new MockAction();
-        
         _transaction = new AutoCommitTransaction(_transactionLog);
     }
 
@@ -81,20 +79,20 @@ public class AutoCommitTransactionTest extends UnitTestBase
      * Asserts that a store transaction has not been started and commit action fired.
      */
     @Test
-    public void testEnqueueToNonDurableQueueOfNonPersistentMessage() throws Exception
+    public void testEnqueueToNonDurableQueueOfNonPersistentMessage()
     {
         _message = createTestMessage(false);
         _queue = createTestAMQQueue(false);
         
         _transaction.enqueue(_queue, _message, _action);
 
-        assertEquals("Enqueue of non-persistent message must not cause message to be enqueued",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
+        assertEquals(0, (long) _storeTransaction.getNumberOfEnqueuedMessages(),
+                "Enqueue of non-persistent message must not cause message to be enqueued");
 
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
-        assertFalse("Rollback action must not be fired", _action.isRollbackActionFired());
-        assertTrue("Post commit action must be fired", _action.isPostCommitActionFired());
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(),
+                "Unexpected transaction state");
+        assertFalse(_action.isRollbackActionFired(), "Rollback action must not be fired");
+        assertTrue(_action.isPostCommitActionFired(), "Post commit action must be fired");
     }
 
     /**
@@ -102,19 +100,19 @@ public class AutoCommitTransactionTest extends UnitTestBase
      * Asserts that a store transaction has been committed and commit action fired.
      */
     @Test
-    public void testEnqueueToDurableQueueOfPersistentMessage() throws Exception
+    public void testEnqueueToDurableQueueOfPersistentMessage()
     {
         _message = createTestMessage(true);
         _queue = createTestAMQQueue(true);
         
         _transaction.enqueue(_queue, _message, _action);
 
-        assertEquals("Enqueue of persistent message to durable queue must cause message to be enqueued",
-                            (long) 1,
-                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.COMMITTED, _storeTransaction.getState());
-        assertFalse("Rollback action must not be fired", _action.isRollbackActionFired());
-        assertTrue("Post commit action must be fired", _action.isPostCommitActionFired());
+        assertEquals(1, (long) _storeTransaction.getNumberOfEnqueuedMessages(),
+                "Enqueue of persistent message to durable queue must cause message to be enqueued");
+        assertEquals(TransactionState.COMMITTED, _storeTransaction.getState(),
+                "Unexpected transaction state");
+        assertFalse(_action.isRollbackActionFired(), "Rollback action must not be fired");
+        assertTrue(_action.isPostCommitActionFired(), "Post commit action must be fired");
     }
 
     /**
@@ -122,7 +120,7 @@ public class AutoCommitTransactionTest extends UnitTestBase
      * Asserts that the transaction is aborted and rollback action is fired.
      */
     @Test
-    public void testStoreEnqueueCausesException() throws Exception
+    public void testStoreEnqueueCausesException()
     {
         _message = createTestMessage(true);
         _queue = createTestAMQQueue(true);
@@ -130,20 +128,14 @@ public class AutoCommitTransactionTest extends UnitTestBase
         _storeTransaction = createTestStoreTransaction(true);
         _transactionLog = MockStoreTransaction.createTestTransactionLog(_storeTransaction);
         _transaction = new AutoCommitTransaction(_transactionLog);
-        
-        try
-        {
-            _transaction.enqueue(_queue, _message, _action);
-            fail("Exception not thrown");
-        }
-        catch (RuntimeException re)
-        {
-            // PASS
-        }
 
-        assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
-        assertTrue("Rollback action must be fired", _action.isRollbackActionFired());
-        assertFalse("Post commit action must be fired", _action.isPostCommitActionFired());
+        assertThrows(RuntimeException.class,
+                () -> _transaction.enqueue(_queue, _message, _action),
+                "Exception not thrown");
+
+        assertEquals(TransactionState.ABORTED, _storeTransaction.getState(), "Unexpected transaction state");
+        assertTrue(_action.isRollbackActionFired(), "Rollback action must be fired");
+        assertFalse(_action.isPostCommitActionFired(), "Post commit action must be fired");
     }
     
     /**
@@ -151,19 +143,19 @@ public class AutoCommitTransactionTest extends UnitTestBase
      * Asserts that a store transaction has not been started and post commit action fired.
      */
     @Test
-    public void testEnqueueToManyNonDurableQueuesOfNonPersistentMessage() throws Exception
+    public void testEnqueueToManyNonDurableQueuesOfNonPersistentMessage()
     {
         _message = createTestMessage(false);
         _queues = createTestBaseQueues(new boolean[] {false, false, false});
         
         _transaction.enqueue(_queues, _message, _action);
 
-        assertEquals("Enqueue of non-persistent message must not cause message to be enqueued",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
-        assertFalse("Rollback action must not be fired", _action.isRollbackActionFired());
-        assertTrue("Post commit action must be fired", _action.isPostCommitActionFired());
+        assertEquals(0, (long) _storeTransaction.getNumberOfEnqueuedMessages(),
+                "Enqueue of non-persistent message must not cause message to be enqueued");
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(),
+                "Unexpected transaction state");
+        assertFalse(_action.isRollbackActionFired(), "Rollback action must not be fired");
+        assertTrue(_action.isPostCommitActionFired(), "Post commit action must be fired");
     }
     
     
@@ -173,19 +165,19 @@ public class AutoCommitTransactionTest extends UnitTestBase
      * fired.
      */
     @Test
-    public void testEnqueueToManyNonDurableQueuesOfPersistentMessage() throws Exception
+    public void testEnqueueToManyNonDurableQueuesOfPersistentMessage()
     {
         _message = createTestMessage(true);
         _queues = createTestBaseQueues(new boolean[] {false, false, false});
         
         _transaction.enqueue(_queues, _message, _action);
 
-        assertEquals("Enqueue of persistent message to non-durable queues must not cause message to be enqueued",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfEnqueuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
-        assertFalse("Rollback action must not be fired", _action.isRollbackActionFired());
-        assertTrue("Post commit action must be fired", _action.isPostCommitActionFired());
+        assertEquals(0, (long) _storeTransaction.getNumberOfEnqueuedMessages(),
+                "Enqueue of persistent message to non-durable queues must not cause message to be enqueued");
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(),
+                "Unexpected transaction state");
+        assertFalse(_action.isRollbackActionFired(), "Rollback action must not be fired");
+        assertTrue(_action.isPostCommitActionFired(), "Post commit action must be fired");
     }
 
     /**
@@ -193,20 +185,19 @@ public class AutoCommitTransactionTest extends UnitTestBase
      * Asserts that a store transaction has been committed and post commit action fired.
      */
     @Test
-    public void testEnqueueToDurableAndNonDurableQueuesOfPersistentMessage() throws Exception
+    public void testEnqueueToDurableAndNonDurableQueuesOfPersistentMessage()
     {
         _message = createTestMessage(true);
         _queues = createTestBaseQueues(new boolean[] {false, true, false, true});
         
         _transaction.enqueue(_queues, _message, _action);
 
-        assertEquals(
-                "Enqueue of persistent message to durable/non-durable queues must cause messages to be enqueued",
-                (long) 2,
-                (long) _storeTransaction.getNumberOfEnqueuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.COMMITTED, _storeTransaction.getState());
-        assertFalse("Rollback action must not be fired", _action.isRollbackActionFired());
-        assertTrue("Post commit action must be fired", _action.isPostCommitActionFired());
+        assertEquals(2, (long) _storeTransaction.getNumberOfEnqueuedMessages(),
+                "Enqueue of persistent message to durable/non-durable queues must cause messages to be enqueued");
+        assertEquals(TransactionState.COMMITTED, _storeTransaction.getState(),
+                "Unexpected transaction state");
+        assertFalse(_action.isRollbackActionFired(), "Rollback action must not be fired");
+        assertTrue(_action.isPostCommitActionFired(), "Post commit action must be fired");
     }
 
     /**
@@ -214,7 +205,7 @@ public class AutoCommitTransactionTest extends UnitTestBase
      * Asserts that the transaction is aborted and rollback action fired.
      */
     @Test
-    public void testStoreEnqueuesCausesExceptions() throws Exception
+    public void testStoreEnqueuesCausesExceptions()
     {
         _message = createTestMessage(true);
         _queues = createTestBaseQueues(new boolean[] {true, true});
@@ -222,20 +213,14 @@ public class AutoCommitTransactionTest extends UnitTestBase
         _storeTransaction = createTestStoreTransaction(true);
         _transactionLog = MockStoreTransaction.createTestTransactionLog(_storeTransaction);
         _transaction = new AutoCommitTransaction(_transactionLog);
-        
-        try
-        {
-            _transaction.enqueue(_queues, _message, _action);
-            fail("Exception not thrown");
-        }
-        catch (RuntimeException re)
-        {
-            // PASS
-        }
 
-        assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
-        assertTrue("Rollback action must be fired", _action.isRollbackActionFired());
-        assertFalse("Post commit action must not be fired", _action.isPostCommitActionFired());
+        assertThrows(RuntimeException.class,
+                () -> _transaction.enqueue(_queues, _message, _action),
+                "Exception not thrown");
+
+        assertEquals(TransactionState.ABORTED, _storeTransaction.getState(), "Unexpected transaction state");
+        assertTrue(_action.isRollbackActionFired(), "Rollback action must be fired");
+        assertFalse(_action.isPostCommitActionFired(), "Post commit action must not be fired");
     }
     
     /**
@@ -244,21 +229,20 @@ public class AutoCommitTransactionTest extends UnitTestBase
      * fired.
      */
     @Test
-    public void testDequeueFromNonDurableQueueOfNonPersistentMessage() throws Exception
+    public void testDequeueFromNonDurableQueueOfNonPersistentMessage()
     {
         _message = createTestMessage(false);
         _queue = createTestAMQQueue(false);
         
         _transaction.dequeue((MessageEnqueueRecord)null, _action);
 
-        assertEquals("Dequeue of non-persistent message must not cause message to be dequeued",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfDequeuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
-        assertFalse("Rollback action must not be fired", _action.isRollbackActionFired());
-        assertTrue("Post commit action must be fired", _action.isPostCommitActionFired());
+        assertEquals(0, (long) _storeTransaction.getNumberOfDequeuedMessages(),
+                "Dequeue of non-persistent message must not cause message to be dequeued");
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(),
+                "Unexpected transaction state");
+        assertFalse(_action.isRollbackActionFired(), "Rollback action must not be fired");
+        assertTrue(_action.isPostCommitActionFired(), "Post commit action must be fired");
     }
-
 
     /**
      * Tests the case where the store operation throws an exception.
@@ -266,7 +250,7 @@ public class AutoCommitTransactionTest extends UnitTestBase
      * fired.
      */
     @Test
-    public void testStoreDequeueCausesException() throws Exception
+    public void testStoreDequeueCausesException()
     {
         _message = createTestMessage(true);
         _queue = createTestAMQQueue(true);
@@ -274,21 +258,15 @@ public class AutoCommitTransactionTest extends UnitTestBase
         _storeTransaction = createTestStoreTransaction(true);
         _transactionLog = MockStoreTransaction.createTestTransactionLog(_storeTransaction);
         _transaction = new AutoCommitTransaction(_transactionLog);
-        
-        try
-        {
-            _transaction.dequeue(mock(MessageEnqueueRecord.class), _action);
-            fail("Exception not thrown");
-        }
-        catch (RuntimeException re)
-        {
-            // PASS
-        }
 
-        assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
+        assertThrows(RuntimeException.class,
+                () -> _transaction.dequeue(mock(MessageEnqueueRecord.class), _action),
+                "Exception not thrown");
 
-        assertTrue("Rollback action must be fired", _action.isRollbackActionFired());
-        assertFalse("Post commit action must not be fired", _action.isPostCommitActionFired());
+        assertEquals(TransactionState.ABORTED, _storeTransaction.getState(), "Unexpected transaction state");
+
+        assertTrue(_action.isRollbackActionFired(), "Rollback action must be fired");
+        assertFalse(_action.isPostCommitActionFired(), "Post commit action must not be fired");
     }
 
     /**
@@ -297,40 +275,38 @@ public class AutoCommitTransactionTest extends UnitTestBase
      * fired.
      */
     @Test
-    public void testDequeueFromManyNonDurableQueuesOfNonPersistentMessage() throws Exception
+    public void testDequeueFromManyNonDurableQueuesOfNonPersistentMessage()
     {
         _queueEntries = createTestQueueEntries(new boolean[] {false, false, false}, new boolean[] {false, false, false});
         
         _transaction.dequeue(_queueEntries, _action);
 
-        assertEquals("Dequeue of non-persistent messages must not cause message to be dequeued",
-                            (long) 0,
-                            (long) _storeTransaction.getNumberOfDequeuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
-        assertEquals("Rollback action must not be fired", false, _action.isRollbackActionFired());
-        assertEquals("Post commit action must be fired", true, _action.isPostCommitActionFired());
+        assertEquals(0, (long) _storeTransaction.getNumberOfDequeuedMessages(),
+                "Dequeue of non-persistent messages must not cause message to be dequeued");
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(),
+                "Unexpected transaction state");
+        assertFalse(_action.isRollbackActionFired(), "Rollback action must not be fired");
+        assertTrue(_action.isPostCommitActionFired(), "Post commit action must be fired");
     }
-    
-    
+
     /**
      * Tests the dequeue of a persistent message from a many non durable queues.
      * Asserts that a store transaction has not been started and post commit action
      * fired.
      */
     @Test
-    public void testDequeueFromManyNonDurableQueuesOfPersistentMessage() throws Exception
+    public void testDequeueFromManyNonDurableQueuesOfPersistentMessage()
     {
         _queueEntries = createTestQueueEntries(new boolean[] {false, false, false}, new boolean[] {true, true, true});
         
         _transaction.dequeue(_queueEntries, _action);
 
-        assertEquals(
-                "Dequeue of persistent message from non-durable queues must not cause message to be enqueued",
-                (long) 0,
-                (long) _storeTransaction.getNumberOfDequeuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.NOT_STARTED, _storeTransaction.getState());
-        assertFalse("Rollback action must not be fired", _action.isRollbackActionFired());
-        assertTrue("Post commit action must be fired", _action.isPostCommitActionFired());
+        assertEquals(0, (long) _storeTransaction.getNumberOfDequeuedMessages(),
+                "Dequeue of persistent message from non-durable queues must not cause message to be enqueued");
+        assertEquals(TransactionState.NOT_STARTED, _storeTransaction.getState(),
+                "Unexpected transaction state");
+        assertFalse(_action.isRollbackActionFired(), "Rollback action must not be fired");
+        assertTrue(_action.isPostCommitActionFired(), "Post commit action must be fired");
     }
 
     /**
@@ -338,20 +314,19 @@ public class AutoCommitTransactionTest extends UnitTestBase
      * Asserts that a store transaction has not been started and post commit action fired.
      */
     @Test
-    public void testDequeueFromDurableAndNonDurableQueuesOfPersistentMessage() throws Exception
+    public void testDequeueFromDurableAndNonDurableQueuesOfPersistentMessage()
     {
         // A transaction will exist owing to the 1st and 3rd.
         _queueEntries = createTestQueueEntries(new boolean[] {true, false, true, true}, new boolean[] {true, true, true, false});
         
         _transaction.dequeue(_queueEntries, _action);
 
-        assertEquals(
-                "Dequeue of persistent messages from durable/non-durable queues must cause messages to be dequeued",
-                (long) 2,
-                (long) _storeTransaction.getNumberOfDequeuedMessages());
-        assertEquals("Unexpected transaction state", TransactionState.COMMITTED, _storeTransaction.getState());
-        assertFalse("Rollback action must not be fired", _action.isRollbackActionFired());
-        assertTrue("Post commit action must be fired", _action.isPostCommitActionFired());
+        assertEquals(2, (long) _storeTransaction.getNumberOfDequeuedMessages(),
+                "Dequeue of persistent messages from durable/non-durable queues must cause messages to be dequeued");
+        assertEquals(TransactionState.COMMITTED, _storeTransaction.getState(),
+                "Unexpected transaction state");
+        assertFalse(_action.isRollbackActionFired(), "Rollback action must not be fired");
+        assertTrue(_action.isPostCommitActionFired(), "Post commit action must be fired");
     }
     
     /**
@@ -359,7 +334,7 @@ public class AutoCommitTransactionTest extends UnitTestBase
      * Asserts that the transaction is aborted and post rollback action fired.
      */
     @Test
-    public void testStoreDequeuesCauseExceptions() throws Exception
+    public void testStoreDequeuesCauseExceptions()
     {
         // Transactions will exist owing to the 1st and 3rd queue entries in the collection
         _queueEntries = createTestQueueEntries(new boolean[] {true}, new boolean[] {true});
@@ -367,21 +342,15 @@ public class AutoCommitTransactionTest extends UnitTestBase
         _storeTransaction = createTestStoreTransaction(true);
         _transactionLog = MockStoreTransaction.createTestTransactionLog(_storeTransaction);
         _transaction = new AutoCommitTransaction(_transactionLog);
-        
-        try
-        {
-            _transaction.dequeue(_queueEntries, _action);
-            fail("Exception not thrown");
-        }
-        catch (RuntimeException re)
-        {
-            // PASS
-        }
 
-        assertEquals("Unexpected transaction state", TransactionState.ABORTED, _storeTransaction.getState());
+        assertThrows(RuntimeException.class,
+                () -> _transaction.dequeue(_queueEntries, _action),
+                "Exception not thrown");
 
-        assertTrue("Rollback action must be fired", _action.isRollbackActionFired());
-        assertFalse("Post commit action must not be fired", _action.isPostCommitActionFired());
+        assertEquals(TransactionState.ABORTED, _storeTransaction.getState(), "Unexpected transaction state");
+
+        assertTrue(_action.isRollbackActionFired(), "Rollback action must be fired");
+        assertFalse(_action.isPostCommitActionFired(), "Post commit action must not be fired");
     }
     
     /** 
@@ -389,32 +358,30 @@ public class AutoCommitTransactionTest extends UnitTestBase
      * have no long lived transactions, the post commit action is fired immediately.
      */
     @Test
-    public void testPostCommitActionFiredImmediately() throws Exception
+    public void testPostCommitActionFiredImmediately()
     {
-        
         _transaction.addPostTransactionAction(_action);
-
-        assertTrue("Post commit action must be fired", _action.isPostCommitActionFired());
-        assertFalse("Rollback action must be fired", _action.isRollbackActionFired());
+        assertTrue(_action.isPostCommitActionFired(), "Post commit action must be fired");
+        assertFalse(_action.isRollbackActionFired(), "Rollback action must be fired");
     }
     
-    private Collection<MessageInstance> createTestQueueEntries(boolean[] queueDurableFlags, boolean[] messagePersistentFlags)
+    private Collection<MessageInstance> createTestQueueEntries(final boolean[] queueDurableFlags,
+                                                               final boolean[] messagePersistentFlags)
     {
-        Collection<MessageInstance> queueEntries = new ArrayList<MessageInstance>();
+        final Collection<MessageInstance> queueEntries = new ArrayList<>();
 
-        assertTrue("Boolean arrays must be the same length",
-                          queueDurableFlags.length == messagePersistentFlags.length);
+        assertEquals(queueDurableFlags.length, messagePersistentFlags.length, "Boolean arrays must be the same length");
 
-        for(int i = 0; i < queueDurableFlags.length; i++)
+        for (int i = 0; i < queueDurableFlags.length; i++)
         {
             final BaseQueue queue = createTestAMQQueue(queueDurableFlags[i]);
-            final ServerMessage message = createTestMessage(messagePersistentFlags[i]);
+            final ServerMessage<?> message = createTestMessage(messagePersistentFlags[i]);
             final boolean hasRecord = queueDurableFlags[i] && messagePersistentFlags[i];
             queueEntries.add(new MockMessageInstance()
             {
 
                 @Override
-                public ServerMessage getMessage()
+                public ServerMessage<?> getMessage()
                 {
                     return message;
                 }
@@ -439,36 +406,29 @@ public class AutoCommitTransactionTest extends UnitTestBase
                 }
             });
         }
-        
         return queueEntries;
     }
 
-    private MockStoreTransaction createTestStoreTransaction(boolean throwException)
+    private MockStoreTransaction createTestStoreTransaction(final boolean throwException)
     {
         return new MockStoreTransaction(throwException);
     }
 
-    private List<BaseQueue> createTestBaseQueues(boolean[] durableFlags)
+    private List<BaseQueue> createTestBaseQueues(final boolean[] durableFlags)
     {
-        List<BaseQueue> queues = new ArrayList<BaseQueue>();
-        for (boolean b: durableFlags)
-        {
-            queues.add(createTestAMQQueue(b));
-        }
-        
-        return queues;
+       return IntStream.range(0, durableFlags.length).mapToObj(idx -> durableFlags[idx])
+               .map(this::createTestAMQQueue).collect(Collectors.toList());
     }
 
     private BaseQueue createTestAMQQueue(final boolean durable)
     {
-        BaseQueue queue = mock(BaseQueue.class);
+        final BaseQueue queue = mock(BaseQueue.class);
         when(queue.getMessageDurability()).thenReturn(durable ? MessageDurability.DEFAULT : MessageDurability.NEVER);
         return queue;
     }
 
-    private ServerMessage createTestMessage(final boolean persistent)
+    private ServerMessage<?> createTestMessage(final boolean persistent)
     {
         return new MockServerMessage(persistent);
     }
-    
 }

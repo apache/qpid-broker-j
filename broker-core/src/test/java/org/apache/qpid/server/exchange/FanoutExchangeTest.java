@@ -21,21 +21,20 @@
 package org.apache.qpid.server.exchange;
 
 import static org.apache.qpid.server.filter.AMQPFilterTypes.JMS_SELECTOR;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -56,337 +55,261 @@ public class FanoutExchangeTest extends UnitTestBase
     private InstanceProperties _instanceProperties;
     private ServerMessage<?> _messageWithNoHeaders;
 
-    @Before
+    @BeforeAll
+    public void beforeAll() throws Exception
+    {
+        _vhost = BrokerTestHelper.createVirtualHost(getTestClassName(), this);
+    }
+
+    @BeforeEach
     public void setUp() throws Exception
     {
-
-        BrokerTestHelper.setUp();
-        _vhost = BrokerTestHelper.createVirtualHost(getTestName(), this);
-
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(Exchange.NAME, "test");
-        attributes.put(Exchange.DURABLE, false);
-        attributes.put(Exchange.TYPE, ExchangeDefaults.FANOUT_EXCHANGE_CLASS);
+        final Map<String,Object> attributes = Map.of(Exchange.NAME, "test",
+                Exchange.DURABLE, false,
+                Exchange.TYPE, ExchangeDefaults.FANOUT_EXCHANGE_CLASS);
 
         _exchange = (FanoutExchange<?>) _vhost.createChild(Exchange.class, attributes);
         _exchange.open();
 
         _instanceProperties = mock(InstanceProperties.class);
-        _messageWithNoHeaders = createTestMessage(Collections.emptyMap());
+        _messageWithNoHeaders = createTestMessage(Map.of());
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    public void afterEach()
     {
-        try
-        {
-            if (_vhost != null)
-            {
-                _vhost.close();
-            }
-        }
-        finally
-        {
-            BrokerTestHelper.tearDown();
-        }
+        _exchange.close();
     }
 
     @Test
-    public void testRouteToQueue() throws Exception
+    public void testRouteToQueue()
     {
-        String bindingKey = "mybinding";
-        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
+        final String bindingKey = "mybinding";
+        final Queue<?> queue = _vhost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_queue"));
 
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders, null,
                                                                                        _instanceProperties);
-        assertFalse("Message unexpectedly routed to queue before bind", result.hasRoutes());
+        assertFalse(result.hasRoutes(), "Message unexpectedly routed to queue before bind");
 
-        boolean bind = _exchange.bind(queue.getName(), bindingKey, Collections.emptyMap(), false);
-        assertTrue("Bind operation should be successful", bind);
+        final boolean bind = _exchange.bind(queue.getName(), bindingKey, Map.of(), false);
+        assertTrue(bind, "Bind operation should be successful");
 
         result = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertTrue("Message not routed to queue after bind", result.hasRoutes());
+        assertTrue(result.hasRoutes(), "Message not routed to queue after bind");
 
         boolean unbind = _exchange.unbind(queue.getName(), bindingKey);
-        assertTrue("Unbind operation should be successful", unbind);
+        assertTrue(unbind, "Unbind operation should be successful");
 
         result = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertFalse("Message unexpectedly routed to queue after unbind", result.hasRoutes());
+        assertFalse(result.hasRoutes(), "Message unexpectedly routed to queue after unbind");
     }
 
     @Test
     public void testRouteToQueueWithSelector()
     {
-        String bindingKey = "mybinding";
-
-        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
-
-        InstanceProperties instanceProperties = mock(InstanceProperties.class);
-        ServerMessage<?> matchingMessage = createTestMessage(Collections.singletonMap("prop", true));
-        ServerMessage<?> unmatchingMessage = createTestMessage(Collections.singletonMap("prop", false));
-
-        boolean bind = _exchange.bind(queue.getName(), bindingKey,
-                                      Collections.singletonMap(JMS_SELECTOR.toString(), "prop = True"),
-                                      false);
-        assertTrue("Bind operation should be successful", bind);
+        final String bindingKey = "mybinding";
+        final Queue<?> queue = _vhost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_queue"));
+        final InstanceProperties instanceProperties = mock(InstanceProperties.class);
+        final ServerMessage<?> matchingMessage = createTestMessage(Map.of("prop", true));
+        final ServerMessage<?> unmatchingMessage = createTestMessage(Map.of("prop", false));
+        final boolean bind = _exchange.bind(queue.getName(), bindingKey,
+                Map.of(JMS_SELECTOR.toString(), "prop = True"), false);
+        assertTrue(bind, "Bind operation should be successful");
 
         RoutingResult<ServerMessage<?>> result = _exchange.route(matchingMessage, null, instanceProperties);
-        assertTrue("Message with matching selector not routed to queue", result.hasRoutes());
+        assertTrue(result.hasRoutes(), "Message with matching selector not routed to queue");
 
         result = _exchange.route(unmatchingMessage, null, instanceProperties);
-        assertFalse("Message without matching selector unexpectedly routed to queue", result.hasRoutes());
+        assertFalse(result.hasRoutes(), "Message without matching selector unexpectedly routed to queue");
 
-        boolean unbind = _exchange.unbind(queue.getName(), bindingKey);
-        assertTrue("Unbind operation should be successful", unbind);
+        final boolean unbind = _exchange.unbind(queue.getName(), bindingKey);
+        assertTrue(unbind, "Unbind operation should be successful");
 
         result = _exchange.route(matchingMessage, null, instanceProperties);
-        assertFalse("Message with matching selector unexpectedly routed to queue after unbind",
-                           result.hasRoutes());
+        assertFalse(result.hasRoutes(), "Message with matching selector unexpectedly routed to queue after unbind");
     }
 
     @Test
     public void testRouteToQueueViaTwoExchanges()
     {
-        String bindingKey = "key";
+        final String bindingKey = "key";
+        final Map<String, Object> attributes = Map.of(Exchange.NAME, getTestName(),
+                Exchange.TYPE, ExchangeDefaults.FANOUT_EXCHANGE_CLASS);
+        final Exchange<?> via = _vhost.createChild(Exchange.class, attributes);
+        final Queue<?> queue = _vhost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_queue"));
 
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(Exchange.NAME, getTestName());
-        attributes.put(Exchange.TYPE, ExchangeDefaults.FANOUT_EXCHANGE_CLASS);
+        final boolean exchToViaBind = _exchange.bind(via.getName(), bindingKey, Map.of(), false);
+        assertTrue(exchToViaBind, "Exchange to exchange bind operation should be successful");
 
-        Exchange via = _vhost.createChild(Exchange.class, attributes);
-        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
+        final boolean viaToQueueBind = via.bind(queue.getName(), bindingKey, Map.of(), false);
+        assertTrue(viaToQueueBind, "Exchange to queue bind operation should be successful");
 
-        boolean exchToViaBind = _exchange.bind(via.getName(), bindingKey, Collections.emptyMap(), false);
-        assertTrue("Exchange to exchange bind operation should be successful", exchToViaBind);
-
-        boolean viaToQueueBind = via.bind(queue.getName(), bindingKey, Collections.emptyMap(), false);
-        assertTrue("Exchange to queue bind operation should be successful", viaToQueueBind);
-
-        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
-                                                                                       null,
-                                                                                       _instanceProperties);
-        assertTrue("Message unexpectedly not routed to queue", result.hasRoutes());
+        final RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders, null,
+                _instanceProperties);
+        assertTrue(result.hasRoutes(), "Message unexpectedly not routed to queue");
     }
 
     @Test
     public void testRouteToQueueViaTwoExchangesWithReplacementRoutingKey()
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(Exchange.NAME, getTestName());
-        attributes.put(Exchange.TYPE, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
+        final Map<String, Object> attributes = Map.of(Exchange.NAME, getTestName(),
+                Exchange.TYPE, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
+        final Exchange<?> via = _vhost.createChild(Exchange.class, attributes);
+        final Queue<?> queue = _vhost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_queue"));
+        final boolean exchToViaBind = _exchange.bind(via.getName(),"key",
+                Map.of(Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY, "key1"), false);
+        assertTrue(exchToViaBind, "Exchange to exchange bind operation should be successful");
 
-        Exchange via = _vhost.createChild(Exchange.class, attributes);
-        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
+        final boolean viaToQueueBind = via.bind(queue.getName(), "key1", Map.of(), false);
+        assertTrue(viaToQueueBind, "Exchange to queue bind operation should be successful");
 
-        boolean exchToViaBind = _exchange.bind(via.getName(),
-                                               "key",
-                                               Collections.singletonMap(Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY, "key1"),
-                                               false);
-        assertTrue("Exchange to exchange bind operation should be successful", exchToViaBind);
-
-        boolean viaToQueueBind = via.bind(queue.getName(), "key1", Collections.emptyMap(), false);
-        assertTrue("Exchange to queue bind operation should be successful", viaToQueueBind);
-
-        RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders,
-                                                                                       null,
-                                                                                       _instanceProperties);
-        assertTrue("Message unexpectedly not routed to queue", result.hasRoutes());
+        final RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders, null,
+                _instanceProperties);
+        assertTrue(result.hasRoutes(), "Message unexpectedly not routed to queue");
     }
 
     @Test
     public void testRouteToQueueViaTwoExchangesWithReplacementRoutingKeyAndFiltering()
     {
-        Map<String, Object> viaExchangeArguments = new HashMap<>();
-        viaExchangeArguments.put(Exchange.NAME, getTestName() + "_via_exch");
-        viaExchangeArguments.put(Exchange.TYPE, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
+        final Map<String, Object> viaExchangeArguments = Map.of(Exchange.NAME, getTestName() + "_via_exch",
+                Exchange.TYPE, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
+        final Exchange<?> via = _vhost.createChild(Exchange.class, viaExchangeArguments);
+        final Queue<?> queue = _vhost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_queue"));
+        final Map<String, Object> exchToViaBindArguments = Map.of(Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY, "key2",
+                JMS_SELECTOR.toString(), "prop = True");
+        final boolean exchToViaBind = _exchange.bind(via.getName(), "key1", exchToViaBindArguments, false);
+        assertTrue(exchToViaBind, "Exchange to exchange bind operation should be successful");
 
-        Exchange via = _vhost.createChild(Exchange.class, viaExchangeArguments);
-        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
+        final boolean viaToQueueBind = via.bind(queue.getName(), "key2", Map.of(), false);
+        assertTrue(viaToQueueBind, "Exchange to queue bind operation should be successful");
 
+        RoutingResult<ServerMessage<?>> result = _exchange.route(createTestMessage(Map.of("prop", true)),
+                "key1", _instanceProperties);
+        assertTrue(result.hasRoutes(), "Message unexpectedly not routed to queue");
 
-        Map<String, Object> exchToViaBindArguments = new HashMap<>();
-        exchToViaBindArguments.put(Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY, "key2");
-        exchToViaBindArguments.put(JMS_SELECTOR.toString(), "prop = True");
-
-        boolean exchToViaBind = _exchange.bind(via.getName(),
-                                               "key1",
-                                               exchToViaBindArguments,
-                                               false);
-        assertTrue("Exchange to exchange bind operation should be successful", exchToViaBind);
-
-        boolean viaToQueueBind = via.bind(queue.getName(), "key2", Collections.emptyMap(), false);
-        assertTrue("Exchange to queue bind operation should be successful", viaToQueueBind);
-
-        RoutingResult<ServerMessage<?>> result = _exchange.route(createTestMessage(Collections.singletonMap("prop", true)),
-                                                                                       "key1",
-                                                                                       _instanceProperties);
-        assertTrue("Message unexpectedly not routed to queue", result.hasRoutes());
-
-        result = _exchange.route(createTestMessage(Collections.singletonMap("prop", false)),
-                                 "key1",
-                                 _instanceProperties);
-        assertFalse("Message unexpectedly routed to queue", result.hasRoutes());
+        result = _exchange.route(createTestMessage(Map.of("prop", false)), "key1", _instanceProperties);
+        assertFalse(result.hasRoutes(), "Message unexpectedly routed to queue");
     }
 
     @Test
     public void testRouteToMultipleQueue()
     {
-        String bindingKey = "key";
-        Queue<?> queue1 = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue1"));
-        Queue<?> queue2 = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue2"));
-
-        boolean bind1 = _exchange.bind(queue1.getName(), bindingKey, Collections.emptyMap(), false);
-        assertTrue("Bind operation to queue1 should be successful", bind1);
+        final String bindingKey = "key";
+        final Queue<?> queue1 = _vhost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_queue1"));
+        final Queue<?> queue2 = _vhost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_queue2"));
+        final boolean bind1 = _exchange.bind(queue1.getName(), bindingKey, Map.of(), false);
+        assertTrue(bind1, "Bind operation to queue1 should be successful");
 
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 1,
-                            (long) result.getNumberOfRoutes());
+        assertEquals(1, (long) result.getNumberOfRoutes(), "Message routed to unexpected number of queues");
 
-        _exchange.bind(queue2.getName(), bindingKey, Collections.singletonMap(JMS_SELECTOR.toString(), "prop is null"), false);
+        _exchange.bind(queue2.getName(), bindingKey, Map.of(JMS_SELECTOR.toString(), "prop is null"), false);
 
         result = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 2,
-                            (long) result.getNumberOfRoutes());
+        assertEquals(2, (long) result.getNumberOfRoutes(), "Message routed to unexpected number of queues");
 
         _exchange.unbind(queue1.getName(), bindingKey);
 
         result = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 1,
-                            (long) result.getNumberOfRoutes());
+        assertEquals(1, (long) result.getNumberOfRoutes(), "Message routed to unexpected number of queues");
 
         _exchange.unbind(queue2.getName(), bindingKey);
         result = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 0,
-                            (long) result.getNumberOfRoutes());
+        assertEquals(0, (long) result.getNumberOfRoutes(), "Message routed to unexpected number of queues");
     }
 
     @Test
     public void testRouteToQueueBoundMultipleTimesUsingTheSameBindingKey()
     {
-        String bindingKey = "key";
-        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
-
-        boolean bind1 = _exchange.bind(queue.getName(), bindingKey, Collections.emptyMap(), false);
-        assertTrue("Bind operation to queue1 should be successful", bind1);
+        final String bindingKey = "key";
+        final Queue<?> queue = _vhost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_queue"));
+        final boolean bind1 = _exchange.bind(queue.getName(), bindingKey, Map.of(), false);
+        assertTrue(bind1, "Bind operation to queue1 should be successful");
 
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 1,
-                            (long) result.getNumberOfRoutes());
+        assertEquals(1, (long) result.getNumberOfRoutes(), "Message routed to unexpected number of queues");
 
-        boolean bind2 = _exchange.bind(queue.getName(), bindingKey, Collections.emptyMap(), true);
-        assertTrue("Bind operation to queue1 should be successful", bind2);
+        final boolean bind2 = _exchange.bind(queue.getName(), bindingKey, Map.of(), true);
+        assertTrue(bind2, "Bind operation to queue1 should be successful");
 
         RoutingResult<ServerMessage<?>> result2 = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 1,
-                            (long) result2.getNumberOfRoutes());
-
+        assertEquals(1, (long) result2.getNumberOfRoutes(), "Message routed to unexpected number of queues");
 
         _exchange.unbind(queue.getName(), bindingKey);
         result = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 0,
-                            (long) result.getNumberOfRoutes());
+        assertEquals(0, (long) result.getNumberOfRoutes(), "Message routed to unexpected number of queues");
     }
 
     @Test
     public void testRouteToQueueBoundMultipleTimesUsingDifferentBindingKeys()
     {
-        String bindingKey1 = "key1";
-        String bindingKey2 = "key2";
-        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() +
-                                                                                              "_queue"));
-
-        boolean bind1 = _exchange.bind(queue.getName(), bindingKey1, Collections.emptyMap(), false);
-        assertTrue("Bind operation to queue1 should be successful", bind1);
+        final String bindingKey1 = "key1";
+        final String bindingKey2 = "key2";
+        final Queue<?> queue = _vhost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_queue"));
+        final boolean bind1 = _exchange.bind(queue.getName(), bindingKey1, Map.of(), false);
+        assertTrue(bind1, "Bind operation to queue1 should be successful");
 
         RoutingResult<ServerMessage<?>> result = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 1,
-                            (long) result.getNumberOfRoutes());
+        assertEquals(1, (long) result.getNumberOfRoutes(), "Message routed to unexpected number of queues");
 
-        boolean bind2 = _exchange.bind(queue.getName(), bindingKey2, Collections.emptyMap(), true);
-        assertTrue("Bind operation to queue1 should be successful", bind2);
+        final boolean bind2 = _exchange.bind(queue.getName(), bindingKey2, Map.of(), true);
+        assertTrue(bind2, "Bind operation to queue1 should be successful");
 
         RoutingResult<ServerMessage<?>> result2 = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues", (long) 1, (long) result2.getNumberOfRoutes
-                ());
+        assertEquals(1, (long) result2.getNumberOfRoutes(), "Message routed to unexpected number of queues");
 
         _exchange.unbind(queue.getName(), bindingKey1);
         result = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 1,
-                            (long) result.getNumberOfRoutes());
+        assertEquals(1, (long) result.getNumberOfRoutes(), "Message routed to unexpected number of queues");
 
         _exchange.unbind(queue.getName(), bindingKey2);
         result = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 0,
-                            (long) result.getNumberOfRoutes());
+        assertEquals(0, (long) result.getNumberOfRoutes(), "Message routed to unexpected number of queues");
     }
 
     @Test
     public void testRouteToQueueBoundMultipleTimesUsingFilteredAndUnfilteredBindings()
     {
-        String bindingKey1 = "key1";
-        String bindingKey2 = "key2";
-        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
+        final String bindingKey1 = "key1";
+        final String bindingKey2 = "key2";
+        final Queue<?> queue = _vhost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_queue"));
+        final Map<String, Object> argumentsWithFilter = Map.of(JMS_SELECTOR.toString(), "prop = True");
+        final boolean bind1 = _exchange.bind(queue.getName(), bindingKey1, argumentsWithFilter, false);
+        assertTrue(bind1, "Bind operation to queue1 should be successful");
 
-        Map<String, Object> argumentsWithFilter = Collections.singletonMap(JMS_SELECTOR.toString(), "prop = True");
-        boolean bind1 = _exchange.bind(queue.getName(), bindingKey1,
-                                       argumentsWithFilter, false);
-        assertTrue("Bind operation to queue1 should be successful", bind1);
-
-        final ServerMessage<?> messageMatchingSelector =
-                createTestMessage(Collections.singletonMap("prop", true));
+        final ServerMessage<?> messageMatchingSelector = createTestMessage(Map.of("prop", true));
         RoutingResult<ServerMessage<?>> result = _exchange.route(messageMatchingSelector, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 1,
-                            (long) result.getNumberOfRoutes());
+        assertEquals(1, (long) result.getNumberOfRoutes(), "Message routed to unexpected number of queues");
 
-        boolean bind2 = _exchange.bind(queue.getName(), bindingKey2, Collections.emptyMap(), true);
-        assertTrue("Bind operation to queue1 should be successful", bind2);
+        final boolean bind2 = _exchange.bind(queue.getName(), bindingKey2, Map.of(), true);
+        assertTrue(bind2, "Bind operation to queue1 should be successful");
 
         RoutingResult<ServerMessage<?>> result2 = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 1,
-                            (long) result2.getNumberOfRoutes());
+        assertEquals(1, (long) result2.getNumberOfRoutes(), "Message routed to unexpected number of queues");
 
         _exchange.unbind(queue.getName(), bindingKey2);
         result = _exchange.route(_messageWithNoHeaders, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 0,
-                            (long) result.getNumberOfRoutes());
+        assertEquals(0, (long) result.getNumberOfRoutes(), "Message routed to unexpected number of queues");
 
         result = _exchange.route(messageMatchingSelector, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 1,
-                            (long) result.getNumberOfRoutes());
+        assertEquals(1, (long) result.getNumberOfRoutes(), "Message routed to unexpected number of queues");
 
         _exchange.unbind(queue.getName(), bindingKey1);
         result = _exchange.route(messageMatchingSelector, null, _instanceProperties);
-        assertEquals("Message routed to unexpected number of queues",
-                            (long) 0,
-                            (long) result.getNumberOfRoutes());
+        assertEquals(0, (long) result.getNumberOfRoutes(), "Message routed to unexpected number of queues");
     }
 
     @Test
     public void testIsBound()
     {
-        String boundKey = "key";
-        Queue<?> queue = _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName() + "_queue"));
-
+        final String boundKey = "key";
+        final Queue<?> queue = _vhost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_queue"));
 
         assertFalse(_exchange.isBound(boundKey));
         assertFalse(_exchange.isBound(boundKey, queue));
         assertFalse(_exchange.isBound(queue));
 
-        _exchange.bind(queue.getName(), boundKey, Collections.emptyMap(), false);
+        _exchange.bind(queue.getName(), boundKey, Map.of(), false);
 
         assertTrue(_exchange.isBound(boundKey));
         assertTrue(_exchange.isBound(boundKey, queue));
@@ -403,65 +326,51 @@ public class FanoutExchangeTest extends UnitTestBase
     public void testBindWithInvalidSelector()
     {
         final String queueName = getTestName() + "_queue";
-        _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, queueName));
+        _vhost.createChild(Queue.class, Map.of(Queue.NAME, queueName));
 
-        final Map<String, Object> bindArguments = Collections.singletonMap(JMS_SELECTOR.toString(), "foo in (");
+        final Map<String, Object> bindArguments = Map.of(JMS_SELECTOR.toString(), "foo in (");
 
-        try
-        {
-            _exchange.bind(queueName, "", bindArguments, false);
-            fail("Queue can be bound when invalid selector expression is supplied as part of bind arguments");
-        }
-        catch (IllegalArgumentException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> _exchange.bind(queueName, "", bindArguments, false),
+                "Queue can be bound when invalid selector expression is supplied as part of bind arguments");
 
-        final ServerMessage<?> testMessage = createTestMessage(Collections.singletonMap("foo", "bar"));
+        final ServerMessage<?> testMessage = createTestMessage(Map.of("foo", "bar"));
         final RoutingResult<ServerMessage<?>> result = _exchange.route(testMessage, queueName, _instanceProperties);
 
-        assertFalse("Message is unexpectedly routed to queue", result.hasRoutes());
+        assertFalse(result.hasRoutes(), "Message is unexpectedly routed to queue");
     }
 
     @Test
     public void testBindWithInvalidSelectorWhenBindingExists()
     {
         final String queueName = getTestName() + "_queue";
-        _vhost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, queueName));
+        _vhost.createChild(Queue.class, Map.of(Queue.NAME, queueName));
 
-        final Map<String, Object> bindArguments = Collections.singletonMap(JMS_SELECTOR.toString(), "foo in ('bar')");
+        final Map<String, Object> bindArguments = Map.of(JMS_SELECTOR.toString(), "foo in ('bar')");
         final boolean isBound = _exchange.bind(queueName, "", bindArguments, false);
-        assertTrue("Could not bind queue", isBound);
+        assertTrue(isBound, "Could not bind queue");
 
-        final ServerMessage<?> testMessage = createTestMessage(Collections.singletonMap("foo", "bar"));
+        final ServerMessage<?> testMessage = createTestMessage(Map.of("foo", "bar"));
         final RoutingResult<ServerMessage<?>> result = _exchange.route(testMessage, queueName, _instanceProperties);
-        assertTrue("Message should be routed to queue", result.hasRoutes());
+        assertTrue(result.hasRoutes(), "Message should be routed to queue");
 
-        final Map<String, Object> bindArguments2 = Collections.singletonMap(JMS_SELECTOR.toString(), "foo in (");
-        try
-        {
-            _exchange.bind(queueName, "", bindArguments2, true);
-            fail("Queue can be bound when invalid selector expression is supplied as part of bind arguments");
-        }
-        catch (IllegalArgumentException e)
-        {
-            // pass
-        }
+        final Map<String, Object> bindArguments2 = Map.of(JMS_SELECTOR.toString(), "foo in (");
+        assertThrows(IllegalArgumentException.class,
+                () -> _exchange.bind(queueName, "", bindArguments2, true),
+                "Queue can be bound when invalid selector expression is supplied as part of bind arguments");
 
         final RoutingResult<ServerMessage<?>> result2 = _exchange.route(testMessage, "", _instanceProperties);
-        assertTrue("Message should be be possible to route using old binding", result2.hasRoutes());
+        assertTrue(result2.hasRoutes(), "Message should be be possible to route using old binding");
     }
 
-    private ServerMessage<?> createTestMessage(Map<String, Object> headerValues)
+    private ServerMessage<?> createTestMessage(final Map<String, Object> headerValues)
     {
-        AMQMessageHeader header = mock(AMQMessageHeader.class);
+        final AMQMessageHeader header = mock(AMQMessageHeader.class);
         headerValues.forEach((key, value) -> when(header.getHeader(key)).thenReturn(value));
 
-        @SuppressWarnings("unchecked")
-        ServerMessage<?> message = mock(ServerMessage.class);
+        final ServerMessage<?> message = mock(ServerMessage.class);
         when(message.isResourceAcceptable(any(TransactionLogResource.class))).thenReturn(true);
         when(message.getMessageHeader()).thenReturn(header);
         return message;
     }
-
 }

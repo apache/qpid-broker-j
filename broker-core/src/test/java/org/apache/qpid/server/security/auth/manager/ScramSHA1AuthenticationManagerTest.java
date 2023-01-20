@@ -20,12 +20,11 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.Collections;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class ScramSHA1AuthenticationManagerTest extends ManagedAuthenticationManagerTestBase
 {
@@ -44,17 +43,9 @@ public class ScramSHA1AuthenticationManagerTest extends ManagedAuthenticationMan
     @Test
     public void testNonASCIIUser()
     {
-        try
-        {
-            getAuthManager().createUser(getTestName() + Character.toString((char) 0xa3),
-                                        "password",
-                                        Collections.<String, String>emptyMap());
-            fail("Expected exception when attempting to create a user with a non ascii name");
-        }
-        catch(IllegalArgumentException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> getAuthManager().createUser(getTestName() + (char) 0xa3, "password", Map.of()),
+                "Expected exception when attempting to create a user with a non ascii name");
     }
 
 }

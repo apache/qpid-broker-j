@@ -20,15 +20,13 @@
  */
 package org.apache.qpid.server.store;
 
-import static junit.framework.TestCase.assertNull;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -38,16 +36,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -62,6 +60,7 @@ import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public abstract class MessageStoreTestCase extends UnitTestBase
 {
     private MessageStore _store;
@@ -71,8 +70,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
     private static final int POOL_SIZE = 20;
     private static final double SPARSITY_FRACTION = 1.0;
 
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _parent = createVirtualHost();
@@ -86,7 +84,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         QpidByteBuffer.deinitialisePool();
@@ -97,7 +95,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         return _parent;
     }
 
-    protected abstract VirtualHost createVirtualHost();
+    protected abstract VirtualHost<?> createVirtualHost();
 
     protected abstract MessageStore createMessageStore();
 
@@ -108,7 +106,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         return _store;
     }
 
-    protected void reopenStore() throws Exception
+    protected void reopenStore()
     {
         _storeReader.close();
         _store.closeMessageStore();
@@ -116,19 +114,18 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         _store = createMessageStore();
         _store.openMessageStore(_parent);
         _storeReader = _store.newMessageStoreReader();
-
     }
 
     @Test
-    public void testAddAndRemoveRecordXid() throws Exception
+    public void testAddAndRemoveRecordXid()
     {
-        long format = 1L;
-        EnqueueRecord enqueueRecord = getTestRecord(1);
-        TestRecord dequeueRecord = getTestRecord(2);
-        EnqueueRecord[] enqueues = { enqueueRecord };
-        TestRecord[] dequeues = { dequeueRecord };
-        byte[] globalId = new byte[] { 1 };
-        byte[] branchId = new byte[] { 2 };
+        final long format = 1L;
+        final EnqueueRecord enqueueRecord = getTestRecord(1);
+        final TestRecord dequeueRecord = getTestRecord(2);
+        final EnqueueRecord[] enqueues = { enqueueRecord };
+        final TestRecord[] dequeues = { dequeueRecord };
+        final byte[] globalId = new byte[] { 1 };
+        final byte[] branchId = new byte[] { 2 };
 
         Transaction transaction = _store.newTransaction();
         final Transaction.StoredXidRecord record =
@@ -155,23 +152,22 @@ public abstract class MessageStoreTestCase extends UnitTestBase
     }
 
     @Test
-    public void testVisitMessages() throws Exception
+    public void testVisitMessages()
     {
-        long messageId = 1;
-        int contentSize = 0;
+        final long messageId = 1;
+        final int contentSize = 0;
         final MessageHandle<TestMessageMetaData> message = _store.addMessage(new TestMessageMetaData(messageId, contentSize));
         enqueueMessage(message.allContentAdded(), "dummyQ");
 
-        MessageHandler handler = mock(MessageHandler.class);
+        final MessageHandler handler = mock(MessageHandler.class);
         _storeReader.visitMessages(handler);
 
         verify(handler, times(1)).handle(argThat(new MessageMetaDataMatcher(messageId)));
-
     }
 
     private void enqueueMessage(final StoredMessage<TestMessageMetaData> message, final String queueName)
     {
-        Transaction txn = _store.newTransaction();
+        final Transaction txn = _store.newTransaction();
         txn.enqueueMessage(new TransactionLogResource()
         {
             private final UUID _id = UUID.nameUUIDFromBytes(queueName.getBytes());
@@ -193,7 +189,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
             {
                 return MessageDurability.DEFAULT;
             }
-        }, new EnqueueableMessage()
+        }, new EnqueueableMessage<>()
         {
             @Override
             public long getMessageNumber()
@@ -217,16 +213,16 @@ public abstract class MessageStoreTestCase extends UnitTestBase
     }
 
     @Test
-    public void testVisitMessagesAborted() throws Exception
+    public void testVisitMessagesAborted()
     {
-        int contentSize = 0;
+        final int contentSize = 0;
         for (int i = 0; i < 3; i++)
         {
             final MessageHandle<TestMessageMetaData> message = _store.addMessage(new TestMessageMetaData(i + 1, contentSize));
             enqueueMessage(message.allContentAdded(), "dummyQ");
         }
 
-        MessageHandler handler = mock(MessageHandler.class);
+        final MessageHandler handler = mock(MessageHandler.class);
         when(handler.handle(any(StoredMessage.class))).thenReturn(true, false);
 
         _storeReader.visitMessages(handler);
@@ -235,9 +231,9 @@ public abstract class MessageStoreTestCase extends UnitTestBase
     }
 
     @Test
-    public void testReopenedMessageStoreUsesLastMessageId() throws Exception
+    public void testReopenedMessageStoreUsesLastMessageId()
     {
-        int contentSize = 0;
+        final int contentSize = 0;
         for (int i = 0; i < 3; i++)
         {
             final StoredMessage<TestMessageMetaData> message = _store.addMessage(new TestMessageMetaData(i + 1, contentSize)).allContentAdded();
@@ -251,94 +247,92 @@ public abstract class MessageStoreTestCase extends UnitTestBase
 
         enqueueMessage(message, "dummyQ");
 
-
-        assertTrue("Unexpected message id " + message.getMessageNumber(), message.getMessageNumber() >= 4);
+        assertTrue(message.getMessageNumber() >= 4, "Unexpected message id " + message.getMessageNumber());
     }
 
     @Test
-    public void testVisitMessageInstances() throws Exception
+    public void testVisitMessageInstances()
     {
-        long messageId = 1;
-        int contentSize = 0;
+        final long messageId = 1;
+        final int contentSize = 0;
         final StoredMessage<TestMessageMetaData> message = _store.addMessage(new TestMessageMetaData(messageId, contentSize)).allContentAdded();
 
-        EnqueueableMessage enqueueableMessage = createMockEnqueueableMessage(messageId, message);
+        final EnqueueableMessage<?> enqueueableMessage = createMockEnqueueableMessage(messageId, message);
 
-        UUID queueId = UUID.randomUUID();
-        TransactionLogResource queue = createTransactionLogResource(queueId);
+        final UUID queueId = randomUUID();
+        final TransactionLogResource queue = createTransactionLogResource(queueId);
 
-        Transaction transaction = _store.newTransaction();
+        final Transaction transaction = _store.newTransaction();
         transaction.enqueueMessage(queue, enqueueableMessage);
         transaction.commitTran();
 
-        MessageInstanceHandler handler = mock(MessageInstanceHandler.class);
+        final MessageInstanceHandler handler = mock(MessageInstanceHandler.class);
         _storeReader.visitMessageInstances(handler);
         verify(handler, times(1)).handle(argThat(new EnqueueRecordMatcher(queueId, messageId)));
     }
 
     @Test
-    public void testVisitDistributedTransactions() throws Exception
+    public void testVisitDistributedTransactions()
     {
-        long format = 1L;
-        byte[] branchId = new byte[] { 2 };
-        byte[] globalId = new byte[] { 1 };
-        EnqueueRecord enqueueRecord = getTestRecord(1);
-        TestRecord dequeueRecord = getTestRecord(2);
-        EnqueueRecord[] enqueues = { enqueueRecord };
-        TestRecord[] dequeues = { dequeueRecord };
+        final long format = 1L;
+        final byte[] branchId = new byte[] { 2 };
+        final byte[] globalId = new byte[] { 1 };
+        final EnqueueRecord enqueueRecord = getTestRecord(1);
+        final TestRecord dequeueRecord = getTestRecord(2);
+        final EnqueueRecord[] enqueues = { enqueueRecord };
+        final TestRecord[] dequeues = { dequeueRecord };
 
-        Transaction transaction = _store.newTransaction();
+        final Transaction transaction = _store.newTransaction();
         final Transaction.StoredXidRecord record =
                 transaction.recordXid(format, globalId, branchId, enqueues, dequeues);
         transaction.commitTran();
 
-        DistributedTransactionHandler handler = mock(DistributedTransactionHandler.class);
+        final DistributedTransactionHandler handler = mock(DistributedTransactionHandler.class);
         _storeReader.visitDistributedTransactions(handler);
 
         verify(handler, times(1)).handle(eq(record),
                                          argThat(new RecordMatcher(enqueues)),
                                          argThat(new DequeueRecordMatcher(dequeues)));
-
     }
 
     @Test
-    public void testCommitTransaction() throws Exception
+    public void testCommitTransaction()
     {
         final UUID mockQueueId = UUIDGenerator.generateRandomUUID();
-        TransactionLogResource mockQueue = createTransactionLogResource(mockQueueId);
+        final TransactionLogResource mockQueue = createTransactionLogResource(mockQueueId);
 
-        Transaction txn = getStore().newTransaction();
+        final Transaction txn = getStore().newTransaction();
 
-        long messageId1 = 1L;
-        long messageId2 = 5L;
-        final EnqueueableMessage enqueueableMessage1 = createEnqueueableMessage(messageId1);
-        final EnqueueableMessage enqueueableMessage2 = createEnqueueableMessage(messageId2);
+        final long messageId1 = 1L;
+        final long messageId2 = 5L;
+        final EnqueueableMessage<?> enqueueableMessage1 = createEnqueueableMessage(messageId1);
+        final EnqueueableMessage<?> enqueueableMessage2 = createEnqueueableMessage(messageId2);
 
         txn.enqueueMessage(mockQueue, enqueueableMessage1);
         txn.enqueueMessage(mockQueue, enqueueableMessage2);
         txn.commitTran();
 
-        QueueFilteringMessageInstanceHandler filter = new QueueFilteringMessageInstanceHandler(mockQueueId);
+        final QueueFilteringMessageInstanceHandler filter = new QueueFilteringMessageInstanceHandler(mockQueueId);
         _storeReader.visitMessageInstances(filter);
-        Set<Long> enqueuedIds = filter.getEnqueuedIds();
+        final Set<Long> enqueuedIds = filter.getEnqueuedIds();
 
-        assertEquals("Number of enqueued messages is incorrect", 2, enqueuedIds.size());
-        assertTrue("Message with id " + messageId1 + " is not found", enqueuedIds.contains(messageId1));
-        assertTrue("Message with id " + messageId2 + " is not found", enqueuedIds.contains(messageId2));
+        assertEquals(2, enqueuedIds.size(), "Number of enqueued messages is incorrect");
+        assertTrue(enqueuedIds.contains(messageId1), "Message with id " + messageId1 + " is not found");
+        assertTrue(enqueuedIds.contains(messageId2), "Message with id " + messageId2 + " is not found");
     }
 
     @Test
-    public void testRollbackTransactionBeforeCommit() throws Exception
+    public void testRollbackTransactionBeforeCommit()
     {
         final UUID mockQueueId = UUIDGenerator.generateRandomUUID();
-        TransactionLogResource mockQueue = createTransactionLogResource(mockQueueId);
+        final TransactionLogResource mockQueue = createTransactionLogResource(mockQueueId);
 
-        long messageId1 = 21L;
-        long messageId2 = 22L;
-        long messageId3 = 23L;
-        final EnqueueableMessage enqueueableMessage1 = createEnqueueableMessage(messageId1);
-        final EnqueueableMessage enqueueableMessage2 = createEnqueueableMessage(messageId2);
-        final EnqueueableMessage enqueueableMessage3 = createEnqueueableMessage(messageId3);
+        final long messageId1 = 21L;
+        final long messageId2 = 22L;
+        final long messageId3 = 23L;
+        final EnqueueableMessage<?> enqueueableMessage1 = createEnqueueableMessage(messageId1);
+        final EnqueueableMessage<?> enqueueableMessage2 = createEnqueueableMessage(messageId2);
+        final EnqueueableMessage<?> enqueueableMessage3 = createEnqueueableMessage(messageId3);
 
         Transaction txn = getStore().newTransaction();
 
@@ -350,28 +344,28 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         txn.enqueueMessage(mockQueue, enqueueableMessage3);
         txn.commitTran();
 
-        QueueFilteringMessageInstanceHandler filter = new QueueFilteringMessageInstanceHandler(mockQueueId);
+        final QueueFilteringMessageInstanceHandler filter = new QueueFilteringMessageInstanceHandler(mockQueueId);
         _storeReader.visitMessageInstances(filter);
-        Set<Long> enqueuedIds = filter.getEnqueuedIds();
+        final Set<Long> enqueuedIds = filter.getEnqueuedIds();
 
-        assertEquals("Number of enqueued messages is incorrect", 2, enqueuedIds.size());
-        assertTrue("Message with id " + messageId2 + " is not found", enqueuedIds.contains(messageId2));
-        assertTrue("Message with id " + messageId3 + " is not found", enqueuedIds.contains(messageId3));
+        assertEquals(2, enqueuedIds.size(), "Number of enqueued messages is incorrect");
+        assertTrue(enqueuedIds.contains(messageId2), "Message with id " + messageId2 + " is not found");
+        assertTrue(enqueuedIds.contains(messageId3), "Message with id " + messageId3 + " is not found");
     }
 
     @Test
-    public void testRollbackTransactionAfterCommit() throws Exception
+    public void testRollbackTransactionAfterCommit()
     {
         final UUID mockQueueId = UUIDGenerator.generateRandomUUID();
-        TransactionLogResource mockQueue = createTransactionLogResource(mockQueueId);
+        final TransactionLogResource mockQueue = createTransactionLogResource(mockQueueId);
 
-        long messageId1 = 30L;
-        long messageId2 = 31L;
-        long messageId3 = 32L;
+        final long messageId1 = 30L;
+        final long messageId2 = 31L;
+        final long messageId3 = 32L;
 
-        final EnqueueableMessage enqueueableMessage1 = createEnqueueableMessage(messageId1);
-        final EnqueueableMessage enqueueableMessage2 = createEnqueueableMessage(messageId2);
-        final EnqueueableMessage enqueueableMessage3 = createEnqueueableMessage(messageId3);
+        final EnqueueableMessage<?> enqueueableMessage1 = createEnqueueableMessage(messageId1);
+        final EnqueueableMessage<?> enqueueableMessage2 = createEnqueueableMessage(messageId2);
+        final EnqueueableMessage<?> enqueueableMessage3 = createEnqueueableMessage(messageId3);
 
         Transaction txn = getStore().newTransaction();
 
@@ -386,74 +380,64 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         txn.enqueueMessage(mockQueue, enqueueableMessage3);
         txn.commitTran();
 
-        QueueFilteringMessageInstanceHandler filter = new QueueFilteringMessageInstanceHandler(mockQueueId);
+        final QueueFilteringMessageInstanceHandler filter = new QueueFilteringMessageInstanceHandler(mockQueueId);
         _storeReader.visitMessageInstances(filter);
-        Set<Long> enqueuedIds = filter.getEnqueuedIds();
+        final Set<Long> enqueuedIds = filter.getEnqueuedIds();
 
-        assertEquals("Number of enqueued messages is incorrect", 2, enqueuedIds.size());
-        assertTrue("Message with id " + messageId1 + " is not found", enqueuedIds.contains(messageId1));
-        assertTrue("Message with id " + messageId3 + " is not found", enqueuedIds.contains(messageId3));
+        assertEquals(2, enqueuedIds.size(), "Number of enqueued messages is incorrect");
+        assertTrue(enqueuedIds.contains(messageId1), "Message with id " + messageId1 + " is not found");
+        assertTrue(enqueuedIds.contains(messageId3), "Message with id " + messageId3 + " is not found");
     }
 
     @Test
-    public void testAddAndRemoveMessageWithoutContent() throws Exception
+    public void testAddAndRemoveMessageWithoutContent()
     {
-        long messageId = 1;
-        int contentSize = 0;
+        final long messageId = 1;
+        final int contentSize = 0;
         final StoredMessage<TestMessageMetaData> message = _store.addMessage(new TestMessageMetaData(messageId, contentSize)).allContentAdded();
         enqueueMessage(message, "dummyQ");
 
-        final AtomicReference<StoredMessage<?>> retrievedMessageRef = new AtomicReference<StoredMessage<?>>();
-        _storeReader.visitMessages(new MessageHandler()
+        final AtomicReference<StoredMessage<?>> retrievedMessageRef = new AtomicReference<>();
+        _storeReader.visitMessages(storedMessage ->
         {
-
-            @Override
-            public boolean handle(StoredMessage<?> storedMessage)
-            {
-                retrievedMessageRef.set(storedMessage);
-                return true;
-            }
+            retrievedMessageRef.set(storedMessage);
+            return true;
         });
 
-        StoredMessage<?> retrievedMessage = retrievedMessageRef.get();
-        assertNotNull("Message was not found", retrievedMessageRef);
-        assertEquals("Unexpected retrieved message", message.getMessageNumber(), retrievedMessage.getMessageNumber());
+        final StoredMessage<?> retrievedMessage = retrievedMessageRef.get();
+        assertNotNull(retrievedMessageRef, "Message was not found");
+        assertEquals(message.getMessageNumber(), retrievedMessage.getMessageNumber(), "Unexpected retrieved message");
 
         retrievedMessage.remove();
 
         retrievedMessageRef.set(null);
-        _storeReader.visitMessages(new MessageHandler()
+        _storeReader.visitMessages(storedMessage ->
         {
-
-            @Override
-            public boolean handle(StoredMessage<?> storedMessage)
-            {
-                retrievedMessageRef.set(storedMessage);
-                return true;
-            }
+            retrievedMessageRef.set(storedMessage);
+            return true;
         });
         assertNull(retrievedMessageRef.get());
     }
 
     @Test
-    public void testMessageDeleted() throws Exception
+    public void testMessageDeleted()
     {
-        MessageStore.MessageDeleteListener listener = mock(MessageStore.MessageDeleteListener.class);
+        final MessageStore.MessageDeleteListener listener = mock(MessageStore.MessageDeleteListener.class);
         _store.addMessageDeleteListener(listener);
 
-        long messageId = 1;
-        int contentSize = 0;
+        final long messageId = 1;
+        final int contentSize = 0;
         final MessageHandle<TestMessageMetaData> messageHandle = _store.addMessage(new TestMessageMetaData(messageId, contentSize));
-        StoredMessage<TestMessageMetaData> message = messageHandle.allContentAdded();
+        final StoredMessage<TestMessageMetaData> message = messageHandle.allContentAdded();
         message.remove();
 
         verify(listener, times(1)).messageDeleted(message);
     }
 
     @Test
-    public void testFlowToDisk() throws Exception
+    public void testFlowToDisk()
     {
-        assumeThat(flowToDiskSupported(), is(equalTo(true)));
+        assumeTrue(flowToDiskSupported());
 
         final StoredMessage<?> storedMessage = createStoredMessage();
 
@@ -465,7 +449,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
     @Test
     public void testFlowToDiskAfterMetadataReload()
     {
-        assumeThat(flowToDiskSupported(), is(equalTo(true)));
+        assumeTrue(flowToDiskSupported());
 
         final StoredMessage<?> storedMessage = createStoredMessage();
 
@@ -480,7 +464,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
     @Test
     public void testFlowToDiskAfterContentReload()
     {
-        assumeThat(flowToDiskSupported(), is(equalTo(true)));
+        assumeTrue(flowToDiskSupported());
 
         final StoredMessage<?> storedMessage = createStoredMessage();
 
@@ -492,11 +476,10 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         assertEquals(0, storedMessage.getInMemorySize());
     }
 
-
     @Test
     public void testIsInContentInMemoryBeforeFlowControl()
     {
-        assumeThat(flowToDiskSupported(), is(equalTo(true)));
+        assumeTrue(flowToDiskSupported());
 
         final StoredMessage<?> storedMessage = createStoredMessage();
 
@@ -506,7 +489,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
     @Test
     public void testIsInContentInMemoryAfterFlowControl()
     {
-        assumeThat(flowToDiskSupported(), is(equalTo(true)));
+        assumeTrue(flowToDiskSupported());
 
         final StoredMessage<?> storedMessage = createStoredMessage();
         assertTrue(storedMessage.flowToDisk());
@@ -516,7 +499,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
     @Test
     public void testIsInContentInMemoryAfterReload()
     {
-        assumeThat(flowToDiskSupported(), is(equalTo(true)));
+        assumeTrue(flowToDiskSupported());
 
         final StoredMessage<?> storedMessage = createStoredMessage();
         assertTrue(storedMessage.flowToDisk());
@@ -527,7 +510,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
 
     private StoredMessage<?> createStoredMessage()
     {
-        return createStoredMessage(Collections.singletonMap("test", "testValue"), "testContent", "testQueue");
+        return createStoredMessage(Map.of("test", "testValue"), "testContent", "testQueue");
     }
 
     private StoredMessage<?> createStoredMessage(final Map<String, String> headers,
@@ -551,44 +534,42 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         return InternalMessage.createMessage(_store, messageHeader, content, true, queueName);
     }
 
-    private TransactionLogResource createTransactionLogResource(UUID queueId)
+    private TransactionLogResource createTransactionLogResource(final UUID queueId)
     {
-        TransactionLogResource queue = mock(TransactionLogResource.class);
+        final TransactionLogResource queue = mock(TransactionLogResource.class);
         when(queue.getId()).thenReturn(queueId);
         when(queue.getName()).thenReturn("testQueue");
         when(queue.getMessageDurability()).thenReturn(MessageDurability.DEFAULT);
         return queue;
     }
 
-    private EnqueueableMessage createMockEnqueueableMessage(long messageId, final StoredMessage<TestMessageMetaData> message)
+    private EnqueueableMessage<?> createMockEnqueueableMessage(final long messageId, final StoredMessage<TestMessageMetaData> message)
     {
-        EnqueueableMessage enqueueableMessage = mock(EnqueueableMessage.class);
+        EnqueueableMessage<TestMessageMetaData> enqueueableMessage = mock(EnqueueableMessage.class);
         when(enqueueableMessage.isPersistent()).thenReturn(true);
         when(enqueueableMessage.getMessageNumber()).thenReturn(messageId);
         when(enqueueableMessage.getStoredMessage()).thenReturn(message);
         return enqueueableMessage;
     }
 
-    private TestRecord getTestRecord(long messageNumber)
+    private TestRecord getTestRecord(final long messageNumber)
     {
-        UUID queueId1 = UUIDGenerator.generateRandomUUID();
-        TransactionLogResource queue1 = mock(TransactionLogResource.class);
+        final UUID queueId1 = UUIDGenerator.generateRandomUUID();
+        final TransactionLogResource queue1 = mock(TransactionLogResource.class);
         when(queue1.getId()).thenReturn(queueId1);
-        EnqueueableMessage message1 = mock(EnqueueableMessage.class);
+        final EnqueueableMessage message1 = mock(EnqueueableMessage.class);
         when(message1.isPersistent()).thenReturn(true);
         when(message1.getMessageNumber()).thenReturn(messageNumber);
         final StoredMessage<?> storedMessage = mock(StoredMessage.class);
         when(storedMessage.getMessageNumber()).thenReturn(messageNumber);
         when(message1.getStoredMessage()).thenReturn(storedMessage);
-        TestRecord enqueueRecord = new TestRecord(queue1, message1);
-        return enqueueRecord;
+        return new TestRecord(queue1, message1);
     }
 
-    private EnqueueableMessage createEnqueueableMessage(long messageId1)
+    private EnqueueableMessage<?> createEnqueueableMessage(final long messageId1)
     {
         final StoredMessage<TestMessageMetaData> message1 = _store.addMessage(new TestMessageMetaData(messageId1, 0)).allContentAdded();
-        EnqueueableMessage enqueueableMessage1 = createMockEnqueueableMessage(messageId1, message1);
-        return enqueueableMessage1;
+        return createMockEnqueueableMessage(messageId1, message1);
     }
 
     private static class MessageMetaDataMatcher implements ArgumentMatcher<StoredMessage<?>>
@@ -613,7 +594,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         private final UUID _queueId;
         private final Set<Long> _enqueuedIds = new HashSet<>();
 
-        QueueFilteringMessageInstanceHandler(UUID queueId)
+        QueueFilteringMessageInstanceHandler(final UUID queueId)
         {
             _queueId = queueId;
         }
@@ -621,7 +602,7 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         @Override
         public boolean handle(final MessageEnqueueRecord record)
         {
-            long messageId = record.getMessageNumber();
+            final long messageId = record.getMessageNumber();
             if (record.getQueueId().equals(_queueId))
             {
                 if (_enqueuedIds.contains(messageId))
@@ -660,7 +641,6 @@ public abstract class MessageStoreTestCase extends UnitTestBase
 
     private static class RecordMatcher implements ArgumentMatcher<Transaction.EnqueueRecord[]>
     {
-
         private final EnqueueRecord[] _expect;
 
         RecordMatcher(Transaction.EnqueueRecord[] expect)
@@ -671,12 +651,12 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         @Override
         public boolean matches(final Transaction.EnqueueRecord[] actual)
         {
-            if(actual.length == _expect.length)
+            if (actual.length == _expect.length)
             {
-                for(int i = 0; i < actual.length; i++)
+                for (int i = 0; i < actual.length; i++)
                 {
-                    if(!actual[i].getResource().getId().equals(_expect[i].getResource().getId())
-                       || actual[i].getMessage().getMessageNumber() != _expect[i].getMessage().getMessageNumber())
+                    if (!actual[i].getResource().getId().equals(_expect[i].getResource().getId()) ||
+                        actual[i].getMessage().getMessageNumber() != _expect[i].getMessage().getMessageNumber())
                     {
                         return false;
                     }
@@ -693,10 +673,9 @@ public abstract class MessageStoreTestCase extends UnitTestBase
 
     private static class DequeueRecordMatcher implements ArgumentMatcher<Transaction.DequeueRecord[]>
     {
-
         private final Transaction.DequeueRecord[] _expect;
 
-        DequeueRecordMatcher(Transaction.DequeueRecord[] expect)
+        DequeueRecordMatcher(final Transaction.DequeueRecord[] expect)
         {
             _expect = expect;
         }
@@ -704,12 +683,12 @@ public abstract class MessageStoreTestCase extends UnitTestBase
         @Override
         public boolean matches(final Transaction.DequeueRecord[] actual)
         {
-            if(actual.length == _expect.length)
+            if (actual.length == _expect.length)
             {
-                for(int i = 0; i < actual.length; i++)
+                for (int i = 0; i < actual.length; i++)
                 {
-                    if(!actual[i].getEnqueueRecord().getQueueId().equals(_expect[i].getEnqueueRecord().getQueueId())
-                       || actual[i].getEnqueueRecord().getMessageNumber() != _expect[i].getEnqueueRecord().getMessageNumber())
+                    if (!actual[i].getEnqueueRecord().getQueueId().equals(_expect[i].getEnqueueRecord().getQueueId()) ||
+                        actual[i].getEnqueueRecord().getMessageNumber() != _expect[i].getEnqueueRecord().getMessageNumber())
                     {
                         return false;
                     }

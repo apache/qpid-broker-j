@@ -21,11 +21,11 @@
 
 package org.apache.qpid.server.protocol.v0_10.transport;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -35,17 +35,16 @@ import org.apache.qpid.test.utils.UnitTestBase;
  */
 public class GenTest extends UnitTestBase
 {
-
     @Test
     public void testBooleans()
     {
         QueueDeclare qd = new QueueDeclare().queue("test-queue").durable(false);
         assertEquals(qd.getQueue(), "test-queue");
-        assertFalse("durable should be false", qd.getDurable());
+        assertFalse(qd.getDurable(), "durable should be false");
         qd.setDurable(true);
-        assertTrue("durable should be true", qd.getDurable());
+        assertTrue(qd.getDurable(), "durable should be true");
         qd.setDurable(false);
-        assertFalse("durable should be false again", qd.getDurable());
+        assertFalse(qd.getDurable(), "durable should be false again");
     }
 
 }

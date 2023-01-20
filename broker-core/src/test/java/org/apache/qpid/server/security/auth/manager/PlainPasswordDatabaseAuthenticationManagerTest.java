@@ -28,12 +28,11 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -51,126 +50,116 @@ public class PlainPasswordDatabaseAuthenticationManagerTest extends UnitTestBase
     private File _passwordFile;
     private ConfiguredObjectFactory _objectFactory;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
-        _broker = BrokerTestHelper.createBrokerMock();
+        _broker = BrokerTestHelper.createNewBrokerMock();
         _objectFactory = _broker.getObjectFactory();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
+        if (_passwordFile.exists())
         {
-            if (_passwordFile.exists())
-            {
-                _passwordFile.delete();
-            }
-        }
-        finally
-        {
+            _passwordFile.delete();
         }
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testExistingPasswordFile()
     {
         _passwordFile = TestFileUtils.createTempFile(this, ".user.password", "user:password");
 
-        Map<String, Object> providerAttrs = new HashMap<>();
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.TYPE, PROVIDER_TYPE);
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.PATH, _passwordFile.getAbsolutePath());
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.NAME, getTestName());
+        final Map<String, Object> providerAttrs = Map.of(PlainPasswordDatabaseAuthenticationManager.TYPE, PROVIDER_TYPE,
+                PlainPasswordDatabaseAuthenticationManager.PATH, _passwordFile.getAbsolutePath(),
+                PlainPasswordDatabaseAuthenticationManager.NAME, getTestName());
 
-        @SuppressWarnings("unchecked")
-        AuthenticationProvider provider = _objectFactory.create(AuthenticationProvider.class, providerAttrs, _broker);
+        final AuthenticationProvider<?> provider = _objectFactory.create(AuthenticationProvider.class, providerAttrs, _broker);
         assertThat(provider.getChildren(User.class).size(), is(equalTo(1)));
 
-        User user = (User) provider.getChildByName(User.class, "user");
+        final User<?> user = (User<?>) provider.getChildByName(User.class, "user");
         assertThat(user.getName(), is(equalTo("user")));
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testAddUser()
     {
         _passwordFile = TestFileUtils.createTempFile(this, ".user.password");
 
-        Map<String, Object> providerAttrs = new HashMap<>();
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.TYPE, PROVIDER_TYPE);
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.PATH, _passwordFile.getAbsolutePath());
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.NAME, getTestName());
+        final Map<String, Object> providerAttrs = Map.of(PlainPasswordDatabaseAuthenticationManager.TYPE, PROVIDER_TYPE,
+                PlainPasswordDatabaseAuthenticationManager.PATH, _passwordFile.getAbsolutePath(),
+                PlainPasswordDatabaseAuthenticationManager.NAME, getTestName());
 
-        AuthenticationProvider provider = _objectFactory.create(AuthenticationProvider.class, providerAttrs, _broker);
+        final AuthenticationProvider<?> provider = _objectFactory.create(AuthenticationProvider.class, providerAttrs, _broker);
         assertThat(provider.getChildren(User.class).size(), is(equalTo(0)));
 
-        Map<String, Object> userAttrs = new HashMap<>();
-        userAttrs.put(User.TYPE, PROVIDER_TYPE);
-        userAttrs.put(User.NAME, "user");
-        userAttrs.put(User.PASSWORD, "password");
-        User user = (User) provider.createChild(User.class, userAttrs);
+        final Map<String, Object> userAttrs = Map.of(User.TYPE, PROVIDER_TYPE,
+                User.NAME, "user",
+                User.PASSWORD, "password");
+        final User<?> user = (User<?>) provider.createChild(User.class, userAttrs);
 
         assertThat(provider.getChildren(User.class).size(), is(equalTo(1)));
         assertThat(user.getName(), is(equalTo("user")));
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testRemoveUser()
     {
         _passwordFile = TestFileUtils.createTempFile(this, ".user.password", "user:password");
 
-        Map<String, Object> providerAttrs = new HashMap<>();
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.TYPE, PROVIDER_TYPE);
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.PATH, _passwordFile.getAbsolutePath());
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.NAME, getTestName());
+        final Map<String, Object> providerAttrs = Map.of(PlainPasswordDatabaseAuthenticationManager.TYPE, PROVIDER_TYPE,
+                PlainPasswordDatabaseAuthenticationManager.PATH, _passwordFile.getAbsolutePath(),
+                PlainPasswordDatabaseAuthenticationManager.NAME, getTestName());
 
-        AuthenticationProvider provider = _objectFactory.create(AuthenticationProvider.class, providerAttrs, _broker);
+        final AuthenticationProvider<?> provider = _objectFactory.create(AuthenticationProvider.class, providerAttrs, _broker);
         assertThat(provider.getChildren(User.class).size(), is(equalTo(1)));
 
-        User user = (User) provider.getChildByName(User.class, "user");
+        final User<?> user = (User<?>) provider.getChildByName(User.class, "user");
         user.delete();
 
         assertThat(provider.getChildren(User.class).size(), is(equalTo(0)));
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testDurability()
     {
         _passwordFile = TestFileUtils.createTempFile(this, ".user.password");
 
-        Map<String, Object> providerAttrs = new HashMap<>();
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.TYPE, PROVIDER_TYPE);
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.PATH, _passwordFile.getAbsolutePath());
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.NAME, getTestName());
+        final Map<String, Object> providerAttrs = Map.of(PlainPasswordDatabaseAuthenticationManager.TYPE, PROVIDER_TYPE,
+                PlainPasswordDatabaseAuthenticationManager.PATH, _passwordFile.getAbsolutePath(),
+                PlainPasswordDatabaseAuthenticationManager.NAME, getTestName());
 
         {
-            AuthenticationProvider provider =
+            final AuthenticationProvider<?> provider =
                     _objectFactory.create(AuthenticationProvider.class, providerAttrs, _broker);
             assertThat(provider.getChildren(User.class).size(), is(equalTo(0)));
 
-            Map<String, Object> userAttrs = new HashMap<>();
-            userAttrs.put(User.TYPE, PROVIDER_TYPE);
-            userAttrs.put(User.NAME, "user");
-            userAttrs.put(User.PASSWORD, "password");
+            final Map<String, Object> userAttrs =Map.of(User.TYPE, PROVIDER_TYPE,
+                    User.NAME, "user",
+                    User.PASSWORD, "password");
             provider.createChild(User.class, userAttrs);
 
             provider.close();
         }
 
         {
-            AuthenticationProvider provider =
+            final AuthenticationProvider<?> provider =
                     _objectFactory.create(AuthenticationProvider.class, providerAttrs, _broker);
             assertThat(provider.getChildren(User.class).size(), is(equalTo(1)));
 
-            User user = (User) provider.getChildByName(User.class, "user");
+            final User<?> user = (User<?>) provider.getChildByName(User.class, "user");
             user.delete();
 
             provider.close();
         }
 
         {
-            AuthenticationProvider provider =
+            final AuthenticationProvider<?> provider =
                     _objectFactory.create(AuthenticationProvider.class, providerAttrs, _broker);
             assertThat(provider.getChildren(User.class).size(), is(equalTo(0)));
 
@@ -179,48 +168,48 @@ public class PlainPasswordDatabaseAuthenticationManagerTest extends UnitTestBase
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testAuthenticate()
     {
         _passwordFile = TestFileUtils.createTempFile(this, ".user.password", "user:password");
 
-        String file = _passwordFile.getAbsolutePath();
-        Map<String, Object> providerAttrs = new HashMap<>();
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.TYPE, PROVIDER_TYPE);
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.PATH, file);
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.NAME, getTestName());
+        final String file = _passwordFile.getAbsolutePath();
+        final Map<String, Object> providerAttrs = Map.of(PlainPasswordDatabaseAuthenticationManager.TYPE, PROVIDER_TYPE,
+                PlainPasswordDatabaseAuthenticationManager.PATH, file,
+                PlainPasswordDatabaseAuthenticationManager.NAME, getTestName());
 
-        PasswordCredentialManagingAuthenticationProvider provider =
-                ((PasswordCredentialManagingAuthenticationProvider) _objectFactory.create(AuthenticationProvider.class,
+        final PasswordCredentialManagingAuthenticationProvider<?> provider =
+                ((PasswordCredentialManagingAuthenticationProvider<?>) _objectFactory.create(AuthenticationProvider.class,
                                                                                           providerAttrs,
                                                                                           _broker));
 
         {
-            AuthenticationResult result = provider.authenticate("user", "password");
+            final AuthenticationResult result = provider.authenticate("user", "password");
             assertThat(result.getStatus(), is(equalTo(SUCCESS)));
         }
 
         {
-            AuthenticationResult result = provider.authenticate("user", "badpassword");
+            final AuthenticationResult result = provider.authenticate("user", "badpassword");
             assertThat(result.getStatus(), is(equalTo(AuthenticationResult.AuthenticationStatus.ERROR)));
         }
 
         {
-            AuthenticationResult result = provider.authenticate("unknownuser", "badpassword");
+            final AuthenticationResult result = provider.authenticate("unknownuser", "badpassword");
             assertThat(result.getStatus(), is(equalTo(AuthenticationResult.AuthenticationStatus.ERROR)));
         }
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testDeleteProvider()
     {
         _passwordFile = TestFileUtils.createTempFile(this, ".user.password", "user:password");
 
-        Map<String, Object> providerAttrs = new HashMap<>();
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.TYPE, PROVIDER_TYPE);
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.PATH, _passwordFile.getAbsolutePath());
-        providerAttrs.put(PlainPasswordDatabaseAuthenticationManager.NAME, getTestName());
+        final Map<String, Object> providerAttrs = Map.of(PlainPasswordDatabaseAuthenticationManager.TYPE, PROVIDER_TYPE,
+                PlainPasswordDatabaseAuthenticationManager.PATH, _passwordFile.getAbsolutePath(),
+                PlainPasswordDatabaseAuthenticationManager.NAME, getTestName());
 
-        AuthenticationProvider provider = _objectFactory.create(AuthenticationProvider.class, providerAttrs, _broker);
+        final AuthenticationProvider<?> provider = _objectFactory.create(AuthenticationProvider.class, providerAttrs, _broker);
         provider.delete();
 
         assertThat(_passwordFile.exists(), is(equalTo(false)));

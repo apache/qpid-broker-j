@@ -19,19 +19,18 @@
 
 package org.apache.qpid.server.store;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AbstractConfigurationStoreUpgraderAndRecovererTest extends UnitTestBase
 {
-
     private TestConfigurationStoreUpgraderAndRecoverer _recoverer;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _recoverer = new TestConfigurationStoreUpgraderAndRecoverer();
@@ -49,59 +48,35 @@ public class AbstractConfigurationStoreUpgraderAndRecovererTest extends UnitTest
     public void testRegisterFailsOnUnknownFromVersion()
     {
         _recoverer.register(new TestStoreUpgraderPhase("0.0", "1.0"));
-        try
-        {
-            _recoverer.register(new TestStoreUpgraderPhase("1.1", "2.0"));
-            fail("should fail");
-        }
-        catch (IllegalStateException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalStateException.class,
+                () -> _recoverer.register(new TestStoreUpgraderPhase("1.1", "2.0")),
+                "Should fail");
     }
 
     @Test
     public void testRegisterFailsOnNoVersionNumberChange()
     {
         _recoverer.register(new TestStoreUpgraderPhase("0.0", "1.0"));
-        try
-        {
-            _recoverer.register(new TestStoreUpgraderPhase("1.0", "1.0"));
-            fail("should fail");
-        }
-        catch (IllegalStateException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalStateException.class,
+                () -> _recoverer.register(new TestStoreUpgraderPhase("1.0", "1.0")),
+                "Should fail");
     }
 
     @Test
     public void testRegisterFailsOnDuplicateFromVersion()
     {
         _recoverer.register(new TestStoreUpgraderPhase("0.0", "1.0"));
-        try
-        {
-            _recoverer.register(new TestStoreUpgraderPhase("0.0", "2.0"));
-            fail("should fail");
-        }
-        catch (IllegalStateException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalStateException.class,
+                () -> _recoverer.register(new TestStoreUpgraderPhase("0.0", "2.0")),
+                "Should fail");
     }
 
     @Test
     public void testRegisterFailsOnUnexpectedFromVersionInFirstUpgrader()
     {
-        try
-        {
-            _recoverer.register(new TestStoreUpgraderPhase("0.1", "1.0"));
-            fail("should fail");
-        }
-        catch (IllegalStateException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalStateException.class,
+                () -> _recoverer.register(new TestStoreUpgraderPhase("0.1", "1.0")),
+                "Should fail");
     }
 
     private static class TestConfigurationStoreUpgraderAndRecoverer extends AbstractConfigurationStoreUpgraderAndRecoverer
@@ -114,7 +89,7 @@ public class AbstractConfigurationStoreUpgraderAndRecovererTest extends UnitTest
 
     private static class TestStoreUpgraderPhase extends StoreUpgraderPhase
     {
-        TestStoreUpgraderPhase(String fromVersion, String toVersion)
+        TestStoreUpgraderPhase(final String fromVersion, final String toVersion)
         {
             super("", fromVersion, toVersion);
         }

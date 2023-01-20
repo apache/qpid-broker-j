@@ -20,16 +20,16 @@
 
 package org.apache.qpid.server.protocol.v1_0.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Collection;
 import java.util.Collections;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.LinkDefinition;
 import org.apache.qpid.server.protocol.v1_0.LinkDefinitionImpl;
@@ -56,7 +56,7 @@ public abstract class LinkStoreTestCase extends UnitTestBase
     private Source _source;
     private Target _target;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _linkStore = createLinkStore();
@@ -87,17 +87,17 @@ public abstract class LinkStoreTestCase extends UnitTestBase
         _target.setDurable(TerminusDurability.CONFIGURATION);
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    public void tearDown()
     {
         deleteLinkStore();
     }
 
     @Test
-    public void testOpenAndLoad() throws Exception
+    public void testOpenAndLoad()
     {
         Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
-        assertTrue("Unexpected links", links.isEmpty());
+        assertTrue(links.isEmpty(), "Unexpected links");
 
         try
         {
@@ -114,7 +114,7 @@ public abstract class LinkStoreTestCase extends UnitTestBase
         _linkStore.close();
 
         links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
-        assertEquals("Unexpected link number", 1, links.size());
+        assertEquals(1, links.size(), "Unexpected link number");
     }
 
 
@@ -137,7 +137,7 @@ public abstract class LinkStoreTestCase extends UnitTestBase
     }
 
     @Test
-    public void testSaveLink() throws Exception
+    public void testSaveLink()
     {
 
         LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
@@ -156,19 +156,20 @@ public abstract class LinkStoreTestCase extends UnitTestBase
         }
 
         Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
-        assertEquals("Unexpected link number", 1, links.size());
+        assertEquals(1, links.size(), "Unexpected link number");
 
         LinkDefinition<Source, Target> recoveredLink = links.iterator().next();
 
-        assertEquals("Unexpected link name", linkDefinition.getName(), recoveredLink.getName());
-        assertEquals("Unexpected container id", linkDefinition.getRemoteContainerId(), recoveredLink.getRemoteContainerId());
-        assertEquals("Unexpected role", linkDefinition.getRole(), recoveredLink.getRole());
-        assertEquals("Unexpected source", linkDefinition.getSource(), recoveredLink.getSource());
-        assertEquals("Unexpected target", linkDefinition.getTarget(), recoveredLink.getTarget());
+        assertEquals(linkDefinition.getName(), recoveredLink.getName(), "Unexpected link name");
+        assertEquals(linkDefinition.getRemoteContainerId(), recoveredLink.getRemoteContainerId(),
+                "Unexpected container id");
+        assertEquals(linkDefinition.getRole(), recoveredLink.getRole(), "Unexpected role");
+        assertEquals(linkDefinition.getSource(), recoveredLink.getSource(), "Unexpected source");
+        assertEquals(linkDefinition.getTarget(), recoveredLink.getTarget(), "Unexpected target");
     }
 
     @Test
-    public void testDeleteLink() throws Exception
+    public void testDeleteLink()
     {
         _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
 
@@ -192,19 +193,20 @@ public abstract class LinkStoreTestCase extends UnitTestBase
         }
 
         Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
-        assertEquals("Unexpected link number", 1, links.size());
+        assertEquals(1, links.size(), "Unexpected link number");
 
         LinkDefinition<Source, Target> recoveredLink = links.iterator().next();
 
-        assertEquals("Unexpected link name", linkDefinition.getName(), recoveredLink.getName());
-        assertEquals("Unexpected container id", linkDefinition.getRemoteContainerId(), recoveredLink.getRemoteContainerId());
-        assertEquals("Unexpected role", linkDefinition.getRole(), recoveredLink.getRole());
-        assertEquals("Unexpected source", linkDefinition.getSource(), recoveredLink.getSource());
-        assertEquals("Unexpected target", linkDefinition.getTarget(), recoveredLink.getTarget());
+        assertEquals(linkDefinition.getName(), recoveredLink.getName(), "Unexpected link name");
+        assertEquals(linkDefinition.getRemoteContainerId(), recoveredLink.getRemoteContainerId(),
+                "Unexpected container id");
+        assertEquals(linkDefinition.getRole(), recoveredLink.getRole(), "Unexpected role");
+        assertEquals(linkDefinition.getSource(), recoveredLink.getSource(), "Unexpected source");
+        assertEquals(linkDefinition.getTarget(), recoveredLink.getTarget(), "Unexpected target");
     }
 
     @Test
-    public void testDelete() throws Exception
+    public void testDelete()
     {
         _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
 
@@ -216,12 +218,12 @@ public abstract class LinkStoreTestCase extends UnitTestBase
 
         _linkStore.close();
         Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
-        assertEquals("Unexpected link number", 2, links.size());
+        assertEquals(2, links.size(), "Unexpected link number");
 
         _linkStore.delete();
 
         links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
-        assertEquals("Unexpected link number", 0, links.size());
+        assertEquals(0, links.size(), "Unexpected link number");
     }
 
     protected abstract LinkStore createLinkStore();

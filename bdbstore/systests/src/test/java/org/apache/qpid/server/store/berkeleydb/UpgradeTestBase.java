@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +30,7 @@ import java.util.Map;
 
 import javax.jms.Connection;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBVirtualHostNode;
@@ -38,7 +38,7 @@ import org.apache.qpid.systests.JmsTestBase;
 
 public abstract class UpgradeTestBase extends JmsTestBase
 {
-    @Before
+    @BeforeEach
     public void restartWithOldStore() throws Exception
     {
         Connection connection = getConnectionBuilder().setVirtualHost("$management").build();

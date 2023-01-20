@@ -21,10 +21,10 @@ package org.apache.qpid.server.logging.logback.jdbc;
 
 import static org.apache.qpid.server.logging.logback.jdbc.JDBCLoggerHelper.ROOT_LOGGER;
 import static org.apache.qpid.server.model.BrokerTestHelper.createBrokerMock;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,9 +32,10 @@ import java.util.Map;
 
 import ch.qos.logback.classic.db.DBAppender;
 import ch.qos.logback.core.Appender;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -46,7 +47,7 @@ public class JDBCVirtualHostLoggerImplTest extends InMemoryDatabaseTestBase
 
     private JDBCVirtualHostLoggerImpl _logger;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         final Map<String, Object> attributes = new HashMap<>();
@@ -55,7 +56,7 @@ public class JDBCVirtualHostLoggerImplTest extends InMemoryDatabaseTestBase
         _logger = new JDBCVirtualHostLoggerImpl(attributes, BrokerTestHelper.createVirtualHost(getTestName(), this));
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         if (_logger != null)

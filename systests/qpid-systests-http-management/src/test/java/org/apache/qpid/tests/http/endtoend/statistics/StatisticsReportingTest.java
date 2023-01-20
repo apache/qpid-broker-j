@@ -40,7 +40,8 @@ import javax.jms.Connection;
 import javax.jms.Session;
 
 import com.google.common.io.CharStreams;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.logback.BrokerFileLogger;
 import org.apache.qpid.server.logging.logback.BrokerNameAndLevelLogInclusionRule;

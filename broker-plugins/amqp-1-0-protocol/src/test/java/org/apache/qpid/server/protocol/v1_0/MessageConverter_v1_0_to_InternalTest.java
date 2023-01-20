@@ -21,9 +21,9 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -39,8 +39,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -77,14 +78,14 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
             new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 5));
     private MessageConverter_v1_0_to_Internal _converter;
 
-    @Before
+    @BeforeAll
     public void setUp() throws Exception
     {
         _converter = new MessageConverter_v1_0_to_Internal();
     }
 
     @Test
-    public void testAmqpValueWithNullWithTextMessageAnnotation() throws Exception
+    public void testAmqpValueWithNullWithTextMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
@@ -93,12 +94,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertNull("Unexpected content", convertedMessage.getMessageBody());
-        assertEquals("Unexpected mime type", "text/plain", convertedMessage.getMessageHeader().getMimeType());
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
+        assertEquals("text/plain", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
     }
 
     @Test
-    public void testAmqpValueWithNullWithMessageAnnotation() throws Exception
+    public void testAmqpValueWithNullWithMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
@@ -107,12 +108,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
-        assertNull("Unexpected content", convertedMessage.getMessageBody());
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testAmqpValueWithNullWithObjectMessageAnnotation() throws Exception
+    public void testAmqpValueWithNullWithObjectMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
@@ -120,14 +121,13 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type",
-                            "application/x-java-serialized-object",
-                            convertedMessage.getMessageHeader().getMimeType());
-        assertNull("Unexpected content", convertedMessage.getMessageBody());
+        assertEquals("application/x-java-serialized-object", convertedMessage.getMessageHeader().getMimeType(),
+                "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testAmqpValueWithNullWithMapMessageAnnotation() throws Exception
+    public void testAmqpValueWithNullWithMapMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
@@ -135,12 +135,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
-        assertNull("Unexpected content", convertedMessage.getMessageBody());
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testAmqpValueWithNullWithBytesMessageAnnotation() throws Exception
+    public void testAmqpValueWithNullWithBytesMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
@@ -148,14 +148,13 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type",
-                            "application/octet-stream",
-                            convertedMessage.getMessageHeader().getMimeType());
-        assertNull("Unexpected content", convertedMessage.getMessageBody());
+        assertEquals("application/octet-stream", convertedMessage.getMessageHeader().getMimeType(),
+                "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testAmqpValueWithNullWithStreamMessageAnnotation() throws Exception
+    public void testAmqpValueWithNullWithStreamMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
@@ -163,12 +162,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
-        assertNull("Unexpected content", convertedMessage.getMessageBody());
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testAmqpValueWithNullWithUnknownMessageAnnotation() throws Exception
+    public void testAmqpValueWithNullWithUnknownMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
@@ -179,12 +178,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
-        assertNull("Unexpected content", convertedMessage.getMessageBody());
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testAmqpValueWithNullWithContentType() throws Exception
+    public void testAmqpValueWithNullWithContentType()
     {
         Properties properties = new Properties();
         final String mimeType = "foo/bar";
@@ -195,13 +194,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", mimeType, convertedMessage.getMessageHeader().getMimeType());
-        assertNull("Unexpected content", convertedMessage.getMessageBody());
+        assertEquals(mimeType, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
-
     @Test
-    public void testAmqpValueWithNull() throws Exception
+    public void testAmqpValueWithNull()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
@@ -209,12 +207,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
-        assertNull("Unexpected content", convertedMessage.getMessageBody());
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testAmqpValueWithString() throws Exception
+    public void testAmqpValueWithString()
     {
         final String expected = "testContent";
         final AmqpValue amqpValue = new AmqpValue(expected);
@@ -222,12 +220,13 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", "text/plain", convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", expected, convertedMessage.getMessageBody());
+        assertEquals("text/plain", convertedMessage.getMessageHeader().getMimeType(),
+                "Unexpected mime type");
+        assertEquals(expected, convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testAmqpValueWithStringWithKnownTextualContentType() throws Exception
+    public void testAmqpValueWithStringWithKnownTextualContentType()
     {
         Properties properties = new Properties();
         final String mimeType = "text/foo";
@@ -238,12 +237,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", mimeType, convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", expected, convertedMessage.getMessageBody());
+        assertEquals(mimeType, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertEquals(expected, convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testAmqpValueWithStringWithUnknownTextualContentType() throws Exception
+    public void testAmqpValueWithStringWithUnknownTextualContentType()
     {
         Properties properties = new Properties();
         final String mimeType = "foo/bar";
@@ -254,13 +253,13 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", "text/plain", convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", expected, convertedMessage.getMessageBody());
+        assertEquals("text/plain", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertEquals(expected, convertedMessage.getMessageBody(), "Unexpected content");
     }
 
 
     @Test
-    public void testAmqpValueWithMap() throws Exception
+    public void testAmqpValueWithMap()
     {
         final Map<Object, Object> originalMap = new LinkedHashMap<>();
         originalMap.put("binaryEntry", new Binary(new byte[]{0x00, (byte) 0xFF}));
@@ -274,24 +273,23 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
 
         Map<Object, Object> convertedMap = (Map<Object, Object>) convertedMessage.getMessageBody();
 
-        assertEquals("Unexpected size", (long) originalMap.size(), (long) convertedMap.size());
-        assertArrayEquals("Unexpected binary entry", ((Binary) originalMap.get("binaryEntry")).getArray(),
-                          (byte[]) convertedMap.get("binaryEntry"));
-        assertEquals("Unexpected int entry", originalMap.get("intEntry"), convertedMap.get("intEntry"));
-        assertEquals("Unexpected null entry", originalMap.get("nullEntry"), convertedMap.get("nullEntry"));
-        assertEquals("Unexpected uuid entry", originalMap.get("uuidEntry"), convertedMap.get("uuidEntry"));
-        assertEquals("Unexpected nonstringkey entry", originalMap.get(43), convertedMap.get(43));
-        assertEquals("Unexpected map entry",
-                            new HashMap((Map) originalMap.get("mapEntry")),
-                            new HashMap((Map) convertedMap.get("mapEntry")));
+        assertEquals(originalMap.size(), (long) convertedMap.size(), "Unexpected size");
+        assertArrayEquals(((Binary) originalMap.get("binaryEntry")).getArray(), (byte[]) convertedMap.get("binaryEntry"),
+                "Unexpected binary entry");
+        assertEquals(originalMap.get("intEntry"), convertedMap.get("intEntry"), "Unexpected int entry");
+        assertEquals(originalMap.get("nullEntry"), convertedMap.get("nullEntry"), "Unexpected null entry");
+        assertEquals(originalMap.get("uuidEntry"), convertedMap.get("uuidEntry"), "Unexpected uuid entry");
+        assertEquals(originalMap.get(43), convertedMap.get(43), "Unexpected nonstringkey entry");
+        assertEquals(new HashMap((Map) originalMap.get("mapEntry")), new HashMap((Map) convertedMap.get("mapEntry")),
+                "Unexpected map entry");
     }
 
     @Test
-    public void testAmqpValueWithList() throws Exception
+    public void testAmqpValueWithList()
     {
         final List<Object> originalList = new ArrayList<>();
         originalList.add(new Binary(new byte[]{0x00, (byte) 0xFF}));
@@ -303,22 +301,21 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
 
         List<Object> convertedList = ((List<Object>) convertedMessage.getMessageBody());
-        assertEquals("Unexpected size", (long) originalList.size(), (long) convertedList.size());
-        assertArrayEquals("Unexpected binary item", ((Binary) originalList.get(0)).getArray(),
-                          (byte[]) convertedList.get(0));
-        assertEquals("Unexpected int item", originalList.get(1), convertedList.get(1));
-        assertEquals("Unexpected null item", originalList.get(2), convertedList.get(2));
-        assertEquals("Unexpected map item",
-                            new HashMap((Map) originalList.get(3)),
-                            new HashMap((Map) convertedList.get(3)));
+        assertEquals(originalList.size(), (long) convertedList.size(), "Unexpected size");
+        assertArrayEquals(((Binary) originalList.get(0)).getArray(), (byte[]) convertedList.get(0),
+                "Unexpected binary item");
+        assertEquals(originalList.get(1), convertedList.get(1), "Unexpected int item");
+        assertEquals(originalList.get(2), convertedList.get(2), "Unexpected null item");
+        assertEquals(new HashMap((Map) originalList.get(3)), new HashMap((Map) convertedList.get(3)),
+                "Unexpected map item");
     }
 
 
     @Test
-    public void testAmqpValueWithAmqpType() throws Exception
+    public void testAmqpValueWithAmqpType()
     {
         final Date originalValue = new Date();
         final AmqpValue amqpValue = new AmqpValue(originalValue);
@@ -329,12 +326,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", mimeType, convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", originalValue, convertedMessage.getMessageBody());
+        assertEquals(mimeType, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertEquals(originalValue, convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testAmqpSequenceWithSimpleTypes() throws Exception
+    public void testAmqpSequenceWithSimpleTypes()
     {
         final List<Object> originalList = new ArrayList<>();
         originalList.add(37);
@@ -344,15 +341,15 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         List<Object> convertedList = ((List<Object>) convertedMessage.getMessageBody());
-        assertEquals("Unexpected size", (long) originalList.size(), (long) convertedList.size());
-        assertEquals("Unexpected first item", originalList.get(0), convertedList.get(0));
-        assertEquals("Unexpected second item", originalList.get(1), convertedList.get(1));
+        assertEquals(originalList.size(), (long) convertedList.size(), "Unexpected size");
+        assertEquals(originalList.get(0), convertedList.get(0), "Unexpected first item");
+        assertEquals(originalList.get(1), convertedList.get(1), "Unexpected second item");
     }
 
     @Test
-    public void testDataWithMessageAnnotation() throws Exception
+    public void testDataWithMessageAnnotation()
     {
         final byte[] data = "helloworld".getBytes(UTF_8);
         doTestDataWithAnnotation(data, MESSAGE_MESSAGE_ANNOTATION, null, "application/octet-stream");
@@ -360,7 +357,7 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testDataWithMessageAnnotationWithContentType() throws Exception
+    public void testDataWithMessageAnnotationWithContentType()
     {
         final byte[] data = "helloworld".getBytes(UTF_8);
         final String mimeType = "foo/bar";
@@ -387,7 +384,7 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testDataWithMapMessageAnnotation() throws Exception
+    public void testDataWithMapMessageAnnotation()
     {
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
                                  MAP_MESSAGE_MESSAGE_ANNOTATION,
@@ -395,7 +392,7 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testDataWithMapMessageAnnotationWithContentType() throws Exception
+    public void testDataWithMapMessageAnnotationWithContentType()
     {
         final String mimeType = "foor/bar";
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
@@ -404,7 +401,7 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testDataWithBytesMessageAnnotation() throws Exception
+    public void testDataWithBytesMessageAnnotation()
     {
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
                                  BYTE_MESSAGE_MESSAGE_ANNOTATION,
@@ -412,7 +409,7 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testDataWithBytesMessageAnnotationWithContentType() throws Exception
+    public void testDataWithBytesMessageAnnotationWithContentType()
     {
         final String mimeType = "foo/bar";
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
@@ -421,14 +418,14 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testDataWithStreamMessageAnnotation() throws Exception
+    public void testDataWithStreamMessageAnnotation()
     {
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8), STREAM_MESSAGE_MESSAGE_ANNOTATION,
                                  null, "application/octet-stream");
     }
 
     @Test
-    public void testDataWithStreamMessageAnnotationWithContentType() throws Exception
+    public void testDataWithStreamMessageAnnotationWithContentType()
     {
         final String mimeType = "foo/bar";
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8), STREAM_MESSAGE_MESSAGE_ANNOTATION,
@@ -436,19 +433,19 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testDataWithTextMessageAnnotation() throws Exception
+    public void testDataWithTextMessageAnnotation()
     {
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8), TEXT_MESSAGE_MESSAGE_ANNOTATION, null, "application/octet-stream");
     }
 
     @Test
-    public void testDataWithTextMessageAnnotationWithContentType() throws Exception
+    public void testDataWithTextMessageAnnotationWithContentType()
     {
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8), TEXT_MESSAGE_MESSAGE_ANNOTATION, "foo/bar", "foo/bar");
     }
 
     @Test
-    public void testDataWithUnsupportedMessageAnnotation() throws Exception
+    public void testDataWithUnsupportedMessageAnnotation()
     {
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
                                  new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"),
@@ -457,7 +454,7 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testDataWithUnsupportedMessageAnnotationWithContentType() throws Exception
+    public void testDataWithUnsupportedMessageAnnotationWithContentType()
     {
         final String mimeType = "foo/bar";
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
@@ -475,85 +472,83 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type",
-                            "application/octet-stream",
-                            convertedMessage.getMessageHeader().getMimeType());
-        assertArrayEquals("Unexpected content", expected, ((byte[]) convertedMessage.getMessageBody()));
+        assertEquals("application/octet-stream", convertedMessage.getMessageHeader().getMimeType(),
+                "Unexpected mime type");
+        assertArrayEquals(expected, ((byte[]) convertedMessage.getMessageBody()), "Unexpected content");
     }
 
     @Test
-    public void testNoBodyWithMessageAnnotation() throws Exception
+    public void testNoBodyWithMessageAnnotation()
     {
         Message_1_0 sourceMessage = createTestMessage(MESSAGE_MESSAGE_ANNOTATION, null);
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testNoBodyWithObjectMessageAnnotation() throws Exception
+    public void testNoBodyWithObjectMessageAnnotation()
     {
         Message_1_0 sourceMessage = createTestMessage(OBJECT_MESSAGE_MESSAGE_ANNOTATION, null);
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type",
-                            "application/x-java-serialized-object",
-                            convertedMessage.getMessageHeader().getMimeType());
+        assertEquals("application/x-java-serialized-object", convertedMessage.getMessageHeader().getMimeType(),
+                "Unexpected mime type");
 
-        assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testNoBodyWithMapMessageAnnotation() throws Exception
+    public void testNoBodyWithMapMessageAnnotation()
     {
         Message_1_0 sourceMessage = createTestMessage(MAP_MESSAGE_MESSAGE_ANNOTATION, null);
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testNoBodyWithBytesMessageAnnotation() throws Exception
+    public void testNoBodyWithBytesMessageAnnotation()
     {
         Message_1_0 sourceMessage = createTestMessage(BYTE_MESSAGE_MESSAGE_ANNOTATION, null);
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type",
-                            "application/octet-stream",
-                            convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
+        assertEquals("application/octet-stream", convertedMessage.getMessageHeader().getMimeType(),
+                "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testNoBodyWithStreamMessageAnnotation() throws Exception
+    public void testNoBodyWithStreamMessageAnnotation()
     {
         Message_1_0 sourceMessage = createTestMessage(STREAM_MESSAGE_MESSAGE_ANNOTATION, null);
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testNoBodyWithTextMessageAnnotation() throws Exception
+    public void testNoBodyWithTextMessageAnnotation()
     {
         Message_1_0 sourceMessage = createTestMessage(TEXT_MESSAGE_MESSAGE_ANNOTATION, null);
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", "text/plain", convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
+        assertEquals("text/plain", convertedMessage.getMessageHeader().getMimeType(),
+                "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testNoBodyWithTextMessageAnnotationWithKnownTextualContentType() throws Exception
+    public void testNoBodyWithTextMessageAnnotationWithKnownTextualContentType()
     {
         final String mimeType = "text/foo";
         Properties properties = new Properties();
@@ -563,12 +558,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", mimeType, convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
+        assertEquals(mimeType, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testNoBodyWithTextMessageAnnotationWithUnknownTextualContentType() throws Exception
+    public void testNoBodyWithTextMessageAnnotationWithUnknownTextualContentType()
     {
         final String mimeType = "foo/bar";
         Properties properties = new Properties();
@@ -577,13 +572,14 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", "text/plain", convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
+        assertEquals("text/plain", convertedMessage.getMessageHeader().getMimeType(),
+                "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
 
     @Test
-    public void testNoBodyWithUnknownMessageAnnotation() throws Exception
+    public void testNoBodyWithUnknownMessageAnnotation()
     {
         Message_1_0 sourceMessage =
                 createTestMessage(new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"),
@@ -591,12 +587,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testNoBodyWithUnknownMessageAnnotationWithContentType() throws Exception
+    public void testNoBodyWithUnknownMessageAnnotationWithContentType()
     {
 
         final String mimeType = "foo/bar";
@@ -608,23 +604,23 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", mimeType, convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
+        assertEquals(mimeType, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testNoBody() throws Exception
+    public void testNoBody()
     {
         final Message_1_0 sourceMessage = createTestMessage(null);
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", null, convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testNoBodyWithContentTypeApplicationOctetStream() throws Exception
+    public void testNoBodyWithContentTypeApplicationOctetStream()
     {
         final String mimeType = "foo/bar";
         Properties properties = new Properties();
@@ -633,12 +629,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", mimeType, convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
+        assertEquals(mimeType, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     @Test
-    public void testMessageAnnotationTakesPrecedenceOverContentType() throws Exception
+    public void testMessageAnnotationTakesPrecedenceOverContentType()
     {
         final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf("application/octet-stream"));
@@ -646,10 +642,9 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type",
-                            "application/x-java-serialized-object",
-                            convertedMessage.getMessageHeader().getMimeType());
-        assertEquals("Unexpected content", null, convertedMessage.getMessageBody());
+        assertEquals("application/x-java-serialized-object", convertedMessage.getMessageHeader().getMimeType(),
+                "Unexpected mime type");
+        assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
     private Message_1_0 createTestMessage(final EncodingRetainingSection encodingRetainingSection)
@@ -764,8 +759,9 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("Unexpected mime type", expectedMimeType, convertedMessage.getMessageHeader().getMimeType());
-        assertArrayEquals("Unexpected content", data, ((byte[]) convertedMessage.getMessageBody()));
+        assertEquals(expectedMimeType, convertedMessage.getMessageHeader().getMimeType(),
+                "Unexpected mime type");
+        assertArrayEquals(data, ((byte[]) convertedMessage.getMessageBody()), "Unexpected content");
 
     }
 

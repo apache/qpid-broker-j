@@ -20,13 +20,13 @@
  */
 package org.apache.qpid.server.query.engine.validation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContext;
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContextHolder;
@@ -42,7 +42,7 @@ public class QueryExpressionValidatorTest
 {
     private final QueryExpressionValidator _validator = new QueryExpressionValidator();
 
-    @Before()
+    @BeforeEach()
     public void setUp()
     {
         final EvaluationContext ctx = EvaluationContextHolder.getEvaluationContext();

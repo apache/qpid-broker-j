@@ -24,7 +24,7 @@ import static org.mockito.Mockito.mock;
 import java.security.AccessControlContext;
 import java.security.AccessController;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -35,9 +35,9 @@ public class HouseKeepingTaskTest extends UnitTestBase
     @Test
     public void runExecuteThrowsConnectionScopeRuntimeException()
     {
-        final VirtualHost virualHost = mock(VirtualHost.class);
+        final VirtualHost<?> virtualHost = mock(VirtualHost.class);
         final AccessControlContext context = AccessController.getContext();
-        final HouseKeepingTask task = new HouseKeepingTask(getTestName(), virualHost, context)
+        final HouseKeepingTask task = new HouseKeepingTask(getTestName(), virtualHost, context)
         {
             @Override
             public void execute()
@@ -45,7 +45,6 @@ public class HouseKeepingTaskTest extends UnitTestBase
                 throw new ConnectionScopedRuntimeException("Test");
             }
         };
-
         task.run();
     }
 }

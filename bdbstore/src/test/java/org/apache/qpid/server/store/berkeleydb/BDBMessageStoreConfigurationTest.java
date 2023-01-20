@@ -20,13 +20,11 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.VirtualHost;
@@ -38,11 +36,12 @@ import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
 public class BDBMessageStoreConfigurationTest extends AbstractDurableConfigurationStoreTestCase
 {
-    @Before
+    @BeforeEach
     @Override
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(getVirtualHostNodeStoreType().equals(VirtualHostNodeStoreType.BDB),
+                "VirtualHostNodeStoreType should be BDB");
         super.setUp();
     }
 
@@ -55,7 +54,7 @@ public class BDBMessageStoreConfigurationTest extends AbstractDurableConfigurati
     }
 
     @Override
-    protected DurableConfigurationStore createConfigStore() throws Exception
+    protected DurableConfigurationStore createConfigStore()
     {
         return new BDBConfigurationStore(VirtualHost.class);
     }

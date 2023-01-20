@@ -28,8 +28,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.model.Exchange;
@@ -46,7 +46,7 @@ public class ServerSessionDelegateTest extends UnitTestBase
     private ServerSession _session;
     private ServerSessionDelegate _delegate;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _host = mock(VirtualHost.class);

@@ -20,10 +20,12 @@
  */
 package org.apache.qpid.server.plugin;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
+import java.util.Arrays;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -31,58 +33,46 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class AMQPProtocolVersionWrapperTest extends UnitTestBase
 {
     @Test
-    public void testAMQPProtocolVersionWrapper() throws Exception
+    public void testAMQPProtocolVersionWrapper()
     {
         final AMQPProtocolVersionWrapper wrapper0_8 = new AMQPProtocolVersionWrapper(Protocol.AMQP_0_8);
-        assertEquals((long) 0, (long) wrapper0_8.getMajor());
-        assertEquals((long) 8, (long) wrapper0_8.getMinor());
-        assertEquals((long) 0, (long) wrapper0_8.getPatch());
+        assertEquals(0, (long) wrapper0_8.getMajor());
+        assertEquals(8, (long) wrapper0_8.getMinor());
+        assertEquals(0, (long) wrapper0_8.getPatch());
 
         final AMQPProtocolVersionWrapper wrapper0_9 = new AMQPProtocolVersionWrapper(Protocol.AMQP_0_9);
-        assertEquals((long) 0, (long) wrapper0_9.getMajor());
-        assertEquals((long) 9, (long) wrapper0_9.getMinor());
-        assertEquals((long) 0, (long) wrapper0_9.getPatch());
+        assertEquals(0, (long) wrapper0_9.getMajor());
+        assertEquals(9, (long) wrapper0_9.getMinor());
+        assertEquals(0, (long) wrapper0_9.getPatch());
 
         final AMQPProtocolVersionWrapper wrapper0_9_1 = new AMQPProtocolVersionWrapper(Protocol.AMQP_0_9_1);
-        assertEquals((long) 0, (long) wrapper0_9_1.getMajor());
-        assertEquals((long) 9, (long) wrapper0_9_1.getMinor());
-        assertEquals((long) 1, (long) wrapper0_9_1.getPatch());
+        assertEquals(0, (long) wrapper0_9_1.getMajor());
+        assertEquals(9, (long) wrapper0_9_1.getMinor());
+        assertEquals(1, (long) wrapper0_9_1.getPatch());
 
         final AMQPProtocolVersionWrapper wrapper0_10 = new AMQPProtocolVersionWrapper(Protocol.AMQP_0_10);
-        assertEquals((long) 0, (long) wrapper0_10.getMajor());
-        assertEquals((long) 10, (long) wrapper0_10.getMinor());
-        assertEquals((long) 0, (long) wrapper0_10.getPatch());
+        assertEquals(0, (long) wrapper0_10.getMajor());
+        assertEquals(10, (long) wrapper0_10.getMinor());
+        assertEquals(0, (long) wrapper0_10.getPatch());
 
         final AMQPProtocolVersionWrapper wrapper1_0 = new AMQPProtocolVersionWrapper(Protocol.AMQP_1_0);
-        assertEquals((long) 1, (long) wrapper1_0.getMajor());
-        assertEquals((long) 0, (long) wrapper1_0.getMinor());
-        assertEquals((long) 0, (long) wrapper1_0.getPatch());
+        assertEquals(1, (long) wrapper1_0.getMajor());
+        assertEquals(0, (long) wrapper1_0.getMinor());
+        assertEquals(0, (long) wrapper1_0.getPatch());
     }
 
     @Test
-    public void testAMQPProtocolVersionWrapperGetProtocol() throws Exception
+    public void testAMQPProtocolVersionWrapperGetProtocol()
     {
-        for (final Protocol protocol : Protocol.values())
-        {
-            if (protocol.isAMQP())
-            {
-                assertEquals(protocol, new AMQPProtocolVersionWrapper(protocol).getProtocol());
-            }
-        }
+        Arrays.stream(Protocol.values()).filter(Protocol::isAMQP)
+                .forEach(protocol -> assertEquals(protocol, new AMQPProtocolVersionWrapper(protocol).getProtocol()));
     }
 
     @Test
-    public void testWrappingNonAMQPProtocol() throws Exception
+    public void testWrappingNonAMQPProtocol()
     {
-        try
-        {
-            new AMQPProtocolVersionWrapper(Protocol.HTTP);
-            fail("IllegalArgumentException exception expected when Protocol is not AMQP based");
-        }
-        catch (IllegalArgumentException iae)
-        {
-            // pass
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> new AMQPProtocolVersionWrapper(Protocol.HTTP),
+                "IllegalArgumentException exception expected when Protocol is not AMQP based");
     }
-
 }

@@ -26,7 +26,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Collections;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;

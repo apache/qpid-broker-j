@@ -25,8 +25,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.controller.CategoryController;
 import org.apache.qpid.server.management.plugin.controller.LegacyManagementController;
@@ -37,7 +37,7 @@ public class LegacyCategoryControllerFactoryTest extends UnitTestBase
     private LegacyCategoryControllerFactory _factory;
     private LegacyManagementController _nextVersionManagementController;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _nextVersionManagementController = mock(LegacyManagementController.class);

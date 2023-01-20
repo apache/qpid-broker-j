@@ -28,22 +28,10 @@ import java.util.Map;
 import org.apache.qpid.disttest.message.CreateConnectionCommand;
 import org.apache.qpid.disttest.message.CreateConsumerCommand;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class IterationValueTest extends UnitTestBase
 {
@@ -54,18 +42,18 @@ public class IterationValueTest extends UnitTestBase
     private CreateConsumerCommand _createConsumerCommand;
     private Map<String, String> _iterationValueMap;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _createConsumerCommand = mock(CreateConsumerCommand.class);
 
-        _iterationValueMap = new HashMap<String, String>();
+        _iterationValueMap = new HashMap<>();
         _iterationValueMap.put("_maximumDuration", String.valueOf(MAXIMUM_DURATION));
         _iterationValueMap.put("_durableSubscription", String.valueOf(IS_DURABLE_SUBSCRIPTION));
     }
 
     @Test
-    public void testApplyPopulatedIterationValueToCommandWithMatchingProperties() throws Exception
+    public void testApplyPopulatedIterationValueToCommandWithMatchingProperties()
     {
         IterationValue iterationValue = new IterationValue(_iterationValueMap);
 
@@ -76,7 +64,7 @@ public class IterationValueTest extends UnitTestBase
     }
 
     @Test
-    public void testApplyPopulatedIterationValueToCommandWithoutMatchingProperties() throws Exception
+    public void testApplyPopulatedIterationValueToCommandWithoutMatchingProperties()
     {
         IterationValue iterationValue = new IterationValue(_iterationValueMap);
 
@@ -87,7 +75,7 @@ public class IterationValueTest extends UnitTestBase
     }
 
     @Test
-    public void testApplyUnpopulatedIterationValueToCommand() throws Exception
+    public void testApplyUnpopulatedIterationValueToCommand()
     {
         IterationValue iterationValue = new IterationValue();
 

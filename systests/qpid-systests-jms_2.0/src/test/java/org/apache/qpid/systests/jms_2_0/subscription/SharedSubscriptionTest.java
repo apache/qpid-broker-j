@@ -19,10 +19,10 @@
 
 package org.apache.qpid.systests.jms_2_0.subscription;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -31,7 +31,7 @@ import javax.jms.MessageConsumer;
 import javax.jms.Session;
 import javax.jms.Topic;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.Utils;
@@ -60,17 +60,17 @@ public class SharedSubscriptionTest extends JmsTestBase
             Message message1 = consumer1.receive(getReceiveTimeout());
             Message message2 = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Message 1 was not received", message1);
-            assertNotNull("Message 2 was not received", message2);
+            assertNotNull(message1, "Message 1 was not received");
+            assertNotNull(message2, "Message 2 was not received");
 
-            assertEquals("Unexpected index for message 1", 0, message1.getIntProperty(Utils.INDEX));
-            assertEquals("Unexpected index for message 2", 1, message2.getIntProperty(Utils.INDEX));
+            assertEquals(0, message1.getIntProperty(Utils.INDEX), "Unexpected index for message 1");
+            assertEquals(1, message2.getIntProperty(Utils.INDEX), "Unexpected index for message 2");
 
             Message message3 = consumer1.receive(getReceiveTimeout());
             Message message4 = consumer2.receive(getReceiveTimeout());
 
-            assertNull("Unexpected message received by first shared consumer", message3);
-            assertNull("Unexpected message received by second shared consumer", message4);
+            assertNull(message3, "Unexpected message received by first shared consumer");
+            assertNull(message4, "Unexpected message received by second shared consumer");
         }
     }
 
@@ -97,13 +97,11 @@ public class SharedSubscriptionTest extends JmsTestBase
             Message message1 = consumer1.receive(getReceiveTimeout());
             Message message2 = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Message 1 was not received", message1);
-            assertNotNull("Message 2 was not received", message2);
+            assertNotNull(message1, "Message 1 was not received");
+            assertNotNull(message2, "Message 2 was not received");
 
-            assertEquals("Unexpected index for message 1", 0, message1.getIntProperty(Utils.INDEX));
-            assertEquals("Unexpected index for message 2", 1, message2.getIntProperty(Utils.INDEX));
-
-            connection.close();
+            assertEquals(0, message1.getIntProperty(Utils.INDEX), "Unexpected index for message 1");
+            assertEquals(1, message2.getIntProperty(Utils.INDEX), "Unexpected index for message 2");
         }
 
         if (getBrokerAdmin().supportsRestart())
@@ -124,19 +122,17 @@ public class SharedSubscriptionTest extends JmsTestBase
             Message message3 = consumer1.receive(getReceiveTimeout());
             Message message4 = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Message 3 was not received", message3);
-            assertNotNull("Message 4 was not received", message4);
+            assertNotNull(message3, "Message 3 was not received");
+            assertNotNull(message4, "Message 4 was not received");
 
-            assertEquals("Unexpected index for message 3", 2, message3.getIntProperty(Utils.INDEX));
-            assertEquals("Unexpected index for message 4", 3, message4.getIntProperty(Utils.INDEX));
+            assertEquals(2, message3.getIntProperty(Utils.INDEX), "Unexpected index for message 3");
+            assertEquals(3, message4.getIntProperty(Utils.INDEX), "Unexpected index for message 4");
 
             Message message5 = consumer1.receive(getReceiveTimeout());
             Message message6 = consumer2.receive(getReceiveTimeout());
 
-            assertNull("Unexpected message received by first shared consumer", message5);
-            assertNull("Unexpected message received by second shared consumer", message6);
-
-            connection.close();
+            assertNull(message5, "Unexpected message received by first shared consumer");
+            assertNull(message6, "Unexpected message received by second shared consumer");
         }
     }
 
@@ -168,11 +164,11 @@ public class SharedSubscriptionTest extends JmsTestBase
             MessageConsumer consumer = session.createSharedDurableConsumer(topic, subscriptionName);
 
             int numberOfQueuesBeforeUnsubscribe = getQueueCount();
-            assertEquals("Unexpected number of Queues", numberOfQueuesBeforeTest + 1, numberOfQueuesBeforeUnsubscribe);
+            assertEquals(numberOfQueuesBeforeTest + 1, numberOfQueuesBeforeUnsubscribe,
+                    "Unexpected number of Queues");
 
             consumer.close();
             session.close();
-            connection.close();
         }
 
         if (getBrokerAdmin().supportsRestart())
@@ -186,7 +182,7 @@ public class SharedSubscriptionTest extends JmsTestBase
             session.unsubscribe(subscriptionName);
 
             int numberOfQueuesAfterUnsubscribe = getQueueCount();
-            assertEquals("Queue should be deleted", numberOfQueuesBeforeTest, numberOfQueuesAfterUnsubscribe);
+            assertEquals(numberOfQueuesBeforeTest, numberOfQueuesAfterUnsubscribe, "Queue should be deleted");
         }
     }
 
@@ -209,11 +205,11 @@ public class SharedSubscriptionTest extends JmsTestBase
             Message message1 = consumer1.receive(getReceiveTimeout());
             Message message2 = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Message 1 was not received", message1);
-            assertNotNull("Message 2 was not received", message2);
+            assertNotNull(message1, "Message 1 was not received");
+            assertNotNull(message2, "Message 2 was not received");
 
-            assertEquals("Unexpected index for message 1", 0, message1.getIntProperty(Utils.INDEX));
-            assertEquals("Unexpected index for message 2", 0, message2.getIntProperty(Utils.INDEX));
+            assertEquals(0, message1.getIntProperty(Utils.INDEX), "Unexpected index for message 1");
+            assertEquals(0, message2.getIntProperty(Utils.INDEX), "Unexpected index for message 2");
         }
     }
 
@@ -239,11 +235,11 @@ public class SharedSubscriptionTest extends JmsTestBase
             Message message1 = consumer1.receive(getReceiveTimeout());
             Message message2 = consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Message 1 was not received", message1);
-            assertNotNull("Message 2 was not received", message2);
+            assertNotNull(message1, "Message 1 was not received");
+            assertNotNull(message2, "Message 2 was not received");
 
-            assertEquals("Unexpected index for message 1", 0, message1.getIntProperty(Utils.INDEX));
-            assertEquals("Unexpected index for message 2", 0, message2.getIntProperty(Utils.INDEX));
+            assertEquals(0, message1.getIntProperty(Utils.INDEX), "Unexpected index for message 1");
+            assertEquals(0, message2.getIntProperty(Utils.INDEX), "Unexpected index for message 2");
         }
     }
 
@@ -269,8 +265,8 @@ public class SharedSubscriptionTest extends JmsTestBase
             connection2.start();
 
             Message message1 = consumer1.receive(getReceiveTimeout());
-            assertNotNull("Message 1 was not received", message1);
-            assertEquals("Unexpected index for message 1", 2, message1.getIntProperty(Utils.INDEX));
+            assertNotNull(message1, "Message 1 was not received");
+            assertEquals(2, message1.getIntProperty(Utils.INDEX), "Unexpected index for message 1");
 
             try
             {
@@ -296,29 +292,27 @@ public class SharedSubscriptionTest extends JmsTestBase
                     subscriber2Session.createSharedDurableConsumer(topic, "subscription", "index>2");
 
             Message message2 = consumer2.receive(getReceiveTimeout());
-            assertNull(
-                    "No message should be received as re-subscribing with different topic or selector is equivalent to unsubscribe/subscribe",
-                    message2);
+            assertNull(message2,
+                       "No message should be received as re-subscribing with different topic or selector is equivalent to unsubscribe/subscribe");
 
             Utils.sendMessages(publishingSession, topic, 4);
 
             Message message3 = consumer2.receive(getReceiveTimeout());
-            assertNotNull("Should receive message 3", message3);
-            assertEquals("Unexpected index for message 3", 3, message3.getIntProperty(Utils.INDEX));
+            assertNotNull(message3, "Should receive message 3");
+            assertEquals(3, message3.getIntProperty(Utils.INDEX), "Unexpected index for message 3");
             consumer2.close();
 
             MessageConsumer consumer3 =
                     subscriber2Session.createSharedDurableConsumer(topic2, "subscription", "index>2");
             Message message4 = consumer3.receive(getReceiveTimeout());
 
-            assertNull(
-                    "No message should be received as re-subscribing with different topic or selector is equivalent to unsubscribe/subscribe",
-                    message4);
+            assertNull(message4,
+                    "No message should be received as re-subscribing with different topic or selector is equivalent to unsubscribe/subscribe");
 
             Utils.sendMessages(publishingSession, topic2, 4);
 
             Message message5 = consumer3.receive(getReceiveTimeout());
-            assertEquals("Unexpected index for message 5", 3, message5.getIntProperty(Utils.INDEX));
+            assertEquals(3, message5.getIntProperty(Utils.INDEX), "Unexpected index for message 5");
         }
     }
 

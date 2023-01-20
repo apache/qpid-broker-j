@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.systests.jms_1_1.topic;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -32,13 +32,12 @@ import javax.jms.Session;
 import javax.jms.TemporaryTopic;
 import javax.jms.TextMessage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
 public class TemporaryTopicTest extends JmsTestBase
 {
-
     @Test
     public void testMessageDeliveryUsingTemporaryTopic() throws Exception
     {
@@ -47,7 +46,7 @@ public class TemporaryTopicTest extends JmsTestBase
         {
             final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             final TemporaryTopic topic = session.createTemporaryTopic();
-            assertNotNull("Temporary topic is null", topic);
+            assertNotNull(topic, "Temporary topic is null");
             final MessageProducer producer = session.createProducer(topic);
             final MessageConsumer consumer1 = session.createConsumer(topic);
             final MessageConsumer consumer2 = session.createConsumer(topic);
@@ -57,9 +56,9 @@ public class TemporaryTopicTest extends JmsTestBase
             final TextMessage tm1 = (TextMessage) consumer1.receive(getReceiveTimeout());
             final TextMessage tm2 = (TextMessage) consumer2.receive(getReceiveTimeout());
 
-            assertNotNull("Message not received by subscriber1", tm1);
+            assertNotNull(tm1, "Message not received by subscriber1");
             assertEquals("hello", tm1.getText());
-            assertNotNull("Message not received by subscriber2", tm2);
+            assertNotNull(tm2, "Message not received by subscriber2");
             assertEquals("hello", tm2.getText());
         }
         finally
@@ -76,7 +75,7 @@ public class TemporaryTopicTest extends JmsTestBase
         {
             final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             final TemporaryTopic topic = session.createTemporaryTopic();
-            assertNotNull("Temporary topic is null", topic);
+            assertNotNull(topic, "Temporary topic is null");
             final MessageConsumer consumer = session.createConsumer(topic);
             connection.start();
             try
@@ -152,14 +151,14 @@ public class TemporaryTopicTest extends JmsTestBase
         {
             final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             final TemporaryTopic topic = session.createTemporaryTopic();
-            assertNotNull("Temporary topic is null", topic);
+            assertNotNull(topic, "Temporary topic is null");
 
             final MessageProducer producer = session.createProducer(topic);
             final MessageConsumer consumer1 = session.createConsumer(topic);
             connection.start();
             producer.send(session.createTextMessage("message1"));
             TextMessage tm = (TextMessage) consumer1.receive(getReceiveTimeout());
-            assertNotNull("Message not received by first consumer", tm);
+            assertNotNull(tm, "Message not received by first consumer");
             assertEquals("message1", tm.getText());
             consumer1.close();
 
@@ -167,7 +166,7 @@ public class TemporaryTopicTest extends JmsTestBase
             connection.start();
             producer.send(session.createTextMessage("message2"));
             tm = (TextMessage) consumer2.receive(getReceiveTimeout());
-            assertNotNull("Message not received by second consumer", tm);
+            assertNotNull(tm, "Message not received by second consumer");
             assertEquals("message2", tm.getText());
             consumer2.close();
         }

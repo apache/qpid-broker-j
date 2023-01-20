@@ -25,23 +25,19 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class UpgraderHelperTest
 {
-
     @Test
     public void renameContextVariables()
     {
-        final Map<String, String> context = new HashMap<>();
-        context.put("foo", "fooValue");
-        context.put("bar", "barValue");
+        final Map<String, String> context = Map.of("foo", "fooValue",
+                "bar", "barValue");
         final Map<String, String> newContext =
-                UpgraderHelper.renameContextVariables(context, Collections.singletonMap("foo", "newFoo"));
+                UpgraderHelper.renameContextVariables(context, Map.of("foo", "newFoo"));
         assertThat(newContext, is(notNullValue()));
         assertThat(newContext.size(), equalTo(context.size()));
         assertThat(newContext.get("bar"), equalTo(context.get("bar")));

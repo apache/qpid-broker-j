@@ -23,7 +23,6 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 import org.apache.qpid.server.model.ManagedAnnotation;
 import org.apache.qpid.server.model.ManagedInterface;
 
-
 @ManagedAnnotation
 public interface TestRechargeable extends ManagedInterface
 {

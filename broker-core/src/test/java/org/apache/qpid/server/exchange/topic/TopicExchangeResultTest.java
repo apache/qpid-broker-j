@@ -21,27 +21,26 @@
 package org.apache.qpid.server.exchange.topic;
 
 import static org.apache.qpid.server.model.Binding.BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.exchange.AbstractExchange;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.test.utils.UnitTestBase;
 
-public class TopicExchangeResultTest
+public class TopicExchangeResultTest extends UnitTestBase
 {
-
     @Test
     public void processMessageForUnfilteredDestinations()
     {
@@ -49,23 +48,22 @@ public class TopicExchangeResultTest
 
         final MessageDestination unfilteredDestination1 = mock(MessageDestination.class);
         result.addUnfilteredDestination(unfilteredDestination1);
-        result.addBinding(new AbstractExchange.BindingIdentifier("key1", unfilteredDestination1),
-                          Collections.emptyMap());
+        result.addBinding(new AbstractExchange.BindingIdentifier("key1", unfilteredDestination1), Map.of());
 
         final MessageDestination unfilteredDestination2 = mock(MessageDestination.class);
         result.addUnfilteredDestination(unfilteredDestination2);
         result.addBinding(new AbstractExchange.BindingIdentifier("key2", unfilteredDestination2),
-                          Collections.singletonMap(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY, "replacement"));
+                Map.of(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY, "replacement"));
 
         final Filterable msg = mock(Filterable.class);
         final Map<MessageDestination, Set<String>> matches = new HashMap<>();
 
         result.processMessage(msg, matches, "test");
 
-        assertTrue("Unfiltered destination is not found ", matches.containsKey(unfilteredDestination1));
-        assertEquals(Collections.singleton("test"), matches.get(unfilteredDestination1));
-        assertTrue("Replacement key destination is not found ", matches.containsKey(unfilteredDestination2));
-        assertEquals(Collections.singleton("replacement"), matches.get(unfilteredDestination2));
+        assertTrue(matches.containsKey(unfilteredDestination1), "Unfiltered destination is not found ");
+        assertEquals(Set.of("test"), matches.get(unfilteredDestination1));
+        assertTrue(matches.containsKey(unfilteredDestination2), "Replacement key destination is not found ");
+        assertEquals(Set.of("replacement"), matches.get(unfilteredDestination2));
     }
 
 
@@ -73,20 +71,19 @@ public class TopicExchangeResultTest
     public void processMessageForFilteredDestinations()
     {
         final TopicExchangeResult result = new TopicExchangeResult();
-
         final MessageDestination matchingFilteredDestination = mock(MessageDestination.class);
         final FilterManager matchingFilter = mock(FilterManager.class);
         result.addFilteredDestination(matchingFilteredDestination, matchingFilter);
         result.addBinding(new AbstractExchange.BindingIdentifier("key1", matchingFilteredDestination),
-                          Collections.emptyMap());
+                Map.of());
         result.addBinding(new AbstractExchange.BindingIdentifier("key3", matchingFilteredDestination),
-                          Collections.singletonMap(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY, "replacement"));
+                Map.of(BINDING_ARGUMENT_REPLACEMENT_ROUTING_KEY, "replacement"));
 
         final MessageDestination notMatchingFilteredDestination = mock(MessageDestination.class);
         final FilterManager nonMatchingFilter = mock(FilterManager.class);
         result.addFilteredDestination(notMatchingFilteredDestination, nonMatchingFilter);
         result.addBinding(new AbstractExchange.BindingIdentifier("key2", notMatchingFilteredDestination),
-                          Collections.emptyMap());
+                Map.of());
 
         final Filterable msg = mock(Filterable.class);
         when(matchingFilter.allAllow(msg)).thenReturn(true);
@@ -95,9 +92,8 @@ public class TopicExchangeResultTest
         final Map<MessageDestination, Set<String>> matches = new HashMap<>();
         result.processMessage(msg, matches, "test");
 
-        assertTrue("Matched destination is not found ", matches.containsKey(matchingFilteredDestination));
-        assertEquals(Collections.singleton("replacement"), matches.get(matchingFilteredDestination));
-        assertFalse("Unfiltered destination is not found ", matches.containsKey(notMatchingFilteredDestination));
+        assertTrue(matches.containsKey(matchingFilteredDestination), "Matched destination is not found ");
+        assertEquals(Set.of("replacement"), matches.get(matchingFilteredDestination));
+        assertFalse(matches.containsKey(notMatchingFilteredDestination), "Unfiltered destination is not found ");
     }
-
 }

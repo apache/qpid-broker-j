@@ -20,10 +20,11 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
@@ -40,6 +41,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -49,9 +51,10 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.read.ListAppender;
 import ch.qos.logback.core.spi.FilterReply;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,23 +80,23 @@ import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class AbstractVirtualHostTest extends UnitTestBase
 {
     private TaskExecutor _taskExecutor;
     private VirtualHostNode _node;
     private MessageStore _failingStore;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
-        SystemConfig systemConfig = mock(SystemConfig.class);
+        final SystemConfig systemConfig = mock(SystemConfig.class);
         when(systemConfig.getEventLogger()).thenReturn(mock(EventLogger.class));
         when(systemConfig.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
-        AccessControl accessControlMock = BrokerTestHelper.createAccessControlMock();
-        Principal systemPrincipal = mock(Principal.class);
-        Broker<?> broker = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(Broker.class, systemPrincipal,
-                                                                                    accessControlMock);
+        final AccessControl<?> accessControlMock = BrokerTestHelper.createAccessControlMock();
+        final Principal systemPrincipal = mock(Principal.class);
+        final Broker broker = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(Broker.class, systemPrincipal,
+                accessControlMock);
         when(broker.getParent()).thenReturn(systemConfig);
         when(broker.getModel()).thenReturn(BrokerModel.getInstance());
 
@@ -103,7 +106,7 @@ public class AbstractVirtualHostTest extends UnitTestBase
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
 
         _node = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(VirtualHostNode.class,
-                                                                         systemPrincipal, accessControlMock);
+                systemPrincipal, accessControlMock);
         when(_node.getParent()).thenReturn(broker);
         when(_node.getModel()).thenReturn(BrokerModel.getInstance());
         when(_node.getTaskExecutor()).thenReturn(_taskExecutor);
@@ -117,8 +120,8 @@ public class AbstractVirtualHostTest extends UnitTestBase
         doThrow(new RuntimeException("Cannot open store")).when(_failingStore).openMessageStore(any(ConfiguredObject.class));
     }
 
-    @After
-    public void  tearDown() throws Exception
+    @AfterEach
+    public void tearDown() throws Exception
     {
         if (_taskExecutor != null)
         {
@@ -129,9 +132,9 @@ public class AbstractVirtualHostTest extends UnitTestBase
     @Test
     public void testValidateMessageStoreCreationFails()
     {
-        Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
+        final Map<String,Object> attributes = Map.of(AbstractVirtualHost.NAME, getTestName());
 
-        AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
+        final AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
         {
             @Override
             protected MessageStore createMessageStore()
@@ -140,29 +143,20 @@ public class AbstractVirtualHostTest extends UnitTestBase
             }
         };
 
-        try
-        {
-            host.validateMessageStoreCreation();
-            fail("Validation on creation should fail");
-        }
-        catch(IllegalConfigurationException e)
-        {
-            assertTrue("Unexpected exception " + e.getMessage(),
-                              e.getMessage().startsWith("Cannot open virtual host message store"));
-
-        }
-        finally
-        {
-            host.close();
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                host::validateMessageStoreCreation,
+                "Validation on creation should fail");
+        assertTrue(thrown.getMessage().startsWith("Cannot open virtual host message store"),
+                "Unexpected exception " + thrown.getMessage());
+        host.close();
     }
 
     @Test
     public void testValidateMessageStoreCreationSucceeds()
     {
-        Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
+        final Map<String,Object> attributes = Map.of(AbstractVirtualHost.NAME, getTestName());
         final MessageStore store = mock(MessageStore.class);
-        AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
+        final AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
         {
             @Override
             protected MessageStore createMessageStore()
@@ -180,9 +174,9 @@ public class AbstractVirtualHostTest extends UnitTestBase
     @Test
     public void testOpenFails()
     {
-        Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
+        final Map<String,Object> attributes = Map.of(AbstractVirtualHost.NAME, getTestName());
 
-        AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
+        final AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
         {
             @Override
             protected MessageStore createMessageStore()
@@ -192,18 +186,18 @@ public class AbstractVirtualHostTest extends UnitTestBase
         };
 
         host.open();
-        assertEquals("Unexpected host state", State.ERRORED, host.getState());
+        assertEquals(State.ERRORED, host.getState(), "Unexpected host state");
         host.close();
     }
 
     @Test
     public void testOpenSucceeds()
     {
-        Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
+        final Map<String,Object> attributes = Map.of(AbstractVirtualHost.NAME, getTestName());
         final MessageStore store = mock(MessageStore.class);
         when(store.newMessageStoreReader()).thenReturn(mock(MessageStore.MessageStoreReader.class));
 
-        AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
+        final AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
         {
             @Override
             protected MessageStore createMessageStore()
@@ -219,16 +213,16 @@ public class AbstractVirtualHostTest extends UnitTestBase
         };
 
         host.open();
-        assertEquals("Unexpected host state", State.ACTIVE, host.getState());
+        assertEquals(State.ACTIVE, host.getState(), "Unexpected host state");
         verify(store, atLeastOnce()).openMessageStore(host);
         host.close();
     }
 
     @Test
-    public void testDeleteInErrorStateAfterOpen() throws Exception
+    public void testDeleteInErrorStateAfterOpen()
     {
-        Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
-        AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
+        final Map<String,Object> attributes = Map.of(AbstractVirtualHost.NAME, getTestName());
+        final AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
         {
             @Override
             protected MessageStore createMessageStore()
@@ -239,20 +233,19 @@ public class AbstractVirtualHostTest extends UnitTestBase
 
         host.open();
 
-        assertEquals("Unexpected state", State.ERRORED, host.getState());
+        assertEquals(State.ERRORED, host.getState(), "Unexpected state");
 
         host.delete();
-        assertEquals("Unexpected state", State.DELETED, host.getState());
+        assertEquals(State.DELETED, host.getState(), "Unexpected state");
     }
 
     @Test
-    public void testActivateInErrorStateAfterOpen() throws Exception
+    public void testActivateInErrorStateAfterOpen()
     {
-        Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME,
-                                                                                 getTestName());
+        final Map<String,Object> attributes = Map.of(AbstractVirtualHost.NAME, getTestName());
         final MessageStore store = mock(MessageStore.class);
         doThrow(new RuntimeException("Cannot open store")).when(store).openMessageStore(any(ConfiguredObject.class));
-        AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
+        final AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
         {
             @Override
             protected MessageStore createMessageStore()
@@ -262,23 +255,23 @@ public class AbstractVirtualHostTest extends UnitTestBase
         };
 
         host.open();
-        assertEquals("Unexpected state", State.ERRORED, host.getState());
+        assertEquals(State.ERRORED, host.getState(), "Unexpected state");
 
         doNothing().when(store).openMessageStore(any(ConfiguredObject.class));
         when(store.newMessageStoreReader()).thenReturn(mock(MessageStore.MessageStoreReader.class));
 
         host.setAttributes(Collections.<String, Object>singletonMap(VirtualHost.DESIRED_STATE, State.ACTIVE));
-        assertEquals("Unexpected state", State.ACTIVE, host.getState());
+        assertEquals(State.ACTIVE, host.getState(), "Unexpected state");
         host.close();
     }
 
     @Test
-    public void testStartInErrorStateAfterOpen() throws Exception
+    public void testStartInErrorStateAfterOpen()
     {
-        Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
+        final Map<String,Object> attributes = Map.of(AbstractVirtualHost.NAME, getTestName());
         final MessageStore store = mock(MessageStore.class);
         doThrow(new RuntimeException("Cannot open store")).when(store).openMessageStore(any(ConfiguredObject.class));
-        AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
+        final AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
         {
             @Override
             protected MessageStore createMessageStore()
@@ -288,13 +281,13 @@ public class AbstractVirtualHostTest extends UnitTestBase
         };
 
         host.open();
-        assertEquals("Unexpected state", State.ERRORED, host.getState());
+        assertEquals(State.ERRORED, host.getState(), "Unexpected state");
 
         doNothing().when(store).openMessageStore(any(ConfiguredObject.class));
         when(store.newMessageStoreReader()).thenReturn(mock(MessageStore.MessageStoreReader.class));
 
         host.start();
-        assertEquals("Unexpected state", State.ACTIVE, host.getState());
+        assertEquals(State.ACTIVE, host.getState(), "Unexpected state");
         host.close();
     }
 
@@ -302,11 +295,10 @@ public class AbstractVirtualHostTest extends UnitTestBase
     @Test
     public void testFileSystemCheckWarnsWhenFileSystemDoesNotExist() throws Exception
     {
-        Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME,
-                                                                                 getTestName());
+        final Map<String,Object> attributes = Map.of(AbstractVirtualHost.NAME, getTestName());
         final MessageStore store = mock(MessageStore.class);
         when(store.newMessageStoreReader()).thenReturn(mock(MessageStore.MessageStoreReader.class));
-        File nonExistingFile = TestFileUtils.createTempFile(this);
+        final File nonExistingFile = TestFileUtils.createTempFile(this);
         FileUtils.delete(nonExistingFile, false);
         when(store.getStoreLocationAsFile()).thenReturn(nonExistingFile);
         setTestSystemProperty("virtualhost.housekeepingCheckPeriod", "100");
@@ -320,15 +312,8 @@ public class AbstractVirtualHostTest extends UnitTestBase
             }
         };
 
-        String loggerName = AbstractVirtualHost.class.getName();
-        assertActionProducesLogMessage(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                host.open();
-            }
-        }, loggerName, Level.WARN, "Cannot check file system for disk space");
+        final String loggerName = AbstractVirtualHost.class.getName();
+        assertActionProducesLogMessage(host::open, loggerName, Level.WARN, "Cannot check file system for disk space");
         host.close();
     }
 
@@ -336,8 +321,8 @@ public class AbstractVirtualHostTest extends UnitTestBase
                                                 final Level logLevel, final String message) throws Exception
     {
         final CountDownLatch logMessageReceivedLatch = new CountDownLatch(1);
-        ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        final ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        final ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.addFilter(new Filter<ILoggingEvent>()
         {
             @Override
@@ -355,7 +340,7 @@ public class AbstractVirtualHostTest extends UnitTestBase
         rootLogger.addAppender(appender);
 
         action.run();
-        assertTrue("Did not receive expected log message", logMessageReceivedLatch.await(2, TimeUnit.SECONDS));
+        assertTrue(logMessageReceivedLatch.await(2, TimeUnit.SECONDS), "Did not receive expected log message");
     }
 
     @Test
@@ -439,7 +424,7 @@ public class AbstractVirtualHostTest extends UnitTestBase
         queues.add(newQueue("queue-topic"));
         queues.add(newQueue("queueB"));
 
-        newVirtualHost(queues).clearQueues(Collections.emptySet());
+        newVirtualHost(queues).clearQueues(Set.of());
         for (final Queue<?> queue : queues)
         {
             Mockito.verify(queue, Mockito.never()).clearQueue();
@@ -448,7 +433,7 @@ public class AbstractVirtualHostTest extends UnitTestBase
 
     private AbstractVirtualHost newVirtualHost(List<Queue> queues)
     {
-        final Map<String, Object> attributes = Collections.singletonMap(AbstractVirtualHost.NAME, getTestName());
+        final Map<String, Object> attributes = Map.of(AbstractVirtualHost.NAME, getTestName());
         final MessageStore store = mock(MessageStore.class);
         return new AbstractVirtualHost(attributes, _node)
         {
@@ -479,7 +464,7 @@ public class AbstractVirtualHostTest extends UnitTestBase
         final Queue<?> queue = Mockito.mock(Queue.class);
         Mockito.doReturn(name).when(queue).getName();
 
-        final UUID uuid = UUID.randomUUID();
+        final UUID uuid = randomUUID();
         Mockito.doReturn(uuid).when(queue).getId();
 
         Mockito.doReturn(Queue.class).when(queue).getCategoryClass();

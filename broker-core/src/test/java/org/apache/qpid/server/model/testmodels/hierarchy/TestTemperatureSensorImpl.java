@@ -30,7 +30,6 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
         type = TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE)
 public class TestTemperatureSensorImpl extends TestAbstractSensorImpl<TestTemperatureSensorImpl> implements TestSensor<TestTemperatureSensorImpl>
 {
-
     public static final String TEST_TEMPERATURE_SENSOR_TYPE = "temperature";
 
     private final AtomicInteger _alertCount = new AtomicInteger();

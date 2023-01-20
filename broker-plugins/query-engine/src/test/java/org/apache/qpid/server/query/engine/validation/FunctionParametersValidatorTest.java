@@ -20,15 +20,15 @@
  */
 package org.apache.qpid.server.query.engine.validation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContext;
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContextHolder;
@@ -44,7 +44,7 @@ import org.apache.qpid.server.query.engine.parsing.factory.FunctionExpressionFac
  */
 public class FunctionParametersValidatorTest
 {
-    @Before()
+    @BeforeEach()
     public void setUp()
     {
         final EvaluationContext ctx = EvaluationContextHolder.getEvaluationContext();

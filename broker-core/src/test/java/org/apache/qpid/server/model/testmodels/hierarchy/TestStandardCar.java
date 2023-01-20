@@ -27,7 +27,6 @@ import org.apache.qpid.server.store.preferences.UserPreferencesCreator;
 @ManagedObject(category = false)
 public interface TestStandardCar<X extends TestStandardCar<X>> extends TestCar<X>, UserPreferencesCreator
 {
-
     @Override
     @ManagedOperation(changesConfiguredObjectState = false)
     Door openDoor(@Param(name = "door", defaultValue = "DRIVER") Door door);

@@ -29,12 +29,12 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.oneOf;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.charset.StandardCharsets;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -73,7 +73,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
 
     private Binary _deliveryTag;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
@@ -550,7 +550,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
         interaction.openDesiredCapabilities(ANONYMOUS_RELAY).negotiateOpen();
 
         Open open = interaction.getLatestResponse(Open.class);
-        assumeThat(open.getOfferedCapabilities(), hasItemInArray((ANONYMOUS_RELAY)));
+        assumeTrue(hasItemInArray((ANONYMOUS_RELAY)).matches(open.getOfferedCapabilities()));
         return interaction;
     }
 
@@ -566,12 +566,12 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
 
     private void assumeSufficientCredits(final Flow flow)
     {
-        assumeThat(flow.getLinkCredit(), is(greaterThan(UnsignedInteger.ZERO)));
+        assumeTrue(is(greaterThan(UnsignedInteger.ZERO)).matches(flow.getLinkCredit()));
     }
 
     private void coordinatorAttachExpected(final Response<?> response)
     {
         assertThat(response, is(notNullValue()));
-        assumeThat(response.getBody(), anyOf(instanceOf(Attach.class), instanceOf(Flow.class)));
+        assumeTrue(anyOf(instanceOf(Attach.class), instanceOf(Flow.class)).matches(response.getBody()));
     }
 }

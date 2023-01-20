@@ -19,9 +19,9 @@ package org.apache.qpid.systests.jms_2_0.deliverycount;/*
  *
  */
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,8 +34,8 @@ import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.Utils;
@@ -47,7 +47,7 @@ public class DeliveryCountTest extends JmsTestBase
     private static final String JMSX_DELIVERY_COUNT = "JMSXDeliveryCount";
     private Queue _queue;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         String testQueueName = BrokerAdmin.TEST_QUEUE_NAME;
@@ -64,7 +64,6 @@ public class DeliveryCountTest extends JmsTestBase
         }
     }
 
-
     @Test
     public void testDeliveryCountChangedOnRollback() throws Exception
     {
@@ -80,7 +79,7 @@ public class DeliveryCountTest extends JmsTestBase
                 assertDeliveryCountHeaders(message, i);
             }
             Message message = consumer.receive(getReceiveTimeout());
-            assertNull("Message should be discarded", message);
+            assertNull(message, "Message should be discarded");
         }
     }
 
@@ -102,19 +101,17 @@ public class DeliveryCountTest extends JmsTestBase
             Session session = connection.createSession(JMSContext.SESSION_TRANSACTED);
             MessageConsumer consumer = session.createConsumer(_queue);
             Message message = consumer.receive(getReceiveTimeout());
-            assertNull("Message should be discarded", message);
+            assertNull(message, "Message should be discarded");
         }
     }
 
     private void assertDeliveryCountHeaders(final Message message, final int deliveryAttempt) throws JMSException
     {
-        assertNotNull(String.format("Message is not received on attempt %d", deliveryAttempt), message);
-        assertEquals(String.format("Unexpected redelivered flag on attempt %d", deliveryAttempt),
-                     deliveryAttempt > 0,
-                     message.getJMSRedelivered());
-        assertEquals(String.format("Unexpected message delivery count on attempt %d", deliveryAttempt + 1),
-                     deliveryAttempt + 1,
-                     message.getIntProperty(JMSX_DELIVERY_COUNT));
+        assertNotNull(message, String.format("Message is not received on attempt %d", deliveryAttempt));
+        assertEquals(deliveryAttempt > 0, message.getJMSRedelivered(),
+                String.format("Unexpected redelivered flag on attempt %d", deliveryAttempt));
+        assertEquals(deliveryAttempt + 1, message.getIntProperty(JMSX_DELIVERY_COUNT),
+                String.format("Unexpected message delivery count on attempt %d", deliveryAttempt + 1));
     }
 }
 

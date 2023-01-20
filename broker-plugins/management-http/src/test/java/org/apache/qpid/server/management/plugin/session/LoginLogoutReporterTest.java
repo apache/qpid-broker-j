@@ -27,9 +27,8 @@ import static org.mockito.Mockito.when;
 
 import javax.security.auth.Subject;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentMatcher;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -45,7 +44,7 @@ public class LoginLogoutReporterTest extends UnitTestBase
     private final MessageLogger _logger = mock(MessageLogger.class);
     private LoginLogoutReporter _loginLogoutReport;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _subject.getPrincipals().add(new AuthenticatedPrincipal(new UsernamePrincipal("mockusername", null)));

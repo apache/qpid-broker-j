@@ -22,9 +22,9 @@ package org.apache.qpid.systests.jms_1_1.extensions.routing;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,7 +38,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Protocol;
@@ -53,7 +53,7 @@ public class MessageRoutingTest extends JmsTestBase
     @Test
     public void testRoutingWithSubjectSetAsJMSMessageType() throws Exception
     {
-        assumeThat("AMQP 1.0 test", getProtocol(), is(equalTo(Protocol.AMQP_1_0)));
+        assumeTrue(is(equalTo(Protocol.AMQP_1_0)).matches(getProtocol()), "AMQP 1.0 test");
 
         prepare();
         
@@ -75,7 +75,7 @@ public class MessageRoutingTest extends JmsTestBase
             MessageConsumer messageConsumer = session.createConsumer(receivingDestination);
             Message receivedMessage = messageConsumer.receive(getReceiveTimeout());
 
-            assertNotNull("Message not received", receivedMessage);
+            assertNotNull(receivedMessage, "Message not received");
             assertEquals("test", ((TextMessage) message).getText());
         }
         finally
@@ -89,7 +89,7 @@ public class MessageRoutingTest extends JmsTestBase
     @Test
     public void testAnonymousRelayRoutingWithSubjectSetAsJMSMessageType() throws Exception
     {
-        assumeThat("AMQP 1.0 test", getProtocol(), is(equalTo(Protocol.AMQP_1_0)));
+        assumeTrue(is(equalTo(Protocol.AMQP_1_0)).matches(getProtocol()), "AMQP 1.0 test");
 
         prepare();
 
@@ -110,7 +110,7 @@ public class MessageRoutingTest extends JmsTestBase
             MessageConsumer messageConsumer = session.createConsumer(receivingDestination);
             Message receivedMessage = messageConsumer.receive(getReceiveTimeout());
 
-            assertNotNull("Message not received", receivedMessage);
+            assertNotNull(receivedMessage, "Message not received");
             assertEquals("test", ((TextMessage) message).getText());
         }
         finally
@@ -122,7 +122,7 @@ public class MessageRoutingTest extends JmsTestBase
     @Test
     public void testRoutingWithRoutingKeySetAsJMSProperty() throws Exception
     {
-        assumeThat("AMQP 1.0 test", getProtocol(), is(equalTo(Protocol.AMQP_1_0)));
+        assumeTrue(is(equalTo(Protocol.AMQP_1_0)).matches(getProtocol()), "AMQP 1.0 test");
 
         prepare();
 
@@ -144,7 +144,7 @@ public class MessageRoutingTest extends JmsTestBase
             MessageConsumer messageConsumer = session.createConsumer(receivingDestination);
             Message receivedMessage = messageConsumer.receive(getReceiveTimeout());
 
-            assertNotNull("Message not received", receivedMessage);
+            assertNotNull(receivedMessage, "Message not received");
             assertEquals("test", ((TextMessage) message).getText());
         }
         finally
@@ -156,7 +156,7 @@ public class MessageRoutingTest extends JmsTestBase
     @Test
     public void testRoutingWithExchangeAndRoutingKeyDestination() throws Exception
     {
-        assumeThat("AMQP 1.0 test", getProtocol(), is(equalTo(Protocol.AMQP_1_0)));
+        assumeTrue(is(equalTo(Protocol.AMQP_1_0)).matches(getProtocol()), "AMQP 1.0 test");
 
         prepare();
 
@@ -177,7 +177,7 @@ public class MessageRoutingTest extends JmsTestBase
             MessageConsumer messageConsumer = session.createConsumer(receivingDestination);
             Message receivedMessage = messageConsumer.receive(getReceiveTimeout());
 
-            assertNotNull("Message not received", receivedMessage);
+            assertNotNull(receivedMessage, "Message not received");
             assertEquals("test", ((TextMessage) message).getText());
         }
         finally
@@ -189,7 +189,7 @@ public class MessageRoutingTest extends JmsTestBase
     @Test
     public void testAnonymousRelayRoutingWithExchangeAndRoutingKeyDestination() throws Exception
     {
-        assumeThat("AMQP 1.0 test", getProtocol(), is(equalTo(Protocol.AMQP_1_0)));
+        assumeTrue(is(equalTo(Protocol.AMQP_1_0)).matches(getProtocol()), "AMQP 1.0 test");
 
         prepare();
 
@@ -210,7 +210,7 @@ public class MessageRoutingTest extends JmsTestBase
             MessageConsumer messageConsumer = session.createConsumer(receivingDestination);
             Message receivedMessage = messageConsumer.receive(getReceiveTimeout());
 
-            assertNotNull("Message not received", receivedMessage);
+            assertNotNull(receivedMessage, "Message not received");
             assertEquals("test", ((TextMessage) message).getText());
         }
         finally
@@ -222,7 +222,7 @@ public class MessageRoutingTest extends JmsTestBase
     @Test
     public void testRoutingToQueue() throws Exception
     {
-        assumeThat("AMQP 1.0 test", getProtocol(), is(equalTo(Protocol.AMQP_1_0)));
+        assumeTrue(is(equalTo(Protocol.AMQP_1_0)).matches(getProtocol()), "AMQP 1.0 test");
 
         prepare();
 
@@ -243,7 +243,7 @@ public class MessageRoutingTest extends JmsTestBase
             MessageConsumer messageConsumer = session.createConsumer(receivingDestination);
             Message receivedMessage = messageConsumer.receive(getReceiveTimeout());
 
-            assertNotNull("Message not received", receivedMessage);
+            assertNotNull(receivedMessage, "Message not received");
             assertEquals("test", ((TextMessage) message).getText());
         }
         finally
@@ -255,7 +255,7 @@ public class MessageRoutingTest extends JmsTestBase
     @Test
     public void testAnonymousRelayRoutingToQueue() throws Exception
     {
-        assumeThat("AMQP 1.0 test", getProtocol(), is(equalTo(Protocol.AMQP_1_0)));
+        assumeTrue(is(equalTo(Protocol.AMQP_1_0)).matches(getProtocol()), "AMQP 1.0 test");
 
         prepare();
 
@@ -276,7 +276,7 @@ public class MessageRoutingTest extends JmsTestBase
             MessageConsumer messageConsumer = session.createConsumer(receivingDestination);
             Message receivedMessage = messageConsumer.receive(getReceiveTimeout());
 
-            assertNotNull("Message not received", receivedMessage);
+            assertNotNull(receivedMessage, "Message not received");
             assertEquals("test", ((TextMessage) message).getText());
         }
         finally

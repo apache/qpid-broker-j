@@ -20,11 +20,11 @@
 
 package org.apache.qpid.server.protocol.v0_8;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
@@ -40,13 +40,13 @@ public class MessageMetaDataFactoryTest extends UnitTestBase
     private final AMQShortString _exchange = AMQShortString.valueOf("exch");
     private MessageMetaData _mmd;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _mmd = createTestMessageMetaData();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         if (_mmd != null)
@@ -56,7 +56,7 @@ public class MessageMetaDataFactoryTest extends UnitTestBase
     }
 
     @Test
-    public void testUnmarshalFromSingleBuffer() throws Exception
+    public void testUnmarshalFromSingleBuffer()
     {
         try(QpidByteBuffer qpidByteBuffer = QpidByteBuffer.allocateDirect(_mmd.getStorableSize()))
         {
@@ -65,25 +65,18 @@ public class MessageMetaDataFactoryTest extends UnitTestBase
 
             MessageMetaData recreated = MessageMetaData.FACTORY.createMetaData(qpidByteBuffer);
 
-            assertEquals("Unexpected arrival time", _arrivalTime, recreated.getArrivalTime());
-            assertEquals("Unexpected routing key",
-                                _routingKey,
-                                recreated.getMessagePublishInfo().getRoutingKey());
+            assertEquals(_arrivalTime, recreated.getArrivalTime(), "Unexpected arrival time");
+            assertEquals(_routingKey, recreated.getMessagePublishInfo().getRoutingKey(), "Unexpected routing key");
 
-            assertEquals("Unexpected content type",
-                                CONTENT_TYPE,
-                                recreated.getContentHeaderBody().getProperties()
-                                         .getContentTypeAsString());
+            assertEquals(CONTENT_TYPE, recreated.getContentHeaderBody().getProperties().getContentTypeAsString(),
+                    "Unexpected content type");
             recreated.dispose();
         }
     }
 
     private MessageMetaData createTestMessageMetaData()
     {
-        final MessagePublishInfo publishBody = new MessagePublishInfo(_exchange,
-                                                                      false,
-                                                                      false,
-                                                                      _routingKey);
+        final MessagePublishInfo publishBody = new MessagePublishInfo(_exchange, false, false, _routingKey);
         final BasicContentHeaderProperties props = new BasicContentHeaderProperties();
         props.setContentType(CONTENT_TYPE);
         final ContentHeaderBody contentHeaderBody = new ContentHeaderBody(props);

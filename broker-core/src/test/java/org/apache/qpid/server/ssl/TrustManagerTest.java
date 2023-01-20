@@ -18,8 +18,9 @@
 
 package org.apache.qpid.server.ssl;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -30,8 +31,8 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.transport.network.security.ssl.QpidMultipleTrustManager;
 import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustManager;
@@ -56,7 +57,7 @@ public class TrustManagerTest extends UnitTestBase
     private static X509Certificate _app2;
     private static X509Certificate _untrusted;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception
     {
         final KeyCertificatePair caPair = TlsResourceBuilder.createKeyPairAndRootCA(DN_CA);
@@ -70,7 +71,6 @@ public class TrustManagerTest extends UnitTestBase
         _untrusted = untrustedKeyCertPair.getCertificate();
     }
 
-
     /**
      * Tests that the QpidPeersOnlyTrustManager gives the expected behaviour when loaded separately
      * with the peer certificate and CA root certificate.
@@ -80,57 +80,33 @@ public class TrustManagerTest extends UnitTestBase
     {
         // peer manager is supposed to trust only clients which peers certificates
         // are directly in the store. CA signing will not be considered.
-        X509TrustManager peerManager = createPeerManager(_app1);
+        final X509TrustManager peerManager = createPeerManager(_app1);
 
-        try
-        {
-            // since peer manager contains the client's app1 certificate, the check should succeed
-            peerManager.checkClientTrusted(new X509Certificate[]{_app1, _ca }, "RSA");
-        }
-        catch (CertificateException e)
-        {
-            fail("Trusted client's validation against the broker's peer store manager failed.");
-        }
+        // since peer manager contains the client's app1 certificate, the check should succeed
+        assertDoesNotThrow(() -> peerManager.checkClientTrusted(new X509Certificate[]{_app1, _ca }, "RSA"),
+                "Trusted client's validation against the broker's peer store manager failed.");
 
-        try
-        {
-            // since peer manager does not contain the client's app2 certificate, the check should fail
-            peerManager.checkClientTrusted(new X509Certificate[]{_app2, _ca }, "RSA");
-            fail("Untrusted client's validation against the broker's peer store manager succeeded.");
-        }
-        catch (CertificateException e)
-        {
-            //expected
-        }
+        // since peer manager does not contain the client's app2 certificate, the check should fail
+        assertThrows(CertificateException.class,
+                () -> peerManager.checkClientTrusted(new X509Certificate[]{_app2, _ca }, "RSA"),
+                "Untrusted client's validation against the broker's peer store manager succeeded.");
 
         // now let's check that peer manager loaded with the CA certificate fails because
         // it does not have the clients certificate in it (though it does have a CA-cert that
         // would otherwise trust the client cert when using the regular trust manager).
-        peerManager = createPeerManager(_ca);
+        final X509TrustManager caPeerManager = createPeerManager(_ca);
 
-        try
-        {
-            // since trust manager doesn't contain the client's app1 certificate, the check should fail
-            // despite the fact that the truststore does have a CA that would otherwise trust the cert
-            peerManager.checkClientTrusted(new X509Certificate[]{_app1, _ca }, "RSA");
-            fail("Client's validation against the broker's peer store manager didn't fail.");
-        }
-        catch (CertificateException e)
-        {
-            // expected
-        }
+        // since trust manager doesn't contain the client's app1 certificate, the check should fail
+        // despite the fact that the truststore does have a CA that would otherwise trust the cert
+        assertThrows(CertificateException.class,
+                () -> caPeerManager.checkClientTrusted(new X509Certificate[]{_app1, _ca }, "RSA"),
+                "Client's validation against the broker's peer store manager didn't fail.");
 
-        try
-        {
-            // since  trust manager doesn't contain the client's app2 certificate, the check should fail
-            // despite the fact that the truststore does have a CA that would otherwise trust the cert
-            peerManager.checkClientTrusted(new X509Certificate[]{_app2, _ca }, "RSA");
-            fail("Client's validation against the broker's peer store manager didn't fail.");
-        }
-        catch (CertificateException e)
-        {
-            // expected
-        }
+        // since  trust manager doesn't contain the client's app2 certificate, the check should fail
+        // despite the fact that the truststore does have a CA that would otherwise trust the cert
+        assertThrows(CertificateException.class,
+                () -> caPeerManager.checkClientTrusted(new X509Certificate[]{_app2, _ca }, "RSA"),
+                "Client's validation against the broker's peer store manager didn't fail.");
     }
 
     /**
@@ -142,40 +118,22 @@ public class TrustManagerTest extends UnitTestBase
     {
         final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
         final X509TrustManager tm = createTrustManager(_ca);
-        assertNotNull("The regular trust manager for the trust store was not found", tm);
+        assertNotNull(tm, "The regular trust manager for the trust store was not found");
 
         mulTrustManager.addTrustManager(tm);
 
-        try
-        {
-            // verify the CA-trusted app1 cert (should succeed)
-            mulTrustManager.checkClientTrusted(new X509Certificate[]{_app1, _ca }, "RSA");
-        }
-        catch (CertificateException ex)
-        {
-            fail("Trusted client's validation against the broker's multi store manager failed.");
-        }
+        // verify the CA-trusted app1 cert (should succeed)
+        assertDoesNotThrow(() -> mulTrustManager.checkClientTrusted(new X509Certificate[]{_app1, _ca }, "RSA"),
+                "Trusted client's validation against the broker's multi store manager failed.");
 
-        try
-        {
-            // verify the CA-trusted app2 cert (should succeed)
-            mulTrustManager.checkClientTrusted(new X509Certificate[]{_app2, _ca }, "RSA");
-        }
-        catch (CertificateException ex)
-        {
-            fail("Trusted client's validation against the broker's multi store manager failed.");
-        }
+        // verify the CA-trusted app2 cert (should succeed)
+        assertDoesNotThrow(() -> mulTrustManager.checkClientTrusted(new X509Certificate[]{_app2, _ca }, "RSA"),
+                "Trusted client's validation against the broker's multi store manager failed.");
 
-        try
-        {
-            // verify the untrusted cert (should fail)
-            mulTrustManager.checkClientTrusted(new X509Certificate[]{_untrusted}, "RSA");
-            fail("Untrusted client's validation against the broker's multi store manager unexpectedly passed.");
-        }
-        catch (CertificateException ex)
-        {
-            // expected
-        }
+        // verify the untrusted cert (should fail)
+        assertThrows(CertificateException.class,
+                () -> mulTrustManager.checkClientTrusted(new X509Certificate[]{_untrusted}, "RSA"),
+                "Untrusted client's validation against the broker's multi store manager unexpectedly passed.");
     }
 
     /**
@@ -188,40 +146,23 @@ public class TrustManagerTest extends UnitTestBase
         final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
         final KeyStore ps = createKeyStore(_app1);
         final X509TrustManager tm = getX509TrustManager(ps);
-        assertNotNull("The regular trust manager for the trust store was not found", tm);
+        assertNotNull(tm, "The regular trust manager for the trust store was not found");
 
         mulTrustManager.addTrustManager(new QpidPeersOnlyTrustManager(ps, tm));
-        try
-        {
-            // verify the trusted app1 cert (should succeed as the key is in the peerstore)
-            mulTrustManager.checkClientTrusted(new X509Certificate[]{_app1, _ca }, "RSA");
-        }
-        catch (CertificateException ex)
-        {
-            fail("Trusted client's validation against the broker's multi store manager failed.");
-        }
 
-        try
-        {
-            // verify the untrusted app2 cert (should fail as the key is not in the peerstore)
-            mulTrustManager.checkClientTrusted(new X509Certificate[]{_app2, _ca }, "RSA");
-            fail("Untrusted client's validation against the broker's multi store manager unexpectedly passed.");
-        }
-        catch (CertificateException ex)
-        {
-            // expected
-        }
+        // verify the trusted app1 cert (should succeed as the key is in the peerstore)
+        assertDoesNotThrow(() -> mulTrustManager.checkClientTrusted(new X509Certificate[]{_app1, _ca }, "RSA"),
+                "Trusted client's validation against the broker's multi store manager failed.");
 
-        try
-        {
-            // verify the untrusted cert (should fail as the key is not in the peerstore)
-            mulTrustManager.checkClientTrusted(new X509Certificate[]{_untrusted }, "RSA");
-            fail("Untrusted client's validation against the broker's multi store manager unexpectedly passed.");
-        }
-        catch (CertificateException ex)
-        {
-            // expected
-        }
+        // verify the untrusted app2 cert (should fail as the key is not in the peerstore)
+        assertThrows(CertificateException.class,
+                () -> mulTrustManager.checkClientTrusted(new X509Certificate[]{_app2, _ca }, "RSA"),
+                "Untrusted client's validation against the broker's multi store manager unexpectedly passed.");
+
+        // verify the untrusted cert (should fail as the key is not in the peerstore)
+        assertThrows(CertificateException.class,
+                () -> mulTrustManager.checkClientTrusted(new X509Certificate[]{_untrusted }, "RSA"),
+                "Untrusted client's validation against the broker's multi store manager unexpectedly passed.");
     }
 
     /**
@@ -235,53 +176,33 @@ public class TrustManagerTest extends UnitTestBase
         final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
         final KeyStore ts = createKeyStore(_ca);
         final X509TrustManager tm = getX509TrustManager(ts);
-        assertNotNull("The regular trust manager for the trust store was not found", tm);
+        assertNotNull(tm, "The regular trust manager for the trust store was not found");
 
         mulTrustManager.addTrustManager(tm);
 
         final KeyStore ps = createKeyStore(_app1);
         final X509TrustManager tm2 = getX509TrustManager(ts);
-        assertNotNull("The regular trust manager for the peer store was not found", tm2);
+        assertNotNull(tm2, "The regular trust manager for the peer store was not found");
         mulTrustManager.addTrustManager(new QpidPeersOnlyTrustManager(ps, tm2));
 
-        try
-        {
-            // verify the CA-trusted app1 cert (should succeed)
-            mulTrustManager.checkClientTrusted(new X509Certificate[]{_app1, _ca }, "RSA");
-        }
-        catch (CertificateException ex)
-        {
-            fail("Trusted client's validation against the broker's multi store manager failed.");
-        }
+        // verify the CA-trusted app1 cert (should succeed)
+        assertDoesNotThrow(() -> mulTrustManager.checkClientTrusted(new X509Certificate[]{_app1, _ca }, "RSA"),
+                "Trusted client's validation against the broker's multi store manager failed.");
 
-        try
-        {
-            // verify the CA-trusted app2 cert (should succeed)
-            mulTrustManager.checkClientTrusted(new X509Certificate[]{_app2, _ca }, "RSA");
-        }
-        catch (CertificateException ex)
-        {
-            fail("Trusted client's validation against the broker's multi store manager failed.");
-        }
+        // verify the CA-trusted app2 cert (should succeed)
+        assertDoesNotThrow(() -> mulTrustManager.checkClientTrusted(new X509Certificate[]{_app2, _ca }, "RSA"),
+                "Trusted client's validation against the broker's multi store manager failed.");
 
-        try
-        {
-            // verify the untrusted cert (should fail)
-            mulTrustManager.checkClientTrusted(new X509Certificate[]{_untrusted }, "RSA");
-            fail("Untrusted client's validation against the broker's multi store manager unexpectedly passed.");
-        }
-        catch (CertificateException ex)
-        {
-            // expected
-        }
+        // verify the untrusted cert (should fail)
+        assertThrows(CertificateException.class,
+                () -> mulTrustManager.checkClientTrusted(new X509Certificate[]{_untrusted }, "RSA"),
+                "Untrusted client's validation against the broker's multi store manager unexpectedly passed.");
     }
 
-    private KeyStore createKeyStore(X509Certificate certificate)
-            throws Exception
+    private KeyStore createKeyStore(final X509Certificate certificate) throws Exception
     {
-        return TlsResourceHelper.createKeyStore(KeyStore.getDefaultType(),
-                                                new char[]{},
-                                                new CertificateEntry(TEST_ALIAS, certificate));
+        return TlsResourceHelper.createKeyStore(KeyStore.getDefaultType(), new char[]{},
+                new CertificateEntry(TEST_ALIAS, certificate));
     }
 
     private X509TrustManager createTrustManager(final X509Certificate certificate) throws Exception

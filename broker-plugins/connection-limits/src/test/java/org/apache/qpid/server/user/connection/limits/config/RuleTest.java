@@ -18,20 +18,20 @@
  */
 package org.apache.qpid.server.user.connection.limits.config;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.time.Duration;
 import java.util.Collections;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.user.connection.limits.config.RulePredicates.Property;
 import org.apache.qpid.server.user.connection.limits.plugins.ConnectionLimitRule;
 import org.apache.qpid.test.utils.UnitTestBase;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class RuleTest extends UnitTestBase
 {
@@ -82,8 +82,7 @@ public class RuleTest extends UnitTestBase
         assertEquals(connectionLimit.getCountLimit(), rule.getCountLimit());
         assertEquals(connectionLimit.getFrequencyLimit(), rule.getFrequencyLimit());
         assertEquals(Duration.ofMillis(connectionLimit.getFrequencyPeriod()), rule.getFrequencyPeriod());
-        assertEquals(
-                Collections.singletonMap(Duration.ofMillis(connectionLimit.getFrequencyPeriod()), rule.getFrequencyLimit()),
+        assertEquals(Collections.singletonMap(Duration.ofMillis(connectionLimit.getFrequencyPeriod()), rule.getFrequencyLimit()),
                 rule.getFrequencyLimits());
         assertEquals(connectionLimit.getPort(), rule.getPort());
         assertEquals(connectionLimit.getIdentity(), rule.getIdentity());
@@ -209,8 +208,7 @@ public class RuleTest extends UnitTestBase
         assertEquals(predicates.getConnectionCountLimit(), rule.getCountLimit());
         assertEquals(predicates.getConnectionFrequencyLimit(), rule.getFrequencyLimit());
         assertEquals(predicates.getConnectionFrequencyPeriod(), rule.getFrequencyPeriod());
-        assertEquals(
-                Collections.singletonMap(predicates.getConnectionFrequencyPeriod(), predicates.getConnectionFrequencyLimit()),
+        assertEquals(Collections.singletonMap(predicates.getConnectionFrequencyPeriod(), predicates.getConnectionFrequencyLimit()),
                 rule.getFrequencyLimits());
         assertEquals(predicates.getPort(), rule.getPort());
         assertEquals("User", rule.getIdentity());

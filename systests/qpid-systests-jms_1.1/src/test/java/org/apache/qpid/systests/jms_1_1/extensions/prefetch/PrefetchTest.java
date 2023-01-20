@@ -20,15 +20,15 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions.prefetch;
 
-import static junit.framework.TestCase.assertEquals;
 import static org.apache.qpid.server.model.Protocol.AMQP_0_8;
 import static org.apache.qpid.server.model.Protocol.AMQP_0_9;
 import static org.apache.qpid.server.model.Protocol.AMQP_0_9_1;
 import static org.apache.qpid.systests.Utils.INDEX;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.EnumSet;
 
@@ -40,7 +40,7 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.naming.NamingException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.JmsTestBase;
@@ -65,8 +65,8 @@ public class PrefetchTest extends JmsTestBase
             Utils.sendMessages(connection1, queue, 6);
 
             final Message receivedMessage = consumer1.receive(getReceiveTimeout());
-            assertNotNull("First message was not received", receivedMessage);
-            assertEquals("Received message has unexpected index", 0, receivedMessage.getIntProperty(INDEX));
+            assertNotNull(receivedMessage, "First message was not received");
+            assertEquals(0, receivedMessage.getIntProperty(INDEX), "Received message has unexpected index");
 
             forceSync(session1);
 
@@ -98,8 +98,8 @@ public class PrefetchTest extends JmsTestBase
             Utils.sendMessages(connection1, queue, 2);
 
             final Message receivedMessage = consumer1.receive(getReceiveTimeout());
-            assertNotNull("First message was not received", receivedMessage);
-            assertEquals("Message property was not as expected", 0, receivedMessage.getIntProperty(INDEX));
+            assertNotNull(receivedMessage, "First message was not received");
+            assertEquals(0, receivedMessage.getIntProperty(INDEX), "Message property was not as expected");
 
             observeNextAvailableMessage(queue, 1);
         }
@@ -112,7 +112,7 @@ public class PrefetchTest extends JmsTestBase
     @Test
     public void connectionStopReleasesPrefetchedMessages() throws Exception
     {
-        assumeThat("Only 0-10 implements this feature", getProtocol(), is(equalTo(Protocol.AMQP_0_10)));
+        assumeTrue(is(equalTo(Protocol.AMQP_0_10)).matches(getProtocol()), "Only 0-10 implements this feature");
 
         Connection connection1 = getConnectionBuilder().setPrefetch(3).build();
         Queue queue = createQueue(getTestName());
@@ -126,8 +126,8 @@ public class PrefetchTest extends JmsTestBase
             Utils.sendMessages(connection1, queue, 6);
 
             final Message receivedMessage = consumer1.receive(getReceiveTimeout());
-            assertNotNull("First message was not received", receivedMessage);
-            assertEquals("Received message has unexpected index", 0, receivedMessage.getIntProperty(INDEX));
+            assertNotNull(receivedMessage, "First message was not received");
+            assertEquals(0, receivedMessage.getIntProperty(INDEX), "Received message has unexpected index");
 
             forceSync(session1);
 
@@ -144,7 +144,7 @@ public class PrefetchTest extends JmsTestBase
     @Test
     public void consumerCloseReleasesPrefetchedMessages() throws Exception
     {
-        assumeThat("Only 0-10 implements this feature", getProtocol(), is(equalTo(Protocol.AMQP_0_10)));
+        assumeTrue(is(equalTo(Protocol.AMQP_0_10)).matches(getProtocol()), "Only 0-10 implements this feature");
 
         Connection connection1 = getConnectionBuilder().setPrefetch(3).build();
         Queue queue = createQueue(getTestName());
@@ -158,8 +158,8 @@ public class PrefetchTest extends JmsTestBase
             Utils.sendMessages(connection1, queue, 6);
 
             final Message receivedMessage = consumer1.receive(getReceiveTimeout());
-            assertNotNull("First message was not received", receivedMessage);
-            assertEquals("Received message has unexpected index", 0, receivedMessage.getIntProperty(INDEX));
+            assertNotNull(receivedMessage, "First message was not received");
+            assertEquals(0, receivedMessage.getIntProperty(INDEX), "Received message has unexpected index");
 
             forceSync(session1);
 
@@ -211,9 +211,8 @@ public class PrefetchTest extends JmsTestBase
 
                 message = consumer2.receive(getReceiveTimeout());
                 assertNotNull(message);
-                assertEquals("Received message has unexpected index",
-                             PRE_010_PROTOCOLS.contains(getProtocol()) ? 3 : 4,
-                             message.getIntProperty(INDEX));
+                assertEquals(PRE_010_PROTOCOLS.contains(getProtocol()) ? 3 : 4, message.getIntProperty(INDEX),
+                        "Received message has unexpected index");
 
                 session2.rollback();
             }
@@ -238,8 +237,9 @@ public class PrefetchTest extends JmsTestBase
             MessageConsumer consumer2 = session2.createConsumer(queue);
 
             final Message receivedMessage2 = consumer2.receive(getReceiveTimeout());
-            assertNotNull("Observer connection did not receive message", receivedMessage2);
-            assertEquals("Message received by the observer connection has unexpected index", expectedIndex, receivedMessage2.getIntProperty(INDEX));
+            assertNotNull(receivedMessage2, "Observer connection did not receive message");
+            assertEquals(expectedIndex, receivedMessage2.getIntProperty(INDEX),
+                    "Message received by the observer connection has unexpected index");
         }
         finally
         {

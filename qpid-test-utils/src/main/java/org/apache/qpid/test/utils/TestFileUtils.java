@@ -27,7 +27,7 @@ import java.io.OutputStream;
 
 import java.io.FileOutputStream;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.TestInfo;
 
 /**
  * Utility methods intended to be used in tests that manipulate files
@@ -67,9 +67,9 @@ public class TestFileUtils
         return testDir;
     }
 
-    public static File createTempFile(TestCase testcase)
+    public static File createTempFile(TestInfo testInfo)
     {
-        return createTempFile(testcase, SUFFIX);
+        return createTempFile(testInfo, SUFFIX);
     }
 
     public static File createTempFile(UnitTestBase testcase)
@@ -77,9 +77,15 @@ public class TestFileUtils
         return createTempFile(testcase, SUFFIX);
     }
 
-    public static File createTempFile(TestCase testcase, String suffix)
+    public static File createTempFile(TestInfo testInfo, String suffix)
     {
-        String prefix = testcase.getClass().getSimpleName() + "-" + testcase.getName();
+        final String className = testInfo.getTestClass()
+                 .orElseThrow(() -> new RuntimeException("Failed to resolve test class"))
+                 .getSimpleName();
+        final String methodName = testInfo.getTestMethod()
+                 .orElseThrow(() -> new RuntimeException("Failed to resolve test method"))
+                 .getName();
+        String prefix = className + "-" + methodName;
 
         File tmpFile;
         try
@@ -101,7 +107,7 @@ public class TestFileUtils
 
     public static File createTempFile(UnitTestBase testcase, String suffix)
     {
-        String prefix = testcase.getClass().getSimpleName() + "-" + testcase.getTestName();
+        String prefix = testcase.getTestClassName() + "-" + testcase.getTestName();
 
         File tmpFile;
         try
@@ -119,27 +125,6 @@ public class TestFileUtils
         }
 
         return tmpFile;
-    }
-
-    /**
-     * Creates a temporary file from the resource name given, using the resource name as the file suffix.
-     *
-     * This is required because the tests use the jar files as their class path.
-     */
-    public static File createTempFileFromResource(TestCase testCase, String resourceName)
-    {
-        File dst = createTempFile(testCase, resourceName);
-        try (InputStream in = testCase.getClass().getResourceAsStream(resourceName))
-        {
-            copy(in, dst);
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException("Cannot copy resource " + resourceName +
-                                       " to temp file " + dst.getAbsolutePath(), e);
-        }
-        dst.deleteOnExit();
-        return dst;
     }
 
     public static File createTempFileFromResource(UnitTestBase testCase, String resourceName)
@@ -161,7 +146,7 @@ public class TestFileUtils
     /**
      * Creates a temporary file for given test with given suffix in file name.
      * The given content is stored in the file using UTF-8 encoding.
-     */
+
     public static File createTempFile(TestCase testcase, String suffix, String content)
     {
         File file = createTempFile(testcase, suffix);
@@ -170,7 +155,7 @@ public class TestFileUtils
             saveTextContentInFile(content, file);
         }
         return file;
-    }
+    }*/
 
     /**
      * Creates a temporary file for given test with given suffix in file name.

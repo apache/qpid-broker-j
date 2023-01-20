@@ -20,10 +20,10 @@
 package org.apache.qpid.systests.jms_1_1.acknowledge;
 
 import static org.apache.qpid.systests.Utils.INDEX;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +39,8 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,7 +185,7 @@ public class RecoverTest extends JmsTestBase
                 try
                 {
                     deliveryCounter.incrementAndGet();
-                    assertEquals("Unexpected JMSRedelivered", deliveryCounter.get() > 1, message.getJMSRedelivered());
+                    assertEquals(deliveryCounter.get() > 1, message.getJMSRedelivered(), "Unexpected JMSRedelivered");
                     if (deliveryCounter.get() == 1)
                     {
                         consumerSession.recover();
@@ -203,12 +204,11 @@ public class RecoverTest extends JmsTestBase
 
             connection.start();
 
-            assertTrue("Message is not received in timely manner",
-                       awaitMessages.await(getReceiveTimeout() * 2, TimeUnit.MILLISECONDS));
-            assertEquals("Message not received the correct number of times.",
-                         2, deliveryCounter.get());
-            assertNull("No exception should be caught by listener : " + listenerCaughtException.get(),
-                       listenerCaughtException.get());
+            assertTrue(awaitMessages.await(getReceiveTimeout() * 2, TimeUnit.MILLISECONDS),
+                    "Message is not received in timely manner");
+            assertEquals(2, deliveryCounter.get(), "Message not received the correct number of times.");
+            assertNull(listenerCaughtException.get(),
+                    "No exception should be caught by listener : " + listenerCaughtException.get());
         }
         finally
         {
@@ -221,9 +221,8 @@ public class RecoverTest extends JmsTestBase
             throws JMSException
     {
         Message message = consumer.receive(getReceiveTimeout());
-        assertNotNull(String.format("Expected message '%d' is not received", messageIndex), message);
-        assertEquals("Received message out of order", messageIndex, message.getIntProperty(INDEX));
+        assertNotNull(message, String.format("Expected message '%d' is not received", messageIndex));
+        assertEquals(messageIndex, message.getIntProperty(INDEX), "Received message out of order");
         return message;
     }
-
 }

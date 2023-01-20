@@ -19,7 +19,7 @@
 
 package org.apache.qpid.server.store.jdbc;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import java.security.Principal;
@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -38,13 +38,13 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class JDBCSystemConfigTest extends UnitTestBase
 {
     @Test
-    public void testInvalidTableNamePrefix() throws Exception
+    public void testInvalidTableNamePrefix()
     {
         final TaskExecutor taskExecutor = new CurrentThreadTaskExecutor();
         final EventLogger eventLogger = mock(EventLogger.class);
         final Principal systemPrincipal = mock(Principal.class);
         JDBCSystemConfig<?> jdbcSystemConfig = new JDBCSystemConfigImpl(taskExecutor, eventLogger, systemPrincipal,
-                                                                        Collections.<String, Object>emptyMap());
+                                                                        Collections.emptyMap());
 
         // This list is not exhaustive
         List<String> knownInvalidPrefixes = Arrays.asList("with\"dblquote",
@@ -64,8 +64,8 @@ public class JDBCSystemConfigTest extends UnitTestBase
         {
             try
             {
-                jdbcSystemConfig.setAttributes(Collections.<String, Object>singletonMap("tableNamePrefix",
-                                                                                        invalidPrefix));
+                jdbcSystemConfig.setAttributes(Collections.singletonMap("tableNamePrefix",
+                                                                        invalidPrefix));
                 fail(String.format("Should not be able to set prefix to '%s'", invalidPrefix));
             }
             catch (IllegalConfigurationException e)

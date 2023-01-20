@@ -22,7 +22,7 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Transport;
 
@@ -35,9 +35,9 @@ public class ManagementConsoleMessagesTest extends AbstractTestMessages
     public void testManagementStartup()
     {
         _logMessage = ManagementConsoleMessages.STARTUP("My");
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"My Management Startup"};
+        final String[] expected = {"My Management Startup"};
 
         validateLogMessage(log, "MNG-1001", expected);
     }
@@ -45,13 +45,13 @@ public class ManagementConsoleMessagesTest extends AbstractTestMessages
     @Test
     public void testManagementListening()
     {
-        String management = "HTTP";
-        Integer port = 8889;
+        final String management = "HTTP";
+        final Integer port = 8889;
 
         _logMessage = ManagementConsoleMessages.LISTENING(management, Transport.TCP.name(), port);
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Starting :", management, ": Listening on ", Transport.TCP.name(), " port", String.valueOf(port)};
+        final String[] expected = {"Starting :", management, ": Listening on ", Transport.TCP.name(), " port", String.valueOf(port)};
 
         validateLogMessage(log, "MNG-1002", expected);
     }
@@ -59,13 +59,13 @@ public class ManagementConsoleMessagesTest extends AbstractTestMessages
     @Test
     public void testManagementShuttingDown()
     {
-        String transport = "HTTP";
-        Integer port = 8889;
+        final String transport = "HTTP";
+        final Integer port = 8889;
 
         _logMessage = ManagementConsoleMessages.SHUTTING_DOWN(transport, port);
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Shutting down :", transport, ": port", String.valueOf(port)};
+        final String[] expected = {"Shutting down :", transport, ": port", String.valueOf(port)};
 
         validateLogMessage(log, "MNG-1003", expected);
     }
@@ -74,9 +74,9 @@ public class ManagementConsoleMessagesTest extends AbstractTestMessages
     public void testManagementReady()
     {
         _logMessage = ManagementConsoleMessages.READY("My");
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"My Management Ready"};
+        final String[] expected = {"My Management Ready"};
 
         validateLogMessage(log, "MNG-1004", expected);
     }
@@ -85,12 +85,10 @@ public class ManagementConsoleMessagesTest extends AbstractTestMessages
     public void testManagementStopped()
     {
         _logMessage = ManagementConsoleMessages.STOPPED("My");
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"My Management Stopped"};
+        final String[] expected = {"My Management Stopped"};
 
         validateLogMessage(log, "MNG-1005", expected);
     }
-
-
 }

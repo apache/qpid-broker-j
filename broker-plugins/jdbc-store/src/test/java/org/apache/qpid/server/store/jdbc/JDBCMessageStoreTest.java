@@ -23,9 +23,9 @@ package org.apache.qpid.server.store.jdbc;
 import static org.apache.qpid.server.store.jdbc.AbstractJDBCMessageStore.IN_CLAUSE_MAX_SIZE;
 import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.assertTablesExistence;
 import static org.apache.qpid.server.store.jdbc.TestJdbcUtils.getTableNames;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -46,9 +46,11 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.Mockito;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -73,8 +75,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
     private static final int POOL_SIZE = 20;
     private static final double SPARSITY_FRACTION = 1.0;
 
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         super.setUp();
@@ -82,7 +83,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
@@ -105,7 +106,9 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         Collection<String> expectedTables = ((GenericJDBCMessageStore)getStore()).getTableNames();
         for (String expectedTable : expectedTables)
         {
-            assertTrue(String.format("Table '%s' does not start with expected prefix '%s'", expectedTable, TEST_TABLE_PREFIX), expectedTable.startsWith(TEST_TABLE_PREFIX));
+            assertTrue(expectedTable.startsWith(TEST_TABLE_PREFIX),
+                    String.format("Table '%s' does not start with expected prefix '%s'",
+                            expectedTable, TEST_TABLE_PREFIX));
         }
         try(Connection connection = openConnection())
         {
@@ -141,9 +144,9 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         final Transaction transaction = store.newTransaction();
         final MessageEnqueueRecord record = transaction.enqueueMessage(transactionalLog, message);
 
-        assertNotNull("Message enqueue record should not be null", record);
-        assertEquals("Unexpected queue id", transactionalLogId, record.getQueueId());
-        assertEquals("Unexpected message number", message.getMessageNumber(), record.getMessageNumber());
+        assertNotNull(record, "Message enqueue record should not be null");
+        assertEquals(transactionalLogId, record.getQueueId(), "Unexpected queue id");
+        assertEquals(message.getMessageNumber(), record.getMessageNumber(), "Unexpected message number");
 
         final ListenableFuture<Void> future = transaction.commitTranAsync(null);
         future.get(1000, TimeUnit.MILLISECONDS);
@@ -179,7 +182,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
 
         store.closeMessageStore();
         store.onDelete(getVirtualHost());
-        assertEquals("Delete action was not invoked", true, deleted.get());
+        assertTrue(deleted.get(), "Delete action was not invoked");
     }
 
     @Test
@@ -282,7 +285,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
             return true;
         });
         assertEquals(records.stream().map(MessageEnqueueRecord::getMessageNumber).collect(Collectors.toSet()),
-                     visited.stream().map(MessageEnqueueRecord::getMessageNumber).collect(Collectors.toSet()));
+                visited.stream().map(MessageEnqueueRecord::getMessageNumber).collect(Collectors.toSet()));
     }
 
     private InternalMessage addTestMessage(final MessageStore store,

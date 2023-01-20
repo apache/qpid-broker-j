@@ -19,17 +19,17 @@
  */
 package org.apache.qpid.server.queue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
@@ -48,12 +48,12 @@ public abstract class QueueEntryListTestBase extends UnitTestBase
     public abstract QueueEntryList getTestList(boolean newList) throws Exception;
     public abstract long getExpectedFirstMsgId();
     public abstract int getExpectedListLength();
-    public abstract ServerMessage getTestMessageToAdd();
+    public abstract ServerMessage<?> getTestMessageToAdd();
 
     @Test
     public void testGetQueue() throws Exception
     {
-        assertEquals("Unexpected head entry returned by getHead()", getTestList().getQueue(), getTestQueue());
+        assertEquals(getTestList().getQueue(), getTestQueue(), "Unexpected head entry returned by getHead()");
     }
 
     protected abstract Queue<?> getTestQueue();
@@ -71,14 +71,12 @@ public abstract class QueueEntryListTestBase extends UnitTestBase
 
         final QueueEntryIterator iter = list.iterator();
         int count = 0;
-        while(iter.advance())
+        while (iter.advance())
         {
             iter.getNode();
             count++;
         }
-        assertEquals("List did not grow by one entry after an add",
-                            (long) (getExpectedListLength() + 1),
-                            (long) count);
+        assertEquals(getExpectedListLength() + 1, (long) count, "List did not grow by one entry after an add");
 
     }
 
@@ -91,27 +89,27 @@ public abstract class QueueEntryListTestBase extends UnitTestBase
     public void testAddGenericMessage() throws Exception
     {
         final QueueEntryList list = getTestList();
-        final ServerMessage message = createServerMessage(666L);
+        final ServerMessage<?> message = createServerMessage(666L);
         list.add(message, null);
 
         final QueueEntryIterator iter = list.iterator();
         int count = 0;
-        while(iter.advance())
+        while (iter.advance())
         {
             iter.getNode();
             count++;
         }
-        assertEquals("List did not grow by one entry after a generic message added",
-                            (long) (getExpectedListLength() + 1),
-                            (long) count);
+        assertEquals(getExpectedListLength() + 1, (long) count,
+                "List did not grow by one entry after a generic message added");
     }
 
-    private ServerMessage createServerMessage(long number)
+    @SuppressWarnings("rawtypes")
+    private ServerMessage<?> createServerMessage(final long number)
     {
-        final ServerMessage message = mock(ServerMessage.class);
+        final ServerMessage<?> message = mock(ServerMessage.class);
         when(message.getMessageNumber()).thenReturn(number);
-        MessageReference ref = mock(MessageReference.class);
-        AMQMessageHeader hdr = mock(AMQMessageHeader.class);
+        final MessageReference ref = mock(MessageReference.class);
+        final AMQMessageHeader hdr = mock(AMQMessageHeader.class);
         when(ref.getMessage()).thenReturn(message);
         when(message.newReference()).thenReturn(ref);
         when(message.newReference(any(TransactionLogResource.class))).thenReturn(ref);
@@ -130,12 +128,12 @@ public abstract class QueueEntryListTestBase extends UnitTestBase
         final QueueEntryList entryList = getTestList();
         QueueEntry entry = entryList.getHead();
         int count = 0;
-        while(entryList.next(entry) != null)
+        while (entryList.next(entry) != null)
         {
             entry = entryList.next(entry);
             count++;
         }
-        assertEquals("Get next didn't get all the list entries", (long) getExpectedListLength(), (long) count);
+        assertEquals(getExpectedListLength(), (long) count, "Get next didn't get all the list entries");
     }
 
     /**
@@ -148,12 +146,12 @@ public abstract class QueueEntryListTestBase extends UnitTestBase
     {
         final QueueEntryIterator iter = getTestList().iterator();
         int count = 0;
-        while(iter.advance())
+        while (iter.advance())
         {
             iter.getNode();
             count++;
         }
-        assertEquals("Iterator invalid", (long) getExpectedListLength(), (long) count);
+        assertEquals(getExpectedListLength(), (long) count, "Iterator invalid");
     }
 
     /**
@@ -173,7 +171,7 @@ public abstract class QueueEntryListTestBase extends UnitTestBase
         while (it1.advance())
         {
             final QueueEntry queueEntry = it1.getNode();
-            if(counter++ % 2 == 0)
+            if (counter++ % 2 == 0)
             {
                 queueEntry.acquire();
                 queueEntry.delete();
@@ -183,15 +181,14 @@ public abstract class QueueEntryListTestBase extends UnitTestBase
         // iterate and check that dequeued messages are not returned by iterator
         final QueueEntryIterator it2 = entryList.iterator();
         int counter2 = 0;
-        while(it2.advance())
+        while (it2.advance())
         {
             it2.getNode();
             counter2++;
         }
         final int expectedNumber = numberOfMessages / 2;
-        assertEquals("Expected  " + expectedNumber + " number of entries in iterator but got " + counter2,
-                            (long) expectedNumber,
-                            (long) counter2);
+        assertEquals(expectedNumber, (long) counter2,
+                "Expected  " + expectedNumber + " number of entries in iterator but got " + counter2);
     }
 
     /**
@@ -203,11 +200,9 @@ public abstract class QueueEntryListTestBase extends UnitTestBase
     public void testGetHead() throws Exception
     {
         final QueueEntry head = getTestList().getHead();
-        assertNull("Head entry should not contain an actual message", head.getMessage());
-        assertEquals("Unexpected message id for first list entry",
-                            getExpectedFirstMsgId(),
-                            getTestList().next(head)
-                                         .getMessage().getMessageNumber());
+        assertNull(head.getMessage(), "Head entry should not contain an actual message");
+        assertEquals(getExpectedFirstMsgId(), getTestList().next(head).getMessage().getMessageNumber(),
+                "Unexpected message id for first list entry");
     }
 
     /**
@@ -218,22 +213,18 @@ public abstract class QueueEntryListTestBase extends UnitTestBase
     public void testEntryDeleted() throws Exception
     {
         final QueueEntry head = getTestList().getHead();
-
         final QueueEntry first = getTestList().next(head);
+
         first.acquire();
         first.delete();
 
         final QueueEntry second = getTestList().next(head);
-        assertNotSame("After deletion the next entry should be different",
-                             first.getMessage().getMessageNumber(),
-                             second
-                        .getMessage().getMessageNumber());
+        assertNotSame(first.getMessage().getMessageNumber(), second.getMessage().getMessageNumber(),
+                "After deletion the next entry should be different");
 
         final QueueEntry third = getTestList().next(first);
-        assertEquals("After deletion the deleted nodes next node should be the same as the next from head",
-                            second
-                        .getMessage().getMessageNumber(),
-                            third.getMessage().getMessageNumber());
+        assertEquals(second.getMessage().getMessageNumber(), third.getMessage().getMessageNumber(),
+                "After deletion the deleted nodes next node should be the same as the next from head");
     }
 
     /**
@@ -246,11 +237,11 @@ public abstract class QueueEntryListTestBase extends UnitTestBase
     @Test
     public void testIteratorIgnoresDeletedFinalNode() throws Exception
     {
-        QueueEntryList list = getTestList(true);
+        final QueueEntryList list = getTestList(true);
         int i = 0;
 
-        QueueEntry queueEntry1 = list.add(createServerMessage(i++), null);
-        QueueEntry queueEntry2 = list.add(createServerMessage(i++), null);
+        final QueueEntry queueEntry1 = list.add(createServerMessage(i++), null);
+        final QueueEntry queueEntry2 = list.add(createServerMessage(i), null);
 
         assertSame(queueEntry2, list.next(queueEntry1));
         assertNull(list.next(queueEntry2));
@@ -258,17 +249,17 @@ public abstract class QueueEntryListTestBase extends UnitTestBase
         //'delete' the 2nd QueueEntry
         queueEntry2.acquire();
         queueEntry2.delete();
-        assertTrue("Deleting node should have succeeded", queueEntry2.isDeleted());
+        assertTrue(queueEntry2.isDeleted(), "Deleting node should have succeeded");
 
-        QueueEntryIterator iter = list.iterator();
+        final QueueEntryIterator iter = list.iterator();
 
         //verify the iterator isn't 'atTail', can advance, and returns the 1st QueueEntry
-        assertFalse("Iterator should not have been 'atTail'", iter.atTail());
-        assertTrue("Iterator should have been able to advance", iter.advance());
-        assertSame("Iterator returned unexpected QueueEntry", queueEntry1, iter.getNode());
+        assertFalse(iter.atTail(), "Iterator should not have been 'atTail'");
+        assertTrue(iter.advance(), "Iterator should have been able to advance");
+        assertSame(queueEntry1, iter.getNode(), "Iterator returned unexpected QueueEntry");
 
         //verify the iterator is atTail() and can't advance
-        assertTrue("Iterator should have been 'atTail'", iter.atTail());
-        assertFalse("Iterator should not have been able to advance", iter.advance());
+        assertTrue(iter.atTail(), "Iterator should have been 'atTail'");
+        assertFalse(iter.advance(), "Iterator should not have been able to advance");
     }
 }

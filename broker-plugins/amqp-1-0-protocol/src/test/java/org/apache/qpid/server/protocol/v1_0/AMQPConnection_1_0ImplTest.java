@@ -23,8 +23,8 @@ package org.apache.qpid.server.protocol.v1_0;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -32,8 +32,8 @@ import java.net.SocketAddress;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
@@ -55,7 +55,7 @@ public class AMQPConnection_1_0ImplTest extends UnitTestBase
     private AggregateTicker _aggregateTicket;
     private QueueManagingVirtualHost<?> _virtualHost;
 
-    @Before
+    @BeforeAll
     public void setUp() throws Exception
     {
         _broker = BrokerTestHelper.createBrokerMock();

@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -42,15 +42,12 @@ import ch.qos.logback.core.Context;
 import ch.qos.logback.core.FileAppender;
 import ch.qos.logback.core.rolling.RollingPolicyBase;
 import ch.qos.logback.core.rolling.helper.FileNamePattern;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentMatcher;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,29 +64,27 @@ public class RollingPolicyDecoratorTest extends UnitTestBase
     private RollingPolicyDecorator.RolloverListener _listener;
     private File _baseFolder;
     private File _testFile;
-    private Pattern _rolledFileRegExp;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
         _baseFolder = TestFileUtils.createTestDirectory("rollover", true);
         _testFile = createTestFile("test.2015-06-25.0.gz");
-        Context mockContext = mock(Context.class);
+        final Context mockContext = mock(Context.class);
         _delegate = mock(RollingPolicyBase.class);
-        String fileNamePattern = _baseFolder.getAbsolutePath() + "/" + "test.%d{yyyy-MM-dd}.%i.gz";
+        final String fileNamePattern = _baseFolder.getAbsolutePath() + "/" + "test.%d{yyyy-MM-dd}.%i.gz";
         when(_delegate.getFileNamePattern()).thenReturn(fileNamePattern);
         when(_delegate.getContext()).thenReturn(mockContext);
         _listener = mock(RollingPolicyDecorator.RolloverListener.class);
 
         _policy = new RollingPolicyDecorator(_delegate, _listener, createMockExecutorService());
 
-        _rolledFileRegExp = Pattern.compile(new FileNamePattern(fileNamePattern, mockContext).toRegex());
+        final Pattern rolledFileRegExp = Pattern.compile(new FileNamePattern(fileNamePattern, mockContext).toRegex());
 
-        LOGGER.debug("Rolled file reg exp: {} ", _rolledFileRegExp);
+        LOGGER.debug("Rolled file reg exp: {} ", rolledFileRegExp);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         if (_baseFolder.exists())
@@ -98,30 +93,28 @@ public class RollingPolicyDecoratorTest extends UnitTestBase
         }
     }
 
-    public File createTestFile(String fileName) throws IOException
+    public File createTestFile(final String fileName) throws IOException
     {
-        File testFile = new File(_baseFolder, fileName);
-        assertTrue("Cannot create a new file " + testFile.getPath(), testFile.createNewFile());
+        final File testFile = new File(_baseFolder, fileName);
+        assertTrue(testFile.createNewFile(), "Cannot create a new file " + testFile.getPath());
         return testFile;
     }
 
     private ScheduledExecutorService createMockExecutorService()
     {
-        ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
-        doAnswer(new Answer() {
-            @Override
-            public Object answer(InvocationOnMock invocation) {
-                Object[] args = invocation.getArguments();
-                ((Runnable)args[0]).run();
-                return null;
-            }}).when(executorService).schedule(any(Runnable.class), any(long.class), any(TimeUnit.class));
-        doAnswer(new Answer() {
-            @Override
-            public Object answer(InvocationOnMock invocation) {
-                Object[] args = invocation.getArguments();
-                ((Runnable)args[0]).run();
-                return null;
-            }}).when(executorService).execute(any(Runnable.class));
+        final ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
+        doAnswer(invocation ->
+        {
+            final Object[] args = invocation.getArguments();
+            ((Runnable)args[0]).run();
+            return null;
+        }).when(executorService).schedule(any(Runnable.class), any(long.class), any(TimeUnit.class));
+        doAnswer(invocation ->
+        {
+            final Object[] args = invocation.getArguments();
+            ((Runnable)args[0]).run();
+            return null;
+        }).when(executorService).execute(any(Runnable.class));
         return executorService;
     }
 
@@ -133,28 +126,28 @@ public class RollingPolicyDecoratorTest extends UnitTestBase
     }
 
     @Test
-    public void testRolloverListener() throws InterruptedException
+    public void testRolloverListener()
     {
         _policy.rollover();
         verify(_listener).onRollover(any(Path.class), any(String[].class));
     }
 
     @Test
-    public void testRolloverWithFile() throws IOException
+    public void testRolloverWithFile()
     {
         _policy.rollover();
         verify(_delegate).rollover();
 
-        ArgumentMatcher<String[]> matcher = getMatcher(new String[]{_testFile.getName()});
+        final ArgumentMatcher<String[]> matcher = getMatcher(new String[]{_testFile.getName()});
         verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher));
     }
 
     @Test
-    public void testRolloverRescanLimit() throws IOException
+    public void testRolloverRescanLimit()
     {
         _policy.rollover();
         verify(_delegate).rollover();
-        ArgumentMatcher<String[]> matcher = getMatcher(new String[]{_testFile.getName()});
+        final ArgumentMatcher<String[]> matcher = getMatcher(new String[]{_testFile.getName()});
         verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher));
         _policy.rollover();
         verify(_delegate, times(2)).rollover();
@@ -167,16 +160,15 @@ public class RollingPolicyDecoratorTest extends UnitTestBase
         _policy.rollover();
         verify(_delegate).rollover();
 
-        ArgumentMatcher<String[]> matcher = getMatcher(new String[]{ _testFile.getName() });
+        final ArgumentMatcher<String[]> matcher = getMatcher(new String[]{ _testFile.getName() });
         verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher));
 
-        File secondFile = createTestFile("test.2015-06-25.1.gz");
+        final File secondFile = createTestFile("test.2015-06-25.1.gz");
         _policy.rollover();
         verify(_delegate, times(2)).rollover();
-        ArgumentMatcher<String[]> matcher2 = getMatcher(new String[]{_testFile.getName(), secondFile.getName()});
+        final ArgumentMatcher<String[]> matcher2 = getMatcher(new String[]{_testFile.getName(), secondFile.getName()});
         verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher2));
     }
-
 
     private ArgumentMatcher<String[]> getMatcher(final String[] expected)
     {
@@ -200,7 +192,7 @@ public class RollingPolicyDecoratorTest extends UnitTestBase
     @Test
     public void testSetParent()
     {
-        FileAppender appender = mock(FileAppender.class);
+        final FileAppender<?> appender = mock(FileAppender.class);
         _policy.setParent(appender);
         verify(_delegate).setParent(appender);
     }
@@ -225,5 +217,4 @@ public class RollingPolicyDecoratorTest extends UnitTestBase
         _policy.isStarted();
         verify(_delegate).isStarted();
     }
-
 }

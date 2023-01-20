@@ -20,10 +20,10 @@
 */
 package org.apache.qpid.systests.jms_1_1.extensions.queue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
@@ -38,7 +38,8 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,23 +82,17 @@ public class PriorityQueueTest extends JmsTestBase
             for (int messageCount = 0, expectedPriority = priorities - 1; messageCount < MSG_COUNT; messageCount++)
             {
                 Message received = consumer.receive(getReceiveTimeout());
-                assertNotNull(String.format("Message '%d' is not received", messageCount), received);
-                assertEquals(String.format("Unexpected message '%d' priority", messageCount),
-                             expectedPriority,
-                             received.getJMSPriority());
+                assertNotNull(received, String.format("Message '%d' is not received", messageCount));
+                assertEquals(expectedPriority, received.getJMSPriority(),
+                        String.format("Unexpected message '%d' priority", messageCount));
                 if (previous != null)
                 {
-                    assertTrue(String.format(
-                            "Messages '%d' arrived in unexpected order : previous message '%d' priority is '%d', received message '%d' priority is '%d'",
-                            messageCount,
-                            previous.getIntProperty("msg"),
-                            previous.getJMSPriority(),
-                            received.getIntProperty("msg"),
-                            received.getJMSPriority()),
-                               previous.getJMSPriority() > received.getJMSPriority()
-                               || (previous.getJMSPriority() == received.getJMSPriority()
-                                   && previous.getIntProperty("msg") < received.getIntProperty("msg")));
-
+                    assertTrue(previous.getJMSPriority() > received.getJMSPriority() ||
+                            (previous.getJMSPriority() == received.getJMSPriority() &&
+                                    previous.getIntProperty("msg") < received.getIntProperty("msg")),
+                            String.format("Messages '%d' arrived in unexpected order : previous message '%d' priority is '%d', received message '%d' priority is '%d'",
+                                    messageCount, previous.getIntProperty("msg"), previous.getJMSPriority(),
+                                    received.getIntProperty("msg"), received.getJMSPriority()));
                 }
                 previous = received;
                 if (messageCount > 0 && (messageCount + 1) % (MSG_COUNT / priorities) == 0)
@@ -232,8 +227,8 @@ public class PriorityQueueTest extends JmsTestBase
             producerSession.commit();
 
             //wait for the reflection process to complete
-            assertTrue("Test process failed to complete in allowed time", latch.await(10, TimeUnit.SECONDS));
-            assertNull("Unexpected throwable encountered", listener.getThrown());
+            assertTrue(latch.await(10, TimeUnit.SECONDS), "Test process failed to complete in allowed time");
+            assertNull(listener.getThrown(), "Unexpected throwable encountered");
         }
         finally
         {

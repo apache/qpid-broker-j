@@ -21,11 +21,11 @@
 
 package org.apache.qpid.server.security.access.config;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
@@ -35,8 +35,9 @@ import java.util.ListIterator;
 
 import javax.security.auth.Subject;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.Mockito;
 
 import org.apache.qpid.server.logging.EventLogger;
@@ -78,7 +79,7 @@ public class RuleSetTest extends UnitTestBase
     private final String _exchangeType = "direct";
     private final Subject _testSubject = TestPrincipalUtils.createTestSubject(TEST_USER);
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _ruleCollector = new RuleCollector();
@@ -119,8 +120,7 @@ public class RuleSetTest extends UnitTestBase
         final RuleSet ruleSet = createRuleSet();
         assertNotNull(ruleSet);
         assertEquals(0, ruleSet.size());
-        assertEquals(ruleSet.getDefault(),
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
+        assertEquals(ruleSet.getDefault(), ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
     }
 
     @Test
@@ -134,9 +134,9 @@ public class RuleSetTest extends UnitTestBase
                 .build());
         final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.VIRTUALHOSTNODE, EMPTY));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.VIRTUALHOSTNODE, EMPTY));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.DELETE, ObjectType.VIRTUALHOSTNODE, EMPTY));
+                ruleSet.check(_testSubject, LegacyOperation.DELETE, ObjectType.VIRTUALHOSTNODE, EMPTY));
     }
 
     @Test
@@ -151,9 +151,9 @@ public class RuleSetTest extends UnitTestBase
                 .build());
         final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
         assertEquals(Result.DEFER,
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
     }
 
     @Test
@@ -169,9 +169,9 @@ public class RuleSetTest extends UnitTestBase
 
         final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
     }
 
     @Test
@@ -186,9 +186,9 @@ public class RuleSetTest extends UnitTestBase
 
         final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
     }
 
     @Test
@@ -202,9 +202,9 @@ public class RuleSetTest extends UnitTestBase
                 .build());
         final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
     }
 
     @Test
@@ -219,9 +219,9 @@ public class RuleSetTest extends UnitTestBase
                 .build());
         final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
     }
 
     @Test
@@ -244,9 +244,9 @@ public class RuleSetTest extends UnitTestBase
 
         final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(ALLOWED_VH)));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
     }
 
     @Test
@@ -264,9 +264,9 @@ public class RuleSetTest extends UnitTestBase
                 .build());
         final RuleSet ruleSet = createRuleSet();
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties));
-        assertEquals(Result.DEFER, ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST,
-                                                        new ObjectProperties(DENIED_VH)));
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties));
+        assertEquals(Result.DEFER,
+                ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
     }
 
 
@@ -290,12 +290,12 @@ public class RuleSetTest extends UnitTestBase
         final ObjectProperties allowedQueueObjectProperties = new ObjectProperties(_queueName);
         allowedQueueObjectProperties.put(Property.VIRTUALHOST_NAME, ALLOWED_VH);
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, new ObjectProperties(allowedQueueObjectProperties)));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, new ObjectProperties(allowedQueueObjectProperties)));
 
         final ObjectProperties deniedQueueObjectProperties = new ObjectProperties(_queueName);
         deniedQueueObjectProperties.put(Property.VIRTUALHOST_NAME, DENIED_VH);
         assertEquals(Result.DEFER,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, deniedQueueObjectProperties));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, deniedQueueObjectProperties));
     }
 
     @Test
@@ -323,13 +323,13 @@ public class RuleSetTest extends UnitTestBase
         allowedExchangeProperties.put(Property.VIRTUALHOST_NAME, ALLOWED_VH);
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.EXCHANGE, allowedExchangeProperties));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.EXCHANGE, allowedExchangeProperties));
 
         final ObjectProperties deniedExchangeProperties = new ObjectProperties(_exchangeName);
         deniedExchangeProperties.put(Property.TYPE, _exchangeType);
         deniedExchangeProperties.put(Property.VIRTUALHOST_NAME, DENIED_VH);
         assertEquals(Result.DEFER,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.EXCHANGE, deniedExchangeProperties));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.EXCHANGE, deniedExchangeProperties));
     }
 
     @Test
@@ -368,7 +368,7 @@ public class RuleSetTest extends UnitTestBase
 
         RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
+                ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
         _ruleCollector.addRule(0, new Builder()
                 .withIdentity(TEST_USER)
                 .withOutcome(RuleOutcome.ALLOW)
@@ -379,11 +379,11 @@ public class RuleSetTest extends UnitTestBase
         ruleSet = createRuleSet();
         assertEquals(1, ruleSet.size());
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
+                ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
 
         // defer to global if exists, otherwise default answer - this is handled by the security manager
         assertEquals(Result.DEFER,
-                            ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, normal));
+                ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, normal));
     }
 
     /**
@@ -399,7 +399,7 @@ public class RuleSetTest extends UnitTestBase
         normal.put(Property.AUTO_DELETE, Boolean.FALSE);
         RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
+                ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
 
         // should not matter if the temporary permission is processed first or last
         _ruleCollector.addRule(1, new Builder()
@@ -422,9 +422,9 @@ public class RuleSetTest extends UnitTestBase
         assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, normal));
+                ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, normal));
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
+                ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
     }
 
     /**
@@ -440,7 +440,7 @@ public class RuleSetTest extends UnitTestBase
         normal.put(Property.AUTO_DELETE, Boolean.FALSE);
         RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
+                ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
 
         // should not matter if the temporary permission is processed first or last
         _ruleCollector.addRule(1, new Builder()
@@ -463,9 +463,9 @@ public class RuleSetTest extends UnitTestBase
         assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, normal));
+                ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, normal));
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
+                ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE, temporary));
     }
 
     /*
@@ -483,9 +483,10 @@ public class RuleSetTest extends UnitTestBase
         namedTemporary.put(Property.AUTO_DELETE, Boolean.TRUE);
 
         RuleSet ruleSet = createRuleSet();
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
 
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(TEST_USER)
@@ -507,9 +508,9 @@ public class RuleSetTest extends UnitTestBase
         assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
     }
 
     /**
@@ -522,9 +523,10 @@ public class RuleSetTest extends UnitTestBase
         final ObjectProperties namedTemporary = new ObjectProperties(_queueName);
         namedTemporary.put(Property.AUTO_DELETE, Boolean.TRUE);
         RuleSet ruleSet = createRuleSet();
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
 
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(TEST_USER)
@@ -546,9 +548,9 @@ public class RuleSetTest extends UnitTestBase
         assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
     }
 
     /**
@@ -563,11 +565,12 @@ public class RuleSetTest extends UnitTestBase
         final ObjectProperties namedDurable = new ObjectProperties(_queueName);
         namedDurable.put(Property.DURABLE, Boolean.TRUE);
         RuleSet ruleSet = createRuleSet();
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedDurable));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedDurable));
 
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(TEST_USER)
@@ -597,11 +600,11 @@ public class RuleSetTest extends UnitTestBase
         assertEquals(3, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedDurable));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedDurable));
     }
 
     @Test
@@ -611,9 +614,10 @@ public class RuleSetTest extends UnitTestBase
         final ObjectProperties namedTemporary = new ObjectProperties(_queueName);
         namedTemporary.put(Property.AUTO_DELETE, Boolean.TRUE);
         RuleSet ruleSet = createRuleSet();
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
 
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(TEST_USER)
@@ -633,9 +637,9 @@ public class RuleSetTest extends UnitTestBase
         assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
     }
 
     @Test
@@ -645,9 +649,10 @@ public class RuleSetTest extends UnitTestBase
         final ObjectProperties namedTemporary = new ObjectProperties(_queueName);
         namedTemporary.put(Property.AUTO_DELETE, Boolean.TRUE);
         RuleSet ruleSet = createRuleSet();
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
 
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(TEST_USER)
@@ -666,9 +671,10 @@ public class RuleSetTest extends UnitTestBase
         ruleSet = createRuleSet();
         assertEquals(2, ruleSet.size());
 
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, named));
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
+                ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, namedTemporary));
     }
 
     /**
@@ -687,9 +693,9 @@ public class RuleSetTest extends UnitTestBase
         assertEquals(1, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(TestPrincipalUtils.createTestSubject("usera"), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
+                ruleSet.check(TestPrincipalUtils.createTestSubject("usera"), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(TestPrincipalUtils.createTestSubject("userb"), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
+                ruleSet.check(TestPrincipalUtils.createTestSubject("userb"), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
     }
 
     @Test
@@ -714,12 +720,11 @@ public class RuleSetTest extends UnitTestBase
         assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(TestPrincipalUtils.createTestSubject("usera", allowGroup), LegacyOperation
-                                    .ACCESS, ObjectType.VIRTUALHOST, EMPTY));
+                ruleSet.check(TestPrincipalUtils.createTestSubject("usera", allowGroup), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
         assertEquals(Result.DENIED,
-                            ruleSet.check(TestPrincipalUtils.createTestSubject("userb", deniedGroup), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
+                ruleSet.check(TestPrincipalUtils.createTestSubject("userb", deniedGroup), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
         assertEquals(Result.DEFER,
-                            ruleSet.check(TestPrincipalUtils.createTestSubject("user", "group not mentioned in acl"), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
+                ruleSet.check(TestPrincipalUtils.createTestSubject("user", "group not mentioned in acl"), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
     }
 
     /**
@@ -749,7 +754,7 @@ public class RuleSetTest extends UnitTestBase
         assertEquals(2, ruleSet.size());
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(TestPrincipalUtils.createTestSubject(user, group), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
+                ruleSet.check(TestPrincipalUtils.createTestSubject(user, group), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
     }
 
     /**
@@ -779,7 +784,7 @@ public class RuleSetTest extends UnitTestBase
         assertEquals(2, ruleSet.size());
 
         assertEquals(Result.DENIED,
-                            ruleSet.check(TestPrincipalUtils.createTestSubject(user, group), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
+                ruleSet.check(TestPrincipalUtils.createTestSubject(user, group), LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
     }
 
     @Test
@@ -806,13 +811,13 @@ public class RuleSetTest extends UnitTestBase
         final Subject subjectInAllowedGroupAndOneOther = TestPrincipalUtils.createTestSubject("user", allowedGroup, "some other group");
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(subjectInBothGroups, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
+                ruleSet.check(subjectInBothGroups, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
 
         assertEquals(Result.DENIED,
-                            ruleSet.check(subjectInDeniedGroupAndOneOther, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
+                ruleSet.check(subjectInDeniedGroupAndOneOther, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
 
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(subjectInAllowedGroupAndOneOther, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
+                ruleSet.check(subjectInAllowedGroupAndOneOther, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY));
     }
 
     @Test
@@ -839,12 +844,12 @@ public class RuleSetTest extends UnitTestBase
         updateProperties.addAttributeNames(Collections.singleton("attribute2"));
 
         assertEquals(Result.DENIED,
-                            ruleSet.check(_testSubject, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, updateProperties));
+                ruleSet.check(_testSubject, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, updateProperties));
 
         updateProperties = new ObjectProperties();
         updateProperties.addAttributeNames(Collections.singleton("attribute1"));
         assertEquals(Result.ALLOWED,
-                            ruleSet.check(_testSubject, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, updateProperties));
+                ruleSet.check(_testSubject, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, updateProperties));
     }
 
     @Test
@@ -859,17 +864,11 @@ public class RuleSetTest extends UnitTestBase
         final RuleSet ruleSet = createRuleSet();
         assertEquals(1, ruleSet.size());
 
-        assertEquals(Result.ALLOWED,
-                     ruleSet.check(_testSubject,
-                                   LegacyOperation.CONSUME,
-                                   ObjectType.QUEUE,
-                                   new ObjectProperties(Property.CREATED_BY, TEST_USER)));
+        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE,
+                new ObjectProperties(Property.CREATED_BY, TEST_USER)));
 
-        assertEquals(Result.DEFER,
-                     ruleSet.check(_testSubject,
-                                   LegacyOperation.CONSUME,
-                                   ObjectType.QUEUE,
-                                   new ObjectProperties(Property.CREATED_BY, "anotherUser")));
+        assertEquals(Result.DEFER, ruleSet.check(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE,
+                new ObjectProperties(Property.CREATED_BY, "anotherUser")));
     }
 
     @Test
@@ -884,17 +883,11 @@ public class RuleSetTest extends UnitTestBase
         final RuleSet ruleSet = createRuleSet();
         assertEquals(1, ruleSet.size());
 
-        assertEquals(Result.ALLOWED,
-                     ruleSet.check(_testSubject,
-                                   LegacyOperation.UPDATE,
-                                   ObjectType.QUEUE,
-                                   new ObjectProperties(Property.CREATED_BY, TEST_USER)));
+        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.UPDATE, ObjectType.QUEUE,
+                new ObjectProperties(Property.CREATED_BY, TEST_USER)));
 
-        assertEquals(Result.DEFER,
-                     ruleSet.check(_testSubject,
-                                   LegacyOperation.CREATE,
-                                   ObjectType.QUEUE,
-                                   new ObjectProperties(Property.CREATED_BY, "anotherUser")));
+        assertEquals(Result.DEFER, ruleSet.check(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE,
+                new ObjectProperties(Property.CREATED_BY, "anotherUser")));
 
     }
 
@@ -931,9 +924,12 @@ public class RuleSetTest extends UnitTestBase
         final RuleSet ruleSet = createRuleSet();
         assertEquals(4, ruleSet.size());
 
-        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties("testExchange")));
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties("exchange")));
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties()));
+        assertEquals(Result.ALLOWED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties("testExchange")));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties("exchange")));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties()));
     }
 
     @Test
@@ -976,36 +972,44 @@ public class RuleSetTest extends UnitTestBase
         final RuleSet ruleSet = createRuleSet();
         assertEquals(4, ruleSet.size());
 
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties()));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties()));
 
         ObjectProperties object = new ObjectProperties("broadcast");
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
 
         object = new ObjectProperties("broadcast");
         object.put(Property.ROUTING_KEY, "broadcast.public");
-        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.ALLOWED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
 
         object = new ObjectProperties("broadcast");
         object.put(Property.ROUTING_KEY, "rs.broadcast.public");
-        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.ALLOWED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
 
         object = new ObjectProperties("rs.broadcast");
         object.put(Property.ROUTING_KEY, "rs.broadcast.public");
-        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.ALLOWED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
 
         object = new ObjectProperties("broadcast");
         object.put(Property.ROUTING_KEY, "queue");
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
 
         object = new ObjectProperties("brs");
         object.put(Property.ROUTING_KEY, "rs.broadcast.public");
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
 
         // Another user
         final Subject testSubject = TestPrincipalUtils.createTestSubject("Java");
         object = new ObjectProperties("rs.broadcast");
         object.put(Property.ROUTING_KEY, "rs.broadcast.public");
-        assertEquals(Result.DEFER, ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.DEFER,
+                ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
     }
 
     @Test
@@ -1048,18 +1052,21 @@ public class RuleSetTest extends UnitTestBase
         final RuleSet ruleSet = createRuleSet();
         assertEquals(4, ruleSet.size());
 
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties()));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, new ObjectProperties()));
 
         // User = owner
         ObjectProperties object = new ObjectProperties("broadcast");
         object.put(Property.ROUTING_KEY, "brs");
         object.setCreatedBy(TEST_USER);
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
 
         object = new ObjectProperties("broadcast");
         object.put(Property.ROUTING_KEY, "rs.broadcast.public");
         object.setCreatedBy(TEST_USER);
-        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.ALLOWED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
     }
 
     @Test
@@ -1111,11 +1118,13 @@ public class RuleSetTest extends UnitTestBase
         ObjectProperties object = new ObjectProperties("broadcast");
         object.put(Property.ROUTING_KEY, "rs.broadcast.public");
         object.setCreatedBy(TEST_USER);
-        assertEquals(Result.DENIED, ruleSet.check(notAuthentificated, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.DENIED,
+                ruleSet.check(notAuthentificated, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
 
         object = new ObjectProperties("broadcast");
         object.put(Property.QUEUE_NAME, "QQ");
-        assertEquals(Result.ALLOWED, ruleSet.check(notAuthentificated, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.ALLOWED,
+                ruleSet.check(notAuthentificated, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
     }
 
     @Test
@@ -1162,27 +1171,32 @@ public class RuleSetTest extends UnitTestBase
         ObjectProperties object = new ObjectProperties("broadcast");
         object.put(Property.ROUTING_KEY, "broadcast.public");
         object.setCreatedBy("another");
-        assertEquals(Result.DENIED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.DENIED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
 
         object = new ObjectProperties("broadcast");
         object.put(Property.QUEUE_NAME, "QQ");
         object.setCreatedBy("another");
-        assertEquals(Result.ALLOWED, ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.ALLOWED,
+                ruleSet.check(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
 
         // Action is performed by another user
         final Subject testSubject = TestPrincipalUtils.createTestSubject("Java");
         object = new ObjectProperties("broadcast");
-        assertEquals(Result.DEFER, ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.DEFER,
+                ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
 
         // Action is performed by another user == owner
         object = new ObjectProperties("broadcast");
         object.setCreatedBy("Java");
-        assertEquals(Result.DEFER, ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.DEFER,
+                ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
 
         object = new ObjectProperties("broadcast");
         object.put(Property.ROUTING_KEY, "rs.broadcast.public");
         object.setCreatedBy("Java");
-        assertEquals(Result.ALLOWED, ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.ALLOWED,
+                ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
     }
 
     @Test
@@ -1236,12 +1250,14 @@ public class RuleSetTest extends UnitTestBase
         final Subject testSubject = TestPrincipalUtils.createTestSubject("Java");
 
         ObjectProperties object = new ObjectProperties("broadcast");
-        assertEquals(Result.DENIED, ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.DENIED,
+                ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
 
         // Action is performed by another user == owner
         object = new ObjectProperties("broadcast");
         object.setCreatedBy("Java");
-        assertEquals(Result.DENIED, ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
+        assertEquals(Result.DENIED,
+                ruleSet.check(testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE, object));
     }
 
     @Test

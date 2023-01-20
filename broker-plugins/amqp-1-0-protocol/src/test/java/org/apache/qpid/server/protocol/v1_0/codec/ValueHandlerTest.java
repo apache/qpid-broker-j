@@ -20,11 +20,11 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -34,7 +34,6 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class ValueHandlerTest extends UnitTestBase
 {
-
     private final byte[] FORMAT_CODES = {
             0x00,
             0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56,
@@ -59,7 +58,7 @@ public class ValueHandlerTest extends UnitTestBase
     private ValueHandler _valueHandle;
     private ValueHandler _sectionValueHandler;
 
-    @Before
+    @BeforeAll
     public void setUp() throws Exception
     {
         _valueHandle = new ValueHandler(TYPE_REGISTRY);
@@ -197,9 +196,8 @@ public class ValueHandlerTest extends UnitTestBase
         }
         catch (AmqpErrorException e)
         {
-            assertEquals(String.format("Unexpected error code for %#02x", type),
-                                AmqpError.DECODE_ERROR,
-                                e.getError().getCondition());
+            assertEquals(AmqpError.DECODE_ERROR, e.getError().getCondition(),
+                    String.format("Unexpected error code for %#02x", type));
 
         }
         catch (Exception e)

@@ -20,12 +20,11 @@
  */
 package org.apache.qpid.server.security.encryption;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -44,20 +43,20 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -65,27 +64,29 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
 {
     private Broker _broker;
     private Path _tmpDir;
     private AbstractAESKeyFileEncrypterFactory _factory;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(isStrongEncryptionEnabled(), is(true));
+        assumeTrue(isStrongEncryptionEnabled());
 
         _broker = mock(Broker.class);
         _tmpDir = Files.createTempDirectory(getTestName());
 
-        when(_broker.getContextKeys(eq(false))).thenReturn(Collections.<String>emptySet());
+        when(_broker.getContextKeys(eq(false))).thenReturn(Set.of());
         when(_broker.getContextValue(eq(String.class), eq(SystemConfig.QPID_WORK_DIR))).thenReturn(_tmpDir.toString());
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getName()).thenReturn(getTestName());
         final ArgumentCaptor<Map> attributesCaptor = ArgumentCaptor.forClass(Map.class);
 
-        doAnswer((Answer<Void>) invocationOnMock -> {
+        doAnswer((Answer<Void>) invocationOnMock ->
+        {
             if (attributesCaptor.getValue().containsKey("context"))
             {
                 Map replacementContext = (Map) attributesCaptor.getValue().get("context");
@@ -113,14 +114,14 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
     @Test
     public void testCreateKeyInDefaultLocation() throws Exception
     {
-        assumeThat(supportsPosixFileAttributes(), is(true));
-        ConfigurationSecretEncrypter encrypter = _factory.createEncrypter(_broker);
+        assumeTrue(supportsPosixFileAttributes());
+        final ConfigurationSecretEncrypter encrypter = _factory.createEncrypter(_broker);
 
-        KeyFilePathChecker keyFilePathChecker = new KeyFilePathChecker();
+        final KeyFilePathChecker keyFilePathChecker = new KeyFilePathChecker();
 
         doChecks(encrypter, keyFilePathChecker);
 
-        String pathName = (String) _broker.getContext().get(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE);
+        final String pathName = (String) _broker.getContext().get(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE);
 
         // check the context variable was set
         assertEquals(keyFilePathChecker.getKeyFile().toString(), pathName);
@@ -135,7 +136,7 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
         // check the file was actually found
         assertNotNull(keyFilePathChecker.getKeyFile());
 
-        String secret = "notasecret";
+        final String secret = "notasecret";
 
         // check the encrypter works
         assertEquals(secret, encrypter.decrypt(encrypter.encrypt(secret)));
@@ -144,18 +145,18 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
     @Test
     public void testSettingContextKeyLeadsToFileCreation() throws Exception
     {
-        assumeThat(supportsPosixFileAttributes(), is(true));
-        String filename = UUID.randomUUID().toString() + ".key";
-        String subdirName = getTestName() + File.separator + "test";
-        String fileLocation = _tmpDir.toString() + File.separator + subdirName + File.separator + filename;
+        assumeTrue(supportsPosixFileAttributes());
+        final String filename = randomUUID() + ".key";
+        final String subdirName = getTestName() + File.separator + "test";
+        final String fileLocation = _tmpDir.toString() + File.separator + subdirName + File.separator + filename;
 
-        when(_broker.getContextKeys(eq(false))).thenReturn(Collections.singleton(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
+        when(_broker.getContextKeys(eq(false))).thenReturn(Set.of(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
         when(_broker.getContextValue(eq(String.class),
                                      eq(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE))).thenReturn(fileLocation);
 
-        ConfigurationSecretEncrypter encrypter = _factory.createEncrypter(_broker);
+        final ConfigurationSecretEncrypter encrypter = _factory.createEncrypter(_broker);
 
-        KeyFilePathChecker keyFilePathChecker = new KeyFilePathChecker(subdirName, filename);
+        final KeyFilePathChecker keyFilePathChecker = new KeyFilePathChecker(subdirName, filename);
 
         doChecks(encrypter, keyFilePathChecker);
     }
@@ -164,103 +165,85 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
     @Test
     public void testUnableToCreateFileInSpecifiedLocation() throws Exception
     {
-        String filename = UUID.randomUUID().toString() + ".key";
-        String subdirName = getTestName() + File.separator + "test";
-        String fileLocation = _tmpDir.toString() + File.separator + subdirName + File.separator + filename;
+        final String filename = randomUUID() + ".key";
+        final String subdirName = getTestName() + File.separator + "test";
+        final String fileLocation = _tmpDir.toString() + File.separator + subdirName + File.separator + filename;
 
-        when(_broker.getContextKeys(eq(false))).thenReturn(Collections.singleton(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
+        when(_broker.getContextKeys(eq(false))).thenReturn(Set.of(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
         when(_broker.getContextValue(eq(String.class),
                                      eq(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE))).thenReturn(fileLocation);
 
         Files.createDirectories(Paths.get(fileLocation));
 
-        try
-        {
-            ConfigurationSecretEncrypter encrypter = _factory.createEncrypter(_broker);
-            fail("should not be able to create a key file where a directory currently is");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalConfigurationException.class,
+                () -> _factory.createEncrypter(_broker),
+                "Should not be able to create a key file where a directory currently is");
     }
 
 
     @Test
     public void testPermissionsAreChecked() throws Exception
     {
-        assumeThat(supportsPosixFileAttributes(), is(true));
-        String filename = UUID.randomUUID().toString() + ".key";
-        String subdirName = getTestName() + File.separator + "test";
-        String fileLocation = _tmpDir.toString() + File.separator + subdirName + File.separator + filename;
+        assumeTrue(supportsPosixFileAttributes());
+        final String filename = randomUUID() + ".key";
+        final String subdirName = getTestName() + File.separator + "test";
+        final String fileLocation = _tmpDir.toString() + File.separator + subdirName + File.separator + filename;
 
-        when(_broker.getContextKeys(eq(false))).thenReturn(Collections.singleton(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
+        when(_broker.getContextKeys(eq(false))).thenReturn(Set.of(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
         when(_broker.getContextValue(eq(String.class),
                                      eq(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE))).thenReturn(fileLocation);
 
         Files.createDirectories(Paths.get(_tmpDir.toString(), subdirName));
 
-        File file = new File(fileLocation);
+        final File file = new File(fileLocation);
         file.createNewFile();
         Files.setPosixFilePermissions(file.toPath(),
                                       EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.GROUP_READ));
 
-        try
-        {
-            ConfigurationSecretEncrypter encrypter = _factory.createEncrypter(_broker);
-            fail("should not be able to create a key file where the file is readable");
-        }
-        catch (IllegalArgumentException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> _factory.createEncrypter(_broker),
+                "Should not be able to create a key file where the file is readable");
     }
 
     @Test
     public void testInvalidKey() throws Exception
     {
-        assumeThat(supportsPosixFileAttributes(), is(true));
-        String filename = UUID.randomUUID().toString() + ".key";
-        String subdirName = getTestName() + File.separator + "test";
-        String fileLocation = _tmpDir.toString() + File.separator + subdirName + File.separator + filename;
+        assumeTrue(supportsPosixFileAttributes());
+        final String filename = randomUUID() + ".key";
+        final String subdirName = getTestName() + File.separator + "test";
+        final String fileLocation = _tmpDir.toString() + File.separator + subdirName + File.separator + filename;
 
-        when(_broker.getContextKeys(eq(false))).thenReturn(Collections.singleton(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
+        when(_broker.getContextKeys(eq(false))).thenReturn(Set.of(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
         when(_broker.getContextValue(eq(String.class),
                                      eq(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE))).thenReturn(fileLocation);
 
         Files.createDirectories(Paths.get(_tmpDir.toString(), subdirName));
 
-        File file = new File(fileLocation);
-        try (FileOutputStream fos = new FileOutputStream(file))
+        final File file = new File(fileLocation);
+        try (final FileOutputStream fos = new FileOutputStream(file))
         {
             fos.write("This is not an AES key.  It is a string saying it is not an AES key".getBytes(
                     StandardCharsets.US_ASCII));
         }
         Files.setPosixFilePermissions(file.toPath(), EnumSet.of(PosixFilePermission.OWNER_READ));
 
-        try
-        {
-            ConfigurationSecretEncrypter encrypter = _factory.createEncrypter(_broker);
-            fail("should not be able to start where the key is not a valid key");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalConfigurationException.class,
+                () -> _factory.createEncrypter(_broker),
+                "Should not be able to start where the key is not a valid key");
     }
 
-    private boolean supportsPosixFileAttributes() throws IOException
+    private boolean supportsPosixFileAttributes()
     {
         return Files.getFileAttributeView(_tmpDir, PosixFileAttributeView.class) != null;
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        Files.walk(_tmpDir)
-             .sorted(Comparator.reverseOrder())
-             .map(Path::toFile)
-             .forEach(File::delete);
+        try (final Stream<Path> stream = Files.walk(_tmpDir))
+        {
+            stream.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        }
     }
 
     static boolean isStrongEncryptionEnabled() throws NoSuchAlgorithmException
@@ -270,7 +253,6 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
 
     private class KeyFilePathChecker extends SimpleFileVisitor<Path>
     {
-
         private final String _fileName;
         private final String _subdirName;
         private Path _keyFile;
@@ -332,7 +314,7 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
         }
 
         @Override
-        public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException
+        public FileVisitResult postVisitDirectory(final Path dir, final IOException exc)
         {
             _inKeysSubdir = false;
             return FileVisitResult.CONTINUE;

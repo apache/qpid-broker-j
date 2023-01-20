@@ -20,10 +20,12 @@
  */
 package org.apache.qpid.server.plugin;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import org.junit.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -31,10 +33,9 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class ProtocolEngineCreatorComparatorTest extends UnitTestBase
 {
     @Test
-    public void testProtocolEngineCreatorComparator() throws Exception
+    public void testProtocolEngineCreatorComparator()
     {
         final ProtocolEngineCreatorComparator comparator = new ProtocolEngineCreatorComparator();
-
         final ProtocolEngineCreator amqp_0_8 = createAMQPProtocolEngineCreatorMock(Protocol.AMQP_0_8);
         final ProtocolEngineCreator amqp_0_9 = createAMQPProtocolEngineCreatorMock(Protocol.AMQP_0_9);
         final ProtocolEngineCreator amqp_0_9_1 = createAMQPProtocolEngineCreatorMock(Protocol.AMQP_0_9_1);
@@ -51,17 +52,17 @@ public class ProtocolEngineCreatorComparatorTest extends UnitTestBase
         assertTrue(comparator.compare(amqp_0_10, amqp_0_9_1) > 0);
         assertTrue(comparator.compare(amqp_1_0, amqp_0_10) > 0);
 
-        assertTrue(comparator.compare(amqp_0_8, amqp_0_8) == 0);
-        assertTrue(comparator.compare(amqp_0_9, amqp_0_9) == 0);
-        assertTrue(comparator.compare(amqp_0_9_1, amqp_0_9_1) == 0);
-        assertTrue(comparator.compare(amqp_0_10, amqp_0_10) == 0);
-        assertTrue(comparator.compare(amqp_1_0, amqp_1_0) == 0);
+        assertEquals(0, comparator.compare(amqp_0_8, amqp_0_8));
+        assertEquals(0, comparator.compare(amqp_0_9, amqp_0_9));
+        assertEquals(0, comparator.compare(amqp_0_9_1, amqp_0_9_1));
+        assertEquals(0, comparator.compare(amqp_0_10, amqp_0_10));
+        assertEquals(0, comparator.compare(amqp_1_0, amqp_1_0));
     }
 
-    private ProtocolEngineCreator createAMQPProtocolEngineCreatorMock(Protocol protocol)
+    private ProtocolEngineCreator createAMQPProtocolEngineCreatorMock(final Protocol protocol)
     {
-        final ProtocolEngineCreator protocolMock = Mockito.mock(ProtocolEngineCreator.class);
-        Mockito.when(protocolMock.getVersion()).thenReturn(protocol);
+        final ProtocolEngineCreator protocolMock = mock(ProtocolEngineCreator.class);
+        when(protocolMock.getVersion()).thenReturn(protocol);
         return protocolMock;
     }
 }

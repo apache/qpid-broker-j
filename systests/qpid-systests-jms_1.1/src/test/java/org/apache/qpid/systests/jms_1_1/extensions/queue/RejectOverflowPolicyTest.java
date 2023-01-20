@@ -18,10 +18,10 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions.queue;
 
-import static junit.framework.TestCase.fail;
 import static org.apache.qpid.systests.Utils.INDEX;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -32,13 +32,12 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.naming.NamingException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.OverflowPolicy;
 
 public class RejectOverflowPolicyTest extends OverflowPolicyTestBase
 {
-
     @Test
     public void testMaximumQueueDepthBytesExceeded() throws Exception
     {
@@ -92,7 +91,7 @@ public class RejectOverflowPolicyTest extends OverflowPolicyTestBase
                 consumerConnection.start();
 
                 Message message = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message is not received", message);
+                assertNotNull(message, "Message is not received");
                 assertEquals(0, message.getIntProperty(INDEX));
 
                 consumerSession.commit();
@@ -100,7 +99,7 @@ public class RejectOverflowPolicyTest extends OverflowPolicyTestBase
                 producer2.send(secondMessage);
 
                 Message message2 = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message is not received", message2);
+                assertNotNull(message2, "Message is not received");
                 assertEquals(1, message2.getIntProperty(INDEX));
 
                 consumerSession.commit();
@@ -115,5 +114,4 @@ public class RejectOverflowPolicyTest extends OverflowPolicyTestBase
             producerConnection.close();
         }
     }
-
 }

@@ -20,15 +20,14 @@
  */
 package org.apache.qpid.server.model;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -58,176 +57,175 @@ public class UUIDGeneratorTest extends UnitTestBase
     private static final String USER_2 = "user2";
 
     @Test
-    public void testDifferentObjectTypeReturnDifferentIdFromSameValues() throws Exception
+    public void testDifferentObjectTypeReturnDifferentIdFromSameValues()
     {
-        String value = "name";
-        Set<UUID> idSet = new HashSet<UUID>();
+        final String value = "name";
+        final Set<UUID> idSet = new HashSet<>();
 
-        UUID id1 = UUIDGenerator.generateQueueUUID(value, value);
+        final UUID id1 = UUIDGenerator.generateQueueUUID(value, value);
         idSet.add(id1);
-        UUID id2 = UUIDGenerator.generateExchangeUUID(value, value);
+        final UUID id2 = UUIDGenerator.generateExchangeUUID(value, value);
         idSet.add(id2);
-        UUID id3 = UUIDGenerator.generateBindingUUID(value, value, value, value);
+        final UUID id3 = UUIDGenerator.generateBindingUUID(value, value, value, value);
         idSet.add(id3);
-        UUID id4 = UUIDGenerator.generateConsumerUUID(value, value, value, value, value);
+        final UUID id4 = UUIDGenerator.generateConsumerUUID(value, value, value, value, value);
         idSet.add(id4);
-        UUID id5 = UUIDGenerator.generateUserUUID(value, value);
+        final UUID id5 = UUIDGenerator.generateUserUUID(value, value);
         idSet.add(id5);
-        UUID id6 = UUIDGenerator.generateVhostUUID(value);
+        final UUID id6 = UUIDGenerator.generateVhostUUID(value);
         idSet.add(id6);
-        UUID id7 = UUIDGenerator.generateVhostAliasUUID(value, value);
+        final UUID id7 = UUIDGenerator.generateVhostAliasUUID(value, value);
         idSet.add(id7);
-        UUID id8 = UUIDGenerator.generateGroupUUID(value, value);
+        final UUID id8 = UUIDGenerator.generateGroupUUID(value, value);
         idSet.add(id8);
-        UUID id9 = UUIDGenerator.generateGroupMemberUUID(value, value, value);
+        final UUID id9 = UUIDGenerator.generateGroupMemberUUID(value, value, value);
         idSet.add(id9);
 
-        assertEquals("The produced UUIDs were not all unique", (long) 9, (long) idSet.size());
+        assertEquals(9, (long) idSet.size(), "The produced UUIDs were not all unique");
     }
 
     @Test
-    public void testQueueIdGeneration() throws Exception
+    public void testQueueIdGeneration()
     {
         //check repeated generation is deterministic
         UUID queue1 = UUIDGenerator.generateQueueUUID(QUEUE_NAME_1, VIRTUAL_HOST_NAME_1);
         UUID queue2 = UUIDGenerator.generateQueueUUID(QUEUE_NAME_1, VIRTUAL_HOST_NAME_1);
-        assertEquals("Queue IDs should be equal", queue1, queue2);
+        assertEquals(queue1, queue2, "Queue IDs should be equal");
 
         //check different name gives different ID
         queue1 = UUIDGenerator.generateQueueUUID(QUEUE_NAME_1, VIRTUAL_HOST_NAME_1);
         queue2 = UUIDGenerator.generateQueueUUID(QUEUE_NAME_2, VIRTUAL_HOST_NAME_1);
-        assertFalse("Queue IDs should not be equal", queue1.equals(queue2));
+        assertNotEquals(queue1, queue2, "Queue IDs should not be equal");
 
         //check different vhost name gives different ID
         queue1 = UUIDGenerator.generateQueueUUID(QUEUE_NAME_1, VIRTUAL_HOST_NAME_1);
         queue2 = UUIDGenerator.generateQueueUUID(QUEUE_NAME_1, VIRTUAL_HOST_NAME_2);
-        assertFalse("Queue IDs should not be equal", queue1.equals(queue2));
+        assertNotEquals(queue1, queue2, "Queue IDs should not be equal");
     }
 
     @Test
-    public void testExchangeIdGeneration() throws Exception
+    public void testExchangeIdGeneration()
     {
         //check repeated generation is deterministic
         UUID exchange1 = UUIDGenerator.generateExchangeUUID(EXCHANGE_NAME_1, VIRTUAL_HOST_NAME_1);
         UUID exchange2 = UUIDGenerator.generateExchangeUUID(EXCHANGE_NAME_1, VIRTUAL_HOST_NAME_1);
-        assertEquals("Exchange IDs should be equal", exchange1, exchange2);
+        assertEquals(exchange1, exchange2, "Exchange IDs should be equal");
 
         //check different name gives different ID
         exchange1 = UUIDGenerator.generateExchangeUUID(EXCHANGE_NAME_1, VIRTUAL_HOST_NAME_1);
         exchange2 = UUIDGenerator.generateExchangeUUID(EXCHANGE_NAME_2, VIRTUAL_HOST_NAME_1);
-        assertFalse("Exchange IDs should not be equal", exchange1.equals(exchange2));
+        assertNotEquals(exchange1, exchange2, "Exchange IDs should not be equal");
 
         //check different vhost name gives different ID
         exchange1 = UUIDGenerator.generateExchangeUUID(EXCHANGE_NAME_1, VIRTUAL_HOST_NAME_1);
         exchange2 = UUIDGenerator.generateExchangeUUID(EXCHANGE_NAME_1, VIRTUAL_HOST_NAME_2);
-        assertFalse("Exchange IDs should not be equal", exchange1.equals(exchange2));
+        assertNotEquals(exchange1, exchange2, "Exchange IDs should not be equal");
     }
 
     @Test
-    public void testBindingIdGeneration() throws Exception
+    public void testBindingIdGeneration()
     {
         //check repeated generation is deterministic
         UUID binding1 = UUIDGenerator.generateBindingUUID(EXCHANGE_NAME_1, QUEUE_NAME_1, BINDING_KEY_1, VIRTUAL_HOST_NAME_1);
         UUID binding2 = UUIDGenerator.generateBindingUUID(EXCHANGE_NAME_1, QUEUE_NAME_1, BINDING_KEY_1, VIRTUAL_HOST_NAME_1);
 
-        assertEquals("Binding IDs should be equal", binding1, binding2);
+        assertEquals(binding1, binding2, "Binding IDs should be equal");
 
         //check different name gives different ID
         binding1 = UUIDGenerator.generateBindingUUID(EXCHANGE_NAME_1, QUEUE_NAME_1, BINDING_KEY_1, VIRTUAL_HOST_NAME_1);
         binding2 = UUIDGenerator.generateBindingUUID(EXCHANGE_NAME_1, QUEUE_NAME_1, BINDING_KEY_2, VIRTUAL_HOST_NAME_1);
-        assertFalse("Binding IDs should not be equal", binding1.equals(binding2));
+        assertNotEquals(binding1, binding2, "Binding IDs should not be equal");
 
         //check different vhost name gives different ID
         binding1 = UUIDGenerator.generateBindingUUID(EXCHANGE_NAME_1, QUEUE_NAME_1, BINDING_KEY_1, VIRTUAL_HOST_NAME_1);
         binding2 = UUIDGenerator.generateBindingUUID(EXCHANGE_NAME_1, QUEUE_NAME_1, BINDING_KEY_1, VIRTUAL_HOST_NAME_2);
-        assertFalse("Binding IDs should not be equal", binding1.equals(binding2));
+        assertNotEquals(binding1, binding2, "Binding IDs should not be equal");
     }
 
     @Test
-    public void testVhostIdGeneration() throws Exception
+    public void testVhostIdGeneration()
     {
         //check repeated generation is deterministic
         UUID vhost1 = UUIDGenerator.generateVhostUUID(VIRTUAL_HOST_NAME_1);
         UUID vhost2 = UUIDGenerator.generateVhostUUID(VIRTUAL_HOST_NAME_1);
-        assertTrue("Virtualhost IDs should be equal", vhost1.equals(vhost2));
+        assertEquals(vhost1, vhost2, "Virtualhost IDs should be equal");
 
         //check different vhost name gives different ID
         vhost1 = UUIDGenerator.generateVhostUUID(VIRTUAL_HOST_NAME_1);
         vhost2 = UUIDGenerator.generateVhostUUID(VIRTUAL_HOST_NAME_2);
-        assertFalse("Virtualhost IDs should not be equal", vhost1.equals(vhost2));
+        assertNotEquals(vhost1, vhost2, "Virtualhost IDs should not be equal");
     }
 
     @Test
-    public void testVhostAliasIdGeneration() throws Exception
+    public void testVhostAliasIdGeneration()
     {
         //check repeated generation is deterministic
         UUID alias1 = UUIDGenerator.generateVhostAliasUUID(VHOST_ALIAS_1, PORT_1);
         UUID alias2 = UUIDGenerator.generateVhostAliasUUID(VHOST_ALIAS_1, PORT_1);
-        assertTrue("Virtualhost Alias IDs should be equal", alias1.equals(alias2));
+        assertEquals(alias1, alias2, "Virtualhost Alias IDs should be equal");
 
         //check different port name gives different ID
         alias1 = UUIDGenerator.generateVhostAliasUUID(VHOST_ALIAS_1, PORT_1);
         alias2 = UUIDGenerator.generateVhostAliasUUID(VHOST_ALIAS_2, PORT_1);
-        assertFalse("Virtualhost Alias IDs should not be equal", alias1.equals(alias2));
+        assertNotEquals(alias1, alias2, "Virtualhost Alias IDs should not be equal");
 
         //check different alias name gives different ID
         alias1 = UUIDGenerator.generateVhostAliasUUID(VHOST_ALIAS_1, PORT_1);
         alias2 = UUIDGenerator.generateVhostAliasUUID(VHOST_ALIAS_1, PORT_2);
-        assertFalse("Virtualhost Alias IDs should not be equal", alias1.equals(alias2));
+        assertNotEquals(alias1, alias2, "Virtualhost Alias IDs should not be equal");
     }
 
     @Test
-    public void testConsumerIdGeneration() throws Exception
+    public void testConsumerIdGeneration()
     {
         //check repeated generation is deterministic
         UUID consumer1 = UUIDGenerator.generateConsumerUUID(VIRTUAL_HOST_NAME_1, QUEUE_NAME_1, CONN_REMOTE_ADDR_1, CHANNEL_NUMBER_1, CONSUMER_NAME_1);
         UUID consumer2 = UUIDGenerator.generateConsumerUUID(VIRTUAL_HOST_NAME_1, QUEUE_NAME_1, CONN_REMOTE_ADDR_1, CHANNEL_NUMBER_1, CONSUMER_NAME_1);
-        assertTrue("Consumer IDs should be equal", consumer1.equals(consumer2));
+        assertEquals(consumer1, consumer2, "Consumer IDs should be equal");
 
         //check different name gives different ID
         consumer1 = UUIDGenerator.generateConsumerUUID(VIRTUAL_HOST_NAME_1, QUEUE_NAME_1, CONN_REMOTE_ADDR_1, CHANNEL_NUMBER_1, CONSUMER_NAME_1);
         consumer2 = UUIDGenerator.generateConsumerUUID(VIRTUAL_HOST_NAME_1, QUEUE_NAME_1, CONN_REMOTE_ADDR_1, CHANNEL_NUMBER_1, CONSUMER_NAME_2);
 
-        assertFalse("Consumer IDs should not be equal", consumer1.equals(consumer2));
+        assertNotEquals(consumer1, consumer2, "Consumer IDs should not be equal");
 
         //check different vhost name gives different ID
         consumer1 = UUIDGenerator.generateConsumerUUID(VIRTUAL_HOST_NAME_1, QUEUE_NAME_1, CONN_REMOTE_ADDR_1, CHANNEL_NUMBER_1, CONSUMER_NAME_1);
         consumer2 = UUIDGenerator.generateConsumerUUID(VIRTUAL_HOST_NAME_2, QUEUE_NAME_1, CONN_REMOTE_ADDR_1, CHANNEL_NUMBER_1, CONSUMER_NAME_1);
-        assertFalse("Consumer IDs should not be equal", consumer1.equals(consumer2));
+        assertNotEquals(consumer1, consumer2, "Consumer IDs should not be equal");
 
         //check different consumer name gives different ID
         consumer1 = UUIDGenerator.generateConsumerUUID(VIRTUAL_HOST_NAME_1, QUEUE_NAME_1, CONN_REMOTE_ADDR_1, CHANNEL_NUMBER_1, CONSUMER_NAME_1);
         consumer2 = UUIDGenerator.generateConsumerUUID(VIRTUAL_HOST_NAME_1, QUEUE_NAME_1, CONN_REMOTE_ADDR_1, CHANNEL_NUMBER_2, CONSUMER_NAME_1);
-        assertFalse("Consumer IDs should not be equal", consumer1.equals(consumer2));
+        assertNotEquals(consumer1, consumer2, "Consumer IDs should not be equal");
 
         //check different address name gives different ID
         consumer1 = UUIDGenerator.generateConsumerUUID(VIRTUAL_HOST_NAME_1, QUEUE_NAME_1, CONN_REMOTE_ADDR_1, CHANNEL_NUMBER_1, CONSUMER_NAME_1);
         consumer2 = UUIDGenerator.generateConsumerUUID(VIRTUAL_HOST_NAME_1, QUEUE_NAME_1, CONN_REMOTE_ADDR_2, CHANNEL_NUMBER_1, CONSUMER_NAME_1);
-        assertFalse("Consumer IDs should not be equal", consumer1.equals(consumer2));
+        assertNotEquals(consumer1, consumer2, "Consumer IDs should not be equal");
 
         //check different queue name gives different ID
         consumer1 = UUIDGenerator.generateConsumerUUID(VIRTUAL_HOST_NAME_1, QUEUE_NAME_1, CONN_REMOTE_ADDR_1, CHANNEL_NUMBER_1, CONSUMER_NAME_1);
         consumer2 = UUIDGenerator.generateConsumerUUID(VIRTUAL_HOST_NAME_1, QUEUE_NAME_2, CONN_REMOTE_ADDR_1, CHANNEL_NUMBER_1, CONSUMER_NAME_1);
-        assertFalse("Consumer IDs should not be equal", consumer1.equals(consumer2));
+        assertNotEquals(consumer1, consumer2, "Consumer IDs should not be equal");
     }
 
     @Test
-    public void testUserIdGeneration() throws Exception
+    public void testUserIdGeneration()
     {
         //check repeated generation is deterministic
         UUID user1 = UUIDGenerator.generateUserUUID(PROVIDER_1, USER_1);
         UUID user2 = UUIDGenerator.generateUserUUID(PROVIDER_1, USER_1);
-        assertTrue("User IDs should be equal", user1.equals(user2));
+        assertEquals(user1, user2, "User IDs should be equal");
 
         //check different name gives different ID
         user1 = UUIDGenerator.generateUserUUID(PROVIDER_1, USER_1);
         user2 = UUIDGenerator.generateUserUUID(PROVIDER_1, USER_2);
-        assertFalse("User IDs should not be equal", user1.equals(user2));
+        assertNotEquals(user1, user2, "User IDs should not be equal");
 
         //check different provider gives different ID
         user1 = UUIDGenerator.generateUserUUID(PROVIDER_1, USER_1);
         user2 = UUIDGenerator.generateUserUUID(PROVIDER_2, USER_1);
-        assertFalse("User IDs should not be equal", user1.equals(user2));
+        assertNotEquals(user1, user2, "User IDs should not be equal");
     }
-
 }

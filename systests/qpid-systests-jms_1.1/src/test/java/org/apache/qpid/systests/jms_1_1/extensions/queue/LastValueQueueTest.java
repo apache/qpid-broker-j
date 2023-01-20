@@ -20,10 +20,10 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions.queue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,7 +43,8 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.naming.NamingException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,20 +103,18 @@ public class LastValueQueueTest extends JmsTestBase
             consumerConnection.start();
 
             Message received1 = consumer.receive(getReceiveTimeout());
-            assertNotNull("First message is not received", received1);
-            assertEquals("Unexpected key property value", "A", received1.getStringProperty(KEY_PROPERTY));
-            assertEquals("Unexpected sequence property value",
-                         3,
-                         received1.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY));
+            assertNotNull(received1, "First message is not received");
+            assertEquals("A", received1.getStringProperty(KEY_PROPERTY), "Unexpected key property value");
+            assertEquals(3, received1.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY),
+                    "Unexpected sequence property value");
 
             Message received2 = consumer.receive(getReceiveTimeout());
-            assertNotNull("Second message is not received", received2);
-            assertEquals("Unexpected key property value", "B", received2.getStringProperty(KEY_PROPERTY));
-            assertEquals("Unexpected sequence property value",
-                         4,
-                         received2.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY));
+            assertNotNull(received2, "Second message is not received");
+            assertEquals("B", received2.getStringProperty(KEY_PROPERTY), "Unexpected key property value");
+            assertEquals(4, received2.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY),
+                    "Unexpected sequence property value");
 
-            assertNull("Unexpected message is received", consumer.receive(getReceiveTimeout() / 4));
+            assertNull(consumer.receive(getReceiveTimeout() / 4), "Unexpected message is received");
         }
         finally
         {
@@ -141,10 +140,10 @@ public class LastValueQueueTest extends JmsTestBase
             for (int i = 0; i < NUMBER_OF_UNIQUE_KEY_VALUES; i++)
             {
                 final Message received = consumer.receive(getReceiveTimeout());
-                assertNotNull(String.format("Message with key %d is not received", i), received);
-                assertEquals("Unexpected message received",
-                             MSG_COUNT / 2 - NUMBER_OF_UNIQUE_KEY_VALUES + i,
-                             received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY));
+                assertNotNull(received, String.format("Message with key %d is not received", i));
+                assertEquals(MSG_COUNT / 2 - NUMBER_OF_UNIQUE_KEY_VALUES + i,
+                        received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY),
+                        "Unexpected message received");
             }
         }
         finally
@@ -164,10 +163,10 @@ public class LastValueQueueTest extends JmsTestBase
             for (int i = 0; i < NUMBER_OF_UNIQUE_KEY_VALUES; i++)
             {
                 final Message received = consumer.receive(getReceiveTimeout());
-                assertNotNull(String.format("Message with key %d is not received", i), received);
-                assertEquals("Unexpected message received",
-                             MSG_COUNT - NUMBER_OF_UNIQUE_KEY_VALUES + i,
-                             received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY));
+                assertNotNull(received, String.format("Message with key %d is not received", i));
+                assertEquals(MSG_COUNT - NUMBER_OF_UNIQUE_KEY_VALUES + i,
+                        received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY),
+                        "Unexpected message received");
             }
         }
         finally
@@ -194,10 +193,10 @@ public class LastValueQueueTest extends JmsTestBase
             for (int i = 0; i < NUMBER_OF_UNIQUE_KEY_VALUES; i++)
             {
                 final Message received = consumer.receive(getReceiveTimeout());
-                assertNotNull(String.format("Message with key %d is not received", i), received);
-                assertEquals("Unexpected message received",
-                             MSG_COUNT / 2 - NUMBER_OF_UNIQUE_KEY_VALUES + i,
-                             received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY));
+                assertNotNull(received, String.format("Message with key %d is not received", i));
+                assertEquals(MSG_COUNT / 2 - NUMBER_OF_UNIQUE_KEY_VALUES + i,
+                        received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY),
+                        "Unexpected message received");
             }
 
             sendMessages(queue, MSG_COUNT / 2, MSG_COUNT);
@@ -221,10 +220,10 @@ public class LastValueQueueTest extends JmsTestBase
             for (int i = 0; i < NUMBER_OF_UNIQUE_KEY_VALUES; i++)
             {
                 final Message received = consumer.receive(getReceiveTimeout());
-                assertNotNull(String.format("Message with key %d is not received", i), received);
-                assertEquals("Unexpected message received",
-                             MSG_COUNT - NUMBER_OF_UNIQUE_KEY_VALUES + i,
-                             received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY));
+                assertNotNull(received, String.format("Message with key %d is not received", i));
+                assertEquals(MSG_COUNT - NUMBER_OF_UNIQUE_KEY_VALUES + i,
+                        received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY),
+                        "Unexpected message received");
             }
         }
         finally
@@ -262,19 +261,18 @@ public class LastValueQueueTest extends JmsTestBase
             for (int i = 0; i < NUMBER_OF_UNIQUE_KEY_VALUES; i++)
             {
                 final Message received = consumer.receive(getReceiveTimeout());
-                assertNotNull(String.format("Message with key %d is not received", i), received);
-                assertEquals("Unexpected message received",
-                             MSG_COUNT - NUMBER_OF_UNIQUE_KEY_VALUES + i,
-                             received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY));
+                assertNotNull(received, String.format("Message with key %d is not received", i));
+                assertEquals(MSG_COUNT - NUMBER_OF_UNIQUE_KEY_VALUES + i,
+                        received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY),
+                        "Unexpected message received");
             }
 
             sendMessages(queue, MSG_COUNT, MSG_COUNT + 1);
 
             final Message received = consumer.receive(getReceiveTimeout());
-            assertNotNull(String.format("Message with key %d is not received", 0), received);
-            assertEquals("Unexpected message received",
-                         MSG_COUNT,
-                         received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY));
+            assertNotNull(received, String.format("Message with key %d is not received", 0));
+            assertEquals(MSG_COUNT, received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY),
+                    "Unexpected message received");
         }
         finally
         {
@@ -302,16 +300,16 @@ public class LastValueQueueTest extends JmsTestBase
             for (int i = 0; i < NUMBER_OF_UNIQUE_KEY_VALUES; i++)
             {
                 final Message received = consumer.receive(getReceiveTimeout());
-                assertNotNull(String.format("Message with key %d is not received by first consumer", i), received);
-                assertEquals("Unexpected message received by first consumer",
-                             MSG_COUNT - NUMBER_OF_UNIQUE_KEY_VALUES + i,
-                             received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY));
+                assertNotNull(received, String.format("Message with key %d is not received by first consumer", i));
+                assertEquals(MSG_COUNT - NUMBER_OF_UNIQUE_KEY_VALUES + i,
+                        received.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY),
+                        "Unexpected message received by first consumer");
 
                 final Message received2 = consumer2.receive(getReceiveTimeout());
-                assertNotNull(String.format("Message with key %d is not received by second consumer", i), received2);
-                assertEquals("Unexpected message received by second consumer",
-                             MSG_COUNT - NUMBER_OF_UNIQUE_KEY_VALUES + i,
-                             received2.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY));
+                assertNotNull(received2, String.format("Message with key %d is not received by second consumer", i));
+                assertEquals(MSG_COUNT - NUMBER_OF_UNIQUE_KEY_VALUES + i,
+                        received2.getIntProperty(MESSAGE_SEQUENCE_NUMBER_PROPERTY),
+                        "Unexpected message received by second consumer");
             }
         }
         finally
@@ -345,15 +343,16 @@ public class LastValueQueueTest extends JmsTestBase
             future2.get(getReceiveTimeout() * MSG_COUNT, TimeUnit.MILLISECONDS);
 
             final Map<String, Integer> lastSentMessages1 = messageProducer1.getMessageSequenceNumbersByKey();
-            assertEquals("Unexpected number of last sent messages sent by producer1",
-                         numberOfUniqueKeyValues, lastSentMessages1.size());
+            assertEquals(numberOfUniqueKeyValues, lastSentMessages1.size(),
+                    "Unexpected number of last sent messages sent by producer1");
             final Map<String, Integer> lastSentMessages2 = messageProducer2.getMessageSequenceNumbersByKey();
             assertEquals(lastSentMessages1, lastSentMessages2);
 
-            assertEquals("The last message sent for each key should match the last message received for that key",
-                         lastSentMessages1, lastReceivedMessages);
+            assertEquals(lastSentMessages1, lastReceivedMessages,
+                    "The last message sent for each key should match the last message received for that key");
 
-            assertNull("Unexpected exception from background producer thread", messageProducer1.getException());
+            assertNull(messageProducer1.getException(),
+                    "Unexpected exception from background producer thread");
         }
         finally
         {
@@ -383,11 +382,8 @@ public class LastValueQueueTest extends JmsTestBase
             while (numberOfShutdownsReceived < 2)
             {
                 message = consumer.receive(getReceiveTimeout());
-                assertNotNull("null received after "
-                              + numberOfMessagesReceived
-                              + " messages and "
-                              + numberOfShutdownsReceived
-                              + " shutdowns", message);
+                assertNotNull(message, "null received after " + numberOfMessagesReceived + " messages and " +
+                        numberOfShutdownsReceived + " shutdowns");
 
                 if (message.propertyExists(BackgroundMessageProducer.SHUTDOWN))
                 {
@@ -437,8 +433,8 @@ public class LastValueQueueTest extends JmsTestBase
         {
             final long latchTimeout = 60000;
             boolean success = _quarterOfMessagesSentLatch.await(latchTimeout, TimeUnit.MILLISECONDS);
-            assertTrue("Failed to be notified that 1/4 of the messages have been sent within " + latchTimeout + " ms.",
-                       success);
+            assertTrue(success,"Failed to be notified that 1/4 of the messages have been sent within " +
+                    latchTimeout + " ms.");
             LOGGER.info("Quarter of messages sent");
         }
 

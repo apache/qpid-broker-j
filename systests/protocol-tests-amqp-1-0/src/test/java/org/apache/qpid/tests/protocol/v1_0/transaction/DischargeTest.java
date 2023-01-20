@@ -29,12 +29,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
@@ -62,7 +62,7 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 public class DischargeTest extends BrokerAdminUsingTestBase
 {
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
@@ -251,8 +251,8 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                        .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                        .attach().consumeResponse(Attach.class)
                        .assertLatestResponse(Attach.class,
-                                             attach -> assumeThat(attach.getRcvSettleMode(),
-                                                                  is(equalTo(ReceiverSettleMode.SECOND))))
+                                             attach -> assumeTrue(is(equalTo(ReceiverSettleMode.SECOND))
+                                                     .matches(attach.getRcvSettleMode())))
                        .consumeResponse(Flow.class)
 
                        .transferDeliveryId()
@@ -276,6 +276,6 @@ public class DischargeTest extends BrokerAdminUsingTestBase
     private void coordinatorAttachExpected(final Response<?> response)
     {
         assertThat(response, is(notNullValue()));
-        assumeThat(response.getBody(), anyOf(instanceOf(Attach.class), instanceOf(Flow.class)));
+        assumeTrue(anyOf(instanceOf(Attach.class), instanceOf(Flow.class)).matches(response.getBody()));
     }
 }

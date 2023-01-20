@@ -29,7 +29,7 @@ import org.apache.qpid.server.model.ManagedStatistic;
 import org.apache.qpid.server.model.StatisticType;
 import org.apache.qpid.server.model.StatisticUnit;
 
-@ManagedObject(category = true, defaultType = TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE)
+@ManagedObject(defaultType = TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE)
 public interface TestEngine<X extends TestEngine<X>> extends ConfiguredObject<X>
 {
     String BEFORE_CLOSE_FUTURE = "beforeCloseFuture";
@@ -38,13 +38,16 @@ public interface TestEngine<X extends TestEngine<X>> extends ConfiguredObject<X>
 
     /* Injectable close future, used to control when/how close completes during the test */
     @ManagedAttribute
+    @SuppressWarnings("unused")
     Object getBeforeCloseFuture();
 
+    @SuppressWarnings("unused")
     void setBeforeCloseFuture(ListenableFuture<Void> listenableFuture);
 
     /* Injectable state change future, used to control when/how asynch state transition completes during the test */
 
     @ManagedAttribute
+    @SuppressWarnings("unused")
     Object getStateChangeFuture();
 
     void setStateChangeFuture(ListenableFuture<Void> listenableFuture);
@@ -52,10 +55,13 @@ public interface TestEngine<X extends TestEngine<X>> extends ConfiguredObject<X>
     /* Injectable exception, used to introduce an exception into a state change transition */
 
     @ManagedAttribute
+    @SuppressWarnings("unused")
     Object getStateChangeException();
+
     void setStateChangeException(RuntimeException exception);
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT)
+    @SuppressWarnings("unused")
     int getTemperature();
 
 }

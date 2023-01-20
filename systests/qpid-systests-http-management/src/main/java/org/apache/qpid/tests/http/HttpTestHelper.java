@@ -21,6 +21,8 @@
 package org.apache.qpid.tests.http;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -51,8 +53,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.google.common.io.ByteStreams;
-import org.junit.Assert;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -219,8 +222,8 @@ public class HttpTestHelper
     {
         List<Map<String, Object>> response = getJsonAsList(path);
 
-        Assert.assertNotNull("Response cannot be null", response);
-        Assert.assertEquals("Unexpected response from " + path, 1, response.size());
+        assertNotNull(response, "Response cannot be null");
+        assertEquals(1, response.size(), "Unexpected response from " + path);
         return response.get(0);
     }
 
@@ -242,7 +245,7 @@ public class HttpTestHelper
         {
             connection.connect();
             responseCode = connection.getResponseCode();
-            Assert.assertEquals(String.format("Unexpected response code from : %s", path), expectedResponseCode, responseCode);
+            assertEquals(expectedResponseCode, responseCode, String.format("Unexpected response code from : %s", path));
 
             byte[] data = readConnectionInputStream(connection);
             LOGGER.debug("Response : {}", new String(data, StandardCharsets.UTF_8));
@@ -266,7 +269,7 @@ public class HttpTestHelper
             connection.connect();
             writeJsonRequest(connection, data);
             responseCode = connection.getResponseCode();
-            Assert.assertEquals(String.format("Unexpected response code from : %s", path), expectedResponseCode, responseCode);
+            assertEquals(expectedResponseCode, responseCode, String.format("Unexpected response code from : %s", path));
 
             byte[] buf = readConnectionInputStream(connection);
             LOGGER.debug("Response data: {}", new String(buf, StandardCharsets.UTF_8));
@@ -293,7 +296,7 @@ public class HttpTestHelper
     {
         Map<String, List<String>> headers = new HashMap<>();
         int responseCode = submitRequest(url, method, data, headers);
-        Assert.assertEquals("Unexpected response code from " + method + " " + url , expectedResponseCode, responseCode);
+        assertEquals(expectedResponseCode, responseCode, "Unexpected response code from " + method + " " + url);
     }
 
     public void submitRequest(String url, String method, int expectedResponseCode) throws IOException

@@ -23,12 +23,12 @@ package org.apache.qpid.server.store.jdbc.bonecp;
 import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProviderFactory.MAX_CONNECTIONS_PER_PARTITION;
 import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProviderFactory.MIN_CONNECTIONS_PER_PARTITION;
 import static org.apache.qpid.server.store.jdbc.bonecp.BoneCPConnectionProviderFactory.PARTITION_COUNT;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Set;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -39,10 +39,10 @@ public class BoneCPConnectionProviderFactoryTest extends UnitTestBase
     {
         BoneCPConnectionProviderFactory factory = new BoneCPConnectionProviderFactory();
         Set<String> supported = factory.getProviderAttributeNames();
-        assertFalse("Supported settings cannot be empty", supported.isEmpty());
+        assertFalse(supported.isEmpty(), "Supported settings cannot be empty");
 
-        assertTrue("partitionCount is not found", supported.contains(PARTITION_COUNT));
-        assertTrue("maxConnectionsPerPartition is not found", supported.contains(MAX_CONNECTIONS_PER_PARTITION));
-        assertTrue("minConnectionsPerPartition is not found",supported.contains(MIN_CONNECTIONS_PER_PARTITION));
+        assertTrue(supported.contains(PARTITION_COUNT), "partitionCount is not found");
+        assertTrue(supported.contains(MAX_CONNECTIONS_PER_PARTITION), "maxConnectionsPerPartition is not found");
+        assertTrue(supported.contains(MIN_CONNECTIONS_PER_PARTITION), "minConnectionsPerPartition is not found");
     }
 }

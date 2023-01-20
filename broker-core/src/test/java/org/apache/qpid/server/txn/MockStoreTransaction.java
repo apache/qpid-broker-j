@@ -22,7 +22,6 @@ package org.apache.qpid.server.txn;
 
 import java.util.UUID;
 
-
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -40,23 +39,23 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
  * for unit test use.
  *
  */
+@SuppressWarnings({"rawtypes"})
 class MockStoreTransaction implements Transaction
 {
-    enum TransactionState {NOT_STARTED, STARTED, COMMITTED, ABORTED};
-
-    private final boolean _throwExceptionOnQueueOp;
+    enum TransactionState {NOT_STARTED, STARTED, COMMITTED, ABORTED}
 
     private TransactionState _state = TransactionState.NOT_STARTED;
 
     private int _numberOfEnqueuedMessages = 0;
     private int _numberOfDequeuedMessages = 0;
+    private final boolean _throwExceptionOnQueueOp;
 
-    public MockStoreTransaction(boolean throwExceptionOnQueueOp)
+    public MockStoreTransaction(final boolean throwExceptionOnQueueOp)
     {
         _throwExceptionOnQueueOp = throwExceptionOnQueueOp;
     }
 
-    public void setState(TransactionState state)
+    public void setState(final TransactionState state)
     {
         _state = state;
     }
@@ -118,10 +117,6 @@ class MockStoreTransaction implements Transaction
         _state = TransactionState.ABORTED;
     }
 
-    public void removeXid(long format, byte[] globalId, byte[] branchId)
-    {
-    }
-
     @Override
     public void removeXid(final StoredXidRecord record)
     {
@@ -129,11 +124,11 @@ class MockStoreTransaction implements Transaction
     }
 
     @Override
-    public StoredXidRecord recordXid(long format,
-                                     byte[] globalId,
-                                     byte[] branchId,
-                                     EnqueueRecord[] enqueues,
-                                     DequeueRecord[] dequeues)
+    public StoredXidRecord recordXid(final long format,
+                                     final byte[] globalId,
+                                     final byte[] branchId,
+                                     final EnqueueRecord[] enqueues,
+                                     final DequeueRecord[] dequeues)
     {
         return null;
     }

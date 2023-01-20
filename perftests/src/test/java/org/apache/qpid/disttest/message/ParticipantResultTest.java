@@ -41,35 +41,21 @@ import static org.apache.qpid.disttest.message.ParticipantAttribute.TIME_TAKEN;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.TIME_TO_LIVE;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.TOTAL_NUMBER_OF_CONSUMERS;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.TOTAL_NUMBER_OF_PRODUCERS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Date;
 
 import javax.jms.DeliveryMode;
 
-import org.junit.Assert;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ParticipantResultTest extends UnitTestBase
 {
 
     @Test
-    public void testSharedParticipantResultAttributes() throws Exception
+    public void testSharedParticipantResultAttributes()
     {
         final String participantName = "PARTICIPANT_NAME1";
         final String testName = "TEST_NAME1";
@@ -128,7 +114,7 @@ public class ParticipantResultTest extends UnitTestBase
     }
 
     @Test
-    public void testConsumerParticipantResultAttributes() throws Exception
+    public void testConsumerParticipantResultAttributes()
     {
         ConsumerParticipantResult result = new ConsumerParticipantResult();
 
@@ -155,7 +141,7 @@ public class ParticipantResultTest extends UnitTestBase
     }
 
     @Test
-    public void testProducerParticipantResultAttributes() throws Exception
+    public void testProducerParticipantResultAttributes()
     {
         ProducerParticipantResult result = new ProducerParticipantResult();
 

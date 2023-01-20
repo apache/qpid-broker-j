@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.systests.jms_1_1.message;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 
@@ -34,7 +34,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -58,8 +58,8 @@ public class BytesMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("BytesMessage should be received", receivedMessage instanceof BytesMessage);
-            assertEquals("Unexpected body length", 0, ((BytesMessage) receivedMessage).getBodyLength());
+            assertTrue(receivedMessage instanceof BytesMessage, "BytesMessage should be received");
+            assertEquals(0, ((BytesMessage) receivedMessage).getBodyLength(), "Unexpected body length");
         }
         finally
         {
@@ -92,14 +92,14 @@ public class BytesMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("BytesMessage should be received", receivedMessage instanceof BytesMessage);
+            assertTrue(receivedMessage instanceof BytesMessage, "BytesMessage should be received");
 
             byte[] receivedBytes = new byte[text.length];
             BytesMessage receivedBytesMessage = (BytesMessage) receivedMessage;
             receivedBytesMessage.readBytes(receivedBytes);
 
-            assertArrayEquals("Unexpected bytes", receivedBytes, text);
-            assertEquals("Unexpected double", value, receivedBytesMessage.readDouble(), 0);
+            assertArrayEquals(receivedBytes, text, "Unexpected bytes");
+            assertEquals(value, receivedBytesMessage.readDouble(), 0, "Unexpected double");
         }
         finally
         {

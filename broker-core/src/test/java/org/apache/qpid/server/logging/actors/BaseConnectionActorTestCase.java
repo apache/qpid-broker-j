@@ -20,8 +20,9 @@
  */
 package org.apache.qpid.server.logging.actors;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.VirtualHost;
@@ -30,31 +31,26 @@ import org.apache.qpid.server.transport.AMQPConnection;
 public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
 {
     private AMQPConnection<?> _connection;
-    private VirtualHost<?> _virtualHost;
+    private VirtualHost<?> _vhost;
 
-    @Before
+    @BeforeAll
+    public void beforeAll() throws Exception
+    {
+        _vhost = BrokerTestHelper.createVirtualHost(getTestClassName(), this);
+    }
+
+    @BeforeEach
     public void setUp() throws Exception
     {
         super.setUp();
-        BrokerTestHelper.setUp();
         _connection = BrokerTestHelper.createConnection();
-        _virtualHost = BrokerTestHelper.createVirtualHost("test", this);
     }
 
-    public VirtualHost<?> getVirtualHost()
-    {
-        return _virtualHost;
-    }
-
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
         {
-            if(_virtualHost != null)
-            {
-                _virtualHost.close();
-            }
             if (_connection != null)
             {
                 _connection.sendConnectionCloseAsync(AMQPConnection.CloseReason.MANAGEMENT, "");
@@ -62,14 +58,17 @@ public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
         }
         finally
         {
-            BrokerTestHelper.tearDown();
             super.tearDown();
         }
+    }
+
+    public VirtualHost<?> getVhost()
+    {
+        return _vhost;
     }
 
     public AMQPConnection<?> getConnection()
     {
         return _connection;
     }
-
 }

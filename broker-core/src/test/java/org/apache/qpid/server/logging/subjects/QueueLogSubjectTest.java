@@ -23,8 +23,8 @@ package org.apache.qpid.server.logging.subjects;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Queue;
@@ -35,32 +35,24 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
  */
 public class QueueLogSubjectTest extends AbstractTestLogSubject
 {
-
     private Queue<?> _queue;
+    @SuppressWarnings("rawtypes")
     private QueueManagingVirtualHost _testVhost;
 
-    @Before
+    @BeforeAll
+    public void beforeAll() throws Exception
+    {
+        _testVhost = BrokerTestHelper.createVirtualHost("test", this);
+    }
+
+    @BeforeEach
+    @SuppressWarnings("unchecked")
     public void setUp() throws Exception
     {
-        super.setUp();
-
-        _testVhost = BrokerTestHelper.createVirtualHost("test", this);
-
         _queue = mock(Queue.class);
         when(_queue.getName()).thenReturn("QueueLogSubjectTest");
         when(_queue.getVirtualHost()).thenReturn(_testVhost);
-
         _subject = new QueueLogSubject(_queue.getName(),_queue.getVirtualHost().getName());
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        if (_testVhost != null)
-        {
-            _testVhost.close();
-        }
-        super.tearDown();
     }
 
     /**
@@ -70,7 +62,7 @@ public class QueueLogSubjectTest extends AbstractTestLogSubject
      * @param message the message whose format needs validation
      */
     @Override
-    protected void validateLogStatement(String message)
+    protected void validateLogStatement(final String message)
     {
         verifyVirtualHost(message, _testVhost);
         verifyQueue(message, _queue);

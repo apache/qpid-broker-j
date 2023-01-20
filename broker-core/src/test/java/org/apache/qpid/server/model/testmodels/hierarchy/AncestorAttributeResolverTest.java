@@ -20,16 +20,16 @@
 
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.AncestorAttributeResolver;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -38,116 +38,104 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AncestorAttributeResolverTest extends UnitTestBase
 {
-
     public static final String CAR_NAME = "myCar";
     private final Model _model = TestModel.getInstance();
 
     private AncestorAttributeResolver _ancestorAttributeResolver;
-    private TestCar _car;
-    private TestEngine _engine;
+    private TestCar<?> _car;
+    private TestEngine<?> _engine;
 
-    @Before
+    @BeforeEach
+    @SuppressWarnings("unchecked")
     public void setUp() throws Exception
     {
-
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, CAR_NAME);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, CAR_NAME,
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
 
         _car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
         assertEquals(CAR_NAME, _car.getName());
 
-        String engineName = "myEngine";
+        final String engineName = "myEngine";
+        final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, engineName,
+                ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
 
-        Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, engineName);
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
-
-
-        _engine = (TestEngine) _car.createChild(TestEngine.class, engineAttributes);
-
-
+        _engine = (TestEngine<?>) _car.createChild(TestEngine.class, engineAttributes);
     }
 
     @Test
-    public void testResolveToParent() throws Exception
+    public void testResolveToParent()
     {
         _ancestorAttributeResolver = new AncestorAttributeResolver(_engine);
-        String actual = _ancestorAttributeResolver.resolve("ancestor:testcar:name", null);
+        final String actual = _ancestorAttributeResolver.resolve("ancestor:testcar:name", null);
         assertEquals(CAR_NAME, actual);
     }
 
     @Test
-    public void testResolveToSelf() throws Exception
+    public void testResolveToSelf()
     {
         _ancestorAttributeResolver = new AncestorAttributeResolver(_car);
-        String actual = _ancestorAttributeResolver.resolve("ancestor:testcar:name", null);
+        final String actual = _ancestorAttributeResolver.resolve("ancestor:testcar:name", null);
         assertEquals(CAR_NAME, actual);
     }
 
     @Test
-    public void testUnrecognisedCategoryName() throws Exception
+    public void testUnrecognisedCategoryName()
     {
         _ancestorAttributeResolver = new AncestorAttributeResolver(_car);
-        String actual = _ancestorAttributeResolver.resolve("ancestor:notacategoty:name", null);
+        final String actual = _ancestorAttributeResolver.resolve("ancestor:notacategoty:name", null);
         assertNull(actual);
     }
 
     @Test
-    public void testUnrecognisedAttributeName() throws Exception
+    public void testUnrecognisedAttributeName()
     {
         _ancestorAttributeResolver = new AncestorAttributeResolver(_car);
-        String actual = _ancestorAttributeResolver.resolve("ancestor:notacategoty:nonexisting", null);
+        final String actual = _ancestorAttributeResolver.resolve("ancestor:notacategoty:nonexisting", null);
         assertNull(actual);
     }
 
     @Test
-    public void testBadAncestorRef() throws Exception
+    public void testBadAncestorRef()
     {
         _ancestorAttributeResolver = new AncestorAttributeResolver(_car);
-        String actual = _ancestorAttributeResolver.resolve("ancestor:name", null);
+        final String actual = _ancestorAttributeResolver.resolve("ancestor:name", null);
         assertNull(actual);
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testResolveAncestorAttributeOfTypeMap() throws Exception
     {
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, CAR_NAME);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
-        Map<String,Object> parameters = new HashMap<>();
-        parameters.put("int", 1);
-        parameters.put("string", "value");
-        carAttributes.put("parameters", parameters);
+        final Map<String, Object> parameters = Map.of("int", 1, "string", "value");
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, CAR_NAME,
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE,
+                "parameters", parameters);
 
         _car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
         _ancestorAttributeResolver = new AncestorAttributeResolver(_car);
-        String actual = _ancestorAttributeResolver.resolve("ancestor:testcar:parameters", null);
+        final String actual = _ancestorAttributeResolver.resolve("ancestor:testcar:parameters", null);
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        Map<Object,Object> data = objectMapper.readValue(actual, HashMap.class);
-        assertEquals("Unexpected resolved ancestor attribute of type Map", parameters, data);
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final Map<Object,Object> data = objectMapper.readValue(actual, HashMap.class);
+        assertEquals(parameters, data, "Unexpected resolved ancestor attribute of type Map");
     }
 
     @Test
-    public void testResolveAncestorAttributeOfTypeConfiguredObject() throws Exception
+    @SuppressWarnings("unchecked")
+    public void testResolveAncestorAttributeOfTypeConfiguredObject()
     {
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, CAR_NAME);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
-        carAttributes.put("alternateEngine", _engine);
+        final Map<String, Object> carAttributes = Map.of(ConfiguredObject.NAME, CAR_NAME,
+                ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE,
+                "alternateEngine", _engine);
 
         _car = _model.getObjectFactory().create(TestCar.class, carAttributes, null);
 
         _ancestorAttributeResolver = new AncestorAttributeResolver(_car);
-        String actual = _ancestorAttributeResolver.resolve("ancestor:testcar:alternateEngine", null);
+        final String actual = _ancestorAttributeResolver.resolve("ancestor:testcar:alternateEngine", null);
 
-        assertEquals("Unexpected resolved ancestor attribute of type ConfiguredObject",
-                            _engine.getId().toString(),
-                            actual);
-
+        assertEquals(_engine.getId().toString(), actual,
+                "Unexpected resolved ancestor attribute of type ConfiguredObject");
     }
-
 }

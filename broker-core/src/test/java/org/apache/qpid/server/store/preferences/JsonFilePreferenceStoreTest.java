@@ -19,9 +19,9 @@
 
 package org.apache.qpid.server.store.preferences;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -32,23 +32,25 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class JsonFilePreferenceStoreTest extends UnitTestBase
 {
     private File _storeFile;
@@ -56,7 +58,7 @@ public class JsonFilePreferenceStoreTest extends UnitTestBase
     private PreferenceStoreUpdater _updater;
     private JsonFilePreferenceStore _store;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _storeFile = new File(TMP_FOLDER, getTestName() + System.currentTimeMillis() + ".preferences.json");
@@ -66,35 +68,28 @@ public class JsonFilePreferenceStoreTest extends UnitTestBase
         when(_updater.getLatestVersion()).thenReturn(BrokerModel.MODEL_VERSION);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
-        {
-            _store.close();
-            FileUtils.delete(_storeFile, true);
-        }
-        finally
-        {
-        }
+        _store.close();
+        FileUtils.delete(_storeFile, true);
     }
 
     @Test
     public void testOpenAndLoad() throws Exception
     {
-        UUID prefId = UUID.randomUUID();
-        Map<String, Object> attributes = Collections.<String, Object>singletonMap("test1", "test2");
+        final UUID prefId = randomUUID();
+        final Map<String, Object> attributes = Map.of("test1", "test2");
         createSingleEntryTestFile(prefId, attributes);
 
-        Collection<PreferenceRecord> records = _store.openAndLoad(_updater);
+        final Collection<PreferenceRecord> records = _store.openAndLoad(_updater);
 
-        assertEquals("Unexpected size of stored preferences", (long) 1, (long) records.size());
+        assertEquals(1, (long) records.size(), "Unexpected size of stored preferences");
 
-        PreferenceRecord storeRecord = records.iterator().next();
-        assertEquals("Unexpected stored preference id", prefId, storeRecord.getId());
-        assertEquals("Unexpected stored preference attributes",
-                            attributes,
-                            new HashMap<>(storeRecord.getAttributes()));
+        final PreferenceRecord storeRecord = records.iterator().next();
+        assertEquals(prefId, storeRecord.getId(), "Unexpected stored preference id");
+        assertEquals(attributes, new HashMap<>(storeRecord.getAttributes()),
+                "Unexpected stored preference attributes");
 
         verify(_updater, never()).updatePreferences(anyString(), anyCollection());
     }
@@ -102,13 +97,12 @@ public class JsonFilePreferenceStoreTest extends UnitTestBase
     @Test
     public void testUpdateOrCreate() throws Exception
     {
-        final UUID id = UUID.randomUUID();
-        final Map<String, Object> attributes = new HashMap<>();
-        attributes.put("test1", "test2");
+        final UUID id = randomUUID();
+        final Map<String, Object> attributes = Map.of("test1", "test2");
         final PreferenceRecord record = new PreferenceRecordImpl(id, attributes);
 
         _store.openAndLoad(_updater);
-        _store.updateOrCreate(Collections.singleton(record));
+        _store.updateOrCreate(Set.of(record));
 
         assertSinglePreferenceRecordInStore(id, attributes);
     }
@@ -116,17 +110,16 @@ public class JsonFilePreferenceStoreTest extends UnitTestBase
     @Test
     public void testReplace() throws Exception
     {
-        UUID prefId = UUID.randomUUID();
-        Map<String, Object> attributes = Collections.<String, Object>singletonMap("test1", "test2");
+        final UUID prefId = randomUUID();
+        final Map<String, Object> attributes = Map.of("test1", "test2");
         createSingleEntryTestFile(prefId, attributes);
 
-        final UUID newPrefId = UUID.randomUUID();
-        final Map<String, Object> newAttributes = new HashMap<>();
-        newAttributes.put("test3", "test4");
+        final UUID newPrefId = randomUUID();
+        final Map<String, Object> newAttributes = Map.of("test3", "test4");
         final PreferenceRecord newRecord = new PreferenceRecordImpl(newPrefId, newAttributes);
 
         _store.openAndLoad(_updater);
-        _store.replace(Collections.singleton(prefId), Collections.singleton(newRecord));
+        _store.replace(Set.of(prefId), Set.of(newRecord));
 
         assertSinglePreferenceRecordInStore(newPrefId, newAttributes);
     }
@@ -134,79 +127,62 @@ public class JsonFilePreferenceStoreTest extends UnitTestBase
     @Test
     public void testReplaceToDelete() throws Exception
     {
-        UUID prefId = UUID.randomUUID();
-        Map<String, Object> attributes = Collections.<String, Object>singletonMap("test1", "test2");
+        final UUID prefId = randomUUID();
+        final Map<String, Object> attributes = Map.of("test1", "test2");
         createSingleEntryTestFile(prefId, attributes);
 
         _store.openAndLoad(_updater);
-        _store.replace(Collections.singleton(prefId), Collections.<PreferenceRecord>emptyList());
+        _store.replace(Set.of(prefId), List.of());
 
         assertStoreVersionAndSizeAndGetData(0);
     }
 
     @Test
-    public void testUpdateFailIfNotOpened() throws Exception
+    public void testUpdateFailIfNotOpened()
     {
-        try
-        {
-            _store.updateOrCreate(Collections.<PreferenceRecord>emptyList());
-            fail("Should not be able to update or create");
-        }
-        catch (IllegalStateException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalStateException.class,
+                () -> _store.updateOrCreate(List.of()),
+                "Should not be able to update or create");
     }
 
     @Test
-    public void testReplaceFailIfNotOpened() throws Exception
+    public void testReplaceFailIfNotOpened()
     {
-        try
-        {
-            _store.replace(Collections.<UUID>emptyList(), Collections.<PreferenceRecord>emptyList());
-            fail("Should not be able to replace");
-        }
-        catch (IllegalStateException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalStateException.class,
+                () -> _store.replace(List.of(), List.of()),
+                "Should not be able to replace");
     }
 
     private void createSingleEntryTestFile(final UUID prefId, final Map<String, Object> attributes) throws IOException
     {
-        Map<String, Object> content = new HashMap<>();
-        content.put("version", BrokerModel.MODEL_VERSION);
-        Map<String, Object> record = new LinkedHashMap<>();
-        record.put("id", prefId);
-        record.put("attributes", attributes);
-        content.put("preferences", Collections.singleton(record));
+        final Map<String, Object> record = Map.of("id", prefId,
+                "attributes", attributes);
+        final Map<String, Object> content = Map.of("version", BrokerModel.MODEL_VERSION,
+                "preferences", Set.of(record));
         _objectMapper.writeValue(_storeFile, content);
     }
 
     private void assertSinglePreferenceRecordInStore(final UUID id, final Map<String, Object> attributes)
             throws java.io.IOException
     {
-        Collection preferences = assertStoreVersionAndSizeAndGetData(1);
+        final Collection preferences = assertStoreVersionAndSizeAndGetData(1);
+        final Map preferenceMap = (Map) preferences.iterator().next();
+        assertEquals(id.toString(), preferenceMap.get("id"), "Unexpected id");
 
-        Map preferenceMap = (Map) preferences.iterator().next();
-        assertEquals("Unexpected id", id.toString(), preferenceMap.get("id"));
-
-        Object storedAttributes = preferenceMap.get("attributes");
-        assertNotNull("Attributes should not be null", storedAttributes);
-        assertEquals("Unexpected attributes", attributes, new HashMap<String, Object>((Map) storedAttributes));
+        final Object storedAttributes = preferenceMap.get("attributes");
+        assertNotNull(storedAttributes, "Attributes should not be null");
+        assertEquals(attributes, new HashMap<String, Object>((Map) storedAttributes), "Unexpected attributes");
     }
 
     private Collection assertStoreVersionAndSizeAndGetData(final int expectedSize) throws IOException
     {
-        Map<String, Object> storedData =
-                _objectMapper.readValue(_storeFile, new TypeReference<HashMap<String, Object>>()
-                {
-                });
+        final Map<String, Object> storedData =
+                _objectMapper.readValue(_storeFile, new TypeReference<HashMap<String, Object>>() { });
 
-        assertEquals("Unexpected stored version", BrokerModel.MODEL_VERSION, storedData.get("version"));
-        Collection preferences = (Collection) storedData.get("preferences");
+        assertEquals(BrokerModel.MODEL_VERSION, storedData.get("version"), "Unexpected stored version");
+        final Collection preferences = (Collection) storedData.get("preferences");
 
-        assertEquals("Unexpected size of preference records", (long) expectedSize, (long) preferences.size());
+        assertEquals(expectedSize, (long) preferences.size(), "Unexpected size of preference records");
         return preferences;
     }
 }

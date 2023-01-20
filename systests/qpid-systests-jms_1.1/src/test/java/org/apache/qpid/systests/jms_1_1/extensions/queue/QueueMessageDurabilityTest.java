@@ -20,12 +20,11 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions.queue;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,7 +38,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.store.MessageDurability;
@@ -56,7 +55,7 @@ public class QueueMessageDurabilityTest extends JmsTestBase
     @Test
     public void testSendPersistentMessageToAll() throws Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         prepare();
 
@@ -89,7 +88,7 @@ public class QueueMessageDurabilityTest extends JmsTestBase
     @Test
     public void testSendNonPersistentMessageToAll() throws Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         prepare();
 
@@ -124,7 +123,7 @@ public class QueueMessageDurabilityTest extends JmsTestBase
     @Test
     public void testNonPersistentContentRetained() throws Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         prepare();
 
@@ -244,11 +243,11 @@ public class QueueMessageDurabilityTest extends JmsTestBase
                                                                 "getStatistics",
                                                                 "org.apache.qpid.Queue",
                                                                 arguments);
-        assertNotNull("Statistics is null", statistics);
-        assertTrue("Statistics is not map", statistics instanceof Map);
+        assertNotNull(statistics, "Statistics is null");
+        assertTrue(statistics instanceof Map, "Statistics is not map");
         @SuppressWarnings("unchecked")
         Map<String, Object> statisticsMap = (Map<String, Object>) statistics;
-        assertTrue("queueDepthMessages is not present", statisticsMap.get("queueDepthMessages") instanceof Number);
+        assertTrue(statisticsMap.get("queueDepthMessages") instanceof Number, "queueDepthMessages is not present");
         return ((Number) statisticsMap.get("queueDepthMessages")).intValue();
     }
 

@@ -20,17 +20,18 @@
  */
 package org.apache.qpid.server.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,6 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public abstract class MessageStoreQuotaEventsTestBase extends UnitTestBase implements EventListener, TransactionLogResource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageStoreQuotaEventsTestBase.class);
-
     protected static final byte[] MESSAGE_DATA = new byte[32 * 1024];
 
     private MessageStore _store;
@@ -56,7 +56,7 @@ public abstract class MessageStoreQuotaEventsTestBase extends UnitTestBase imple
     protected abstract MessageStore createStore() throws Exception;
     protected abstract int getNumberOfMessagesToFillStore();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _storeLocation = new File(new File(TMP_FOLDER), getTestName());
@@ -64,18 +64,18 @@ public abstract class MessageStoreQuotaEventsTestBase extends UnitTestBase imple
 
         _store = createStore();
 
-        ConfiguredObject<?> parent = createVirtualHost(_storeLocation.getAbsolutePath());
+        final ConfiguredObject<?> parent = createVirtualHost(_storeLocation.getAbsolutePath());
 
         _store.openMessageStore(parent);
 
-        _transactionResource = UUID.randomUUID();
-        _events = new ArrayList<Event>();
+        _transactionResource = randomUUID();
+        _events = new ArrayList<>();
         _store.addEventListener(this, Event.PERSISTENT_MESSAGE_SIZE_OVERFULL, Event.PERSISTENT_MESSAGE_SIZE_UNDERFULL);
     }
 
-    protected abstract VirtualHost createVirtualHost(String storeLocation);
+    protected abstract VirtualHost<?> createVirtualHost(final String storeLocation);
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         if (_store != null)
@@ -89,14 +89,13 @@ public abstract class MessageStoreQuotaEventsTestBase extends UnitTestBase imple
     }
 
     @Test
-    public void testOverflow() throws Exception
+    public void testOverflow()
     {
-        Transaction transaction = _store.newTransaction();
-
-        List<EnqueueableMessage> messages = new ArrayList<EnqueueableMessage>();
+        final Transaction transaction = _store.newTransaction();
+        final List<EnqueueableMessage<?>> messages = new ArrayList<>();
         for (int i = 0; i < getNumberOfMessagesToFillStore(); i++)
         {
-            EnqueueableMessage m = addMessage(i);
+            final EnqueueableMessage<?> m = addMessage(i);
             messages.add(m);
             transaction.enqueueMessage(this, m);
         }
@@ -104,7 +103,7 @@ public abstract class MessageStoreQuotaEventsTestBase extends UnitTestBase imple
 
         assertEvent(1, Event.PERSISTENT_MESSAGE_SIZE_OVERFULL);
 
-        for (EnqueueableMessage m : messages)
+        for (final EnqueueableMessage<?> m : messages)
         {
             m.getStoredMessage().remove();
         }
@@ -112,34 +111,33 @@ public abstract class MessageStoreQuotaEventsTestBase extends UnitTestBase imple
         assertEvent(2, Event.PERSISTENT_MESSAGE_SIZE_UNDERFULL);
     }
 
-    protected EnqueueableMessage addMessage(long id)
+    protected EnqueueableMessage<?> addMessage(final long id)
     {
-        StorableMessageMetaData metaData = createMetaData(id, MESSAGE_DATA.length);
-        MessageHandle<?> handle = _store.addMessage(metaData);
+        final StorableMessageMetaData metaData = createMetaData(id, MESSAGE_DATA.length);
+        final MessageHandle<?> handle = _store.addMessage(metaData);
         handle.addContent(QpidByteBuffer.wrap(MESSAGE_DATA));
-        StoredMessage<? extends StorableMessageMetaData> storedMessage = handle.allContentAdded();
-        TestMessage message = new TestMessage(id, storedMessage);
-        return message;
+        final StoredMessage<? extends StorableMessageMetaData> storedMessage = handle.allContentAdded();
+        return new TestMessage<>(id, storedMessage);
     }
 
-    private StorableMessageMetaData createMetaData(long id, int length)
+    private StorableMessageMetaData createMetaData(final long id, final int length)
     {
         return new TestMessageMetaData(id, length);
     }
 
     @Override
-    public void event(Event event)
+    public void event(final Event event)
     {
         LOGGER.debug("Test event listener received event " + event);
         _events.add(event);
     }
 
-    private void assertEvent(int expectedNumberOfEvents, Event... expectedEvents)
+    private void assertEvent(final int expectedNumberOfEvents, final Event... expectedEvents)
     {
-        assertEquals("Unexpected number of events received ", expectedNumberOfEvents, _events.size());
-        for (Event event : expectedEvents)
+        assertEquals(expectedNumberOfEvents, _events.size(), "Unexpected number of events received ");
+        for (final Event event : expectedEvents)
         {
-            assertTrue("Expected event is not found:" + event, _events.contains(event));
+            assertTrue(_events.contains(event), "Expected event is not found:" + event);
         }
     }
 
@@ -149,12 +147,12 @@ public abstract class MessageStoreQuotaEventsTestBase extends UnitTestBase imple
         return _transactionResource;
     }
 
-    private static class TestMessage implements EnqueueableMessage
+    private static class TestMessage<T extends StorableMessageMetaData> implements EnqueueableMessage<T>
     {
-        private final StoredMessage<?> _handle;
+        private final StoredMessage<T> _handle;
         private final long _messageId;
 
-        public TestMessage(long messageId, StoredMessage<?> handle)
+        public TestMessage(final long messageId, final StoredMessage<T> handle)
         {
             _messageId = messageId;
             _handle = handle;
@@ -173,7 +171,7 @@ public abstract class MessageStoreQuotaEventsTestBase extends UnitTestBase imple
         }
 
         @Override
-        public StoredMessage<?> getStoredMessage()
+        public StoredMessage<T> getStoredMessage()
         {
             return _handle;
         }

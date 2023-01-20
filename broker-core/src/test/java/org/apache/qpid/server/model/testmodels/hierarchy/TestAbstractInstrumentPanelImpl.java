@@ -21,7 +21,6 @@
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import java.util.Map;
-import java.util.Random;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -47,10 +46,10 @@ public class TestAbstractInstrumentPanelImpl<X extends TestAbstractInstrumentPan
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
+    @SuppressWarnings({"unused"})
     private ListenableFuture<Void> onActivate()
     {
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
     }
-
 }

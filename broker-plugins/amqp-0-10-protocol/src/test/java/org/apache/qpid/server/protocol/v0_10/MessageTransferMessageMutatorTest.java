@@ -27,9 +27,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.Collections;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
@@ -51,7 +51,7 @@ public class MessageTransferMessageMutatorTest extends UnitTestBase
     private MessageStore _messageStore;
     private MessageTransferMessageMutator _messageMutator;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _messageStore = new TestMemoryMessageStore();
@@ -60,7 +60,7 @@ public class MessageTransferMessageMutatorTest extends UnitTestBase
     }
 
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         _messageStore.closeMessageStore();

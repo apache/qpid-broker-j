@@ -20,9 +20,8 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,16 +39,18 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class StartupAppenderTest extends UnitTestBase
 {
     private StartupAppender _startupAppender;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _startupAppender = createAndStartStartupAppender();
@@ -58,32 +59,31 @@ public class StartupAppenderTest extends UnitTestBase
     @Test
     public void testLogToConsole() throws Exception
     {
-        ILoggingEvent event1 = createMockLoggingEvent("org.apache.qpid.Test", Level.WARN, "Test1", "Test-Thread-1");
+        final ILoggingEvent event1 = createMockLoggingEvent("org.apache.qpid.Test", Level.WARN, "Test1", "Test-Thread-1");
         _startupAppender.doAppend(event1);
-        ILoggingEvent event2 = createMockLoggingEvent("non.qpid.Test",Level.DEBUG, "Test2",  "Test-Thread-2");
+        final ILoggingEvent event2 = createMockLoggingEvent("non.qpid.Test",Level.DEBUG, "Test2",  "Test-Thread-2");
         _startupAppender.doAppend(event2);
-        ILoggingEvent event3 = createMockLoggingEvent("non.qpid.Test", Level.INFO, "Test3", "Test-Thread-3");
+        final ILoggingEvent event3 = createMockLoggingEvent("non.qpid.Test", Level.INFO, "Test3", "Test-Thread-3");
         _startupAppender.doAppend(event3);
-        ILoggingEvent event4 = createMockLoggingEvent("org.apache.qpid.Test", Level.DEBUG, "Test4", "Test-Thread-4");
+        final ILoggingEvent event4 = createMockLoggingEvent("org.apache.qpid.Test", Level.DEBUG, "Test4", "Test-Thread-4");
         _startupAppender.doAppend(event4);
 
-        List<String> lines = logToConsoleAndCollectSystemOutputLines();
+        final List<String> lines = logToConsoleAndCollectSystemOutputLines();
 
-        assertEquals("Unexpected number of log events", (long) 2, (long) lines.size());
+        assertEquals(2, (long) lines.size(), "Unexpected number of log events");
         assertTrue(lines.get(0).contains("Test1"));
         assertTrue(lines.get(1).contains("Test3"));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void testReplayAccumulatedEvents()
     {
-        ILoggingEvent event1 = createMockLoggingEvent("org.apache.qpid.Test", Level.DEBUG, "Test1", "Test-Thread-1");
+        final ILoggingEvent event1 = createMockLoggingEvent("org.apache.qpid.Test", Level.DEBUG, "Test1", "Test-Thread-1");
         _startupAppender.doAppend(event1);
-        ILoggingEvent event2 = createMockLoggingEvent("non.qpid.Test", Level.INFO, "Test2", "Test-Thread-2");
+        final ILoggingEvent event2 = createMockLoggingEvent("non.qpid.Test", Level.INFO, "Test2", "Test-Thread-2");
         _startupAppender.doAppend(event2);
 
-        Appender mockAppender = mock(Appender.class);
+        final Appender mockAppender = mock(Appender.class);
         _startupAppender.replayAccumulatedEvents(mockAppender);
 
         verify(mockAppender).doAppend(event1);
@@ -98,18 +98,18 @@ public class StartupAppenderTest extends UnitTestBase
 
         _startupAppender = createAndStartStartupAppender();
 
-        ILoggingEvent event1 = createMockLoggingEvent("org.apache.qpid.Test", Level.WARN, "Test1", "Test-Thread-1");
+        final ILoggingEvent event1 = createMockLoggingEvent("org.apache.qpid.Test", Level.WARN, "Test1", "Test-Thread-1");
         _startupAppender.doAppend(event1);
-        ILoggingEvent event2 = createMockLoggingEvent("non.qpid.Test",Level.DEBUG, "Test2",  "Test-Thread-2");
+        final ILoggingEvent event2 = createMockLoggingEvent("non.qpid.Test",Level.DEBUG, "Test2",  "Test-Thread-2");
         _startupAppender.doAppend(event2);
-        ILoggingEvent event3 = createMockLoggingEvent("non.qpid.Test", Level.INFO, "Test3", "Test-Thread-3");
+        final ILoggingEvent event3 = createMockLoggingEvent("non.qpid.Test", Level.INFO, "Test3", "Test-Thread-3");
         _startupAppender.doAppend(event3);
-        ILoggingEvent event4 = createMockLoggingEvent("org.apache.qpid.Test", Level.DEBUG, "Test4", "Test-Thread-4");
+        final ILoggingEvent event4 = createMockLoggingEvent("org.apache.qpid.Test", Level.DEBUG, "Test4", "Test-Thread-4");
         _startupAppender.doAppend(event4);
 
-        List<String> lines = logToConsoleAndCollectSystemOutputLines();
+        final List<String> lines = logToConsoleAndCollectSystemOutputLines();
 
-        assertEquals("Unexpected number of log events", (long) 4, (long) lines.size());
+        assertEquals(4, (long) lines.size(), "Unexpected number of log events");
         assertTrue(lines.get(0).contains("Test1"));
         assertTrue(lines.get(1).contains("Test2"));
         assertTrue(lines.get(2).contains("Test3"));
@@ -118,7 +118,7 @@ public class StartupAppenderTest extends UnitTestBase
 
     private StartupAppender createAndStartStartupAppender()
     {
-        StartupAppender startupAppender = new StartupAppender();
+        final StartupAppender startupAppender = new StartupAppender();
         startupAppender.setContext(new LoggerContext());
         startupAppender.start();
         return startupAppender;
@@ -127,10 +127,9 @@ public class StartupAppenderTest extends UnitTestBase
     private List<String> logToConsoleAndCollectSystemOutputLines() throws IOException
     {
         List<String> lines;
-        try(ByteArrayOutputStream out = new ByteArrayOutputStream())
+        try (final ByteArrayOutputStream out = new ByteArrayOutputStream())
         {
-
-            PrintStream originalOutput = System.out;
+            final PrintStream originalOutput = System.out;
             try
             {
                 System.setOut(new PrintStream(out));
@@ -146,9 +145,12 @@ public class StartupAppenderTest extends UnitTestBase
         return lines;
     }
 
-    private ILoggingEvent createMockLoggingEvent(String loggerName, Level logLevel, String logMessage, String threadName)
+    private ILoggingEvent createMockLoggingEvent(final String loggerName,
+                                                 final Level logLevel,
+                                                 final String logMessage,
+                                                 final String threadName)
     {
-        ILoggingEvent event = mock(ILoggingEvent.class);
+        final ILoggingEvent event = mock(ILoggingEvent.class);
         when(event.getLoggerName()).thenReturn(loggerName);
         when(event.getLevel()).thenReturn(logLevel);
         when(event.getFormattedMessage()).thenReturn(logMessage);
@@ -157,14 +159,14 @@ public class StartupAppenderTest extends UnitTestBase
         return event;
     }
 
-    private List<String> getLogLines(byte[] data) throws IOException
+    private List<String> getLogLines(final byte[] data) throws IOException
     {
-        List<String> lines = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(data))))
+        final List<String> lines = new ArrayList<>();
+        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(data))))
         {
             for (;;)
             {
-                String line = reader.readLine();
+                final String line = reader.readLine();
                 if (line == null)
                 {
                     break;

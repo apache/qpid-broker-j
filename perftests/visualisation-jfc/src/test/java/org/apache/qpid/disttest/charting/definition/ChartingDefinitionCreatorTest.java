@@ -26,33 +26,22 @@ import static org.apache.qpid.disttest.charting.definition.ChartingDefinitionCre
 import static org.apache.qpid.disttest.charting.definition.ChartingDefinitionCreator.XAXIS_TITLE_KEY;
 import static org.apache.qpid.disttest.charting.definition.ChartingDefinitionCreator.YAXIS_TITLE_KEY;
 import static org.apache.qpid.disttest.charting.definition.SeriesDefinitionCreator.SERIES_STATEMENT_KEY_FORMAT;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.util.List;
 import java.util.Properties;
 
-import org.junit.Assert;
-
 import org.apache.qpid.disttest.charting.ChartType;
 import org.apache.qpid.disttest.charting.ChartingException;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ChartingDefinitionCreatorTest extends UnitTestBase
 {
@@ -70,8 +59,8 @@ public class ChartingDefinitionCreatorTest extends UnitTestBase
     private final ChartingDefinitionCreator _chartingDefinitionLoader = new ChartingDefinitionCreator();
     private File _testTempDir;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    public void setUp()
     {
         _testTempDir = createTestTemporaryDirectory();
     }
@@ -84,7 +73,7 @@ public class ChartingDefinitionCreatorTest extends UnitTestBase
 
         List<ChartingDefinition> definitions = _chartingDefinitionLoader.createFromFileOrDirectory(_testTempDir.getAbsolutePath());
 
-        assertEquals((long) 2, (long) definitions.size());
+        assertEquals(2, definitions.size());
     }
 
     @Test
@@ -93,7 +82,7 @@ public class ChartingDefinitionCreatorTest extends UnitTestBase
         File testDefFile = createTestDefinitionWithin(_testTempDir);
 
         List<ChartingDefinition> definitions = _chartingDefinitionLoader.createFromFileOrDirectory(testDefFile.getAbsolutePath());
-        assertEquals((long) 1, (long) definitions.size());
+        assertEquals(1, definitions.size());
 
         ChartingDefinition definition1 = definitions.get(0);
         assertEquals(TEST_CHART_TITLE, definition1.getChartTitle());
@@ -106,7 +95,7 @@ public class ChartingDefinitionCreatorTest extends UnitTestBase
         File testDefFile = createTestDefinitionWithin(_testTempDir);
 
         List<ChartingDefinition> definitions = _chartingDefinitionLoader.createFromFileOrDirectory(testDefFile.getAbsolutePath());
-        assertEquals((long) 1, (long) definitions.size());
+        assertEquals(1, definitions.size());
 
         ChartingDefinition definition1 = definitions.get(0);
         assertEquals("CHART_TITLE propValue", definition1.getChartTitle());
@@ -120,13 +109,13 @@ public class ChartingDefinitionCreatorTest extends UnitTestBase
         assertEquals(stemOnly, definition1.getChartStemName());
 
         final List<SeriesDefinition> seriesDefinitions = definition1.getSeriesDefinitions();
-        assertEquals((long) 1, (long) seriesDefinitions.size());
+        assertEquals(1, seriesDefinitions.size());
         SeriesDefinition seriesDefinition = seriesDefinitions.get(0);
         assertEquals(TEST_SERIES_SELECT_STATEMENT, seriesDefinition.getSeriesStatement());
     }
 
     @Test
-    public void testDefinitionFileNotFound() throws Exception
+    public void testDefinitionFileNotFound()
     {
         File notFound = new File(_testTempDir,"notfound.chartdef");
         assertFalse(notFound.exists());
@@ -158,20 +147,15 @@ public class ChartingDefinitionCreatorTest extends UnitTestBase
 
         props.setProperty(String.format(SERIES_STATEMENT_KEY_FORMAT, 1), TEST_SERIES_SELECT_STATEMENT);
 
-        final FileWriter writer = new FileWriter(chartDef);
-        try
+        try (FileWriter writer = new FileWriter(chartDef))
         {
             props.store(writer, "Test chart definition file");
-        }
-        finally
-        {
-            writer.close();
         }
 
         return chartDef;
     }
 
-    private File createTestTemporaryDirectory() throws Exception
+    private File createTestTemporaryDirectory()
     {
         File tmpDir = new File(System.getProperty("java.io.tmpdir"), "testdef" + System.nanoTime());
         tmpDir.mkdirs();

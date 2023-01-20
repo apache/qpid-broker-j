@@ -23,8 +23,8 @@ package org.apache.qpid.server.logging.subjects;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
@@ -36,35 +36,28 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
  */
 public class BindingLogSubjectTest extends AbstractTestLogSubject
 {
-
     private Queue<?> _queue;
     private String _routingKey;
     private Exchange<?> _exchange;
-    private QueueManagingVirtualHost _testVhost;
+    @SuppressWarnings("rawtypes")
+    private QueueManagingVirtualHost _vhost;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeAll
+    public void beforeAll() throws Exception
     {
-        super.setUp();
-
-        _testVhost = BrokerTestHelper.createVirtualHost("test", this);
-        _routingKey = "RoutingKey";
-        _exchange = (Exchange<?>) _testVhost.getChildByName(Exchange.class, "amq.direct");
-        _queue = mock(Queue.class);
-        when(_queue.getName()).thenReturn("BindingLogSubjectTest");
-        when(_queue.getVirtualHost()).thenReturn(_testVhost);
-
-        _subject = new BindingLogSubject(_routingKey, _exchange, _queue);
+        _vhost = BrokerTestHelper.createVirtualHost("test", this);
     }
 
-    @After
-    public void tearDown() throws Exception
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    public void setUp() throws Exception
     {
-        if (_testVhost != null)
-        {
-            _testVhost.close();
-        }
-        super.tearDown();
+        _routingKey = "RoutingKey";
+        _exchange = (Exchange<?>) _vhost.getChildByName(Exchange.class, "amq.direct");
+        _queue = mock(Queue.class);
+        when(_queue.getName()).thenReturn("BindingLogSubjectTest");
+        when(_queue.getVirtualHost()).thenReturn(_vhost);
+        _subject = new BindingLogSubject(_routingKey, _exchange, _queue);
     }
 
     /**
@@ -73,13 +66,11 @@ public class BindingLogSubjectTest extends AbstractTestLogSubject
      * @param message the message whose format needs validation
      */
     @Override
-    protected void validateLogStatement(String message)
+    protected void validateLogStatement(final String message)
     {
-        verifyVirtualHost(message, _testVhost);
+        verifyVirtualHost(message, _vhost);
         verifyExchange(message, _exchange);
         verifyQueue(message, _queue);
         verifyRoutingKey(message, _routingKey);
     }
-
-
 }

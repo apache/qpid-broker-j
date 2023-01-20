@@ -20,13 +20,12 @@
 
 package org.apache.qpid.server.prometheus;
 
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,9 +37,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import io.prometheus.client.Collector;
+
 import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectStatistic;
@@ -83,7 +84,7 @@ public class QpidCollectorTest extends UnitTestBase
             StatisticUnit.TIME_DURATION};
     private static final String[] UNIT_SUFFIXES = new String[]{"_bytes", "_messages", "", "", ""};
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         final Model model = TestModel.getInstance();

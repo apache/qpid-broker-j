@@ -21,16 +21,13 @@
 
 package org.apache.qpid.server.logging.logback.validator;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.test.utils.UnitTestBase;
-import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Test;
 
 public class AtLeastTest extends UnitTestBase
 {
@@ -46,7 +43,8 @@ public class AtLeastTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'attr' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value 'null' as it has to be at least 42", e.getMessage());
+            assertEquals("Attribute 'attr' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value 'null' as it has to be at least 42",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -81,7 +79,8 @@ public class AtLeastTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'attr' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '41' as it has to be at least 42", e.getMessage());
+            assertEquals("Attribute 'attr' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '41' as it has to be at least 42",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {

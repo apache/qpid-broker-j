@@ -20,13 +20,13 @@
  */
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -34,7 +34,7 @@ public class MapJsonSerializerTest extends UnitTestBase
 {
     private MapJsonSerializer _serializer;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _serializer = new MapJsonSerializer();

@@ -30,8 +30,8 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -48,7 +48,7 @@ public class StoreConfigurationChangeListenerTest extends UnitTestBase
     private DurableConfigurationStore _store;
     private StoreConfigurationChangeListener _listener;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _store = mock(DurableConfigurationStore.class);
@@ -59,26 +59,27 @@ public class StoreConfigurationChangeListenerTest extends UnitTestBase
     public void testStateChanged()
     {
         notifyBrokerStarted();
-        UUID id = UUID.randomUUID();
-        ConfiguredObject object = mock(VirtualHost.class);
+        final UUID id = randomUUID();
+        final ConfiguredObject<?> object = mock(VirtualHost.class);
         when(object.isDurable()).thenReturn(true);
         when(object.getId()).thenReturn(id);
-        ConfiguredObjectRecord record = mock(ConfiguredObjectRecord.class);
+        final ConfiguredObjectRecord record = mock(ConfiguredObjectRecord.class);
         when(object.asObjectRecord()).thenReturn(record);
         _listener.stateChanged(object, State.ACTIVE, State.DELETED);
         verify(_store).remove(record);
     }
 
     @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void testChildAdded()
     {
         notifyBrokerStarted();
-        Broker broker = mock(Broker.class);
+        final Broker broker = mock(Broker.class);
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.isDurable()).thenReturn(true);
-        VirtualHost child = mock(VirtualHost.class);
+        final VirtualHost child = mock(VirtualHost.class);
         when(child.getCategoryClass()).thenReturn(VirtualHost.class);
-        Model model = mock(Model.class);
+        final Model model = mock(Model.class);
         when(model.getChildTypes(any(Class.class))).thenReturn(Collections.<Class<? extends ConfiguredObject>>emptyList());
         when(model.getParentType(eq(VirtualHost.class))).thenReturn((Class)Broker.class);
         when(child.getModel()).thenReturn(model);
@@ -90,10 +91,11 @@ public class StoreConfigurationChangeListenerTest extends UnitTestBase
     }
 
     @Test
+    @SuppressWarnings({"rawtypes"})
     public void testAttributeSet()
     {
         notifyBrokerStarted();
-        Broker broker = mock(Broker.class);
+        final Broker broker = mock(Broker.class);
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.isDurable()).thenReturn(true);
         final ConfiguredObjectRecord record = mock(ConfiguredObjectRecord.class);
@@ -107,16 +109,16 @@ public class StoreConfigurationChangeListenerTest extends UnitTestBase
     {
         notifyBrokerStarted();
 
-        VirtualHostNode<?> object = mock(VirtualHostNode.class);
+        final VirtualHostNode<?> object = mock(VirtualHostNode.class);
         when(object.managesChildStorage()).thenReturn(true);
-        VirtualHost<?> virtualHost = mock(VirtualHost.class);
+        final VirtualHost<?> virtualHost = mock(VirtualHost.class);
         _listener.childAdded(object, virtualHost);
         verifyNoMoreInteractions(_store);
     }
 
     private void notifyBrokerStarted()
     {
-        Broker broker = mock(Broker.class);
+        final Broker<?> broker = mock(Broker.class);
         _listener.stateChanged(broker, State.UNINITIALIZED, State.ACTIVE);
     }
 }

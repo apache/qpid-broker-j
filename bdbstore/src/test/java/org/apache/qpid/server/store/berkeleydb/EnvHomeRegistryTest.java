@@ -19,21 +19,20 @@
 
 package org.apache.qpid.server.store.berkeleydb;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class EnvHomeRegistryTest extends UnitTestBase
 {
-
     private final EnvHomeRegistry _ehr = new EnvHomeRegistry();
 
     @Test
-    public void testDuplicateEnvHomeRejected() throws Exception
+    public void testDuplicateEnvHomeRejected()
     {
         File home = new File(UnitTestBase.TMP_FOLDER, getTestName());
 
@@ -50,7 +49,7 @@ public class EnvHomeRegistryTest extends UnitTestBase
     }
 
     @Test
-    public void testUniqueEnvHomesAllowed() throws Exception
+    public void testUniqueEnvHomesAllowed()
     {
         File home1 = new File(UnitTestBase.TMP_FOLDER, getTestName() + "1");
         File home2 = new File(UnitTestBase.TMP_FOLDER, getTestName() + "2");
@@ -60,7 +59,7 @@ public class EnvHomeRegistryTest extends UnitTestBase
     }
 
     @Test
-    public void testReuseOfEnvHomesAllowed() throws Exception
+    public void testReuseOfEnvHomesAllowed()
     {
         File home = new File(UnitTestBase.TMP_FOLDER, getTestName() + "1");
 

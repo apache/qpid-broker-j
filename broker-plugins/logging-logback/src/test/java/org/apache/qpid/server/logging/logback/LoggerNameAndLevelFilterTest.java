@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,139 +28,129 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.spi.FilterReply;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class LoggerNameAndLevelFilterTest extends UnitTestBase
 {
-
     @Test
-    public void testDecideForWildcardLoggerName() throws Exception
+    public void testDecideForWildcardLoggerName()
     {
-        LoggerNameAndLevelFilter filter = new LoggerNameAndLevelFilter("org.apache.qpid.server.*", Level.INFO);
+        final LoggerNameAndLevelFilter filter =
+                new LoggerNameAndLevelFilter("org.apache.qpid.server.*", Level.INFO);
 
-        ILoggingEvent event = mock(ILoggingEvent.class);
+        final ILoggingEvent event = mock(ILoggingEvent.class);
         when(event.getLevel()).thenReturn(Level.INFO);
         when(event.getLoggerName()).thenReturn("org.apache.qpid.server.foo");
-        assertEquals("Unexpected reply for matching logger name and log level",
-                            FilterReply.ACCEPT,
-                            filter.decide(event));
+        assertEquals(FilterReply.ACCEPT, filter.decide(event),
+                "Unexpected reply for matching logger name and log level");
 
         when(event.getLoggerName()).thenReturn("org.apache.qpid.foo");
-        assertEquals("Unexpected reply for non matching logger name but matching log level",
-                            FilterReply.NEUTRAL,
-                            filter.decide(event));
+        assertEquals(FilterReply.NEUTRAL, filter.decide(event),
+                "Unexpected reply for non matching logger name but matching log level");
 
         when(event.getLoggerName()).thenReturn("org.apache.qpid.server.foo");
         when(event.getLevel()).thenReturn(Level.DEBUG);
-        assertEquals("Unexpected reply for matching logger name but non matching log level",
-                            FilterReply.NEUTRAL,
-                            filter.decide(event));
+        assertEquals(FilterReply.NEUTRAL, filter.decide(event),
+                "Unexpected reply for matching logger name but non matching log level");
     }
 
     @Test
-    public void testDecideForEmptyLoggerName() throws Exception
+    public void testDecideForEmptyLoggerName()
     {
-        LoggerNameAndLevelFilter filter = new LoggerNameAndLevelFilter("", Level.INFO);
+        final LoggerNameAndLevelFilter filter = new LoggerNameAndLevelFilter("", Level.INFO);
 
-        ILoggingEvent event = mock(ILoggingEvent.class);
+        final ILoggingEvent event = mock(ILoggingEvent.class);
         when(event.getLevel()).thenReturn(Level.INFO);
         when(event.getLoggerName()).thenReturn("org.apache.qpid.server.foo");
-        assertEquals("Unexpected reply for matching log level and arbitrary logger name",
-                            FilterReply.ACCEPT,
-                            filter.decide(event));
+        assertEquals(FilterReply.ACCEPT, filter.decide(event),
+                "Unexpected reply for matching log level and arbitrary logger name");
 
         when(event.getLoggerName()).thenReturn("org.apache.qpid.foo");
-        assertEquals("Unexpected reply for matching log level and arbitrary logger namel",
-                            FilterReply.ACCEPT,
-                            filter.decide(event));
+        assertEquals(FilterReply.ACCEPT, filter.decide(event),
+                "Unexpected reply for matching log level and arbitrary logger namel");
 
         when(event.getLevel()).thenReturn(Level.DEBUG);
-        assertEquals("Unexpected reply for non matching log level", FilterReply.NEUTRAL, filter.decide(event));
+        assertEquals(FilterReply.NEUTRAL, filter.decide(event),
+                "Unexpected reply for non matching log level");
     }
 
     @Test
-    public void testDecideForRootLoggerName() throws Exception
+    public void testDecideForRootLoggerName()
     {
-        LoggerNameAndLevelFilter filter = new LoggerNameAndLevelFilter(Logger.ROOT_LOGGER_NAME, Level.INFO);
+        final LoggerNameAndLevelFilter filter = new LoggerNameAndLevelFilter(Logger.ROOT_LOGGER_NAME, Level.INFO);
 
-        ILoggingEvent event = mock(ILoggingEvent.class);
+        final ILoggingEvent event = mock(ILoggingEvent.class);
         when(event.getLevel()).thenReturn(Level.INFO);
         when(event.getLoggerName()).thenReturn("org.apache.qpid.server.foo");
-        assertEquals("Unexpected reply for matching log level and arbitrary logger name",
-                            FilterReply.ACCEPT,
-                            filter.decide(event));
+        assertEquals(FilterReply.ACCEPT, filter.decide(event),
+                "Unexpected reply for matching log level and arbitrary logger name");
 
         when(event.getLoggerName()).thenReturn("org.apache.qpid.foo");
-        assertEquals("Unexpected reply for matching log level and arbitrary logger name",
-                            FilterReply.ACCEPT,
-                            filter.decide(event));
+        assertEquals(FilterReply.ACCEPT, filter.decide(event),
+                "Unexpected reply for matching log level and arbitrary logger name");
 
         when(event.getLevel()).thenReturn(Level.DEBUG);
-        assertEquals("Unexpected reply for non matching log level", FilterReply.NEUTRAL, filter.decide(event));
+        assertEquals(FilterReply.NEUTRAL, filter.decide(event),
+                "Unexpected reply for non matching log level");
     }
 
     @Test
-    public void testDecideForNullLoggerName() throws Exception
+    public void testDecideForNullLoggerName()
     {
-        LoggerNameAndLevelFilter filter = new LoggerNameAndLevelFilter(null, Level.INFO);
+        final LoggerNameAndLevelFilter filter = new LoggerNameAndLevelFilter(null, Level.INFO);
 
-        ILoggingEvent event = mock(ILoggingEvent.class);
+        final ILoggingEvent event = mock(ILoggingEvent.class);
         when(event.getLevel()).thenReturn(Level.INFO);
         when(event.getLoggerName()).thenReturn("org.apache.qpid.server.foo");
-        assertEquals("Unexpected reply for matching log level and arbitrary logger name",
-                            FilterReply.ACCEPT,
-                            filter.decide(event));
+        assertEquals(FilterReply.ACCEPT, filter.decide(event),
+                "Unexpected reply for matching log level and arbitrary logger name");
 
         when(event.getLoggerName()).thenReturn("org.apache.qpid.foo");
-        assertEquals("Unexpected reply for matching log level and arbitrary logger name",
-                            FilterReply.ACCEPT,
-                            filter.decide(event));
+        assertEquals(FilterReply.ACCEPT, filter.decide(event),
+                "Unexpected reply for matching log level and arbitrary logger name");
 
         when(event.getLevel()).thenReturn(Level.DEBUG);
-        assertEquals("Unexpected reply for non matching log level", FilterReply.NEUTRAL, filter.decide(event));
+        assertEquals(FilterReply.NEUTRAL, filter.decide(event),
+                "Unexpected reply for non matching log level");
     }
 
     @Test
-    public void testDecideForNonWildCardLoggerName() throws Exception
+    public void testDecideForNonWildCardLoggerName()
     {
-        LoggerNameAndLevelFilter filter = new LoggerNameAndLevelFilter("org.apache.qpid", Level.INFO);
+        final LoggerNameAndLevelFilter filter = new LoggerNameAndLevelFilter("org.apache.qpid", Level.INFO);
 
-        ILoggingEvent event = mock(ILoggingEvent.class);
+        final ILoggingEvent event = mock(ILoggingEvent.class);
         when(event.getLevel()).thenReturn(Level.INFO);
         when(event.getLoggerName()).thenReturn("org.apache.qpid");
-        assertEquals("Unexpected reply for matching log level and same logger name",
-                            FilterReply.ACCEPT,
-                            filter.decide(event));
+        assertEquals(FilterReply.ACCEPT, filter.decide(event),
+                "Unexpected reply for matching log level and same logger name");
 
         when(event.getLoggerName()).thenReturn("org.apache.qpid.foo");
-        assertEquals("Unexpected reply for matching log level and not same logger name",
-                            FilterReply.NEUTRAL,
-                            filter.decide(event));
+        assertEquals(FilterReply.NEUTRAL, filter.decide(event),
+                "Unexpected reply for matching log level and not same logger name");
 
         when(event.getLevel()).thenReturn(Level.DEBUG);
         when(event.getLoggerName()).thenReturn("org.apache.qpid");
-        assertEquals("Unexpected reply for non matching log leve and same logger namel",
-                            FilterReply.DENY,
-                            filter.decide(event));
+        assertEquals(FilterReply.DENY, filter.decide(event),
+                "Unexpected reply for non matching log leve and same logger namel");
     }
 
     @Test
-    public void testDecideForTurnedOffLogger() throws Exception
+    public void testDecideForTurnedOffLogger()
     {
-        LoggerNameAndLevelFilter filter = new LoggerNameAndLevelFilter("org.apache.qpid", Level.OFF);
+        final LoggerNameAndLevelFilter filter = new LoggerNameAndLevelFilter("org.apache.qpid", Level.OFF);
 
-        ILoggingEvent event = mock(ILoggingEvent.class);
+        final ILoggingEvent event = mock(ILoggingEvent.class);
         when(event.getLevel()).thenReturn(Level.WARN);
         when(event.getLoggerName()).thenReturn("org.apache.qpid");
-        assertEquals("Unexpected reply for matching log level and same logger name",
-                     FilterReply.DENY,
-                     filter.decide(event));
+        assertEquals(FilterReply.DENY, filter.decide(event),
+                "Unexpected reply for matching log level and same logger name");
 
         when(event.getLoggerName()).thenReturn("org.apache.qpid.foo");
-        assertEquals("Unexpected reply for matching log level and not same logger name",
-                     FilterReply.NEUTRAL,
-                     filter.decide(event));
+        assertEquals(FilterReply.NEUTRAL, filter.decide(event),
+                "Unexpected reply for matching log level and not same logger name");
     }
 }

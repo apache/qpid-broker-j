@@ -19,6 +19,11 @@
  */
 package org.apache.qpid.disttest.message;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -28,23 +33,17 @@ import org.apache.qpid.disttest.client.property.ListPropertyValue;
 import org.apache.qpid.disttest.client.property.PropertyValue;
 import org.apache.qpid.disttest.json.JsonHandler;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
 
 public class JsonHandlerTest extends UnitTestBase
 {
     private JsonHandler _jsonHandler = null;
     private SendChristmasCards _testCommand = null;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _jsonHandler = new JsonHandler();
@@ -59,9 +58,8 @@ public class JsonHandlerTest extends UnitTestBase
 
         final SendChristmasCards unmarshalledCommand = _jsonHandler.unmarshall(jsonString, SendChristmasCards.class);
 
-        assertEquals("Unmarshalled command should be equal to the original object",
-                            _testCommand,
-                            unmarshalledCommand);
+        assertEquals(_testCommand, unmarshalledCommand,
+                "Unmarshalled command should be equal to the original object");
 
     }
 
@@ -72,20 +70,20 @@ public class JsonHandlerTest extends UnitTestBase
         final TestCommand unmarshalledCommand = _jsonHandler.unmarshall(json, TestCommand.class);
 
         Map<String, PropertyValue> properties = unmarshalledCommand.getMessageProperties();
-        assertNotNull("Properties should not be null", properties);
-        assertFalse("Properties should not be empty", properties.isEmpty());
-        assertEquals("Unexpected properties size", (long) 1, (long) properties.size());
+        assertNotNull(properties, "Properties should not be null");
+        assertFalse(properties.isEmpty(), "Properties should not be empty");
+        assertEquals(1, (long) properties.size(), "Unexpected properties size");
         PropertyValue testProperty = properties.get("test");
-        assertNotNull("Unexpected property test", testProperty);
+        assertNotNull(testProperty, "Unexpected property test");
         final boolean condition = testProperty.getValue() instanceof Number;
-        assertTrue("Unexpected property test", condition);
-        assertEquals("Unexpected property value", (long) 1, (long) ((Number) testProperty.getValue()).intValue());
+        assertTrue(condition, "Unexpected property test");
+        assertEquals(1, (long) ((Number) testProperty.getValue()).intValue(),
+                "Unexpected property value");
 
         String newJson =_jsonHandler.marshall(unmarshalledCommand);
         final TestCommand newUnmarshalledCommand = _jsonHandler.unmarshall(newJson, TestCommand.class);
-        assertEquals("Unmarshalled command should be equal to the original object",
-                            unmarshalledCommand,
-                            newUnmarshalledCommand);
+        assertEquals(unmarshalledCommand, newUnmarshalledCommand,
+                "Unmarshalled command should be equal to the original object");
     }
 
     @Test
@@ -96,31 +94,31 @@ public class JsonHandlerTest extends UnitTestBase
         final TestCommand unmarshalledCommand = _jsonHandler.unmarshall(json, TestCommand.class);
 
         Map<String, PropertyValue> properties = unmarshalledCommand.getMessageProperties();
-        assertNotNull("Properties should not be null", properties);
-        assertFalse("Properties should not be empty", properties.isEmpty());
-        assertEquals("Unexpected properties size", (long) 2, (long) properties.size());
+        assertNotNull(properties, "Properties should not be null");
+        assertFalse(properties.isEmpty(), "Properties should not be empty");
+        assertEquals(2, (long) properties.size(), "Unexpected properties size");
         PropertyValue testProperty = properties.get("test");
-        assertNotNull("Unexpected property test", testProperty);
+        assertNotNull(testProperty, "Unexpected property test");
         final boolean condition1 = testProperty.getValue() instanceof Number;
-        assertTrue("Unexpected property test", condition1);
-        assertEquals("Unexpected property value", (long) 1, (long) ((Number) testProperty.getValue()).intValue());
+        assertTrue(condition1, "Unexpected property test");
+        assertEquals(1, (long) ((Number) testProperty.getValue()).intValue(),
+                "Unexpected property value");
         Object generatorObject = properties.get("generator");
 
         final boolean condition = generatorObject instanceof ListPropertyValue;
-        assertTrue("Unexpected generator object : " + generatorObject, condition);
+        assertTrue(condition, "Unexpected generator object : " + generatorObject);
 
         PropertyValue generator = (PropertyValue)generatorObject;
-        assertEquals("Unexpected generator value", "first", generator.getValue());
+        assertEquals("first", generator.getValue(), "Unexpected generator value");
         for (int i = 0; i < 10; i++)
         {
-            assertEquals("Unexpected generator value", Integer.valueOf(i), generator.getValue());
+            assertEquals(i, generator.getValue(), "Unexpected generator value");
         }
 
         String newJson =_jsonHandler.marshall(unmarshalledCommand);
         final TestCommand newUnmarshalledCommand = _jsonHandler.unmarshall(newJson, TestCommand.class);
-        assertEquals("Unmarshalled command should be equal to the original object",
-                            unmarshalledCommand,
-                            newUnmarshalledCommand);
+        assertEquals(unmarshalledCommand, newUnmarshalledCommand,
+                "Unmarshalled command should be equal to the original object");
     }
 
     /**

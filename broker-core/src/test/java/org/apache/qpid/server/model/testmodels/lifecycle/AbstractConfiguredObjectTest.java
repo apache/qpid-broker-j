@@ -18,20 +18,23 @@
  */
 package org.apache.qpid.server.model.testmodels.lifecycle;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
@@ -42,241 +45,205 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings("unchecked")
 public class AbstractConfiguredObjectTest extends UnitTestBase
 {
-
     @Test
-    public void testOpeningResultsInErroredStateWhenResolutionFails() throws Exception
+    public void testOpeningResultsInErroredStateWhenResolutionFails()
     {
-        TestConfiguredObject object = new TestConfiguredObject(getTestName());
+        final TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnPostResolve(true);
         object.open();
-        assertFalse("Unexpected opened", object.isOpened());
-        assertEquals("Unexpected state", State.ERRORED, object.getState());
+        assertFalse(object.isOpened(), "Unexpected opened");
+        assertEquals(State.ERRORED, object.getState(), "Unexpected state");
 
         object.setThrowExceptionOnPostResolve(false);
-        object.setAttributes(Collections.<String, Object>singletonMap(Port.DESIRED_STATE, State.ACTIVE));
-        assertTrue("Unexpected opened", object.isOpened());
-        assertEquals("Unexpected state", State.ACTIVE, object.getState());
+        object.setAttributes(Map.of(Port.DESIRED_STATE, State.ACTIVE));
+        assertTrue(object.isOpened(), "Unexpected opened");
+        assertEquals(State.ACTIVE, object.getState(), "Unexpected state");
     }
 
     @Test
-    public void testOpeningResultsInErroredStateWhenActivationFails() throws Exception
+    public void testOpeningResultsInErroredStateWhenActivationFails()
     {
-        TestConfiguredObject object = new TestConfiguredObject(getTestName());
+        final TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnActivate(true);
         object.open();
-        assertEquals("Unexpected state", State.ERRORED, object.getState());
+        assertEquals(State.ERRORED, object.getState(), "Unexpected state");
 
         object.setThrowExceptionOnActivate(false);
         object.setAttributes(Collections.<String, Object>singletonMap(Port.DESIRED_STATE, State.ACTIVE));
-        assertEquals("Unexpected state", State.ACTIVE, object.getState());
+        assertEquals(State.ACTIVE, object.getState(), "Unexpected state");
     }
 
     @Test
-    public void testOpeningInERROREDStateAfterFailedOpenOnDesiredStateChangeToActive() throws Exception
+    public void testOpeningInERROREDStateAfterFailedOpenOnDesiredStateChangeToActive()
     {
-        TestConfiguredObject object = new TestConfiguredObject(getTestName());
+        final TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnOpen(true);
         object.open();
-        assertFalse("Unexpected opened", object.isOpened());
-        assertEquals("Unexpected state", State.ERRORED, object.getState());
+        assertFalse(object.isOpened(), "Unexpected opened");
+        assertEquals(State.ERRORED, object.getState(), "Unexpected state");
 
         object.setThrowExceptionOnOpen(false);
         object.setAttributes(Collections.<String, Object>singletonMap(Port.DESIRED_STATE, State.ACTIVE));
-        assertTrue("Unexpected opened", object.isOpened());
-        assertEquals("Unexpected state", State.ACTIVE, object.getState());
+        assertTrue(object.isOpened(), "Unexpected opened");
+        assertEquals(State.ACTIVE, object.getState(), "Unexpected state");
     }
 
     @Test
-    public void testOpeningInERROREDStateAfterFailedOpenOnStart() throws Exception
+    public void testOpeningInERROREDStateAfterFailedOpenOnStart()
     {
-        TestConfiguredObject object = new TestConfiguredObject(getTestName());
+        final TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnOpen(true);
         object.open();
-        assertFalse("Unexpected opened", object.isOpened());
-        assertEquals("Unexpected state", State.ERRORED, object.getState());
+        assertFalse(object.isOpened(), "Unexpected opened");
+        assertEquals(State.ERRORED, object.getState(), "Unexpected state");
 
         object.setThrowExceptionOnOpen(false);
         object.start();
-        assertTrue("Unexpected opened", object.isOpened());
-        assertEquals("Unexpected state", State.ACTIVE, object.getState());
+        assertTrue(object.isOpened(), "Unexpected opened");
+        assertEquals(State.ACTIVE, object.getState(), "Unexpected state");
     }
 
     @Test
-    public void testDeletionERROREDStateAfterFailedOpenOnDelete() throws Exception
+    public void testDeletionERROREDStateAfterFailedOpenOnDelete()
     {
-        TestConfiguredObject object = new TestConfiguredObject(getTestName());
+        final TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnOpen(true);
         object.open();
-        assertFalse("Unexpected opened", object.isOpened());
-        assertEquals("Unexpected state", State.ERRORED, object.getState());
+        assertFalse(object.isOpened(), "Unexpected opened");
+        assertEquals(State.ERRORED, object.getState(), "Unexpected state");
 
         object.delete();
-        assertFalse("Unexpected opened", object.isOpened());
-        assertEquals("Unexpected state", State.DELETED, object.getState());
+        assertFalse(object.isOpened(), "Unexpected opened");
+        assertEquals(State.DELETED, object.getState(), "Unexpected state");
     }
 
     @Test
-    public void testDeletionInERROREDStateAfterFailedOpenOnDesiredStateChangeToDelete() throws Exception
+    public void testDeletionInERROREDStateAfterFailedOpenOnDesiredStateChangeToDelete()
     {
-        TestConfiguredObject object = new TestConfiguredObject(getTestName());
+        final TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnOpen(true);
         object.open();
-        assertFalse("Unexpected opened", object.isOpened());
-        assertEquals("Unexpected state", State.ERRORED, object.getState());
+        assertFalse(object.isOpened(), "Unexpected opened");
+        assertEquals(State.ERRORED, object.getState(), "Unexpected state");
 
         object.setAttributes(Collections.<String, Object>singletonMap(Port.DESIRED_STATE, State.DELETED));
-        assertFalse("Unexpected opened", object.isOpened());
-        assertEquals("Unexpected state", State.DELETED, object.getState());
+        assertFalse(object.isOpened(), "Unexpected opened");
+        assertEquals(State.DELETED, object.getState(), "Unexpected state");
     }
 
-
     @Test
-    public void testCreationWithExceptionThrownFromValidationOnCreate() throws Exception
+    public void testCreationWithExceptionThrownFromValidationOnCreate()
     {
-        TestConfiguredObject object = new TestConfiguredObject(getTestName());
+        final TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnValidationOnCreate(true);
-        try
-        {
-            object.create();
-            fail("IllegalConfigurationException is expected to be thrown");
-        }
-        catch(IllegalConfigurationException e)
-        {
-            //pass
-        }
-        assertFalse("Unexpected opened", object.isOpened());
+        assertThrows(IllegalConfigurationException.class, object::create, "IllegalConfigurationException is expected to be thrown");
+        assertFalse(object.isOpened(), "Unexpected opened");
     }
 
     @Test
-    public void testCreationWithoutExceptionThrownFromValidationOnCreate() throws Exception
+    public void testCreationWithoutExceptionThrownFromValidationOnCreate()
     {
-        TestConfiguredObject object = new TestConfiguredObject(getTestName());
+        final TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnValidationOnCreate(false);
         object.create();
-        assertTrue("Unexpected opened", object.isOpened());
-        assertEquals("Unexpected state", State.ACTIVE, object.getState());
+        assertTrue(object.isOpened(), "Unexpected opened");
+        assertEquals(State.ACTIVE, object.getState(), "Unexpected state");
     }
 
     @Test
-    public void testCreationWithExceptionThrownFromOnOpen() throws Exception
+    public void testCreationWithExceptionThrownFromOnOpen()
     {
-        TestConfiguredObject object = new TestConfiguredObject(getTestName());
+        final TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnOpen(true);
-        try
-        {
-            object.create();
-            fail("Exception should have been re-thrown");
-        }
-        catch (RuntimeException re)
-        {
-            // pass
-        }
-
-        assertFalse("Unexpected opened", object.isOpened());
-        assertEquals("Unexpected state", State.DELETED, object.getState());
+        assertThrows(IllegalConfigurationException.class, object::create, "Exception should have been re-thrown");
+        assertFalse(object.isOpened(), "Unexpected opened");
+        assertEquals(State.DELETED, object.getState(), "Unexpected state");
     }
 
     @Test
-    public void testCreationWithExceptionThrownFromOnCreate() throws Exception
+    public void testCreationWithExceptionThrownFromOnCreate()
     {
-        TestConfiguredObject object = new TestConfiguredObject(getTestName());
+        final TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnCreate(true);
-        try
-        {
-            object.create();
-            fail("Exception should have been re-thrown");
-        }
-        catch (RuntimeException re)
-        {
-            // pass
-        }
-
-        assertFalse("Unexpected opened", object.isOpened());
-        assertEquals("Unexpected state", State.DELETED, object.getState());
+        assertThrows(IllegalConfigurationException.class, object::create, "Exception should have been re-thrown");
+        assertFalse(object.isOpened(), "Unexpected opened");
+        assertEquals(State.DELETED, object.getState(), "Unexpected state");
     }
 
     @Test
-    public void testCreationWithExceptionThrownFromActivate() throws Exception
+    public void testCreationWithExceptionThrownFromActivate()
     {
-        TestConfiguredObject object = new TestConfiguredObject(getTestName());
+        final TestConfiguredObject object = new TestConfiguredObject(getTestName());
         object.setThrowExceptionOnActivate(true);
-        try
-        {
-            object.create();
-            fail("Exception should have been re-thrown");
-        }
-        catch (RuntimeException re)
-        {
-            // pass
-        }
-
-        assertEquals("Unexpected state", State.DELETED, object.getState());
+        assertThrows(IllegalConfigurationException.class, object::create, "Exception should have been re-thrown");
+        assertEquals(State.DELETED, object.getState(), "Unexpected state");
     }
 
     @Test
-    public void testUnresolvedChildInERROREDStateIsNotValidatedOrOpenedOrAttainedDesiredStateOnParentOpen() throws Exception
+    public void testUnresolvedChildInERROREDStateIsNotValidatedOrOpenedOrAttainedDesiredStateOnParentOpen()
     {
-        TestConfiguredObject parent = new TestConfiguredObject("parent");
-        TestConfiguredObject child1 = new TestConfiguredObject("child1", parent, parent.getTaskExecutor());
+        final TestConfiguredObject parent = new TestConfiguredObject("parent");
+        final TestConfiguredObject child1 = new TestConfiguredObject("child1", parent, parent.getTaskExecutor());
         child1.registerWithParents();
-        TestConfiguredObject child2 = new TestConfiguredObject("child2", parent, parent.getTaskExecutor());
+        final TestConfiguredObject child2 = new TestConfiguredObject("child2", parent, parent.getTaskExecutor());
         child2.registerWithParents();
 
         child1.setThrowExceptionOnPostResolve(true);
 
         parent.open();
 
-        assertTrue("Parent should be resolved", parent.isResolved());
-        assertTrue("Parent should be validated", parent.isValidated());
-        assertTrue("Parent should be opened", parent.isOpened());
-        assertEquals("Unexpected parent state", State.ACTIVE, parent.getState());
+        assertTrue(parent.isResolved(), "Parent should be resolved");
+        assertTrue(parent.isValidated(), "Parent should be validated");
+        assertTrue(parent.isOpened(), "Parent should be opened");
+        assertEquals(State.ACTIVE, parent.getState(), "Unexpected parent state");
 
-        assertTrue("Child2 should be resolved", child2.isResolved());
-        assertTrue("Child2 should be validated", child2.isValidated());
-        assertTrue("Child2 should be opened", child2.isOpened());
-        assertEquals("Unexpected child2 state", State.ACTIVE, child2.getState());
+        assertTrue(child2.isResolved(), "Child2 should be resolved");
+        assertTrue(child2.isValidated(), "Child2 should be validated");
+        assertTrue(child2.isOpened(), "Child2 should be opened");
+        assertEquals(State.ACTIVE, child2.getState(), "Unexpected child2 state");
 
-        assertFalse("Child2 should not be resolved", child1.isResolved());
-        assertFalse("Child1 should not be validated", child1.isValidated());
-        assertFalse("Child1 should not be opened", child1.isOpened());
-        assertEquals("Unexpected child1 state", State.ERRORED, child1.getState());
+        assertFalse(child1.isResolved(), "Child2 should not be resolved");
+        assertFalse(child1.isValidated(), "Child1 should not be validated");
+        assertFalse(child1.isOpened(), "Child1 should not be opened");
+        assertEquals(State.ERRORED, child1.getState(), "Unexpected child1 state");
     }
 
     @Test
-    public void testUnvalidatedChildInERROREDStateIsNotOpenedOrAttainedDesiredStateOnParentOpen() throws Exception
+    public void testUnvalidatedChildInERROREDStateIsNotOpenedOrAttainedDesiredStateOnParentOpen()
     {
-        TestConfiguredObject parent = new TestConfiguredObject("parent");
-        TestConfiguredObject child1 = new TestConfiguredObject("child1", parent, parent.getTaskExecutor());
+        final TestConfiguredObject parent = new TestConfiguredObject("parent");
+        final TestConfiguredObject child1 = new TestConfiguredObject("child1", parent, parent.getTaskExecutor());
         child1.registerWithParents();
-        TestConfiguredObject child2 = new TestConfiguredObject("child2", parent, parent.getTaskExecutor());
+        final TestConfiguredObject child2 = new TestConfiguredObject("child2", parent, parent.getTaskExecutor());
         child2.registerWithParents();
 
         child1.setThrowExceptionOnValidate(true);
 
         parent.open();
 
-        assertTrue("Parent should be resolved", parent.isResolved());
-        assertTrue("Parent should be validated", parent.isValidated());
-        assertTrue("Parent should be opened", parent.isOpened());
-        assertEquals("Unexpected parent state", State.ACTIVE, parent.getState());
+        assertTrue(parent.isResolved(), "Parent should be resolved");
+        assertTrue(parent.isValidated(), "Parent should be validated");
+        assertTrue(parent.isOpened(), "Parent should be opened");
+        assertEquals(State.ACTIVE, parent.getState(), "Unexpected parent state");
 
-        assertTrue("Child2 should be resolved", child2.isResolved());
-        assertTrue("Child2 should be validated", child2.isValidated());
-        assertTrue("Child2 should be opened", child2.isOpened());
-        assertEquals("Unexpected child2 state", State.ACTIVE, child2.getState());
+        assertTrue(child2.isResolved(), "Child2 should be resolved");
+        assertTrue(child2.isValidated(), "Child2 should be validated");
+        assertTrue(child2.isOpened(), "Child2 should be opened");
+        assertEquals(State.ACTIVE, child2.getState(), "Unexpected child2 state");
 
-        assertTrue("Child1 should be resolved", child1.isResolved());
-        assertFalse("Child1 should not be validated", child1.isValidated());
-        assertFalse("Child1 should not be opened", child1.isOpened());
-        assertEquals("Unexpected child1 state", State.ERRORED, child1.getState());
+        assertTrue(child1.isResolved(), "Child1 should be resolved");
+        assertFalse(child1.isValidated(), "Child1 should not be validated");
+        assertFalse(child1.isOpened(), "Child1 should not be opened");
+        assertEquals(State.ERRORED, child1.getState(), "Unexpected child1 state");
     }
 
     @Test
-    public void testSuccessfulStateTransitionInvokesListener() throws Exception
+    public void testSuccessfulStateTransitionInvokesListener()
     {
-        TestConfiguredObject parent = new TestConfiguredObject("parent");
+        final TestConfiguredObject parent = new TestConfiguredObject("parent");
         parent.create();
 
         final AtomicReference<State> newState = new AtomicReference<>();
@@ -294,15 +261,15 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
 
         parent.delete();
         assertEquals(State.DELETED, newState.get());
-        assertEquals((long) 1, (long) callCounter.get());
+        assertEquals(1, (long) callCounter.get());
     }
 
     // TODO - not sure if I want to keep the state transition methods on delete
-    public void XtestUnsuccessfulStateTransitionDoesNotInvokesListener() throws Exception
+    public void XtestUnsuccessfulStateTransitionDoesNotInvokesListener()
     {
         final IllegalStateTransitionException expectedException =
                 new IllegalStateTransitionException("This test fails the state transition.");
-        TestConfiguredObject parent = new TestConfiguredObject("parent")
+        final TestConfiguredObject parent = new TestConfiguredObject("parent")
         {
             @Override
             protected ListenableFuture<Void> doDelete()
@@ -330,25 +297,18 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
             }
         });
 
-        try
-        {
-            parent.delete();
-            fail("Exception not thrown.");
-        }
-        catch (RuntimeException e)
-        {
-            assertSame("State transition threw unexpected exception.", expectedException, e);
-        }
-        assertEquals((long) 0, (long) callCounter.get());
+        final RuntimeException thrown = assertThrows(RuntimeException.class, parent::delete, "Exception not thrown");
+        assertSame(expectedException, thrown, "State transition threw unexpected exception");
+        assertEquals(0, (long) callCounter.get());
         assertEquals(State.ACTIVE, parent.getDesiredState());
         assertEquals(State.ACTIVE, parent.getState());
     }
 
 
     @Test
-    public void testSuccessfulDeletion() throws Exception
+    public void testSuccessfulDeletion()
     {
-        TestConfiguredObject configuredObject = new TestConfiguredObject("configuredObject");
+        final TestConfiguredObject configuredObject = new TestConfiguredObject("configuredObject");
         configuredObject.create();
 
         final List<ChangeEvent> events = new ArrayList<>();
@@ -376,29 +336,19 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         });
 
         configuredObject.delete();
-        assertEquals((long) 2, (long) events.size());
+        assertEquals(2, (long) events.size());
         assertEquals(State.DELETED, configuredObject.getDesiredState());
         assertEquals(State.DELETED, configuredObject.getState());
 
-        assertEquals("Unexpected events number", (long) 2, (long) events.size());
-        ChangeEvent event0 = events.get(0);
-        ChangeEvent event1 = events.get(1);
+        assertEquals(2, (long) events.size(), "Unexpected events number");
+        final ChangeEvent event0 = events.get(0);
+        final ChangeEvent event1 = events.get(1);
 
-        assertEquals("Unexpected first event: " + event0,
-                     new ChangeEvent(EventType.STATE_CHANGED,
-                                     configuredObject,
-                                     Exchange.DESIRED_STATE,
-                                     State.ACTIVE,
-                                     State.DELETED),
-                            event0);
+        assertEquals(new ChangeEvent(EventType.STATE_CHANGED, configuredObject, Exchange.DESIRED_STATE, State.ACTIVE,
+                State.DELETED), event0, "Unexpected first event: " + event0);
 
-        assertEquals("Unexpected second event: " + event1,
-                     new ChangeEvent(EventType.ATTRIBUTE_SET,
-                                     configuredObject,
-                                     Exchange.DESIRED_STATE,
-                                     State.ACTIVE,
-                                     State.DELETED),
-                            event1);
+        assertEquals(new ChangeEvent(EventType.ATTRIBUTE_SET, configuredObject, Exchange.DESIRED_STATE, State.ACTIVE,
+                State.DELETED), event1, "Unexpected second event: " + event1);
     }
 
     private enum EventType
@@ -432,11 +382,11 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
 
             ChangeEvent that = (ChangeEvent) o;
 
-            return (_source != null ? _source.equals(that._source) : that._source == null)
-                    && (_attributeName != null ? _attributeName.equals(that._attributeName) : that._attributeName == null)
-                    && (_oldValue != null ? _oldValue.equals(that._oldValue) : that._oldValue == null)
-                    && (_newValue != null ? _newValue.equals(that._newValue) : that._newValue == null)
-                    && _eventType == that._eventType;
+            return (Objects.equals(_source, that._source)) &&
+                   (Objects.equals(_attributeName, that._attributeName)) &&
+                   (Objects.equals(_oldValue, that._oldValue)) &&
+                   (Objects.equals(_newValue, that._newValue)) &&
+                   _eventType == that._eventType;
 
         }
 

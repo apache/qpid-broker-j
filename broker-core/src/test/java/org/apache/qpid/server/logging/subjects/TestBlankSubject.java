@@ -29,5 +29,4 @@ public class TestBlankSubject extends AbstractLogSubject
     {
        setLogString("[TestBlankSubject]");
     }
-        
 }

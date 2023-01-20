@@ -23,16 +23,15 @@ package org.apache.qpid.server.protocol.v0_10.transport;
 
 import static org.apache.qpid.server.util.Serial.COMPARATOR;
 import static org.apache.qpid.server.util.Serial.eq;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -42,18 +41,17 @@ import org.apache.qpid.test.utils.UnitTestBase;
  */
 public class RangeSetTest extends UnitTestBase
 {
-
     private void check(RangeSet ranges)
     {
-        List<Integer> posts = new ArrayList<Integer>();
+        List<Integer> posts = new ArrayList<>();
         for (Range range : ranges)
         {
             posts.add(range.getLower());
             posts.add(range.getUpper());
         }
 
-        List<Integer> sorted = new ArrayList<Integer>(posts);
-        Collections.sort(sorted, COMPARATOR);
+        List<Integer> sorted = new ArrayList<>(posts);
+        sorted.sort(COMPARATOR);
 
         assertEquals(posts, sorted);
 
@@ -155,10 +153,10 @@ public class RangeSetTest extends UnitTestBase
         check(a);
         a.add(0, 8);
         check(a);
-        assertEquals((long) a.size(), (long) 1);
+        assertEquals(a.size(), (long) 1);
         Range range = a.iterator().next();
-        assertEquals((long) range.getLower(), (long) 0);
-        assertEquals((long) range.getUpper(), (long) 8);
+        assertEquals(range.getLower(), (long) 0);
+        assertEquals(range.getUpper(), (long) 8);
     }
 
     @Test
@@ -168,10 +166,10 @@ public class RangeSetTest extends UnitTestBase
         Range b = Range.newInstance(9, 20);
         Range i1 = a.intersect(b);
         Range i2 = b.intersect(a);
-        assertEquals((long) i1.getUpper(), (long) 10);
-        assertEquals((long) i2.getUpper(), (long) 10);
-        assertEquals((long) i1.getLower(), (long) 9);
-        assertEquals((long) i2.getLower(), (long) 9);
+        assertEquals(i1.getUpper(), (long) 10);
+        assertEquals(i2.getUpper(), (long) 10);
+        assertEquals(i1.getLower(), (long) 9);
+        assertEquals(i2.getLower(), (long) 9);
     }
 
     @Test
@@ -190,10 +188,10 @@ public class RangeSetTest extends UnitTestBase
         Range b = Range.newInstance(3, 5);
         Range i1 = a.intersect(b);
         Range i2 = b.intersect(a);
-        assertEquals((long) i1.getUpper(), (long) 5);
-        assertEquals((long) i2.getUpper(), (long) 5);
-        assertEquals((long) i1.getLower(), (long) 3);
-        assertEquals((long) i2.getLower(), (long) 3);
+        assertEquals(i1.getUpper(), (long) 5);
+        assertEquals(i2.getUpper(), (long) 5);
+        assertEquals(i1.getLower(), (long) 3);
+        assertEquals(i2.getLower(), (long) 3);
     }
 
     @Test
@@ -209,10 +207,10 @@ public class RangeSetTest extends UnitTestBase
         Range a = Range.newInstance(0, 10);
         Range b = Range.newInstance(20, 30);
         List<Range> ranges = a.subtract(b);
-        assertEquals((long) ranges.size(), (long) 1);
+        assertEquals(ranges.size(), (long) 1);
         Range d = ranges.get(0);
-        assertEquals((long) d.getLower(), (long) a.getLower());
-        assertEquals((long) d.getUpper(), (long) a.getUpper());
+        assertEquals(d.getLower(), (long) a.getLower());
+        assertEquals(d.getUpper(), (long) a.getUpper());
     }
 
     @Test
@@ -221,10 +219,10 @@ public class RangeSetTest extends UnitTestBase
         Range a = Range.newInstance(20, 30);
         Range b = Range.newInstance(0, 10);
         List<Range> ranges = a.subtract(b);
-        assertEquals((long) ranges.size(), (long) 1);
+        assertEquals(ranges.size(), (long) 1);
         Range d = ranges.get(0);
-        assertEquals((long) d.getLower(), (long) a.getLower());
-        assertEquals((long) d.getUpper(), (long) a.getUpper());
+        assertEquals(d.getLower(), (long) a.getLower());
+        assertEquals(d.getUpper(), (long) a.getUpper());
     }
 
     @Test
@@ -233,13 +231,13 @@ public class RangeSetTest extends UnitTestBase
         Range a = Range.newInstance(0, 10);
         Range b = Range.newInstance(3, 5);
         List<Range> ranges = a.subtract(b);
-        assertEquals((long) ranges.size(), (long) 2);
+        assertEquals(ranges.size(), (long) 2);
         Range low = ranges.get(0);
         Range high = ranges.get(1);
-        assertEquals((long) low.getLower(), (long) 0);
-        assertEquals((long) low.getUpper(), (long) 2);
-        assertEquals((long) high.getLower(), (long) 6);
-        assertEquals((long) high.getUpper(), (long) 10);
+        assertEquals(low.getLower(), (long) 0);
+        assertEquals(low.getUpper(), (long) 2);
+        assertEquals(high.getLower(), (long) 6);
+        assertEquals(high.getUpper(), (long) 10);
     }
 
     @Test
@@ -248,10 +246,10 @@ public class RangeSetTest extends UnitTestBase
         Range a = Range.newInstance(0, 10);
         Range b = Range.newInstance(3, 20);
         List<Range> ranges = a.subtract(b);
-        assertEquals((long) ranges.size(), (long) 1);
+        assertEquals(ranges.size(), (long) 1);
         Range d = ranges.get(0);
-        assertEquals((long) d.getLower(), (long) 0);
-        assertEquals((long) d.getUpper(), (long) 2);
+        assertEquals(d.getLower(), (long) 0);
+        assertEquals(d.getUpper(), (long) 2);
     }
 
     @Test
@@ -260,10 +258,10 @@ public class RangeSetTest extends UnitTestBase
         Range a = Range.newInstance(0, 10);
         Range b = Range.newInstance(-10, 5);
         List<Range> ranges = a.subtract(b);
-        assertEquals((long) ranges.size(), (long) 1);
+        assertEquals(ranges.size(), (long) 1);
         Range d = ranges.get(0);
-        assertEquals((long) d.getLower(), (long) 6);
-        assertEquals((long) d.getUpper(), (long) 10);
+        assertEquals(d.getLower(), (long) 6);
+        assertEquals(d.getUpper(), (long) 10);
     }
 
     @Test
@@ -380,16 +378,16 @@ public class RangeSetTest extends UnitTestBase
     private void checkRange(final RangeSet rangeSet, int ... bounds)
     {
         final int length = (bounds == null ? 0 : bounds.length) ;
-        assertEquals("Range count", (long) (length / 2), (long) rangeSet.size());
+        assertEquals(length / 2, (long) rangeSet.size(), "Range count");
         final Iterator<Range> iter = rangeSet.iterator() ;
         int count = 0 ;
         while(count < length)
         {
             final Range range = iter.next() ;
             final long expected1 = bounds[count++];
-            assertEquals("Range lower", expected1, (long) range.getLower());
+            assertEquals(expected1, range.getLower(), "Range lower");
             final long expected = bounds[count++];
-            assertEquals("Range upper", expected, (long) range.getUpper());
+            assertEquals(expected, range.getUpper(), "Range upper");
         }
     }
 }

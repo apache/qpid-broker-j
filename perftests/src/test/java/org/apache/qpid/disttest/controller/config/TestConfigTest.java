@@ -20,33 +20,20 @@
 package org.apache.qpid.disttest.controller.config;
 
 import static org.apache.qpid.disttest.controller.config.ConfigTestUtils.assertCommandForClient;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Assert;
-
 import org.apache.qpid.disttest.controller.CommandForClient;
 import org.apache.qpid.disttest.message.NoOpCommand;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class TestConfigTest extends UnitTestBase
 {
@@ -68,7 +55,7 @@ public class TestConfigTest extends UnitTestBase
         TestConfig config = createTestConfigWithClientConfigReturningChildCommands();
 
         List<CommandForClient> commandsForClients = config.createCommands();
-        assertEquals("Unexpected number of commands for client", (long) 3, (long) commandsForClients.size());
+        assertEquals(3, commandsForClients.size(), "Unexpected number of commands for client");
 
         assertCommandForClient(commandsForClients, 0, CLIENT1, NoOpCommand.class);
         assertCommandForClient(commandsForClients, 1, CLIENT1, NoOpCommand.class);
@@ -80,21 +67,21 @@ public class TestConfigTest extends UnitTestBase
     {
         TestConfig config = createTestConfigWithTwoClients();
 
-        assertEquals((long) 2, (long) config.getClientNames().size());
+        assertEquals(2, config.getClientNames().size());
     }
 
     @Test
     public void testGetTotalNumberOfClients()
     {
         TestConfig config = createTestConfigWithTwoClients();
-        assertEquals((long) 2, (long) config.getTotalNumberOfClients());
+        assertEquals(2, config.getTotalNumberOfClients());
     }
 
     @Test
     public void testGetTotalNumberOfParticipants()
     {
         TestConfig config = createTestConfigWithTwoClients();
-        assertEquals((long) 2, (long) config.getTotalNumberOfParticipants());
+        assertEquals(2, config.getTotalNumberOfParticipants());
     }
 
     private TestConfig createTestConfigWithClientConfigReturningChildCommands()
@@ -102,15 +89,14 @@ public class TestConfigTest extends UnitTestBase
         ClientConfig clientConfig1 = createClientConfigReturningCommands(CLIENT1, 2);
         ClientConfig clientConfig2 = createClientConfigReturningCommands(CLIENT2, 1);
 
-        TestConfig config = new TestConfig(TEST1, new ClientConfig[] { clientConfig1, clientConfig2 }, EMPTY_QUEUES_ARRAY);
-        return config;
+        return new TestConfig(TEST1, new ClientConfig[] { clientConfig1, clientConfig2 }, EMPTY_QUEUES_ARRAY);
     }
 
     private ClientConfig createClientConfigReturningCommands(final String clientName, int numberOfCommands)
     {
         ClientConfig clientConfig = mock(ClientConfig.class);
 
-        List<CommandForClient> commandList = new ArrayList<CommandForClient>();
+        List<CommandForClient> commandList = new ArrayList<>();
 
         for (int i = 1 ; i <= numberOfCommands; i++)
         {
@@ -129,7 +115,6 @@ public class TestConfigTest extends UnitTestBase
         when(clientConfig1.getTotalNumberOfParticipants()).thenReturn(1);
         when(clientConfig2.getTotalNumberOfParticipants()).thenReturn(1);
 
-        TestConfig config = new TestConfig(TEST1, new ClientConfig[] { clientConfig1, clientConfig2 }, EMPTY_QUEUES_ARRAY);
-        return config;
+        return new TestConfig(TEST1, new ClientConfig[] { clientConfig1, clientConfig2 }, EMPTY_QUEUES_ARRAY);
     }
 }

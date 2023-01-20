@@ -24,12 +24,12 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,7 +55,8 @@ import javax.jms.TextMessage;
 import javax.jms.Topic;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.AlternateBinding;
@@ -74,7 +75,6 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
     private static final String VALID_QUEUE_NAME = "fooQueue";
     private static final String TYPE_QUEUE = "queue";
     private static final String TYPE_TOPIC = "topic";
-
 
     private static String createAutoCreationPolicies()
     {
@@ -424,9 +424,8 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
     @Test
     public void testSendingToQueuePatternBURL() throws Exception
     {
-        assumeThat("Qpid JMS Client does not support BURL syntax",
-                   getProtocol(),
-                   is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()),
+                "Qpid JMS Client does not support BURL syntax");
         updateAutoCreationPolicies();
 
         Connection connection = getConnection();
@@ -453,9 +452,7 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
     @Test
     public void testSendingToNonMatchingQueuePatternBURL() throws Exception
     {
-        assumeThat("Using AMQP 0-8..0-9-1 to test BURL syntax",
-                   getProtocol(),
-                   is(not(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10)))));
+        assumeTrue(is(not(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10)))).matches(getProtocol()), "Using AMQP 0-8..0-9-1 to test BURL syntax");
         updateAutoCreationPolicies();
 
         Connection connection = getConnectionBuilder().setSyncPublish(true).build();
@@ -500,13 +497,12 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
 
         Object actualAlternateBinding = queueAttributes.get(org.apache.qpid.server.model.Queue.ALTERNATE_BINDING);
         Map<String, Object> actualAlternateBindingMap = convertIfNecessary(actualAlternateBinding);
-        assertEquals("Unexpected alternate binding",
-                     new HashMap<>(expectedAlternateBinding),
-                     new HashMap<>(actualAlternateBindingMap));
+        assertEquals(new HashMap<>(expectedAlternateBinding), new HashMap<>(actualAlternateBindingMap),
+                "Unexpected alternate binding");
 
         Map<String, Object> dlqAttributes =
                 readEntityUsingAmqpManagement(deadLetterQueueName, "org.apache.qpid.Queue", true);
-        assertNotNull("Cannot get dead letter queue", dlqAttributes);
+        assertNotNull(dlqAttributes, "Cannot get dead letter queue");
     }
 
     @Test
@@ -528,15 +524,14 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
 
         Object actualAlternateBinding = exchangeAttributes.get(Exchange.ALTERNATE_BINDING);
         Map<String, Object> actualAlternateBindingMap = convertIfNecessary(actualAlternateBinding);
-        assertEquals("Unexpected alternate binding",
-                     new HashMap<>(expectedAlternateBinding),
-                     new HashMap<>(actualAlternateBindingMap));
+        assertEquals(new HashMap<>(expectedAlternateBinding), new HashMap<>(actualAlternateBindingMap),
+                "Unexpected alternate binding");
 
         Map<String, Object> dlqExchangeAttributes = readEntityUsingAmqpManagement(
                 deadLetterExchangeName,
                 "org.apache.qpid.FanoutExchange",
                 true);
-        assertNotNull("Cannot get dead letter exchange", dlqExchangeAttributes);
+        assertNotNull(dlqExchangeAttributes, "Cannot get dead letter exchange");
     }
 
     @SuppressWarnings("unchecked")

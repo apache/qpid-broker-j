@@ -28,8 +28,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseBody;
@@ -48,7 +48,7 @@ import org.apache.qpid.tests.utils.ConfigItem;
 public class MaximumMessageSizeTest extends BrokerAdminUsingTestBase
 {
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);

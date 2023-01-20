@@ -22,7 +22,7 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test CON Log Messages
@@ -32,22 +32,22 @@ public class ConnectionMessagesTest extends AbstractTestMessages
     @Test
     public void testConnectionOpen_WithOptional()
     {
-        String port = "myport";
-        String local = "127.0.0.1:5672";
-        String protocolVersion = "0-8";
-        String clientID = "client";
-        String clientVersion = "1.2.3_4";
-        String clientProduct = "myProduct";
+        final String port = "myport";
+        final String local = "127.0.0.1:5672";
+        final String protocolVersion = "0-8";
+        final String clientID = "client";
+        final String clientVersion = "1.2.3_4";
+        final String clientProduct = "myProduct";
 
         _logMessage = ConnectionMessages.OPEN(port, local, protocolVersion, clientID, clientVersion, clientProduct , false, true, true, true);
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Open",
-                             ": Destination", "myport(127.0.0.1:5672)",
-                             ": Protocol Version :", protocolVersion,
-                             ": Client ID", clientID,
-                             ": Client Version :", clientVersion,
-                             ": Client Product :", clientProduct};
+        final String[] expected = {"Open",
+                ": Destination", "myport(127.0.0.1:5672)",
+                ": Protocol Version :", protocolVersion,
+                ": Client ID", clientID,
+                ": Client Version :", clientVersion,
+                ": Client Product :", clientProduct};
 
         validateLogMessage(log, "CON-1001", expected);
     }
@@ -55,14 +55,14 @@ public class ConnectionMessagesTest extends AbstractTestMessages
     @Test
     public void testConnectionOpen()
     {
-        String port = "myport";
-        String local = "127.0.0.1:5672";
-        String protocolVersion = "0-8";
+        final String port = "myport";
+        final String local = "127.0.0.1:5672";
+        final String protocolVersion = "0-8";
 
         _logMessage = ConnectionMessages.OPEN(port, local, protocolVersion, null, null, null , false, false, false, false);
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Open",
+        final String[] expected = {"Open",
                 ": Destination", "myport(127.0.0.1:5672)",
                 ": Protocol Version :", protocolVersion};
 
@@ -72,14 +72,14 @@ public class ConnectionMessagesTest extends AbstractTestMessages
     @Test
     public void testSslConnectionOpen()
     {
-        String port = "myport";
-        String local = "127.0.0.1:5672";
-        String protocolVersion = "0-8";
+        final String port = "myport";
+        final String local = "127.0.0.1:5672";
+        final String protocolVersion = "0-8";
 
         _logMessage = ConnectionMessages.OPEN(port, local, protocolVersion, null, null, null , true, false, false, false);
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Open",
+        final String[] expected = {"Open",
                 ": Destination", "myport(127.0.0.1:5672)",
                 ": Protocol Version :", protocolVersion,
                 ": SSL"};
@@ -92,9 +92,9 @@ public class ConnectionMessagesTest extends AbstractTestMessages
     public void testConnectionClose()
     {
         _logMessage = ConnectionMessages.CLOSE(null, false);
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Close"};
+        final String[] expected = {"Close"};
 
         validateLogMessage(log, "CON-1002", expected);
     }
@@ -103,9 +103,9 @@ public class ConnectionMessagesTest extends AbstractTestMessages
     public void testConnectionCloseWithCause()
     {
         _logMessage = ConnectionMessages.CLOSE("Test", true);
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Close : Test"};
+        final String[] expected = {"Close : Test"};
 
         validateLogMessage(log, "CON-1002", expected);
     }

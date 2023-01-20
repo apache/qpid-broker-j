@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.store.derby;
 
-
 import java.io.File;
+import java.util.Objects;
 
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageStore;
@@ -30,28 +30,28 @@ import org.apache.qpid.server.virtualhost.derby.DerbyVirtualHost;
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-import static junit.framework.TestCase.assertFalse;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class DerbyMessageStoreTest extends MessageStoreTestCase
 {
     private String _storeLocation;
 
-    @Override
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.DERBY)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.DERBY));
         super.setUp();
     }
 
-    @Override
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
@@ -65,19 +65,19 @@ public class DerbyMessageStoreTest extends MessageStoreTestCase
     }
 
     @Test
-    public void testOnDelete() throws Exception
+    public void testOnDelete()
     {
         File location = new File(_storeLocation);
-        assertTrue("Store does not exist at " + _storeLocation, location.exists());
+        assertTrue(location.exists(), "Store does not exist at " + _storeLocation);
 
         getStore().closeMessageStore();
-        assertTrue("Store does not exist at " + _storeLocation, location.exists());
+        assertTrue(location.exists(), "Store does not exist at " + _storeLocation);
 
         DerbyVirtualHost mockVH = mock(DerbyVirtualHost.class);
         when(mockVH.getStorePath()).thenReturn(_storeLocation);
 
         getStore().onDelete(mockVH);
-        assertFalse("Store exists at " + _storeLocation, location.exists());
+        assertFalse(location.exists(), "Store exists at " + _storeLocation);
     }
 
     @Override
@@ -114,5 +114,4 @@ public class DerbyMessageStoreTest extends MessageStoreTestCase
     {
         return true;
     }
-
 }

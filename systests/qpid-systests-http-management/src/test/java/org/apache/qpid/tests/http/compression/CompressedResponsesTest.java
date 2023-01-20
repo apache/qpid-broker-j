@@ -21,8 +21,8 @@
 package org.apache.qpid.tests.http.compression;
 
 import static javax.servlet.http.HttpServletResponse.SC_OK;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -35,14 +35,15 @@ import java.util.zip.GZIPInputStream;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.google.common.io.ByteStreams;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.tests.http.HttpTestBase;
 
 public class CompressedResponsesTest extends HttpTestBase
 {
-
     @Test
     public void compressionOffAcceptOff() throws Exception
     {
@@ -126,6 +127,4 @@ public class CompressedResponsesTest extends HttpTestBase
             conn.disconnect();
         }
     }
-
-
 }

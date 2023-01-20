@@ -34,9 +34,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.security.PrivilegedExceptionAction;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.security.auth.DestroyFailedException;
 import javax.security.auth.Subject;
@@ -60,6 +60,7 @@ import org.ietf.jgss.Oid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.test.utils.EmbeddedKdcExtension;
 import org.apache.qpid.test.utils.JvmVendor;
 import org.apache.qpid.test.utils.SystemPropertySetter;
 
@@ -87,7 +88,7 @@ public class KerberosUtilities
     private static final String CLIENT_KEYTAB = "client.keytab";
 
 
-    public File prepareKeyTabs(final EmbeddedKdcResource kdc) throws Exception
+    public File prepareKeyTabs(final EmbeddedKdcExtension kdc) throws Exception
     {
         final File clientKeyTabFile;
         kdc.createPrincipal(BROKER_KEYTAB, SERVICE_PRINCIPAL_FULL_NAME);
@@ -105,7 +106,7 @@ public class KerberosUtilities
         return configLocation;
     }
 
-    public byte[] buildToken(String clientPrincipalName, File clientKeyTabFile, String targetServerPrincipalName)
+    public byte[] buildToken(final String clientPrincipalName, final File clientKeyTabFile, final String targetServerPrincipalName)
             throws Exception
     {
         final LoginContext lc = createKerberosKeyTabLoginContext(INITIATE_SCOPE,
@@ -113,7 +114,7 @@ public class KerberosUtilities
                                                                  clientKeyTabFile);
 
         Subject clientSubject = null;
-        String useSubjectCredsOnly = System.getProperty(USE_SUBJECT_CREDS_ONLY);
+        final String useSubjectCredsOnly = System.getProperty(USE_SUBJECT_CREDS_ONLY);
         try
         {
             debug("Before login");
@@ -121,10 +122,8 @@ public class KerberosUtilities
             clientSubject = lc.getSubject();
             debug("LoginContext subject {}", clientSubject);
             System.setProperty(USE_SUBJECT_CREDS_ONLY, "true");
-            return Subject.doAs(clientSubject,
-                                (PrivilegedExceptionAction<byte[]>) () -> buildTokenWithinSubjectWithKerberosTicket(
-                                        clientPrincipalName,
-                                        targetServerPrincipalName));
+            return Subject.doAs(clientSubject, (PrivilegedExceptionAction<byte[]>) () ->
+                    buildTokenWithinSubjectWithKerberosTicket(clientPrincipalName, targetServerPrincipalName));
         }
         finally
         {
@@ -143,8 +142,8 @@ public class KerberosUtilities
         }
     }
 
-    private byte[] buildTokenWithinSubjectWithKerberosTicket(String clientPrincipalName,
-                                                             String targetServerPrincipalName) throws GSSException
+    private byte[] buildTokenWithinSubjectWithKerberosTicket(final String clientPrincipalName,
+                                                             final String targetServerPrincipalName) throws GSSException
     {
         debug("Building token for client principal '{}' and server principal '{}'",
               clientPrincipalName,
@@ -196,15 +195,11 @@ public class KerberosUtilities
 
     public LoginContext createKerberosKeyTabLoginContext(final String scopeName,
                                                          final String principalName,
-                                                         final File keyTabFile)
-            throws LoginException
+                                                         final File keyTabFile) throws LoginException
     {
         final KerberosPrincipal principal = new KerberosPrincipal(principalName);
         final KeyTab keyTab = getKeyTab(principal, keyTabFile);
-        final Subject subject = new Subject(false,
-                                            Collections.singleton(principal),
-                                            Collections.emptySet(),
-                                            Collections.singleton(keyTab));
+        final Subject subject = new Subject(false, Set.of(principal), Set.of(), Set.of(keyTab));
 
         return createLoginContext(scopeName,
                                   subject,
@@ -222,8 +217,9 @@ public class KerberosUtilities
     private LoginContext createLoginContext(final String serviceName, final Subject subject, final Configuration config)
             throws LoginException
     {
-        return new LoginContext(serviceName, subject, callbacks -> {
-            for (Callback callback : callbacks)
+        return new LoginContext(serviceName, subject, callbacks ->
+        {
+            for (final Callback callback : callbacks)
             {
                 if (callback instanceof TextOutputCallback)
                 {
@@ -232,7 +228,6 @@ public class KerberosUtilities
             }
         }, config);
     }
-
 
     private KeyTab getKeyTab(final KerberosPrincipal principal, final File keyTabFile)
     {
@@ -264,7 +259,6 @@ public class KerberosUtilities
                 LOGGER.debug("Unable to destroy key", e);
             }
         }
-
         return keytab;
     }
 
@@ -314,7 +308,7 @@ public class KerberosUtilities
         LOGGER.debug(message, args);
         if (Boolean.TRUE.toString().equalsIgnoreCase(System.getProperty("sun.security.krb5.debug")))
         {
-            System.out.println(String.format(message.replace("{}", "%s"), args));
+            System.out.printf((message.replace("{}", "%s")) + "%n", args);
         }
     }
 
@@ -327,7 +321,7 @@ public class KerberosUtilities
             throw new IllegalArgumentException(String.format("Unknown resource '%s'", resourceName));
         }
         final String config;
-        try (InputStream is = resource.openStream())
+        try (final InputStream is = resource.openStream())
         {
             config = new String(ByteStreams.toByteArray(is), UTF_8);
         }
@@ -348,7 +342,7 @@ public class KerberosUtilities
         return file.toRealPath(LinkOption.NOFOLLOW_LINKS);
     }
 
-    private String toAbsolutePath(String fileName)
+    private String toAbsolutePath(final String fileName)
     {
         final Path path = Paths.get("target", fileName)
                                .toAbsolutePath()
@@ -360,5 +354,4 @@ public class KerberosUtilities
     {
         return JvmVendor.getJvmVendor() == JvmVendor.IBM;
     }
-
 }

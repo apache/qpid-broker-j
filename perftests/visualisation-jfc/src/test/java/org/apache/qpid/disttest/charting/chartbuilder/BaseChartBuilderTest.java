@@ -19,6 +19,7 @@
  */
 package org.apache.qpid.disttest.charting.chartbuilder;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,24 +37,11 @@ import org.jfree.chart.plot.Plot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.general.Dataset;
-import org.junit.Assert;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class BaseChartBuilderTest extends UnitTestBase
 {
@@ -74,8 +62,8 @@ public class BaseChartBuilderTest extends UnitTestBase
 
     private JFreeChart _jFreeChart;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    public void setUp()
     {
 
         Plot plot = new CategoryPlot();
@@ -107,10 +95,8 @@ public class BaseChartBuilderTest extends UnitTestBase
         JFreeChart chart = chartBuilder.buildChart(_chartingDefinition);
 
         assertEquals(BaseChartBuilder.BLUE_GRADIENT, chart.getBackgroundPaint());
-        assertEquals(
-                "The *second* subtitle of the generated chart should have the text from the chart definition",
-                CHART_SUB_TITLE,
-                ((TextTitle)chart.getSubtitle(1)).getText());
+        assertEquals(CHART_SUB_TITLE, ((TextTitle)chart.getSubtitle(1)).getText(),
+                "The *second* subtitle of the generated chart should have the text from the chart definition");
 
         verify(_seriesPainter).applySeriesAppearance(_jFreeChart, _seriesDefinitions, _strokeAndPaintApplier);
     }

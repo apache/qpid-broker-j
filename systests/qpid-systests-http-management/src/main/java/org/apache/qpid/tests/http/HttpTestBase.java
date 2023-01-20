@@ -28,8 +28,8 @@ import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.naming.NamingException;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.ConnectionBuilder;
@@ -46,8 +46,8 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
 
     private JmsProvider _jmsProvider;
 
-    @Before
-    public void setUpTestBase() throws Exception
+    @BeforeEach
+    public void setUpTestBase()
     {
         System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
 
@@ -59,7 +59,7 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
         _jmsProvider = getJmsProvider();
     }
 
-    @After
+    @AfterEach
     public void tearDownTestBase()
     {
         System.clearProperty("sun.net.http.allowRestrictedHeaders");
@@ -95,14 +95,15 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
                            .setPassword(getBrokerAdmin().getValidPassword());
     }
 
-    private HttpRequestConfig getHttpRequestConfig() throws Exception
+    private HttpRequestConfig getHttpRequestConfig()
     {
-        HttpRequestConfig config = getClass().getMethod(getTestName(), new Class[]{}).getAnnotation(HttpRequestConfig.class);
+        HttpRequestConfig config = _testInfo.getTestMethod()
+                .orElseThrow(() -> new RuntimeException("Failed to resolve test method"))
+                .getAnnotation(HttpRequestConfig.class);
         if (config == null)
         {
             config = getClass().getAnnotation(HttpRequestConfig.class);
         }
-
         return config;
     }
 
@@ -115,5 +116,4 @@ public abstract class HttpTestBase extends BrokerAdminUsingTestBase
     {
         return Utils.getProtocol();
     }
-
 }

@@ -28,5 +28,6 @@ import org.apache.qpid.server.model.ManagedObject;
 public interface TestPetrolEngine<X extends TestPetrolEngine<X>> extends TestEngine<X>
 {
     @ManagedAttribute
+    @SuppressWarnings("unused")
     Collection<TestSensor<?>> getTemperatureSensors();
 }

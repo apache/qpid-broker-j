@@ -20,37 +20,37 @@
  */
 package org.apache.qpid.server.filter;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
+import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class ArrivalTimeFilterFactoryTest extends UnitTestBase
 {
     @Test
-    public void testNewInstance() throws Exception
+    public void testNewInstance()
     {
-        long currentTime = System.currentTimeMillis();
-        int periodInSeconds = 60;
-        MessageFilter filter =
-                new ArrivalTimeFilterFactory().newInstance(Collections.singletonList(String.valueOf(periodInSeconds)));
+        final long currentTime = System.currentTimeMillis();
+        final int periodInSeconds = 60;
+        final MessageFilter filter =
+                new ArrivalTimeFilterFactory().newInstance(List.of(String.valueOf(periodInSeconds)));
 
-        Filterable message = mock(Filterable.class);
+        final Filterable message = mock(Filterable.class);
         when(message.getArrivalTime()).thenReturn(currentTime - periodInSeconds * 1000 - 1);
 
-        assertFalse("Message arrived before '1 minute before filter creation' should not be accepted",
-                           filter.matches(message));
+        assertFalse(filter.matches(message),
+                "Message arrived before '1 minute before filter creation' should not be accepted");
 
         when(message.getArrivalTime()).thenReturn(currentTime - periodInSeconds  * 1000 / 2);
-        assertTrue("Message arrived after '1 minute before filter creation' should be accepted",
-                          filter.matches(message));
+        assertTrue(filter.matches(message),
+                   "Message arrived after '1 minute before filter creation' should be accepted");
         when(message.getArrivalTime()).thenReturn(System.currentTimeMillis());
-        assertTrue("Message arrived after filter creation should be accepted", filter.matches(message));
+        assertTrue(filter.matches(message), "Message arrived after filter creation should be accepted");
     }
 }

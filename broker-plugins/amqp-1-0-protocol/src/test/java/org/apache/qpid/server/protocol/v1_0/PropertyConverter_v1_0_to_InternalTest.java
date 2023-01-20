@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,8 +34,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.internal.InternalMessage;
@@ -61,7 +61,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
     private MessageConverter_v1_0_to_Internal _messageConverter;
     private NamedAddressSpace _addressSpace;
 
-    @Before
+    @BeforeAll
     public void setUp() throws Exception
     {
         _messageConverter = new MessageConverter_v1_0_to_Internal();
@@ -77,9 +77,9 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertTrue("Unexpected persistence of message", convertedMessage.isPersistent());
-        assertTrue("Unexpected persistence of meta data",
-                          convertedMessage.getStoredMessage().getMetaData().isPersistent());
+        assertTrue(convertedMessage.isPersistent(), "Unexpected persistence of message");
+        assertTrue(convertedMessage.getStoredMessage().getMetaData().isPersistent(),
+                "Unexpected persistence of meta data");
     }
 
     @Test
@@ -91,9 +91,9 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertFalse("Unexpected persistence of message", convertedMessage.isPersistent());
-        assertFalse("Unexpected persistence of meta data",
-                           convertedMessage.getStoredMessage().getMetaData().isPersistent());
+        assertFalse(convertedMessage.isPersistent(), "Unexpected persistence of message");
+        assertFalse(convertedMessage.getStoredMessage().getMetaData().isPersistent(),
+                "Unexpected persistence of meta data");
     }
 
     @Test
@@ -106,10 +106,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected priority",
-                            (long) priority,
-                            (long) convertedMessage.getMessageHeader().getPriority());
-
+        assertEquals(priority, (long) convertedMessage.getMessageHeader().getPriority(), "Unexpected priority");
     }
 
     @Test
@@ -124,7 +121,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected expiration", (long) 0, convertedMessage.getMessageHeader().getExpiration());
+        assertEquals(0, convertedMessage.getMessageHeader().getExpiration(), "Unexpected expiration");
     }
 
     @Test
@@ -140,7 +137,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected expiration", expiryTime, convertedMessage.getMessageHeader().getExpiration());
+        assertEquals(expiryTime, convertedMessage.getMessageHeader().getExpiration(), "Unexpected expiration");
     }
 
     @Test
@@ -153,9 +150,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected content encoding",
-                            contentEncoding,
-                            convertedMessage.getMessageHeader().getEncoding());
+        assertEquals(contentEncoding, convertedMessage.getMessageHeader().getEncoding(), "Unexpected content encoding");
 
     }
 
@@ -169,7 +164,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected messageId", messageId, convertedMessage.getMessageHeader().getMessageId());
+        assertEquals(messageId, convertedMessage.getMessageHeader().getMessageId(), "Unexpected messageId");
     }
 
     @Test
@@ -182,9 +177,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected messageId",
-                            messageId.toString(),
-                            convertedMessage.getMessageHeader().getMessageId());
+        assertEquals(messageId.toString(), convertedMessage.getMessageHeader().getMessageId(), "Unexpected messageId");
     }
 
     @Test
@@ -197,9 +190,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected messageId",
-                            messageId.toString(),
-                            convertedMessage.getMessageHeader().getMessageId());
+        assertEquals(messageId.toString(), convertedMessage.getMessageHeader().getMessageId(), "Unexpected messageId");
     }
 
     @Test
@@ -213,9 +204,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected messageId",
-                            messageId.toString(),
-                            convertedMessage.getMessageHeader().getMessageId());
+        assertEquals(messageId.toString(), convertedMessage.getMessageHeader().getMessageId(), "Unexpected messageId");
     }
 
     @Test
@@ -228,9 +217,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected correlationId",
-                            correlationId,
-                            convertedMessage.getMessageHeader().getCorrelationId());
+        assertEquals(correlationId, convertedMessage.getMessageHeader().getCorrelationId(), "Unexpected correlationId");
     }
 
     @Test
@@ -243,9 +230,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected correlationId",
-                            correlationId.toString(),
-                            convertedMessage.getMessageHeader().getCorrelationId());
+        assertEquals(correlationId.toString(), convertedMessage.getMessageHeader().getCorrelationId(), "Unexpected correlationId");
     }
 
     @Test
@@ -258,9 +243,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected correlationId",
-                            correlationId.toString(),
-                            convertedMessage.getMessageHeader().getCorrelationId());
+        assertEquals(correlationId.toString(), convertedMessage.getMessageHeader().getCorrelationId(), "Unexpected correlationId");
     }
 
     @Test
@@ -274,9 +257,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected correlationId",
-                            correlationId.toString(),
-                            convertedMessage.getMessageHeader().getCorrelationId());
+        assertEquals(correlationId.toString(), convertedMessage.getMessageHeader().getCorrelationId(), "Unexpected correlationId");
     }
 
     @Test
@@ -290,9 +271,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected userId",
-                            new String(data, UTF_8),
-                            convertedMessage.getMessageHeader().getUserId());
+        assertEquals(new String(data, UTF_8), convertedMessage.getMessageHeader().getUserId(), "Unexpected userId");
     }
 
     @Test
@@ -305,7 +284,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected replyTo", replyTo, convertedMessage.getMessageHeader().getReplyTo());
+        assertEquals(replyTo, convertedMessage.getMessageHeader().getReplyTo(), "Unexpected replyTo");
     }
 
     @Test
@@ -318,7 +297,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected timestamp", creationTime, convertedMessage.getMessageHeader().getTimestamp());
+        assertEquals(creationTime, convertedMessage.getMessageHeader().getTimestamp(), "Unexpected timestamp");
     }
 
     @Test
@@ -333,8 +312,8 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        assertEquals("Unexpected to", to, convertedMessage.getTo());
-        assertEquals("Unexpected initialRoutingAddress", "", convertedMessage.getInitialRoutingAddress());
+        assertEquals(to, convertedMessage.getTo(), "Unexpected to");
+        assertEquals("", convertedMessage.getInitialRoutingAddress(), "Unexpected initialRoutingAddress");
     }
 
     @Test
@@ -350,7 +329,7 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
         final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         final Map<String, Object> headers = convertedMessage.getMessageHeader().getHeaderMap();
-        assertEquals("Unexpected headers", properties, new HashMap<>(headers));
+        assertEquals(properties, new HashMap<>(headers), "Unexpected headers");
     }
 
 

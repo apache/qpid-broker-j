@@ -18,10 +18,11 @@
  */
 package org.apache.qpid.server.filter;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -31,34 +32,31 @@ public class JMSSelectorFilterTest extends UnitTestBase
     public void testEqualsAndHashCodeUsingSelectorString() throws Exception
     {
         final String selectorString = "1 = 1";
+        final JMSSelectorFilter filter1 = new JMSSelectorFilter(selectorString);
+        final JMSSelectorFilter filter2 = new JMSSelectorFilter(selectorString);
 
-        JMSSelectorFilter filter1 = new JMSSelectorFilter(new String(selectorString));
-        JMSSelectorFilter filter2 = new JMSSelectorFilter(new String(selectorString));
-
-        assertEquals(filter1 + " should equal itself", filter1, filter1);
-        assertFalse(filter1 + " should not equal null", filter1.equals(null));
+        assertEquals(filter1, filter1, filter1 + " should equal itself");
+        assertNotNull(filter1, filter1 + " should not equal null");
         assertEqualsAndHashCodeMatch(filter1, filter2);
 
-        JMSSelectorFilter differentFilter = new JMSSelectorFilter("2 = 2");
+        final JMSSelectorFilter differentFilter = new JMSSelectorFilter("2 = 2");
         assertNotEqual(filter1, differentFilter);
     }
 
-    private void assertEqualsAndHashCodeMatch(JMSSelectorFilter filter1, JMSSelectorFilter filter2)
+    private void assertEqualsAndHashCodeMatch(final JMSSelectorFilter filter1, final JMSSelectorFilter filter2)
     {
-        String message = filter1 + " and " + filter2 + " should be equal";
+        final String message = filter1 + " and " + filter2 + " should be equal";
 
-        assertEquals(message, filter1, filter2);
-        assertEquals(message, filter2, filter1);
+        assertEquals(filter1, filter2, message);
+        assertEquals(filter2, filter1, message);
 
-        assertEquals("HashCodes of " + filter1 + " and " + filter2 + " should be equal",
-                            (long) filter1.hashCode(),
-                            (long) filter2.hashCode());
-
+        assertEquals(filter1.hashCode(), (long) filter2.hashCode(), "HashCodes of " + filter1 + " and " +
+                filter2 + " should be equal");
     }
 
-    private void assertNotEqual(JMSSelectorFilter filter, JMSSelectorFilter differentFilter)
+    private void assertNotEqual(final JMSSelectorFilter filter, final JMSSelectorFilter differentFilter)
     {
-        assertFalse(filter.equals(differentFilter));
-        assertFalse(differentFilter.equals(filter));
+        assertNotEquals(filter, differentFilter);
+        assertNotEquals(differentFilter, filter);
     }
 }

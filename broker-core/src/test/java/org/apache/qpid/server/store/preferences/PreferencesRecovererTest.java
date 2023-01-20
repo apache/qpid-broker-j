@@ -20,22 +20,22 @@
 package org.apache.qpid.server.store.preferences;
 
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.awaitPreferenceFuture;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 
 import java.security.PrivilegedAction;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import javax.security.auth.Subject;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -49,51 +49,50 @@ import org.apache.qpid.server.model.testmodels.hierarchy.TestModel;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"unchecked"})
 public class PreferencesRecovererTest extends UnitTestBase
 {
     public static final String TEST_USERNAME = "testUser";
     private final Model _model = TestModel.getInstance();
     private PreferenceStore _store;
-    private TestCar _testObject;
+    private TestCar<?> _testObject;
     private ConfiguredObject<?> _testChildObject;
     private Subject _testSubject;
     private TaskExecutor _preferenceTaskExecutor;
     private PreferencesRecoverer _recoverer;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _store = mock(PreferenceStore.class);
         _testObject = _model.getObjectFactory()
-                            .create(TestCar.class,
-                                    Collections.<String, Object>singletonMap(ConfiguredObject.NAME, getTestName()), null);
-        _testChildObject = _testObject.createChild(TestEngine.class,
-                                                   Collections.<String, Object>singletonMap(ConfiguredObject.NAME, getTestName()));
+                .create(TestCar.class, Map.of(ConfiguredObject.NAME, getTestName()), null);
+        _testChildObject = _testObject.createChild(TestEngine.class, Map.of(ConfiguredObject.NAME, getTestName()));
         _testSubject = TestPrincipalUtils.createTestSubject(TEST_USERNAME);
         _preferenceTaskExecutor = new CurrentThreadTaskExecutor();
         _preferenceTaskExecutor.start();
         _recoverer = new PreferencesRecoverer(_preferenceTaskExecutor);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         _preferenceTaskExecutor.stop();
     }
 
     @Test
-    public void testRecoverEmptyPreferences() throws Exception
+    public void testRecoverEmptyPreferences()
     {
-        _recoverer.recoverPreferences(_testObject, Collections.<PreferenceRecord>emptyList(), _store);
-        assertNotNull("Object should have UserPreferences", _testObject.getUserPreferences());
-        assertNotNull("Child object should have UserPreferences", _testChildObject.getUserPreferences());
+        _recoverer.recoverPreferences(_testObject, List.of(), _store);
+        assertNotNull(_testObject.getUserPreferences(), "Object should have UserPreferences");
+        assertNotNull(_testChildObject.getUserPreferences(), "Child object should have UserPreferences");
     }
 
     @Test
-    public void testRecoverPreferences() throws Exception
+    public void testRecoverPreferences()
     {
-        final UUID p1Id = UUID.randomUUID();
-        Map<String, Object> pref1Attributes = PreferenceTestHelper.createPreferenceAttributes(
+        final UUID p1Id = randomUUID();
+        final Map<String, Object> pref1Attributes = PreferenceTestHelper.createPreferenceAttributes(
                 _testObject.getId(),
                 p1Id,
                 "X-testType",
@@ -101,10 +100,10 @@ public class PreferencesRecovererTest extends UnitTestBase
                 null,
                 TestPrincipalUtils.getTestPrincipalSerialization(TEST_USERNAME),
                 null,
-                Collections.<String, Object>emptyMap());
-        PreferenceRecord record1 = new PreferenceRecordImpl(p1Id, pref1Attributes);
-        final UUID p2Id = UUID.randomUUID();
-        Map<String, Object> pref2Attributes = PreferenceTestHelper.createPreferenceAttributes(
+                Map.of());
+        final PreferenceRecord record1 = new PreferenceRecordImpl(p1Id, pref1Attributes);
+        final UUID p2Id = randomUUID();
+        final Map<String, Object> pref2Attributes = PreferenceTestHelper.createPreferenceAttributes(
                 _testChildObject.getId(),
                 p2Id,
                 "X-testType",
@@ -112,24 +111,19 @@ public class PreferencesRecovererTest extends UnitTestBase
                 null,
                 TestPrincipalUtils.getTestPrincipalSerialization(TEST_USERNAME),
                 null,
-                Collections.<String, Object>emptyMap());
-        PreferenceRecord record2 = new PreferenceRecordImpl(p2Id, pref2Attributes);
+                Map.of());
+        final PreferenceRecord record2 = new PreferenceRecordImpl(p2Id, pref2Attributes);
         _recoverer.recoverPreferences(_testObject, Arrays.asList(record1, record2), _store);
 
-        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                Set<Preference> preferences = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
-                assertEquals("Unexpected number of preferences", (long) 1, (long) preferences.size());
+            final Set<Preference> preferences = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
+            assertEquals(1, (long) preferences.size(), "Unexpected number of preferences");
 
-                Set<Preference> childPreferences = awaitPreferenceFuture(_testChildObject.getUserPreferences().getPreferences());
+            final Set<Preference> childPreferences = awaitPreferenceFuture(_testChildObject.getUserPreferences().getPreferences());
 
-                assertEquals("Unexpected number of preferences", (long) 1, (long) childPreferences.size());
-                return null;
-            }
+            assertEquals(1, (long) childPreferences.size(), "Unexpected number of preferences");
+            return null;
         });
     }
-
 }

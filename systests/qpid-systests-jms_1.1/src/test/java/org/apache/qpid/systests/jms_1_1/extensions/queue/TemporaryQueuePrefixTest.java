@@ -19,8 +19,8 @@
 
 package org.apache.qpid.systests.jms_1_1.extensions.queue;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 
@@ -28,14 +28,13 @@ import javax.jms.Connection;
 import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.systests.JmsTestBase;
 
 public class TemporaryQueuePrefixTest extends JmsTestBase
 {
-
     @Test
     public void testNoPrefixSet() throws Exception
     {
@@ -45,8 +44,8 @@ public class TemporaryQueuePrefixTest extends JmsTestBase
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             TemporaryQueue queue = session.createTemporaryQueue();
 
-            assertTrue(queue.getQueueName() + " does not start with \"TempQueue\".",
-                       queue.getQueueName().startsWith("TempQueue"));
+            assertTrue(queue.getQueueName().startsWith("TempQueue"),
+                    queue.getQueueName() + " does not start with \"TempQueue\".");
         }
         finally
         {
@@ -65,8 +64,8 @@ public class TemporaryQueuePrefixTest extends JmsTestBase
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             TemporaryQueue queue = session.createTemporaryQueue();
 
-            assertTrue(queue.getQueueName() + " does not start with \"TempQueue\".",
-                       queue.getQueueName().startsWith("TempQueue"));
+            assertTrue(queue.getQueueName().startsWith("TempQueue"),
+                    queue.getQueueName() + " does not start with \"TempQueue\".");
         }
         finally
         {
@@ -86,10 +85,10 @@ public class TemporaryQueuePrefixTest extends JmsTestBase
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             TemporaryQueue queue = session.createTemporaryQueue();
 
-            assertFalse(queue.getQueueName() + " has superfluous slash in prefix.",
-                        queue.getQueueName().startsWith(("[\"" + primaryPrefix + "\", \"/foo\" ]") + "/"));
-            assertTrue(queue.getQueueName() + " does not start with expected prefix \"" + primaryPrefix + "\".",
-                       queue.getQueueName().startsWith(primaryPrefix));
+            assertFalse(queue.getQueueName().startsWith(("[\"" + primaryPrefix + "\", \"/foo\" ]") + "/"),
+                    queue.getQueueName() + " has superfluous slash in prefix.");
+            assertTrue(queue.getQueueName().startsWith(primaryPrefix),
+                    queue.getQueueName() + " does not start with expected prefix \"" + primaryPrefix + "\".");
         }
         finally
         {
@@ -109,8 +108,8 @@ public class TemporaryQueuePrefixTest extends JmsTestBase
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             TemporaryQueue queue = session.createTemporaryQueue();
 
-            assertTrue(queue.getQueueName() + " does not start with expected prefix \"" + prefix + "/\".",
-                       queue.getQueueName().startsWith(prefix + "/"));
+            assertTrue(queue.getQueueName().startsWith(prefix + "/"),
+                    queue.getQueueName() + " does not start with expected prefix \"" + prefix + "/\".");
         }
         finally
         {

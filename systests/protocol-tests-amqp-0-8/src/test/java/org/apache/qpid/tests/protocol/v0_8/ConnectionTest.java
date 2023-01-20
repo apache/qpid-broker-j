@@ -31,14 +31,14 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
@@ -133,7 +133,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "1.4.2.3", description = "security challenge data")
     public void connectionSecure() throws Exception
     {
-        assumeThat(getBrokerAdmin().isSASLMechanismSupported(PLAIN), is(true));
+        assumeTrue(getBrokerAdmin().isSASLMechanismSupported(PLAIN));
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
             final byte[] initialResponse = String.format("\0%s\0%s",
@@ -171,7 +171,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "1.4.2.3", description = "security challenge data")
     public void connectionSecureWithChallengeResponse() throws Exception
     {
-        assumeThat(getBrokerAdmin().isSASLMechanismSupported(CRAM_MD5), is(true));
+        assumeTrue(getBrokerAdmin().isSASLMechanismSupported(CRAM_MD5));
 
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
@@ -210,7 +210,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     @SpecificationTest(section = "1.4.2.3", description = "security challenge data")
     public void connectionSecureUnsuccessfulAuthentication() throws Exception
     {
-        assumeThat(getBrokerAdmin().isSASLMechanismSupported(PLAIN), is(true));
+        assumeTrue(getBrokerAdmin().isSASLMechanismSupported(PLAIN));
 
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {

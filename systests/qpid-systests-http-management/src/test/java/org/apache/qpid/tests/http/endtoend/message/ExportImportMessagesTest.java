@@ -24,7 +24,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,8 +37,9 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.systests.Utils;
@@ -51,7 +52,7 @@ public class ExportImportMessagesTest extends HttpTestBase
 {
     private static final String TEST_QUEUE = "testQueue";
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         getHelper().setTls(true);
@@ -60,7 +61,7 @@ public class ExportImportMessagesTest extends HttpTestBase
     @Test
     public void exportImport() throws Exception
     {
-        assumeThat(getBrokerAdmin().supportsRestart(), is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
 
         getBrokerAdmin().createQueue(TEST_QUEUE);
 

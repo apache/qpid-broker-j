@@ -18,10 +18,10 @@
  */
 package org.apache.qpid.server.security;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -35,8 +35,8 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.ConsumerOption;
@@ -51,18 +51,19 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TestMemoryMessageStore;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class TrustStoreMessageSourceTest extends UnitTestBase
 {
     private TrustStoreMessageSource _trustStoreMessageSource;
     private Certificate[] _certificates;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        VirtualHost vhost = mock(VirtualHost.class);
-        MessageStore messageStore = new TestMemoryMessageStore();
-        TrustStore trustStore = mock(TrustStore.class);
-        Certificate certificate = mock(Certificate.class);
+        final VirtualHost<?> vhost = mock(VirtualHost.class);
+        final MessageStore messageStore = new TestMemoryMessageStore();
+        final TrustStore<?> trustStore = mock(TrustStore.class);
+        final Certificate certificate = mock(Certificate.class);
         _certificates = new Certificate[]{certificate};
 
         when(vhost.getMessageStore()).thenReturn(messageStore);
@@ -79,10 +80,10 @@ public class TrustStoreMessageSourceTest extends UnitTestBase
         final ConsumerTarget target = mock(ConsumerTarget.class);
         when(target.allocateCredit(any(ServerMessage.class))).thenReturn(true);
 
-        MessageInstanceConsumer consumer = _trustStoreMessageSource.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
+        MessageInstanceConsumer<?> consumer = _trustStoreMessageSource.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
         final MessageContainer messageContainer = consumer.pullMessage();
-        assertNotNull("Could not pull message of TrustStore", messageContainer);
-        final ServerMessage message = messageContainer.getMessageInstance().getMessage();
+        assertNotNull(messageContainer, "Could not pull message of TrustStore");
+        final ServerMessage<?> message = messageContainer.getMessageInstance().getMessage();
         assertCertificates(getCertificatesFromMessage(message));
     }
 
@@ -90,32 +91,32 @@ public class TrustStoreMessageSourceTest extends UnitTestBase
     {
         for (int i = 0; i < _certificates.length; ++i)
         {
-            assertArrayEquals("Unexpected content", _certificates[i].getEncoded(), encodedCertificates.get(i).getBytes());
+            assertArrayEquals(_certificates[i].getEncoded(), encodedCertificates.get(i).getBytes(),
+                    "Unexpected content");
         }
     }
 
     private List<String> getCertificatesFromMessage(final ServerMessage<?> message) throws ClassNotFoundException
     {
         final int bodySize = (int) message.getSize();
-        byte[] msgContent = new byte[bodySize];
+        final byte[] msgContent = new byte[bodySize];
         final List<String> certificates;
         final ByteArrayInputStream bytesIn;
-        try (QpidByteBuffer allData = message.getStoredMessage().getContent(0, bodySize))
+        try (final QpidByteBuffer allData = message.getStoredMessage().getContent(0, bodySize))
         {
-            assertEquals("Unexpected message size was retrieved", (long) bodySize, (long) allData.remaining());
+            assertEquals(bodySize, (long) allData.remaining(), "Unexpected message size was retrieved");
             allData.get(msgContent);
         }
 
         certificates = new ArrayList<>();
         bytesIn = new ByteArrayInputStream(msgContent);
-        try (ObjectInputStream is = new ObjectInputStream(bytesIn))
+        try (final ObjectInputStream is = new ObjectInputStream(bytesIn))
         {
-            ArrayList<byte[]> encodedCertificates = (ArrayList<byte[]>) is.readObject();
-            for(byte[] encodedCertificate : encodedCertificates)
+            final ArrayList<byte[]> encodedCertificates = (ArrayList<byte[]>) is.readObject();
+            for (final byte[] encodedCertificate : encodedCertificates)
             {
                 certificates.add(new String(encodedCertificate));
             }
-            is.close();
         }
         catch (IOException e)
         {

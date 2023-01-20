@@ -20,10 +20,8 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,12 +29,11 @@ import static org.mockito.Mockito.withSettings;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.Objects;
 
 import com.sleepycat.je.EnvironmentConfig;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.FileBasedSettings;
@@ -50,26 +47,24 @@ public class StandardEnvironmentFacadeFactoryTest extends UnitTestBase
     private File _path;
     private ConfiguredObject<?> _parent;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.BDB),
+                "VirtualHostNodeStoreType should be BDB");
 
         _path = TestFileUtils.createTestDirectory(".je.test", true);
 
         // make mock object implementing FileBasedSettings
-        _parent = mock(ConfiguredObject.class, withSettings().extraInterfaces(FileBasedSettings.class).defaultAnswer(new Answer()
-        {
-            @Override
-            public Object answer(InvocationOnMock invocation)
-            {
-                if (invocation.getMethod().getName().equals("getStorePath"))
+        _parent = mock(ConfiguredObject.class, withSettings().extraInterfaces(FileBasedSettings.class)
+                .defaultAnswer(invocation ->
                 {
-                    return _path.getAbsolutePath();
-                }
-                return null;
-            }
-        }));
+                    if (invocation.getMethod().getName().equals("getStorePath"))
+                    {
+                        return _path.getAbsolutePath();
+                    }
+                    return null;
+                }));
 
     }
     public void tearDown()throws Exception

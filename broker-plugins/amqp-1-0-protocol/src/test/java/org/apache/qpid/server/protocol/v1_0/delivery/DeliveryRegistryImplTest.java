@@ -26,8 +26,8 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.LinkEndpoint;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -42,13 +42,12 @@ public class DeliveryRegistryImplTest extends UnitTestBase
     private static final Binary DELIVERY_TAG_2 = new Binary(new byte[]{(byte) 32});
 
     private DeliveryRegistryImpl _registry;
-    private UnsettledDelivery _unsettledDelivery;
+    private final UnsettledDelivery _unsettledDelivery = new UnsettledDelivery(DELIVERY_TAG, mock(LinkEndpoint.class));
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _registry = new DeliveryRegistryImpl();
-        _unsettledDelivery = new UnsettledDelivery(DELIVERY_TAG, mock(LinkEndpoint.class));
     }
 
     @Test

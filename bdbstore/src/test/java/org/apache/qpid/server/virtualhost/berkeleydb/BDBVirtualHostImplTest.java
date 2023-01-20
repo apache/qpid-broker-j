@@ -20,20 +20,19 @@
  */
 package org.apache.qpid.server.virtualhost.berkeleydb;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -48,10 +47,11 @@ public class BDBVirtualHostImplTest extends UnitTestBase
     private File _storePath;
     private VirtualHostNode<?> _node;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.BDB),
+                "VirtualHostNodeStoreType should be BDB");
 
         _storePath = TestFileUtils.createTestDirectory();
 
@@ -61,7 +61,7 @@ public class BDBVirtualHostImplTest extends UnitTestBase
                                                            BrokerTestHelper.createBrokerMock());
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         if (_storePath != null)
@@ -75,7 +75,7 @@ public class BDBVirtualHostImplTest extends UnitTestBase
     {
         String hostName = getTestName();
         File file = new File(_storePath + File.separator + hostName);
-        assertTrue("Empty file is not created", file.createNewFile());
+        assertTrue(file.createNewFile(), "Empty file is not created");
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(BDBVirtualHost.ID, UUID.randomUUID());
         attributes.put(BDBVirtualHost.TYPE, BDBVirtualHostImpl.VIRTUAL_HOST_TYPE);
@@ -90,8 +90,8 @@ public class BDBVirtualHostImplTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertTrue("Unexpected exception " + e.getMessage(),
-                              e.getMessage().startsWith("Cannot open virtual host message store"));
+            assertTrue(e.getMessage().startsWith("Cannot open virtual host message store"),
+                       "Unexpected exception " + e.getMessage());
         }
     }
 

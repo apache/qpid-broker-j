@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.systests.jms_1_1.message;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -40,7 +40,7 @@ import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -58,8 +58,8 @@ public class ObjectMessageTest extends JmsTestBase
             ObjectMessage testMessage = session.createObjectMessage(test);
             Object o = testMessage.getObject();
 
-            assertNotNull("Object was null", o);
-            assertNotNull("toString returned null", testMessage.toString());
+            assertNotNull(o, "Object was null");
+            assertNotNull(testMessage.toString(), "toString returned null");
 
             MessageProducer producer = session.createProducer(queue);
             producer.send(testMessage);
@@ -68,15 +68,15 @@ public class ObjectMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("ObjectMessage should be received", receivedMessage instanceof ObjectMessage);
+            assertTrue(receivedMessage instanceof ObjectMessage, "ObjectMessage should be received");
 
             Object result = ((ObjectMessage) receivedMessage).getObject();
 
-            assertEquals("First read: UUIDs were not equal", test, result);
+            assertEquals(test, result, "First read: UUIDs were not equal");
 
             result = ((ObjectMessage) receivedMessage).getObject();
 
-            assertEquals("Second read: UUIDs were not equal", test, result);
+            assertEquals(test, result, "Second read: UUIDs were not equal");
         }
         finally
         {
@@ -95,8 +95,8 @@ public class ObjectMessageTest extends JmsTestBase
             ObjectMessage testMessage = session.createObjectMessage(null);
             Object o = testMessage.getObject();
 
-            assertNull("Object was not null", o);
-            assertNotNull("toString returned null", testMessage.toString());
+            assertNull(o, "Object was not null");
+            assertNotNull(testMessage.toString(), "toString returned null");
 
             MessageProducer producer = session.createProducer(queue);
             producer.send(testMessage);
@@ -105,15 +105,15 @@ public class ObjectMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("ObjectMessage should be received", receivedMessage instanceof ObjectMessage);
+            assertTrue(receivedMessage instanceof ObjectMessage, "ObjectMessage should be received");
 
             Object result = ((ObjectMessage) receivedMessage).getObject();
 
-            assertEquals("First read: UUIDs were not equal", null, result);
+            assertNull(result, "First read: UUIDs were not equal");
 
             result = ((ObjectMessage) receivedMessage).getObject();
 
-            assertEquals("Second read: UUIDs were not equal", null, result);
+            assertNull(result, "Second read: UUIDs were not equal");
         }
         finally
         {
@@ -138,15 +138,15 @@ public class ObjectMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("ObjectMessage should be received", receivedMessage instanceof ObjectMessage);
+            assertTrue(receivedMessage instanceof ObjectMessage, "ObjectMessage should be received");
 
             Object result = ((ObjectMessage) receivedMessage).getObject();
 
-            assertEquals("First read: unexpected object received", null, result);
+            assertNull(result, "First read: unexpected object received");
 
             result = ((ObjectMessage) receivedMessage).getObject();
 
-            assertEquals("Second read: unexpected object received", null, result);
+            assertNull(result, "Second read: unexpected object received");
         }
         finally
         {
@@ -179,19 +179,19 @@ public class ObjectMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("ObjectMessage should be received", receivedMessage instanceof ObjectMessage);
+            assertTrue(receivedMessage instanceof ObjectMessage, "ObjectMessage should be received");
 
             Object result = ((ObjectMessage) receivedMessage).getObject();
 
-            assertTrue("Unexpected object received", result instanceof C);
+            assertTrue(result instanceof C, "Unexpected object received");
 
             @SuppressWarnings("unchecked") final C<String, Object> received = (C) result;
-            assertEquals("Unexpected size", c.size(), received.size());
-            assertEquals("Unexpected keys", new HashSet<>(c.keySet()), new HashSet<>(received.keySet()));
+            assertEquals(c.size(), received.size(), "Unexpected size");
+            assertEquals(new HashSet<>(c.keySet()), new HashSet<>(received.keySet()), "Unexpected keys");
 
             for (String key : c.keySet())
             {
-                assertEquals("Unexpected value for " + key, c.get(key), received.get(key));
+                assertEquals(c.get(key), received.get(key), "Unexpected value for " + key);
             }
         }
         finally
@@ -220,10 +220,9 @@ public class ObjectMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("ObjectMessage should be received", receivedMessage instanceof ObjectMessage);
-            assertEquals("Unexpected received property",
-                         testStringProperty,
-                         receivedMessage.getObjectProperty("TestStringProperty"));
+            assertTrue(receivedMessage instanceof ObjectMessage, "ObjectMessage should be received");
+            assertEquals(testStringProperty, receivedMessage.getObjectProperty("TestStringProperty"),
+                    "Unexpected received property");
         }
         finally
         {
@@ -250,10 +249,9 @@ public class ObjectMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("ObjectMessage should be received", receivedMessage instanceof ObjectMessage);
-            assertEquals("Unexpected received property",
-                         Boolean.TRUE,
-                         receivedMessage.getObjectProperty("TestBooleanProperty"));
+            assertTrue(receivedMessage instanceof ObjectMessage, "ObjectMessage should be received");
+            assertEquals(Boolean.TRUE, receivedMessage.getObjectProperty("TestBooleanProperty"),
+                    "Unexpected received property");
         }
         finally
         {
@@ -280,10 +278,9 @@ public class ObjectMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("ObjectMessage should be received", receivedMessage instanceof ObjectMessage);
-            assertEquals("Unexpected received property",
-                         Byte.MAX_VALUE,
-                         receivedMessage.getObjectProperty("TestByteProperty"));
+            assertTrue(receivedMessage instanceof ObjectMessage, "ObjectMessage should be received");
+            assertEquals(Byte.MAX_VALUE, receivedMessage.getObjectProperty("TestByteProperty"),
+                    "Unexpected received property");
         }
         finally
         {
@@ -309,10 +306,9 @@ public class ObjectMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("ObjectMessage should be received", receivedMessage instanceof ObjectMessage);
-            assertEquals("Unexpected received property",
-                         Short.MAX_VALUE,
-                         receivedMessage.getObjectProperty("TestShortProperty"));
+            assertTrue(receivedMessage instanceof ObjectMessage, "ObjectMessage should be received");
+            assertEquals(Short.MAX_VALUE, receivedMessage.getObjectProperty("TestShortProperty"),
+                    "Unexpected received property");
         }
         finally
         {
@@ -338,10 +334,9 @@ public class ObjectMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("ObjectMessage should be received", receivedMessage instanceof ObjectMessage);
-            assertEquals("Unexpected received property",
-                         Integer.MAX_VALUE,
-                         receivedMessage.getObjectProperty("TestIntegerProperty"));
+            assertTrue(receivedMessage instanceof ObjectMessage, "ObjectMessage should be received");
+            assertEquals(Integer.MAX_VALUE, receivedMessage.getObjectProperty("TestIntegerProperty"),
+                    "Unexpected received property");
         }
         finally
         {
@@ -369,10 +364,9 @@ public class ObjectMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("ObjectMessage should be received", receivedMessage instanceof ObjectMessage);
-            assertEquals("Unexpected received property",
-                         Double.MAX_VALUE,
-                         receivedMessage.getObjectProperty("TestDoubleProperty"));
+            assertTrue(receivedMessage instanceof ObjectMessage, "ObjectMessage should be received");
+            assertEquals(Double.MAX_VALUE, receivedMessage.getObjectProperty("TestDoubleProperty"),
+                    "Unexpected received property");
         }
         finally
         {
@@ -399,10 +393,9 @@ public class ObjectMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("ObjectMessage should be received", receivedMessage instanceof ObjectMessage);
-            assertEquals("Unexpected received property",
-                         Float.MAX_VALUE,
-                         receivedMessage.getObjectProperty("TestFloatProperty"));
+            assertTrue(receivedMessage instanceof ObjectMessage, "ObjectMessage should be received");
+            assertEquals(Float.MAX_VALUE, receivedMessage.getObjectProperty("TestFloatProperty"),
+                    "Unexpected received property");
         }
         finally
         {
@@ -429,12 +422,13 @@ public class ObjectMessageTest extends JmsTestBase
             connection.start();
             Message receivedMessage = consumer.receive(getReceiveTimeout());
 
-            assertTrue("ObjectMessage should be received", receivedMessage instanceof ObjectMessage);
+            assertTrue(receivedMessage instanceof ObjectMessage, "ObjectMessage should be received");
             ObjectMessage objectMessage = (ObjectMessage) receivedMessage;
             Object received = objectMessage.getObject();
-            assertTrue("Unexpected object type received", received instanceof A);
-            assertEquals("Unexpected object received", object, received);
-            assertEquals("Unexpected property value", "testValue", receivedMessage.getStringProperty("testProperty"));
+            assertTrue(received instanceof A, "Unexpected object type received");
+            assertEquals(object, received, "Unexpected object received");
+            assertEquals("testValue",   receivedMessage.getStringProperty("testProperty"),
+                    "Unexpected property value");
 
             try
             {

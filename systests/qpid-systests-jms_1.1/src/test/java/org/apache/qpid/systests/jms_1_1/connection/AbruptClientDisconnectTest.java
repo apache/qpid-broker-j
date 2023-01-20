@@ -19,9 +19,9 @@
  */
 package org.apache.qpid.systests.jms_1_1.connection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -41,9 +41,10 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +68,7 @@ public class AbruptClientDisconnectTest extends JmsTestBase
     private Queue _testQueue;
     private Connection _utilityConnection;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _executorService = Executors.newFixedThreadPool(3);
@@ -83,7 +84,7 @@ public class AbruptClientDisconnectTest extends JmsTestBase
         _tcpTunneler.start();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
@@ -134,9 +135,9 @@ public class AbruptClientDisconnectTest extends JmsTestBase
         _executorService.submit(producer);
         boolean disconnected = clientMonitor.awaitDisconnect(10, TimeUnit.SECONDS);
         producer.stop();
-        assertTrue("Client disconnect did not happen", disconnected);
-        assertTrue("Unexpected number of published messages " + producer.getNumberOfPublished(),
-                   producer.getNumberOfPublished() >= 10);
+        assertTrue(disconnected, "Client disconnect did not happen");
+        assertTrue(producer.getNumberOfPublished() >= 10,
+                "Unexpected number of published messages " + producer.getNumberOfPublished());
 
         consumeIgnoringLastSeenOmission(_utilityConnection, _testQueue, 0, producer.getNumberOfPublished(), -1);
     }
@@ -180,7 +181,8 @@ public class AbruptClientDisconnectTest extends JmsTestBase
         LOGGER.debug("Waiting for producer to produce {} messages before consuming", minimumNumberOfMessagesToProduce);
         _executorService.submit(producer);
 
-        assertTrue("Latch waiting for produced messages was not count down", queueDataWaiter.await(10, TimeUnit.SECONDS));
+        assertTrue(queueDataWaiter.await(10, TimeUnit.SECONDS),
+                "Latch waiting for produced messages was not count down");
 
         LOGGER.debug("Producer sent {} messages. Starting consumption...", producer.getNumberOfPublished());
 
@@ -196,11 +198,11 @@ public class AbruptClientDisconnectTest extends JmsTestBase
                      producer.getNumberOfPublished(),
                      consumer.getNumberOfConsumed());
 
-        assertTrue("Client disconnect did not happen", disconnectOccurred);
-        assertTrue("Unexpected number of published messages " + producer.getNumberOfPublished(),
-                   producer.getNumberOfPublished() >= minimumNumberOfMessagesToProduce);
-        assertTrue("Unexpected number of consumed messages " + consumer.getNumberOfConsumed(),
-                   consumer.getNumberOfConsumed() >= minimumNumberOfMessagesToConsume);
+        assertTrue(disconnectOccurred, "Client disconnect did not happen");
+        assertTrue(producer.getNumberOfPublished() >= minimumNumberOfMessagesToProduce,
+                "Unexpected number of published messages " + producer.getNumberOfPublished());
+        assertTrue(consumer.getNumberOfConsumed() >= minimumNumberOfMessagesToConsume,
+                "Unexpected number of consumed messages " + consumer.getNumberOfConsumed());
 
         LOGGER.debug("Remaining number to consume {}.",
                      (producer.getNumberOfPublished() - consumer.getNumberOfConsumed()));
@@ -250,7 +252,7 @@ public class AbruptClientDisconnectTest extends JmsTestBase
             }
             else
             {
-                assertNotNull("Expected message with index " + expectedIndex + " but got null", message);
+                assertNotNull(message, "Expected message with index " + expectedIndex + " but got null");
                 int messageIndex = message.getIntProperty(Utils.INDEX);
                 LOGGER.debug("Received message with index {}, expected index is {}", messageIndex, expectedIndex);
                 if (messageIndex != expectedIndex
@@ -262,7 +264,7 @@ public class AbruptClientDisconnectTest extends JmsTestBase
                             consumerLastSeenMessageIndex);
                     expectedIndex = messageIndex;
                 }
-                assertEquals("Unexpected message index", expectedIndex, messageIndex);
+                assertEquals(expectedIndex, messageIndex, "Unexpected message index");
             }
             expectedIndex++;
         }
@@ -449,9 +451,7 @@ public class AbruptClientDisconnectTest extends JmsTestBase
                         LOGGER.debug("Received message with index {}, expected index {}",
                                      messageIndex,
                                      _consumedMessageCounter);
-                        assertEquals("Unexpected message index",
-                                              _consumedMessageCounter,
-                                              messageIndex);
+                        assertEquals(_consumedMessageCounter, messageIndex, "Unexpected message index");
 
                         if (_session.getTransacted())
                         {
@@ -492,6 +492,5 @@ public class AbruptClientDisconnectTest extends JmsTestBase
         {
             return _lastSeenMessageIndex;
         }
-
     }
 }

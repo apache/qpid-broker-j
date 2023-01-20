@@ -25,10 +25,10 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -56,11 +56,13 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+
 import org.hamcrest.Matchers;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
@@ -83,7 +85,7 @@ import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
 
 public class AuthenticationTest extends JmsTestBase
 {
-    @ClassRule
+    @RegisterExtension
     public static final TlsResource TLS_RESOURCE = new TlsResource();
 
     private static final String DN_CA = "CN=MyRootCA,O=ACME,ST=Ontario,C=CA";
@@ -130,7 +132,7 @@ public class AuthenticationTest extends JmsTestBase
     private static Path _emptyCrlFile;
     private static Path _intermediateCrlFile;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() throws Exception
     {
         _crlFile = TLS_RESOURCE.createFile(".crl");
@@ -307,7 +309,7 @@ public class AuthenticationTest extends JmsTestBase
                                                .getAbsolutePath();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception
     {
         System.clearProperty("javax.net.debug");
@@ -323,9 +325,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void md5() throws Exception
     {
-        assumeThat("Qpid JMS Client does not support MD5 mechanisms",
-                   getProtocol(),
-                   is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "Qpid JMS Client does not support MD5 mechanisms");
 
         final int port = createAuthenticationProviderAndUserAndPort(getTestName(), "MD5");
 
@@ -424,7 +424,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndAllowedCertificateWithCrlUrl() throws Exception
     {
-        assumeThat(getJvmVendor(), Matchers.not(JvmVendor.IBM));
+        assumeTrue(Matchers.not(JvmVendor.IBM).matches(getJvmVendor()));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes, null, false);
@@ -443,7 +443,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithEmptyCrl() throws Exception
     {
-        assumeThat(getJvmVendor(), Matchers.not(JvmVendor.IBM));
+        assumeTrue(Matchers.not(JvmVendor.IBM).matches(getJvmVendor()));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes, null, false);
@@ -472,7 +472,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithSoftFail() throws Exception
     {
-        assumeThat(getJvmVendor(), Matchers.not(JvmVendor.IBM));
+        assumeTrue(Matchers.not(JvmVendor.IBM).matches(getJvmVendor()));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_WITH_IGNORING_SOFT_FAILURES, true);
@@ -494,7 +494,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedCertificateWithCrlUrlWithoutPreferCrlsWithFallback() throws Exception
     {
-        assumeThat(getJvmVendor(), Matchers.not(JvmVendor.IBM));
+        assumeTrue(Matchers.not(JvmVendor.IBM).matches(getJvmVendor()));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_WITH_PREFERRING_CERTIFICATE_REVOCATION_LIST,
@@ -518,7 +518,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalWithRevocationAndRevokedIntermediateCertificateWithCrlUrlOnlyEndEntity() throws Exception
     {
-        assumeThat(getJvmVendor(), Matchers.not(JvmVendor.IBM));
+        assumeTrue(Matchers.not(JvmVendor.IBM).matches(getJvmVendor()));
         final Map<String, Object> trustStoreAttributes = getBrokerTrustStoreAttributes();
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
         trustStoreAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_OF_ONLY_END_ENTITY_CERTIFICATES, true);
@@ -530,7 +530,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalDeniesUntrustedClientCert() throws Exception
     {
-        assumeThat("QPID-8069", getProtocol(), is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))));
+        assumeTrue(is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))).matches(getProtocol()), "QPID-8069");
 
         final int port = createExternalProviderAndTlsPort(getBrokerTrustStoreAttributes(), null, false);
 
@@ -550,7 +550,7 @@ public class AuthenticationTest extends JmsTestBase
     @Test
     public void externalDeniesExpiredClientCert() throws Exception
     {
-        assumeThat("QPID-8069", getProtocol(), is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))));
+        assumeTrue(is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))).matches(getProtocol()), "QPID-8069");
 
         final Map<String, Object> trustStoreAttributes = new HashMap<>();
         trustStoreAttributes.put(FileTrustStore.STORE_URL, _brokerPeerStore);
@@ -586,7 +586,7 @@ public class AuthenticationTest extends JmsTestBase
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes, null, false);
         assertTlsConnectivity(port, CERT_ALIAS_APP1);
 
-        assumeThat("QPID-8069", getProtocol(), is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))));
+        assumeTrue(is(anyOf(equalTo(Protocol.AMQP_1_0), equalTo(Protocol.AMQP_0_10))).matches(getProtocol()), "QPID-8069");
         assertNoTlsConnectivity(port, CERT_ALIAS_APP2);
     }
 
@@ -629,7 +629,8 @@ public class AuthenticationTest extends JmsTestBase
             {
                 String principal =
                         helper.openManagementConnection().getConnectionPrincipalByClientId(getPortName(), clientId);
-                assertEquals("Unexpected principal", "CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA", principal);
+                assertEquals("CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA", principal,
+                        "Unexpected principal");
             }
         }
         catch (JMSException e)
@@ -657,7 +658,7 @@ public class AuthenticationTest extends JmsTestBase
             {
                 String principal =
                         helper.openManagementConnection().getConnectionPrincipalByClientId(getPortName(), clientId);
-                assertEquals("Unexpected principal", "app2@acme.org", principal);
+                assertEquals("app2@acme.org", principal, "Unexpected principal");
             }
         }
         catch (JMSException e)
@@ -753,7 +754,7 @@ public class AuthenticationTest extends JmsTestBase
         try
         {
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            assertNotNull("Temporary queue was not created", session.createTemporaryQueue());
+            assertNotNull(session.createTemporaryQueue(), "Temporary queue was not created");
         }
         finally
         {
@@ -787,7 +788,7 @@ public class AuthenticationTest extends JmsTestBase
         {
             final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             final TemporaryQueue queue = session.createTemporaryQueue();
-            assertNotNull("Temporary queue was not created", queue);
+            assertNotNull(queue, "Temporary queue was not created");
         }
         finally
         {

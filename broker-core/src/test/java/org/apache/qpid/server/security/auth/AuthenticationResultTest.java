@@ -21,18 +21,16 @@ package org.apache.qpid.server.security.auth;
 import static org.apache.qpid.server.security.auth.AuthenticatedPrincipalTestHelper.assertOnlyContainsWrapped;
 import static org.apache.qpid.server.security.auth.AuthenticatedPrincipalTestHelper
         .assertOnlyContainsWrappedAndSecondaryPrincipals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import java.security.Principal;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -41,8 +39,8 @@ public class AuthenticationResultTest extends UnitTestBase
     @Test
     public void testConstructWithAuthenticationStatusContinue()
     {
-        AuthenticationResult authenticationResult = new AuthenticationResult(AuthenticationResult.AuthenticationStatus.CONTINUE);
-
+        final AuthenticationResult authenticationResult =
+                new AuthenticationResult(AuthenticationResult.AuthenticationStatus.CONTINUE);
         assertSame(AuthenticationResult.AuthenticationStatus.CONTINUE, authenticationResult.getStatus());
         assertTrue(authenticationResult.getPrincipals().isEmpty());
     }
@@ -50,7 +48,8 @@ public class AuthenticationResultTest extends UnitTestBase
     @Test
     public void testConstructWithAuthenticationStatusError()
     {
-        AuthenticationResult authenticationResult = new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR);
+        final AuthenticationResult authenticationResult =
+                new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR);
         assertSame(AuthenticationResult.AuthenticationStatus.ERROR, authenticationResult.getStatus());
         assertTrue(authenticationResult.getPrincipals().isEmpty());
     }
@@ -58,22 +57,16 @@ public class AuthenticationResultTest extends UnitTestBase
     @Test
     public void testConstructWithAuthenticationStatusSuccessThrowsException()
     {
-        try
-        {
-            new AuthenticationResult(AuthenticationResult.AuthenticationStatus.SUCCESS);
-            fail("Exception not thrown");
-        }
-        catch(IllegalArgumentException e)
-        {
-            // PASS
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> new AuthenticationResult(AuthenticationResult.AuthenticationStatus.SUCCESS),
+                "Exception not thrown");
     }
 
     @Test
     public void testConstructWithPrincipal()
     {
-        Principal mainPrincipal = mock(Principal.class);
-        AuthenticationResult authenticationResult = new AuthenticationResult(mainPrincipal);
+        final Principal mainPrincipal = mock(Principal.class);
+        final AuthenticationResult authenticationResult = new AuthenticationResult(mainPrincipal);
 
         assertOnlyContainsWrapped(mainPrincipal, authenticationResult.getPrincipals());
         assertSame(AuthenticationResult.AuthenticationStatus.SUCCESS, authenticationResult.getStatus());
@@ -82,25 +75,19 @@ public class AuthenticationResultTest extends UnitTestBase
     @Test
     public void testConstructWithNullPrincipalThrowsException()
     {
-        try
-        {
-            new AuthenticationResult((Principal)null);
-            fail("Exception not thrown");
-        }
-        catch(IllegalArgumentException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> new AuthenticationResult((Principal) null),
+                "Exception not thrown");
     }
 
     @Test
     public void testConstructWithSetOfPrincipals()
     {
-        Principal mainPrincipal = mock(Principal.class);
-        Principal secondaryPrincipal = mock(Principal.class);
-        Set<Principal> secondaryPrincipals = Collections.singleton(secondaryPrincipal);
-
-        AuthenticationResult authenticationResult = new AuthenticationResult(mainPrincipal, secondaryPrincipals, null);
+        final Principal mainPrincipal = mock(Principal.class);
+        final Principal secondaryPrincipal = mock(Principal.class);
+        final Set<Principal> secondaryPrincipals = Set.of(secondaryPrincipal);
+        final AuthenticationResult authenticationResult =
+                new AuthenticationResult(mainPrincipal, secondaryPrincipals, null);
 
         assertOnlyContainsWrappedAndSecondaryPrincipals(mainPrincipal, secondaryPrincipals, authenticationResult.getPrincipals());
         assertSame(AuthenticationResult.AuthenticationStatus.SUCCESS, authenticationResult.getStatus());
@@ -109,14 +96,12 @@ public class AuthenticationResultTest extends UnitTestBase
     @Test
     public void testConstructWithSetOfPrincipalsDeDuplicatesMainPrincipal()
     {
-        Principal mainPrincipal = mock(Principal.class);
-        Principal secondaryPrincipal = mock(Principal.class);
-
-        Set<Principal> secondaryPrincipalsContainingDuplicateOfMainPrincipal = new HashSet<Principal>(
-                Arrays.asList(secondaryPrincipal, mainPrincipal));
-        Set<Principal> deDuplicatedSecondaryPrincipals = Collections.singleton(secondaryPrincipal);
-
-        AuthenticationResult authenticationResult = new AuthenticationResult(
+        final Principal mainPrincipal = mock(Principal.class);
+        final Principal secondaryPrincipal = mock(Principal.class);
+        final Set<Principal> secondaryPrincipalsContainingDuplicateOfMainPrincipal =
+                Set.of(secondaryPrincipal, mainPrincipal);
+        final Set<Principal> deDuplicatedSecondaryPrincipals = Set.of(secondaryPrincipal);
+        final AuthenticationResult authenticationResult = new AuthenticationResult(
                 mainPrincipal, secondaryPrincipalsContainingDuplicateOfMainPrincipal, null);
 
         assertOnlyContainsWrappedAndSecondaryPrincipals(mainPrincipal, deDuplicatedSecondaryPrincipals, authenticationResult.getPrincipals());

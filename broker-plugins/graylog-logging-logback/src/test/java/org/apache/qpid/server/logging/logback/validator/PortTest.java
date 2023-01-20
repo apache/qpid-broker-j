@@ -21,20 +21,21 @@
 
 package org.apache.qpid.server.logging.logback.validator;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.test.utils.UnitTestBase;
-import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Test;
 
 public class PortTest extends UnitTestBase
 {
     @Test
     public void testValidator()
     {
-        assertNotNull("Factory method has to produce a instance", Port.validator());
+        assertNotNull(Port.validator(), "Factory method has to produce a instance");
     }
 
     @Test
@@ -48,7 +49,8 @@ public class PortTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'attr' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value 'null' as it has to be in range [1, 65535]", e.getMessage());
+            assertEquals("Attribute 'attr' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value 'null' as it has to be in range [1, 65535]",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {
@@ -81,7 +83,8 @@ public class PortTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertEquals("Attribute 'attr' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '170641' as it has to be in range [1, 65535]", e.getMessage());
+            assertEquals("Attribute 'attr' instance of org.apache.qpid.server.logging.logback.validator.TestConfiguredObject named 'TestConfiguredObject' cannot have value '170641' as it has to be in range [1, 65535]",
+                    e.getMessage());
         }
         catch (RuntimeException e)
         {

@@ -20,23 +20,23 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -48,20 +48,20 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings("unchecked")
 public class BrokerNameAndLevelLogInclusionRuleTest extends UnitTestBase
 {
     private BrokerLogger<?> _brokerLogger;
     private TaskExecutor _taskExecutor;
     private final Broker<?> _broker = mock(Broker.class);
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-
         _taskExecutor =  new TaskExecutorImpl();
         _taskExecutor.start();
 
-        Model model = BrokerModel.getInstance();
+        final Model model = BrokerModel.getInstance();
 
         when(_broker.getModel()).thenReturn(model);
         doReturn(Broker.class).when(_broker).getCategoryClass();
@@ -73,80 +73,62 @@ public class BrokerNameAndLevelLogInclusionRuleTest extends UnitTestBase
         doReturn(BrokerLogger.class).when(_brokerLogger).getCategoryClass();
    }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
-        {
-            _taskExecutor.stopImmediately();
-        }
-        finally
-        {
-        }
+        _taskExecutor.stopImmediately();
     }
-
 
     @Test
     public void testAsFilter()
     {
-        BrokerNameAndLevelLogInclusionRule<?> rule = createRule("org.apache.qpid", LogLevel.INFO);
-
-        Filter<ILoggingEvent> filter = rule.asFilter();
+        final BrokerNameAndLevelLogInclusionRule<?> rule = createRule("org.apache.qpid", LogLevel.INFO);
+        final Filter<ILoggingEvent> filter = rule.asFilter();
 
         final boolean condition = filter instanceof LoggerNameAndLevelFilter;
-        assertTrue("Unexpected filter instance", condition);
+        assertTrue(condition, "Unexpected filter instance");
 
-        LoggerNameAndLevelFilter f = (LoggerNameAndLevelFilter)filter;
-        assertEquals("Unexpected log level", Level.INFO, f.getLevel());
-        assertEquals("Unexpected logger name", "org.apache.qpid", f.getLoggerName());
+        final LoggerNameAndLevelFilter f = (LoggerNameAndLevelFilter)filter;
+        assertEquals(Level.INFO, f.getLevel(), "Unexpected log level");
+        assertEquals("org.apache.qpid", f.getLoggerName(), "Unexpected logger name");
     }
 
     @Test
     public void testLevelChangeAffectsFilter()
     {
-        BrokerNameAndLevelLogInclusionRule<?> rule = createRule("org.apache.qpid", LogLevel.INFO);
+        final BrokerNameAndLevelLogInclusionRule<?> rule = createRule("org.apache.qpid", LogLevel.INFO);
+        final LoggerNameAndLevelFilter filter = (LoggerNameAndLevelFilter)rule.asFilter();
 
-        LoggerNameAndLevelFilter filter = (LoggerNameAndLevelFilter)rule.asFilter();
+        assertEquals(Level.INFO, filter.getLevel(), "Unexpected log level");
 
-        assertEquals("Unexpected log level", Level.INFO, filter.getLevel());
-
-        rule.setAttributes(Collections.<String, Object>singletonMap("level", LogLevel.DEBUG));
-        assertEquals("Unexpected log level attribute", Level.DEBUG, filter.getLevel());
+        rule.setAttributes(Collections.singletonMap("level", LogLevel.DEBUG));
+        assertEquals(Level.DEBUG, filter.getLevel(), "Unexpected log level attribute");
     }
 
     @Test
     public void testLoggerNameChangeNotAllowed()
     {
-        BrokerNameAndLevelLogInclusionRule<?> rule = createRule("org.apache.qpid", LogLevel.INFO);
+        final BrokerNameAndLevelLogInclusionRule<?> rule = createRule("org.apache.qpid", LogLevel.INFO);
+        final LoggerNameAndLevelFilter filter = (LoggerNameAndLevelFilter)rule.asFilter();
 
-        LoggerNameAndLevelFilter filter = (LoggerNameAndLevelFilter)rule.asFilter();
+        assertEquals("org.apache.qpid", filter.getLoggerName(), "Unexpected logger name");
 
-        assertEquals("Unexpected logger name", "org.apache.qpid", filter.getLoggerName());
+        assertThrows(IllegalConfigurationException.class,
+                () -> rule.setAttributes(Map.of(BrokerNameAndLevelLogInclusionRule.LOGGER_NAME, "org.apache.qpid.foo")),
+                "IllegalConfigurationException is expected to throw on attempt to change logger name");
 
-        try
-        {
-            rule.setAttributes(Collections.<String, Object>singletonMap(BrokerNameAndLevelLogInclusionRule.LOGGER_NAME, "org.apache.qpid.foo"));
-            fail("IllegalConfigurationException is expected to throw on attempt to change logger name");
-        }
-        catch(IllegalConfigurationException e)
-        {
-            // pass
-        }
-
-        assertEquals("Unexpected logger name", "org.apache.qpid", filter.getLoggerName());
+        assertEquals("org.apache.qpid", filter.getLoggerName(), "Unexpected logger name");
     }
 
 
-    private BrokerNameAndLevelLogInclusionRule createRule(String loggerName, LogLevel logLevel)
+    private BrokerNameAndLevelLogInclusionRule<?> createRule(String loggerName, LogLevel logLevel)
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put("loggerName", loggerName);
-        attributes.put("level", logLevel);
-        attributes.put("name", "test");
-
-        BrokerNameAndLevelLogInclusionRule brokerNameAndLevelLogInclusionRule = new BrokerNameAndLevelLogInclusionRuleImpl(attributes, _brokerLogger);
+        final Map<String, Object> attributes = Map.of("loggerName", loggerName,
+                "level", logLevel,
+                "name", "test");
+        final BrokerNameAndLevelLogInclusionRule<?> brokerNameAndLevelLogInclusionRule =
+                new BrokerNameAndLevelLogInclusionRuleImpl(attributes, _brokerLogger);
         brokerNameAndLevelLogInclusionRule.open();
         return brokerNameAndLevelLogInclusionRule;
     }
-
 }

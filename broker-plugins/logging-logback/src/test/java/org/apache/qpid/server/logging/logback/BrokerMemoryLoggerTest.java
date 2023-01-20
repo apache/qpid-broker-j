@@ -20,22 +20,22 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +53,7 @@ import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.GenericRecoverer;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class BrokerMemoryLoggerTest extends UnitTestBase
 {
     private final ConfiguredObjectRecord _brokerEntry = mock(ConfiguredObjectRecord.class);
@@ -60,58 +61,51 @@ public class BrokerMemoryLoggerTest extends UnitTestBase
     private TaskExecutor _taskExecutor;
     private SystemConfig<JsonSystemConfigImpl> _systemConfig;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        _taskExecutor = new CurrentThreadTaskExecutor();
-        _taskExecutor.start();
-        _systemConfig = new JsonSystemConfigImpl(_taskExecutor,
-                                                 mock(EventLogger.class),
-                                                 null, new HashMap<String,Object>())
-                        {
-                            {
-                                updateModel(BrokerModel.getInstance());
-                            }
-                        };
+        _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
+        _systemConfig = new JsonSystemConfigImpl(_taskExecutor, mock(EventLogger.class), null, new HashMap<>())
+        {
+            {
+                updateModel(BrokerModel.getInstance());
+            }
+        };
 
 
         when(_brokerEntry.getId()).thenReturn(_brokerId);
         when(_brokerEntry.getType()).thenReturn(Broker.class.getSimpleName());
-        Map<String, Object> attributesMap = new HashMap<>();
-        attributesMap.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
-        attributesMap.put(Broker.NAME, getTestName());
+        final Map<String, Object> attributesMap = Map.of(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION,
+                Broker.NAME, getTestName());
 
         when(_brokerEntry.getAttributes()).thenReturn(attributesMap);
         when(_brokerEntry.getParents()).thenReturn(Collections.singletonMap(SystemConfig.class.getSimpleName(), _systemConfig.getId()));
-        GenericRecoverer recoverer = new GenericRecoverer(_systemConfig);
-        recoverer.recover(Arrays.asList(_brokerEntry), false);
+        final GenericRecoverer recoverer = new GenericRecoverer(_systemConfig);
+        recoverer.recover(Collections.singletonList(_brokerEntry), false);
     }
 
     @Test
     public void testCreateDeleteBrokerMemoryLogger()
     {
         final String brokerLoggerName = "TestBrokerLogger";
-        ch.qos.logback.classic.Logger rootLogger =
+        final ch.qos.logback.classic.Logger rootLogger =
                 (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        Broker broker = _systemConfig.getContainer(Broker.class);
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(ConfiguredObject.NAME, brokerLoggerName);
-        attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
+        final Broker broker = _systemConfig.getContainer(Broker.class);
+        final Map<String, Object> attributes = Map.of(ConfiguredObject.NAME, brokerLoggerName,
+                ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
 
-        BrokerLogger brokerLogger = (BrokerLogger) broker.createChild(BrokerLogger.class, attributes);
-        assertEquals("Created BrokerLogger has unexpected name", brokerLoggerName, brokerLogger.getName());
+        final BrokerLogger brokerLogger = (BrokerLogger) broker.createChild(BrokerLogger.class, attributes);
+        assertEquals(brokerLoggerName, brokerLogger.getName(), "Created BrokerLogger has unexpected name");
         final boolean condition = brokerLogger instanceof BrokerMemoryLogger;
-        assertTrue("BrokerLogger has unexpected type", condition);
+        assertTrue(condition, "BrokerLogger has unexpected type");
 
-        assertNotNull("Appender not attached to root logger after BrokerLogger creation",
-                             rootLogger.getAppender(brokerLoggerName));
-
+        assertNotNull(rootLogger.getAppender(brokerLoggerName),
+                "Appender not attached to root logger after BrokerLogger creation");
 
         brokerLogger.delete();
 
-        assertNull("Appender should be no longer attached to root logger after BrokerLogger deletion",
-                          rootLogger.getAppender(brokerLoggerName));
-
+        assertNull(rootLogger.getAppender(brokerLoggerName),
+                "Appender should be no longer attached to root logger after BrokerLogger deletion");
     }
 
     @Test
@@ -125,37 +119,22 @@ public class BrokerMemoryLoggerTest extends UnitTestBase
     {
         final String brokerLoggerName = "TestBrokerLogger";
 
-        Broker broker = _systemConfig.getContainer(Broker.class);
-        Map<String, Object> attributes = new HashMap<>();
+        final Broker broker = _systemConfig.getContainer(Broker.class);
+        final Map<String, Object> attributes = new HashMap<>();
         attributes.put(ConfiguredObject.NAME, brokerLoggerName);
         attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
         attributes.put(BrokerMemoryLogger.MAX_RECORDS, illegalValue);
 
-        try
-        {
-            broker.createChild(BrokerLogger.class, attributes);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException ice)
-        {
-            // PASS
-        }
+        assertThrows(IllegalConfigurationException.class,
+                () -> broker.createChild(BrokerLogger.class, attributes),
+                "Exception not thrown");
 
         attributes.put(BrokerMemoryLogger.MAX_RECORDS, legalValue);
-        BrokerLogger brokerLogger = (BrokerLogger) broker.createChild(BrokerLogger.class, attributes);
+        final BrokerLogger brokerLogger = (BrokerLogger) broker.createChild(BrokerLogger.class, attributes);
 
-        try
-        {
-            brokerLogger.setAttributes(Collections.singletonMap(BrokerMemoryLogger.MAX_RECORDS, illegalValue));
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException ice)
-        {
-            // PASS
-        }
-        finally
-        {
-            brokerLogger.delete();
-        }
+        assertThrows(IllegalConfigurationException.class,
+                () -> brokerLogger.setAttributes(Map.of(BrokerMemoryLogger.MAX_RECORDS, illegalValue)),
+                "Exception not thrown");
+        brokerLogger.delete();
     }
 }

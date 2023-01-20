@@ -21,17 +21,16 @@
 
 package org.apache.qpid.server.util;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Properties;
 
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-
 
 /**
  * Unit tests the {@link CommandLineParser} class.
@@ -64,426 +63,345 @@ import org.apache.qpid.test.utils.UnitTestBase;
  */
 public class CommandLineParserTest extends UnitTestBase
 {
-    private static final Logger log = LoggerFactory.getLogger(CommandLineParserTest.class);
-
     /** Check that get errors returns an empty string on no errors. */
     @Test
-    public void testGetErrorsReturnsEmptyStringOnNoErrors() throws Exception
+    public void testGetErrorsReturnsEmptyStringOnNoErrors()
     {
         // Create a command line parser for some flags and options.
-        CommandLineParser parser =
-            new CommandLineParser(
-                new String[][]
-                {
-                    { "t1", "Test Flag 1." },
-                    { "t2", "Test Option 2.", "test" },
-                    { "t3", "Test Option 3.", "test", "true" },
-                    { "t4", "Test Option 4.", "test", null, "^test$" }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "t1", "Test Flag 1." },
+                { "t2", "Test Option 2.", "test" },
+                { "t3", "Test Option 3.", "test", "true" },
+                { "t4", "Test Option 4.", "test", null, "^test$" }
+        });
 
         // Do some legal parsing.
         parser.parseCommandLine(new String[] { "-t1", "-t2test", "-t3test", "-t4test" });
 
         // Check that the get errors message returns an empty string.
-        assertTrue("The errors method did not return an empty string.", "".equals(parser.getErrors()));
+        assertEquals("", parser.getErrors(), "The errors method did not return an empty string.");
     }
 
     /** Check that get errors returns a string on errors. */
     @Test
-    public void testGetErrorsReturnsStringOnErrors() throws Exception
+    public void testGetErrorsReturnsStringOnErrors()
     {
         // Create a command line parser for some flags and options.
-        CommandLineParser parser =
-            new CommandLineParser(
-                new String[][]
-                {
-                    { "t1", "Test Flag 1." },
-                    { "t2", "Test Option 2.", "test" },
-                    { "t3", "Test Option 3.", "test", "true" },
-                    { "t4", "Test Option 4.", "test", null, "^test$" }
-                });
-
-        try
+        final CommandLineParser parser = new CommandLineParser(new String[][]
         {
-            // Do some illegal parsing.
-            parser.parseCommandLine(new String[] { "-t1", "-t1t2test", "-t4fail" });
-        }
-        catch (IllegalArgumentException e)
-        { }
+                { "t1", "Test Flag 1." },
+                { "t2", "Test Option 2.", "test" },
+                { "t3", "Test Option 3.", "test", "true" },
+                { "t4", "Test Option 4.", "test", null, "^test$" }
+        });
+
+        assertThrows(IllegalArgumentException.class,
+                () -> parser.parseCommandLine(new String[] { "-t1", "-t1t2test", "-t4fail" }));
 
         // Check that the get errors message returns a string.
         final boolean condition = !((parser.getErrors() == null) || "".equals(parser.getErrors()));
-        assertTrue("The errors method returned an empty string.", condition);
+        assertTrue(condition, "The errors method returned an empty string.");
     }
 
     /** Check that get options in force returns an empty string before parsing. */
     @Test
-    public void testGetOptionsInForceReturnsEmptyStringBeforeParsing() throws Exception
+    public void testGetOptionsInForceReturnsEmptyStringBeforeParsing()
     {
         // Create a command line parser for some flags and options.
-        CommandLineParser parser =
-            new CommandLineParser(
-                new String[][]
-                {
-                    { "t1", "Test Flag 1." },
-                    { "t2", "Test Option 2.", "test" },
-                    { "t3", "Test Option 3.", "test", "true" },
-                    { "t4", "Test Option 4.", "test", null, "^test$" }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "t1", "Test Flag 1." },
+                { "t2", "Test Option 2.", "test" },
+                { "t3", "Test Option 3.", "test", "true" },
+                { "t4", "Test Option 4.", "test", null, "^test$" }
+        });
 
         // Check that the options in force method returns an empty string.
-        assertTrue("The options in force method did not return an empty string.",
-                          "".equals(parser.getOptionsInForce()));
+        assertEquals("", parser.getOptionsInForce(), "The options in force method did not return an empty string.");
     }
 
     /** Check that get options in force return a non-empty string after parsing. */
     @Test
-    public void testGetOptionsInForceReturnsNonEmptyStringAfterParsing() throws Exception
+    public void testGetOptionsInForceReturnsNonEmptyStringAfterParsing()
     {
         // Create a command line parser for some flags and options.
-        CommandLineParser parser =
-            new CommandLineParser(
-                new String[][]
-                {
-                    { "t1", "Test Flag 1." },
-                    { "t2", "Test Option 2.", "test" },
-                    { "t3", "Test Option 3.", "test", "true" },
-                    { "t4", "Test Option 4.", "test", null, "^test$" }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "t1", "Test Flag 1." },
+                { "t2", "Test Option 2.", "test" },
+                { "t3", "Test Option 3.", "test", "true" },
+                { "t4", "Test Option 4.", "test", null, "^test$" }
+        });
 
         // Do some parsing.
         parser.parseCommandLine(new String[] { "-t1", "-t2test", "-t3test", "-t4test" });
 
         // Check that the options in force method returns a string.
         final boolean condition = !((parser.getOptionsInForce() == null) || "".equals(parser.getOptionsInForce()));
-        assertTrue("The options in force method did not return a non empty string.", condition);
+        assertTrue(condition, "The options in force method did not return a non empty string.");
     }
 
     /** Check that get usage returns a string. */
     @Test
-    public void testGetUsageReturnsString() throws Exception
+    public void testGetUsageReturnsString()
     {
         // Create a command line parser for some flags and options.
-        CommandLineParser parser =
-            new CommandLineParser(
-                new String[][]
-                {
-                    { "t1", "Test Flag 1." },
-                    { "t2", "Test Option 2.", "test" },
-                    { "t3", "Test Option 3.", "test", "true" },
-                    { "t4", "Test Option 4.", "test", null, "^test$" }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "t1", "Test Flag 1." },
+                { "t2", "Test Option 2.", "test" },
+                { "t3", "Test Option 3.", "test", "true" },
+                { "t4", "Test Option 4.", "test", null, "^test$" }
+        });
 
         // Check that the usage method returns a string.
         final boolean condition = !((parser.getUsage() == null) || "".equals(parser.getUsage()));
-        assertTrue("The usage method did not return a non empty string.", condition);
+        assertTrue(condition, "The usage method did not return a non empty string.");
     }
 
     /** Check that parsing multiple flags condensed together works ok. */
     @Test
-    public void testParseCondensedFlagsOk() throws Exception
+    public void testParseCondensedFlagsOk()
     {
         // Create a command line parser for multiple flags.
-        CommandLineParser parser =
-            new CommandLineParser(
-                new String[][]
-                {
-                    { "t1", "Test Flag 1." },
-                    { "t2", "Test Flag 2." },
-                    { "t3", "Test Flag 3." }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "t1", "Test Flag 1." },
+                { "t2", "Test Flag 2." },
+                { "t3", "Test Flag 3." }
+        });
 
         // Parse a command line with the flags set and condensed together.
-        Properties testProps = parser.parseCommandLine(new String[] { "-t1t2t3" });
+        final Properties testProps = parser.parseCommandLine(new String[] { "-t1t2t3" });
 
         // Check that the flags were set in the parsed properties.
-        assertTrue("The t1 flag was not \"true\", it was: " + testProps.get("t1"),
-                          "true".equals(testProps.get("t1")));
-        assertTrue("The t2 flag was not \"true\", it was: " + testProps.get("t2"),
-                          "true".equals(testProps.get("t2")));
-        assertTrue("The t3 flag was not \"true\", it was: " + testProps.get("t3"),
-                          "true".equals(testProps.get("t3")));
+        assertEquals("true", testProps.get("t1"), "The t1 flag was not \"true\", it was: " + testProps.get("t1"));
+        assertEquals("true", testProps.get("t2"), "The t2 flag was not \"true\", it was: " + testProps.get("t2"));
+        assertEquals("true", testProps.get("t3"), "The t3 flag was not \"true\", it was: " + testProps.get("t3"));
     }
 
     /** Check that parsing a flag condensed together with an option fails. */
     @Test
-    public void testParseFlagCondensedWithOptionFails() throws Exception
+    public void testParseFlagCondensedWithOptionFails()
     {
         // Create a command line parser for a flag and an option.
-        CommandLineParser parser =
-            new CommandLineParser(new String[][]
-                {
-                    { "t1", "Test Flag 1." },
-                    { "t2", "Test Option 2.", "test" }
-                });
-
-        // Check that the parser reports an error.
-        boolean testPassed = false;
-
-        try
+        final CommandLineParser parser = new CommandLineParser(new String[][]
         {
-            // Parse a command line with the flag and option condensed together.
-            Properties testProps = parser.parseCommandLine(new String[] { "-t1t2" });
-        }
-        catch (IllegalArgumentException e)
-        {
-            testPassed = true;
-        }
+                { "t1", "Test Flag 1." },
+                { "t2", "Test Option 2.", "test" }
+        });
 
-        assertTrue("IllegalArgumentException not thrown when a flag and option are condensed together.",
-                          testPassed);
+        assertThrows(IllegalArgumentException.class,
+                () -> parser.parseCommandLine(new String[] { "-t1t2" }),
+                "IllegalArgumentException not thrown when a flag and option are condensed together.");
     }
 
     /** Check that parsing a free argument with specific format fails on bad argument. */
     @Test
-    public void testParseFormattedFreeArgumentFailsBadArgument() throws Exception
+    public void testParseFormattedFreeArgumentFailsBadArgument()
     {
         // Create a command line parser for a formatted free argument.
-        CommandLineParser parser =
-            new CommandLineParser(new String[][]
-                {
-                    { "1", "Test Free Argument.", "test", null, "^test$" }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "1", "Test Free Argument.", "test", null, "^test$" }
+        });
 
         // Check that the parser signals an error for a badly formatted argument.
-        boolean testPassed = false;
-
-        try
-        {
-            // Parse a command line with this option set incorrectly.
-            Properties testProps = parser.parseCommandLine(new String[] { "fail" });
-        }
-        catch (IllegalArgumentException e)
-        {
-            testPassed = true;
-        }
-
-        assertTrue("IllegalArgumentException not thrown when a badly formatted argument was set.", testPassed);
+        assertThrows(IllegalArgumentException.class,
+                () -> parser.parseCommandLine(new String[] { "fail" }),
+                "IllegalArgumentException not thrown when a badly formatted argument was set.");
     }
 
     /** Check that parsing a free argument with specific format works ok. */
     @Test
-    public void testParseFormattedFreeArgumentOk() throws Exception
+    public void testParseFormattedFreeArgumentOk()
     {
         // Create a command line parser for a formatted free argument.
-        CommandLineParser parser =
-            new CommandLineParser(new String[][]
-                {
-                    { "1", "Test Free Argument.", "test", null, "^test$" }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "1", "Test Free Argument.", "test", null, "^test$" }
+        });
 
         // Parse a command line with this argument set correctly.
-        Properties testProps = parser.parseCommandLine(new String[] { "test" });
+        final Properties testProps = parser.parseCommandLine(new String[] { "test" });
 
         // Check that the resultant properties contains the correctly parsed option.
-        assertTrue("The first free argument was not equal to \"test\" but was: " + testProps.get("1"),
-                          "test".equals(testProps.get("1")));
+        assertEquals("test", testProps.get("1"),
+                "The first free argument was not equal to \"test\" but was: " + testProps.get("1"));
     }
 
     /** Check that parsing an option with specific argument format fails on bad argument. */
     @Test
-    public void testParseFormattedOptionArgumentFailsBadArgument() throws Exception
+    public void testParseFormattedOptionArgumentFailsBadArgument()
     {
         // Create a command line parser for a formatted option.
-        CommandLineParser parser = new CommandLineParser(new String[][]
-                {
-                    { "t", "Test Option.", "test", null, "^test$" }
-                });
-
-        // Check that the parser signals an error for a badly formatted argument.
-        boolean testPassed = false;
-
-        try
+        final CommandLineParser parser = new CommandLineParser(new String[][]
         {
-            // Parse a command line with this option set incorrectly.
-            Properties testProps = parser.parseCommandLine(new String[] { "-t", "fail" });
-        }
-        catch (IllegalArgumentException e)
-        {
-            testPassed = true;
-        }
+                { "t", "Test Option.", "test", null, "^test$" }
+        });
 
-        assertTrue("IllegalArgumentException not thrown when a badly formatted argument was set.", testPassed);
+        // Check that the parser signals an error for a badly formatted argument
+        assertThrows(IllegalArgumentException.class,
+                () -> parser.parseCommandLine(new String[] { "-t", "fail" }),
+                "IllegalArgumentException not thrown when a badly formatted argument was set.");
     }
 
     /** Check that parsing an option with specific argument format works ok. */
     @Test
-    public void testParseFormattedOptionArgumentOk() throws Exception
+    public void testParseFormattedOptionArgumentOk()
     {
         // Create a command line parser for a formatted option.
-        CommandLineParser parser = new CommandLineParser(new String[][]
-                {
-                    { "t", "Test Option.", "test", null, "^test$" }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "t", "Test Option.", "test", null, "^test$" }
+        });
 
         // Parse a command line with this option set correctly.
-        Properties testProps = parser.parseCommandLine(new String[] { "-t", "test" });
+        final Properties testProps = parser.parseCommandLine(new String[] { "-t", "test" });
 
         // Check that the resultant properties contains the correctly parsed option.
-        assertTrue("The test option was not equal to \"test\" but was: " + testProps.get("t"),
-                          "test".equals(testProps.get("t")));
+        assertEquals("test", testProps.get("t"),
+                "The test option was not equal to \"test\" but was: " + testProps.get("t"));
     }
 
     /** Check that parsing a free argument works ok. */
     @Test
-    public void testParseFreeArgumentOk() throws Exception
+    public void testParseFreeArgumentOk()
     {
         // Create a command line parser for a free argument.
-        CommandLineParser parser = new CommandLineParser(new String[][]
-                {
-                    { "1", "Test Free Argument.", "test" }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "1", "Test Free Argument.", "test" }
+        });
 
         // Parse a command line with this argument set.
-        Properties testProps = parser.parseCommandLine(new String[] { "test" });
+        final Properties testProps = parser.parseCommandLine(new String[] { "test" });
 
         // Check that the resultant properties contains the correctly parsed option.
-        assertTrue("The first free argument was not equal to \"test\" but was: " + testProps.get("1"),
-                          "test".equals(testProps.get("1")));
+        assertEquals("test", testProps.get("1"),
+                "The first free argument was not equal to \"test\" but was: " + testProps.get("1"));
     }
 
     /** Check that parsing a mandatory option works ok. */
     @Test
-    public void testParseMandatoryOptionOk() throws Exception
+    public void testParseMandatoryOptionOk()
     {
         // Create a command line parser for a mandatory option.
-        CommandLineParser parser = new CommandLineParser(new String[][]
-                {
-                    { "t", "Test Option.", "test", "true" }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "t", "Test Option.", "test", "true" }
+        });
 
         // Parse a command line with this option set correctly.
-        Properties testProps = parser.parseCommandLine(new String[] { "-t", "test" });
+        final Properties testProps = parser.parseCommandLine(new String[] { "-t", "test" });
 
         // Check that the resultant properties contains the correctly parsed option.
-        assertTrue("The test option was not equal to \"test\" but was: " + testProps.get("t"),
-                          "test".equals(testProps.get("t")));
+        assertEquals("test", testProps.get("t"),
+                "The test option was not equal to \"test\" but was: " + testProps.get("t"));
     }
 
     /** Check that parsing a mandatory free argument works ok. */
     @Test
-    public void testParseMandatoryFreeArgumentOk() throws Exception
+    public void testParseMandatoryFreeArgumentOk()
     {
         // Create a command line parser for a mandatory free argument.
-        CommandLineParser parser = new CommandLineParser(new String[][]
-                {
-                    { "1", "Test Option.", "test", "true" }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "1", "Test Option.", "test", "true" }
+        });
 
         // Parse a command line with this argument set.
-        Properties testProps = parser.parseCommandLine(new String[] { "test" });
+        final Properties testProps = parser.parseCommandLine(new String[] { "test" });
 
         // Check that the resultant properties contains the correctly parsed option.
-        assertTrue("The first free argument was not equal to \"test\" but was: " + testProps.get("1"),
-                          "test".equals(testProps.get("1")));
+        assertEquals("test", testProps.get("1"),
+                "The first free argument was not equal to \"test\" but was: " + testProps.get("1"));
     }
 
     /** Check that parsing a mandatory free argument fails when no argument is specified. */
     @Test
-    public void testParseManadatoryFreeArgumentFailsNoArgument() throws Exception
+    public void testParseManadatoryFreeArgumentFailsNoArgument()
     {
         // Create a command line parser for a mandatory free argument.
-        CommandLineParser parser = new CommandLineParser(new String[][]
-                {
-                    { "1", "Test Option.", "test", "true" }
-                });
-
-        // Check that parsing fails when this mandatory free argument is missing.
-        boolean testPassed = false;
-
-        try
+        final CommandLineParser parser = new CommandLineParser(new String[][]
         {
-            // Parse a command line with this free argument not set.
-            Properties testProps = parser.parseCommandLine(new String[] {});
-        }
-        catch (IllegalArgumentException e)
-        {
-            testPassed = true;
-        }
+                { "1", "Test Option.", "test", "true" }
+        });
 
-        // Check that the resultant properties contains the correctly parsed option.
-        assertTrue("IllegalArgumentException not thrown for a missing mandatory option.", testPassed);
+        // Check that parsing fails when this mandatory free argument is missing
+        assertThrows(IllegalArgumentException.class,
+                () -> parser.parseCommandLine(new String[] {}),
+                "IllegalArgumentException not thrown for a missing mandatory option.");
     }
 
     /** Check that parsing a mandatory option fails when no option is set. */
     @Test
-    public void testParseMandatoryFailsNoOption() throws Exception
+    public void testParseMandatoryFailsNoOption()
     {
         // Create a command line parser for a mandatory option.
-        CommandLineParser parser = new CommandLineParser(new String[][]
-                {
-                    { "t", "Test Option.", "test", "true" }
-                });
-
-        // Check that parsing fails when this mandatory option is missing.
-        boolean testPassed = false;
-
-        try
+        final CommandLineParser parser = new CommandLineParser(new String[][]
         {
-            // Parse a command line with this option not set.
-            Properties testProps = parser.parseCommandLine(new String[] {});
-        }
-        catch (IllegalArgumentException e)
-        {
-            testPassed = true;
-        }
+                { "t", "Test Option.", "test", "true" }
+        });
 
-        // Check that the resultant properties contains the correctly parsed option.
-        assertTrue("IllegalArgumentException not thrown for a missing mandatory option.", testPassed);
+        // Check that parsing fails when this mandatory option is missing
+        assertThrows(IllegalArgumentException.class,
+                () -> parser.parseCommandLine(new String[] {}),
+                "IllegalArgumentException not thrown for a missing mandatory option.");
     }
 
     /** Check that parsing an option with no space between it and its argument works ok. */
     @Test
-    public void testParseOptionWithNoSpaceOk() throws Exception
+    public void testParseOptionWithNoSpaceOk()
     {
         // Create a command line parser for an option.
-        CommandLineParser parser = new CommandLineParser(new String[][]
-                {
-                    { "t", "Test Option.", "test" }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "t", "Test Option.", "test" }
+        });
 
         // Parse a command line with this option set with no space.
-        Properties testProps = parser.parseCommandLine(new String[] { "-ttest" });
+        final Properties testProps = parser.parseCommandLine(new String[] { "-ttest" });
 
         // Check that the resultant properties contains the correctly parsed option.
-        assertTrue("The test option was not equal to \"test\" but was: " + testProps.get("t"),
-                          "test".equals(testProps.get("t")));
+        assertEquals("test", testProps.get("t"),
+            "The test option was not equal to \"test\" but was: " + testProps.get("t"));
     }
 
     /** Check that parsing an option with a space between it and its argument works ok. */
     @Test
-    public void testParseOptionWithSpaceOk() throws Exception
+    public void testParseOptionWithSpaceOk()
     {
         // Create a command line parser for an option.
-        CommandLineParser parser = new CommandLineParser(new String[][]
-                {
-                    { "t", "Test Option.", "test" }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "t", "Test Option.", "test" }
+        });
 
         // Parse a command line with this option set with a space.
-        Properties testProps = parser.parseCommandLine(new String[] { "-t", "test" });
+        final Properties testProps = parser.parseCommandLine(new String[] { "-t", "test" });
 
         // Check that the resultant properties contains the correctly parsed option.
-        assertTrue("The test option was not equal to \"test\" but was: " + testProps.get("t"),
-                          "test".equals(testProps.get("t")));
+        assertEquals("test", testProps.get("t"),
+                "The test option was not equal to \"test\" but was: " + testProps.get("t"));
     }
 
     /** Check that parsing a single flag works ok. */
     @Test
-    public void testParseSingleFlagOk() throws Exception
+    public void testParseSingleFlagOk()
     {
         // Create a command line parser for a single flag.
-        CommandLineParser parser = new CommandLineParser(new String[][]
-                {
-                    { "t", "Test Flag." }
-                });
+        final CommandLineParser parser = new CommandLineParser(new String[][]
+        {
+                { "t", "Test Flag." }
+        });
 
         // Parse a command line with the single flag set.
         Properties testProps = parser.parseCommandLine(new String[] { "-t" });
 
         // Check that the flag is set in the parsed properties.
-        assertTrue("The t flag was not \"true\", it was: " + testProps.get("t"),
-                          "true".equals(testProps.get("t")));
+        assertEquals("true", testProps.get("t"), "The t flag was not \"true\", it was: " + testProps.get("t"));
 
         // Reset the parser.
         parser.reset();
@@ -492,78 +410,50 @@ public class CommandLineParserTest extends UnitTestBase
         testProps = parser.parseCommandLine(new String[] {});
 
         // Check that the flag is cleared in the parsed properties.
-        assertTrue("The t flag was not \"false\", it was: " + testProps.get("t"),
-                          "false".equals(testProps.get("t")));
+        assertEquals("false", testProps.get("t"), "The t flag was not \"false\", it was: " + testProps.get("t"));
     }
 
     /** Check that parsing an unknown option works when unknowns not errors. */
     @Test
-    public void testParseUnknownOptionOk() throws Exception
+    public void testParseUnknownOptionOk()
     {
         // Create a command line parser for no flags or options
-        CommandLineParser parser = new CommandLineParser(new String[][] {});
+        final CommandLineParser parser = new CommandLineParser(new String[][] {});
 
         // Check that parsing does not fail on an unknown flag.
-        try
-        {
-            parser.parseCommandLine(new String[] { "-t" });
-        }
-        catch (IllegalArgumentException e)
-        {
-            fail("The parser threw an IllegalArgumentException on an unknown flag when errors on unkowns is off.");
-        }
+        assertDoesNotThrow(() -> parser.parseCommandLine(new String[] { "-t" }),
+                "The parser threw an IllegalArgumentException on an unknown flag when errors on unkowns is off.");
     }
 
     /** Check that parsing an unknown flag fails when unknowns are to be reported as errors. */
     @Test
-    public void testParseUnknownFlagFailsWhenUnknownsAreErrors() throws Exception
+    public void testParseUnknownFlagFailsWhenUnknownsAreErrors()
     {
         // Create a command line parser for no flags or options
-        CommandLineParser parser = new CommandLineParser(new String[][] {});
+        final CommandLineParser parser = new CommandLineParser(new String[][] {});
 
         // Turn on fail on unknowns mode.
         parser.setErrorsOnUnknowns(true);
 
-        // Check that parsing fails on an unknown flag.
-        boolean testPassed = false;
-
-        try
-        {
-            parser.parseCommandLine(new String[] { "-t" });
-        }
-        catch (IllegalArgumentException e)
-        {
-            testPassed = true;
-        }
-
-        assertTrue("IllegalArgumentException not thrown for an unknown flag when errors on unknowns mode is on.",
-                          testPassed);
+        // Check that parsing fails on an unknown flag
+        assertThrows(IllegalArgumentException.class,
+                () -> parser.parseCommandLine(new String[] { "-t" }),
+                "IllegalArgumentException not thrown for an unknown flag when errors on unknowns mode is on.");
     }
 
     /** Check that parsing an unknown option fails when unknowns are to be reported as errors. */
     @Test
-    public void testParseUnknownOptionFailsWhenUnknownsAreErrors() throws Exception
+    public void testParseUnknownOptionFailsWhenUnknownsAreErrors()
     {
         // Create a command line parser for no flags or options
-        CommandLineParser parser = new CommandLineParser(new String[][] {});
+        final CommandLineParser parser = new CommandLineParser(new String[][] {});
 
         // Turn on fail on unknowns mode.
         parser.setErrorsOnUnknowns(true);
 
-        // Check that parsing fails on an unknown flag.
-        boolean testPassed = false;
-
-        try
-        {
-            parser.parseCommandLine(new String[] { "-t", "test" });
-        }
-        catch (IllegalArgumentException e)
-        {
-            testPassed = true;
-        }
-
-        assertTrue(
-                "IllegalArgumentException not thrown for an unknown option when errors on unknowns mode is on.",
-                testPassed);
+        // Check that parsing fails on an unknown flag
+        assertThrows(IllegalArgumentException.class,
+                () -> parser.parseCommandLine(new String[] { "-t", "test" }),
+                "IllegalArgumentException not thrown for an unknown option when errors on unknowns mode is on.");
     }
 }

@@ -24,10 +24,8 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
-@ManagedObject( category = false,
-                type = TestKitCarImpl.TEST_KITCAR_TYPE)
-public class TestKitCarImpl extends TestAbstractCarImpl<TestKitCarImpl>
-        implements TestKitCar<TestKitCarImpl>
+@ManagedObject(category = false, type = TestKitCarImpl.TEST_KITCAR_TYPE)
+public class TestKitCarImpl extends TestAbstractCarImpl<TestKitCarImpl> implements TestKitCar<TestKitCarImpl>
 {
     public static final String TEST_KITCAR_TYPE = "testkitcar";
 
@@ -35,7 +33,7 @@ public class TestKitCarImpl extends TestAbstractCarImpl<TestKitCarImpl>
     private Map<String,Object> _parameters;
 
     @ManagedAttributeField
-    private TestEngine _alternateEngine;
+    private TestEngine<?> _alternateEngine;
 
     @ManagedObjectFactoryConstructor
     public TestKitCarImpl(final Map<String, Object> attributes)
@@ -50,6 +48,7 @@ public class TestKitCarImpl extends TestAbstractCarImpl<TestKitCarImpl>
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public TestEngine getAlternateEngine()
     {
         return _alternateEngine;

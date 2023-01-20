@@ -22,8 +22,8 @@ package org.apache.qpid.systests.jms_1_1.connection;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -38,8 +38,9 @@ import javax.jms.Queue;
 import javax.jms.Session;
 
 import com.google.common.util.concurrent.SettableFuture;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.JmsTestBase;
@@ -48,8 +49,8 @@ public class SpontaneousConnectionCloseTest extends JmsTestBase
 {
     private SettableFuture<JMSException> _connectionCloseFuture;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    public void setUp()
     {
         _connectionCloseFuture = SettableFuture.create();
     }
@@ -57,7 +58,7 @@ public class SpontaneousConnectionCloseTest extends JmsTestBase
     @Test
     public void explictManagementConnectionClose() throws Exception
     {
-        assumeThat(getBrokerAdmin().isManagementSupported(), is(true));
+        assumeTrue(getBrokerAdmin().isManagementSupported());
 
         Connection con = getConnection();
         try

@@ -20,12 +20,11 @@
  */
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,19 +32,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.Lists;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredDerivedInjectedAttribute;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectInjectedAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectInjectedOperation;
 import org.apache.qpid.server.model.ConfiguredObjectInjectedStatistic;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.ConfiguredSettableInjectedAttribute;
 import org.apache.qpid.server.model.Initialization;
-import org.apache.qpid.server.model.InjectedAttributeOrStatistic;
 import org.apache.qpid.server.model.InjectedAttributeStatisticOrOperation;
 import org.apache.qpid.server.model.OperationParameter;
 import org.apache.qpid.server.model.OperationParameterFromInjection;
@@ -57,43 +53,28 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class InjectedAttributeTest extends UnitTestBase
 {
-
     private static final InjectedAttributeStatisticOrOperation.TypeValidator TYPE_VALIDATOR =
-            new InjectedAttributeOrStatistic.TypeValidator()
-            {
-                @Override
-                public boolean appliesToType(final Class<? extends ConfiguredObject<?>> type)
-                {
-                    return TestCar.class.isAssignableFrom(type);
-                }
-            };
+            TestCar.class::isAssignableFrom;
 
     private static class TestInjector implements ConfiguredObjectAttributeInjector
     {
-
         private final Collection<ConfiguredObjectInjectedAttribute<?, ?>> _injectedAttributes;
         private final Collection<ConfiguredObjectInjectedStatistic<?, ?>> _injectedStatistics;
         private final Collection<ConfiguredObjectInjectedOperation<?>> _injectedOperations;
 
         private TestInjector(ConfiguredObjectInjectedAttribute<?, ?>... attributes)
         {
-            this(Arrays.asList(attributes),
-                 Collections.<ConfiguredObjectInjectedStatistic<?, ?>>emptyList(),
-                 Collections.<ConfiguredObjectInjectedOperation<?>>emptyList());
+            this(Arrays.asList(attributes), List.of(), List.of());
         }
 
         private TestInjector(ConfiguredObjectInjectedStatistic<?, ?>... statistics)
         {
-            this(Collections.<ConfiguredObjectInjectedAttribute<?, ?>>emptyList(),
-                 Arrays.asList(statistics),
-                 Collections.<ConfiguredObjectInjectedOperation<?>>emptyList());
+            this(List.of(), Arrays.asList(statistics), List.of());
         }
 
         private TestInjector(ConfiguredObjectInjectedOperation<?>... operations)
         {
-            this(Collections.<ConfiguredObjectInjectedAttribute<?, ?>>emptyList(),
-                 Collections.<ConfiguredObjectInjectedStatistic<?, ?>>emptyList(),
-                 Arrays.asList(operations));
+            this(List.of(), List.of(), Arrays.asList(operations));
         }
 
         private TestInjector(final Collection<ConfiguredObjectInjectedAttribute<?, ?>> injectedAttributes,
@@ -134,36 +115,37 @@ public class InjectedAttributeTest extends UnitTestBase
     public void testInjectedSettableAttributeWithDefault()
     {
         final ConfiguredSettableInjectedAttribute<?, ?> attrInjector =
-                new ConfiguredSettableInjectedAttribute<TestCar<?>, Integer>("meaningOfLife",
-                                                                             Integer.class,
-                                                                             Integer.class,
-                                                                             "42",
-                                                                             false,
-                                                                             true,
-                                                                             false,
-                                                                             "",
-                                                                             false,
-                                                                             "",
-                                                                             "",
-                                                                             null,
-                                                                             "", TYPE_VALIDATOR, Initialization.none);
+                new ConfiguredSettableInjectedAttribute<TestCar<?>, Integer>(
+                        "meaningOfLife",
+                        Integer.class,
+                        Integer.class,
+                        "42",
+                        false,
+                        true,
+                        false,
+                        "",
+                        false,
+                        "",
+                        "",
+                        null,
+                        "", TYPE_VALIDATOR, Initialization.none);
 
-        TestModel model = new TestModel(null, new TestInjector(attrInjector));
+        final TestModel model = new TestModel(null, new TestInjector(attrInjector));
 
-        TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
+        final TestCar<?> testCar = new TestStandardCarImpl(Map.of("name", "Arthur"), model);
 
-        assertEquals("incorrect attribute value", Integer.valueOf(42), testCar.getAttribute("meaningOfLife"));
+        assertEquals(42, testCar.getAttribute("meaningOfLife"), "incorrect attribute value");
 
-        testCar.setAttributes(Collections.<String,Object>singletonMap("meaningOfLife", 54));
+        testCar.setAttributes(Map.of("meaningOfLife", 54));
 
-        assertEquals("incorrect attribute value", Integer.valueOf(54), testCar.getAttribute("meaningOfLife"));
+        assertEquals(54, testCar.getAttribute("meaningOfLife"), "incorrect attribute value");
 
-        Map<String, String> context = new HashMap<>(testCar.getContext());
+        final Map<String, String> context = new HashMap<>(testCar.getContext());
         context.put("varieties","57");
-        testCar.setAttributes(Collections.<String,Object>singletonMap("context", context));
-        testCar.setAttributes(Collections.<String,Object>singletonMap("meaningOfLife", "${varieties}"));
+        testCar.setAttributes(Map.of("context", context));
+        testCar.setAttributes(Map.of("meaningOfLife", "${varieties}"));
 
-        assertEquals("incorrect attribute value", Integer.valueOf(57), testCar.getAttribute("meaningOfLife"));
+        assertEquals(57, testCar.getAttribute("meaningOfLife"), "incorrect attribute value");
     }
 
 
@@ -171,94 +153,87 @@ public class InjectedAttributeTest extends UnitTestBase
     public void testInjectedSettableAttributeValidValues()
     {
         final ConfiguredSettableInjectedAttribute<?, ?> attrInjector =
-                new ConfiguredSettableInjectedAttribute<TestCar<?>, Integer>("meaningOfLife",
-                                                                             Integer.class,
-                                                                             Integer.class,
-                                                                             "42",
-                                                                             false,
-                                                                             true,
-                                                                             false,
-                                                                             "",
-                                                                             false,
-                                                                             "",
-                                                                             "",
-                                                                             new String[] { "42", "49" },
-                                                                             "", TYPE_VALIDATOR, Initialization.none);
+                new ConfiguredSettableInjectedAttribute<TestCar<?>, Integer>(
+                        "meaningOfLife",
+                        Integer.class,
+                        Integer.class,
+                        "42",
+                        false,
+                        true,
+                        false,
+                        "",
+                        false,
+                        "",
+                        "",
+                        new String[] { "42", "49" },
+                        "", TYPE_VALIDATOR, Initialization.none);
 
-        TestModel model = new TestModel(null, new TestInjector(attrInjector));
+        final TestModel model = new TestModel(null, new TestInjector(attrInjector));
 
-        TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
+        final TestCar<?> testCar = new TestStandardCarImpl(Map.of("name", "Arthur"), model);
 
-        assertEquals("incorrect attribute value", Integer.valueOf(42), testCar.getAttribute("meaningOfLife"));
+        assertEquals(42, testCar.getAttribute("meaningOfLife"), "incorrect attribute value");
 
-        testCar.setAttributes(Collections.<String,Object>singletonMap("meaningOfLife", 49));
+        testCar.setAttributes(Map.of("meaningOfLife", 49));
 
-        assertEquals("incorrect attribute value", Integer.valueOf(49), testCar.getAttribute("meaningOfLife"));
-
-        try
-        {
-            testCar.setAttributes(Collections.<String, Object>singletonMap("meaningOfLife", 54));
-            fail("Should not be able to set attribute value to 54 as it is not a valid value");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
+        assertEquals(49,  testCar.getAttribute("meaningOfLife"), "incorrect attribute value");
+        assertThrows(IllegalConfigurationException.class,
+                () -> testCar.setAttributes(Map.of("meaningOfLife", 54)),
+                "Should not be able to set attribute value to 54 as it is not a valid value");
     }
 
     @Test
     public void testInjectedSettableAttributeEnumValidValues_Unrestricted()
     {
         final ConfiguredSettableInjectedAttribute<?, ?> attribute =
-                new ConfiguredSettableInjectedAttribute<TestCar<?>, Colour>("trimColour",
-                                                                            Colour.class,
-                                                                            Colour.class,
-                                                                            Colour.BLACK.name(),
-                                                                            false,
-                                                                            true,
-                                                                            false,
-                                                                            "",
-                                                                            false,
-                                                                            "",
-                                                                            "",
-                                                                            null,
-                                                                            "",
-                                                                            null, Initialization.none);
+                new ConfiguredSettableInjectedAttribute<TestCar<?>, Colour>(
+                        "trimColour",
+                        Colour.class,
+                        Colour.class,
+                        Colour.BLACK.name(),
+                        false,
+                        true,
+                        false,
+                        "",
+                        false,
+                        "",
+                        "",
+                        null,
+                        "",
+                        null, Initialization.none);
 
-        assertEquals("The attribute's valid values should match the set of the enum",
-                            Lists.newArrayList("BLACK", "RED", "BLUE", "GREY"),
-                            attribute.validValues());
+        assertEquals(List.of("BLACK", "RED", "BLUE", "GREY"), attribute.validValues(),
+                "The attribute's valid values should match the set of the enum");
     }
 
     @Test
     public void testInjectedSettableAttributeEnumValidValues_RestrictedSet()
     {
         final ConfiguredSettableInjectedAttribute<?, ?> attribute =
-                new ConfiguredSettableInjectedAttribute<TestCar<?>, Colour>("trimColour",
-                                                                            Colour.class,
-                                                                            Colour.class,
-                                                                            Colour.BLACK.name(),
-                                                                            false,
-                                                                            true,
-                                                                            false,
-                                                                            "",
-                                                                            false,
-                                                                            "",
-                                                                            "",
-                                                                            new String[] {Colour.GREY.name(), Colour.BLACK.name()},
-                                                                            "",
-                                                                            null, Initialization.none);
+                new ConfiguredSettableInjectedAttribute<TestCar<?>, Colour>(
+                        "trimColour",
+                        Colour.class,
+                        Colour.class,
+                        Colour.BLACK.name(),
+                        false,
+                        true,
+                        false,
+                        "",
+                        false,
+                        "",
+                        "",
+                        new String[] {Colour.GREY.name(), Colour.BLACK.name()},
+                        "",
+                        null, Initialization.none);
 
-        assertEquals(
-                "The attribute's valid values should match the restricted set defined on the attribute itself",
-                Lists.newArrayList("GREY", "BLACK"),
-                attribute.validValues());
+        assertEquals(List.of("GREY", "BLACK"), attribute.validValues(),
+                "The attribute's valid values should match the restricted set defined on the attribute itself");
     }
 
     @Test
     public void testInjectedDerivedAttribute() throws Exception
     {
-        Method method = InjectedAttributeTest.class.getDeclaredMethod("getMeaningOfLife", TestCar.class);
+        final Method method = InjectedAttributeTest.class.getDeclaredMethod("getMeaningOfLife", TestCar.class);
 
         final ConfiguredDerivedInjectedAttribute<?, ?> attrInjector =
                 new ConfiguredDerivedInjectedAttribute<TestCar<?>, Integer>("meaningOfLife",
@@ -271,20 +246,17 @@ public class InjectedAttributeTest extends UnitTestBase
                                                                             "",
                                                                             TYPE_VALIDATOR);
 
-        TestModel model = new TestModel(null, new TestInjector(attrInjector));
+        final TestModel model = new TestModel(null, new TestInjector(attrInjector));
 
-        TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
+        final TestCar<?> testCar = new TestStandardCarImpl(Map.of("name", "Arthur"), model);
 
-        assertEquals("incorrect attribute value", Integer.valueOf(42), testCar.getAttribute("meaningOfLife"));
+        assertEquals(42, testCar.getAttribute("meaningOfLife"), "incorrect attribute value");
     }
-
 
     @Test
     public void testInjectedStatistic() throws Exception
     {
-
-        Method method = InjectedAttributeTest.class.getDeclaredMethod("getMeaningOfLife", TestCar.class);
-
+        final Method method = InjectedAttributeTest.class.getDeclaredMethod("getMeaningOfLife", TestCar.class);
         final ConfiguredObjectInjectedStatistic<?, ?> statInjector =
                 new ConfiguredObjectInjectedStatistic<TestCar<?>, Integer>("meaningOfLife",
                                                                            method,
@@ -295,23 +267,18 @@ public class InjectedAttributeTest extends UnitTestBase
                                                                            "What is 6 x 9?",
                                                                            null,
                                                                            false);
-
-        TestModel model = new TestModel(null, new TestInjector(statInjector));
-
-        TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
-
+        final TestModel model = new TestModel(null, new TestInjector(statInjector));
+        final TestCar<?> testCar = new TestStandardCarImpl(Map.of("name", "Arthur"), model);
         final Map<String, Object> statistics = testCar.getStatistics();
-        assertEquals("incorrect number of statistics", (long) 3, (long) statistics.size());
-        assertEquals("incorrect statistic value", 42, statistics.get("meaningOfLife"));
-    }
 
+        assertEquals(3, (long) statistics.size(), "incorrect number of statistics");
+        assertEquals(42, statistics.get("meaningOfLife"), "incorrect statistic value");
+    }
 
     @Test
     public void testInjectedStatisticWithParameters() throws Exception
     {
-
-        Method method = InjectedAttributeTest.class.getDeclaredMethod("getWhatISent", TestCar.class, Integer.TYPE);
-
+        final Method method = InjectedAttributeTest.class.getDeclaredMethod("getWhatISent", TestCar.class, Integer.TYPE);
         final ConfiguredObjectInjectedStatistic<?, ?> statInjector1 =
                 new ConfiguredObjectInjectedStatistic<TestCar<?>, Integer>("whatISent1",
                                                                            method,
@@ -332,22 +299,20 @@ public class InjectedAttributeTest extends UnitTestBase
                                                                            "Two",
                                                                            null,
                                                                            false);
-        TestModel model = new TestModel(null, new TestInjector(statInjector1, statInjector2));
-
-        TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
-
+        final TestModel model = new TestModel(null, new TestInjector(statInjector1, statInjector2));
+        final TestCar<?> testCar = new TestStandardCarImpl(Map.of("name", "Arthur"), model);
         final Map<String, Object> statistics = testCar.getStatistics();
-        assertEquals("incorrect number of statistics", (long) 4, (long) statistics.size());
-        assertEquals("incorrect statistic value", 1, statistics.get("whatISent1"));
-        assertEquals("incorrect statistic value", 2, statistics.get("whatISent2"));
+
+        assertEquals(4, (long) statistics.size(), "incorrect number of statistics");
+        assertEquals(1, statistics.get("whatISent1"), "incorrect statistic value");
+        assertEquals(2, statistics.get("whatISent2"), "incorrect statistic value");
     }
 
-
     @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void testInjectedOperation() throws Exception
     {
-        Method method = InjectedAttributeTest.class.getDeclaredMethod("fly", TestCar.class, Integer.TYPE);
-
+        final Method method = InjectedAttributeTest.class.getDeclaredMethod("fly", TestCar.class, Integer.TYPE);
         final OperationParameter[] params = new OperationParameter[1];
         params[0] = new OperationParameterFromInjection("height", Integer.TYPE, Integer.TYPE, "", "", new String[0],
                                                         false);
@@ -355,113 +320,83 @@ public class InjectedAttributeTest extends UnitTestBase
                 new ConfiguredObjectInjectedOperation<TestCar<?>>("fly", "", true,
                                                                   false,
                                                                   "", params, method, null, TYPE_VALIDATOR);
-
-        TestModel model = new TestModel(null, new TestInjector(operationInjector));
-
-        TestCar testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
-
+        final TestModel model = new TestModel(null, new TestInjector(operationInjector));
+        final TestCar<?> testCar = new TestStandardCarImpl(Map.of("name", "Arthur"), model);
         final Map<String, ConfiguredObjectOperation<?>> allOperations =
                 model.getTypeRegistry().getOperations(testCar.getClass());
 
-        assertTrue("Operation fly(int height) is missing", allOperations.containsKey("fly"));
+        assertTrue(allOperations.containsKey("fly"), "Operation fly(int height) is missing");
 
         final ConfiguredObjectOperation foundOperation = allOperations.get("fly");
 
         Object result = foundOperation.perform(testCar, Collections.<String, Object>singletonMap("height", 0));
 
-        assertEquals("Car should be able to fly at 0m", Boolean.TRUE, result);
+        assertEquals(Boolean.TRUE, result, "Car should be able to fly at 0m");
 
         result = foundOperation.perform(testCar, Collections.<String, Object>singletonMap("height", 5000));
 
-        assertEquals("Car should not be able to fly at 5000m", Boolean.FALSE, result);
+        assertEquals(Boolean.FALSE, result, "Car should not be able to fly at 5000m");
     }
 
     @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void testInjectedOperationWithStaticParams() throws Exception
     {
-
-        Method method = InjectedAttributeTest.class.getDeclaredMethod("saySomething", TestCar.class, String.class, Integer.TYPE);
-
+        final Method method = InjectedAttributeTest.class.getDeclaredMethod("saySomething", TestCar.class, String.class, Integer.TYPE);
         final OperationParameter[] params = new OperationParameter[1];
         params[0] = new OperationParameterFromInjection("count", Integer.TYPE, Integer.TYPE, "", "", new String[0],
                                                         false);
-
         final ConfiguredObjectInjectedOperation<?> hello =
                 new ConfiguredObjectInjectedOperation<TestCar<?>>("sayHello", "", true,
                                                                   false,
                                                                   "", params, method, new String[] { "Hello"},
-                                                                  TYPE_VALIDATOR
-                );
+                                                                  TYPE_VALIDATOR);
         final ConfiguredObjectInjectedOperation<?> goodbye =
                 new ConfiguredObjectInjectedOperation<TestCar<?>>("sayGoodbye", "", true,
                                                                   false,
                                                                   "",
                                                                   params, method, new String[] { "Goodbye"},
-                                                                  TYPE_VALIDATOR
-                );
-
-        TestModel model = new TestModel(null, new TestInjector(hello, goodbye));
-
-        TestCar testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
-
+                                                                  TYPE_VALIDATOR);
+        final TestModel model = new TestModel(null, new TestInjector(hello, goodbye));
+        final TestCar<?> testCar = new TestStandardCarImpl(Map.of("name", "Arthur"), model);
         final Map<String, ConfiguredObjectOperation<?>> allOperations =
                 model.getTypeRegistry().getOperations(testCar.getClass());
 
-        assertTrue("Operation sayHello(int count) is missing", allOperations.containsKey("sayHello"));
-        assertTrue("Operation sayGoodbye(int count) is missing", allOperations.containsKey("sayGoodbye"));
+        assertTrue(allOperations.containsKey("sayHello"), "Operation sayHello(int count) is missing");
+        assertTrue(allOperations.containsKey("sayGoodbye"), "Operation sayGoodbye(int count) is missing");
 
         final ConfiguredObjectOperation helloOperation = allOperations.get("sayHello");
         final ConfiguredObjectOperation goodbyeOperation = allOperations.get("sayGoodbye");
 
         Object result = helloOperation.perform(testCar, Collections.<String, Object>singletonMap("count", 3));
 
-        assertEquals("Car should say 'Hello' 3 times", Arrays.asList("Hello", "Hello", "Hello"), result);
+        assertEquals(Arrays.asList("Hello", "Hello", "Hello"), result, "Car should say 'Hello' 3 times");
 
         result = goodbyeOperation.perform(testCar, Collections.<String, Object>singletonMap("count", 1));
 
-        assertEquals("Car say 'Goodbye' once", Collections.singletonList("Goodbye"), result);
+        assertEquals(Collections.singletonList("Goodbye"), result, "Car say 'Goodbye' once");
     }
 
     @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public void testOperationWithMandatoryParameter_RejectsNullParameter() throws Exception
     {
-        Method method = InjectedAttributeTest.class.getDeclaredMethod("ping", TestCar.class, String.class);
-
+        final Method method = InjectedAttributeTest.class.getDeclaredMethod("ping", TestCar.class, String.class);
         final OperationParameter[] params = new OperationParameter[1];
         params[0] = new OperationParameterFromInjection("arg", String.class, String.class, "", "", new String[0], true);
         final ConfiguredObjectInjectedOperation<?> operationInjector =
                 new ConfiguredObjectInjectedOperation<TestCar<?>>(method.getName(), "", true,
                                                                   false,
                                                                   "", params, method, null, TYPE_VALIDATOR);
-
-        TestModel model = new TestModel(null, new TestInjector(operationInjector));
-        TestCar testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
-
+        final TestModel model = new TestModel(null, new TestInjector(operationInjector));
+        final TestCar<?> testCar = new TestStandardCarImpl(Map.of("name", "Arthur"), model);
         final Map<String, ConfiguredObjectOperation<?>> allOperations =
                 model.getTypeRegistry().getOperations(testCar.getClass());
-
         final ConfiguredObjectOperation operation = allOperations.get(method.getName());
 
-        try
-        {
-            operation.perform(testCar, Collections.<String, Object>emptyMap());
-            fail("Exception not thrown");
-        }
-        catch (IllegalArgumentException iae)
-        {
-            // PASS
-        }
-
-        try
-        {
-            operation.perform(testCar, Collections.<String, Object>singletonMap("arg", null));
-            fail("Exception not thrown");
-        }
-        catch (IllegalArgumentException iae)
-        {
-            // PASS
-        }
-
+        assertThrows(IllegalArgumentException.class, () -> operation.perform(testCar, Map.of()), "Exception not thrown");
+        assertThrows(IllegalArgumentException.class, () -> operation.perform(testCar, Collections.singletonMap("arg", null)),
+                "Exception not thrown");
     }
 
     @SuppressWarnings("unused")
@@ -470,30 +405,27 @@ public class InjectedAttributeTest extends UnitTestBase
         return arg;
     }
 
+    @SuppressWarnings("unused")
     public static int getMeaningOfLife(TestCar<?> car)
     {
         return 42;
     }
 
-
+    @SuppressWarnings("unused")
     public static int getWhatISent(TestCar<?> car, int whatIsent)
     {
         return whatIsent;
     }
 
+    @SuppressWarnings("unused")
     public static boolean fly(TestCar<?> car, int height)
     {
         return height == 0;
     }
 
+    @SuppressWarnings("unused")
     public static List<String> saySomething(TestCar<?> car, String whatToSay, int count)
     {
-        List<String> list = new ArrayList<>();
-        for(int i = 0; i < count; i++)
-        {
-            list.add(whatToSay);
-        }
-        return list;
+        return Collections.nCopies(count, whatToSay);
     }
-
 }

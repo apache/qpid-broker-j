@@ -23,7 +23,7 @@ package org.apache.qpid.server.store.berkeleydb.replication;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -32,12 +32,13 @@ import javax.jms.JMSException;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,57 +53,48 @@ public class GroupJmsTestBase extends UnitTestBase
     private static final int FAILOVER_CONNECTDELAY = 1000;
     static final int SHORT_FAILOVER_CYCLECOUNT = 2;
     static final int SHORT_FAILOVER_CONNECTDELAY = 200;
-    private static final AtomicReference<Class<?>> TEST_CLASS = new AtomicReference<>();
-    private static final Logger LOGGER = LoggerFactory.getLogger(GroupJmsTestBase.class);
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(GroupJmsTestBase.class);
     private static JmsProvider _jmsProvider;
     private static GroupBrokerAdmin _groupBrokerAdmin;
+    private static AtomicReference<Class<?>> _testClass = new AtomicReference<>();
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpTestBase()
     {
-        assumeThat(System.getProperty("virtualhostnode.type", "BDB"), is(equalTo("BDB")));
+        assumeTrue("BDB".equals(System.getProperty("virtualhostnode.type", "BDB")),
+                "VirtualHostNodeStoreType should be BDB");
 
         _jmsProvider = Utils.getJmsProvider();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownTestBase()
     {
-        Class<?> testClass = TEST_CLASS.get();
-        if (testClass != null && TEST_CLASS.compareAndSet(testClass, null))
+        Class<?> testClass = _testClass.get();
+        if (testClass != null && _testClass.compareAndSet(testClass, null))
         {
             _groupBrokerAdmin.afterTestClass(testClass);
         }
     }
 
-    @Rule
-    public final ExternalResource resource = new ExternalResource()
+    @RegisterExtension
+    public final BeforeAllCallback resource = (ExtensionContext ctx) ->
     {
-        @Override
-        protected void before()
+        if (_testClass.compareAndSet(null, GroupJmsTestBase.this.getClass() ))
         {
-            if (TEST_CLASS.compareAndSet(null, GroupJmsTestBase.this.getClass()))
-            {
-                _groupBrokerAdmin = new GroupBrokerAdmin();
-                _groupBrokerAdmin.beforeTestClass(GroupJmsTestBase.this.getClass());
-            }
-        }
-
-        @Override
-        protected void after()
-        {
-
+            _groupBrokerAdmin = new GroupBrokerAdmin();
+            _groupBrokerAdmin.beforeTestClass(GroupJmsTestBase.this.getClass());
         }
     };
 
-    @Before
+    @BeforeEach
     public void beforeTestMethod() throws Exception
     {
         _groupBrokerAdmin.beforeTestMethod(getClass(), getClass().getMethod(getTestName()));
     }
 
-    @After
+    @AfterEach
     public void afterTestMethod() throws Exception
     {
         _groupBrokerAdmin.afterTestMethod(getClass(), getClass().getMethod(getTestName()));

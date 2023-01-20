@@ -37,18 +37,18 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.AMQPConnection;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
 {
-    private final String tag = "mocktag";
     private final Queue<?> queue = null;
     private final ArrayList<MessageInstance> _messages = new ArrayList<>();
-    private final AMQPSession _sessionModel = mock(AMQPSession.class);
+    private final AMQPSession<?, ?> _sessionModel = mock(AMQPSession.class);
 
     private boolean _closed = false;
-    private State _state = State.OPEN;
     private boolean _isActive = true;
-    private MessageInstanceConsumer _consumer;
     private boolean _notifyDesired;
+    private State _state = State.OPEN;
+    private MessageInstanceConsumer<?> _consumer;
 
     public TestConsumerTarget()
     {
@@ -73,7 +73,7 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
 
     public String getName()
     {
-        return tag;
+        return "mocktag";
     }
 
     @Override
@@ -110,13 +110,10 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         return _isActive ;
     }
 
-
-
     public boolean isClosed()
     {
         return _closed;
     }
-
 
     @Override
     public boolean isSuspended()
@@ -127,6 +124,7 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
     @Override
     public void restoreCredit(ServerMessage message)
     {
+
     }
 
     @Override
@@ -178,7 +176,7 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
     @Override
     public ListenableFuture<Void> consumerRemoved(final MessageInstanceConsumer sub)
     {
-       close();
+        close();
         return Futures.immediateFuture(null);
     }
 
@@ -191,7 +189,7 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
     @Override
     public boolean processPending()
     {
-        MessageContainer messageContainer = _consumer.pullMessage();
+        final MessageContainer messageContainer = _consumer.pullMessage();
         if (messageContainer == null)
         {
             return false;
@@ -206,10 +204,10 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
         return _messages;
     }
 
-
     @Override
     public void noMessagesAvailable()
     {
+
     }
 
     @Override
@@ -222,7 +220,6 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
     {
         _isActive = isActive;
     }
-
 
     @Override
     public boolean isMultiQueue()

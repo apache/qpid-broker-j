@@ -19,15 +19,12 @@
 
 package org.apache.qpid.server.store.berkeleydb;
 
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -38,6 +35,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import com.sleepycat.bind.tuple.ByteBinding;
@@ -47,9 +45,10 @@ import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -71,30 +70,31 @@ public class BDBPreferenceStoreTest extends UnitTestBase
     private BDBPreferenceStore _preferenceStore;
     private List<PreferenceRecord> _testInitialRecords;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.BDB),
+                "VirtualHostNodeStoreType should be BDB");
 
         _storeFile = new File(TMP_FOLDER, getTestName() + System.currentTimeMillis() + ".preferences.bdb");
         boolean result = _storeFile.mkdirs();
-        assertTrue(String.format("Test folder '%s' was not created", _storeFile.getAbsolutePath()), result);
+        assertTrue(result, String.format("Test folder '%s' was not created", _storeFile.getAbsolutePath()));
         _updater = mock(PreferenceStoreUpdater.class);
         when(_updater.getLatestVersion()).thenReturn(BrokerModel.MODEL_VERSION);
 
         final ConfiguredObject<?> parent = mock(ConfiguredObject.class);
-        when(parent.getContext()).thenReturn(Collections.<String, String>emptyMap());
-        when(parent.getContextKeys(anyBoolean())).thenReturn(Collections.<String>emptySet());
+        when(parent.getContext()).thenReturn(Collections.emptyMap());
+        when(parent.getContextKeys(anyBoolean())).thenReturn(Collections.emptySet());
 
         _preferenceStore = new BDBPreferenceStore(parent, _storeFile.getPath());
 
-        _testInitialRecords = Arrays.<PreferenceRecord>asList(
-                new PreferenceRecordImpl(UUID.randomUUID(), Collections.<String, Object>singletonMap("name", "test")),
-                new PreferenceRecordImpl(UUID.randomUUID(), Collections.<String, Object>singletonMap("name", "test1")));
+        _testInitialRecords = Arrays.asList(
+                new PreferenceRecordImpl(UUID.randomUUID(), Collections.singletonMap("name", "test")),
+                new PreferenceRecordImpl(UUID.randomUUID(), Collections.singletonMap("name", "test1")));
         populateTestData(_testInitialRecords, BrokerModel.MODEL_VERSION);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
@@ -114,7 +114,7 @@ public class BDBPreferenceStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testVersionAfterUpgrade() throws Exception
+    public void testVersionAfterUpgrade()
     {
         FileUtils.delete(_storeFile, true);
         _storeFile.mkdirs();
@@ -126,18 +126,17 @@ public class BDBPreferenceStoreTest extends UnitTestBase
 
         ModelVersion storedVersion = _preferenceStore.getStoredVersion();
 
-        assertEquals("Unexpected version", BrokerModel.MODEL_VERSION, storedVersion.toString());
+        assertEquals(BrokerModel.MODEL_VERSION, storedVersion.toString(), "Unexpected version");
     }
 
     @Test
-    public void testOpenAndLoad() throws Exception
+    public void testOpenAndLoad()
     {
         Collection<PreferenceRecord> recovered = _preferenceStore.openAndLoad(_updater);
-        assertEquals("Unexpected store state",
-                            AbstractBDBPreferenceStore.StoreState.OPENED,
-                            _preferenceStore.getStoreState());
+        assertEquals(AbstractBDBPreferenceStore.StoreState.OPENED, _preferenceStore.getStoreState(),
+                     "Unexpected store state");
 
-        assertNotNull("Store was not properly opened", _preferenceStore.getEnvironmentFacade());
+        assertNotNull(_preferenceStore.getEnvironmentFacade(), "Store was not properly opened");
         PreferenceTestHelper.assertRecords(_testInitialRecords, recovered);
     }
 
@@ -146,22 +145,21 @@ public class BDBPreferenceStoreTest extends UnitTestBase
     {
         _preferenceStore.openAndLoad(_updater);
         _preferenceStore.close();
-        assertEquals("Unexpected store state",
-                            AbstractBDBPreferenceStore.StoreState.CLOSED,
-                            _preferenceStore.getStoreState());
-        assertNull("Store was not properly closed", _preferenceStore.getEnvironmentFacade());
+        assertEquals(AbstractBDBPreferenceStore.StoreState.CLOSED, _preferenceStore.getStoreState(),
+                     "Unexpected store state");
+        assertNull(_preferenceStore.getEnvironmentFacade(), "Store was not properly closed");
     }
 
     @Test
-    public void testUpdateOrCreate() throws Exception
+    public void testUpdateOrCreate()
     {
         _preferenceStore.openAndLoad(_updater);
 
         PreferenceRecord oldRecord = _testInitialRecords.get(0);
 
-        Collection<PreferenceRecord> records = Arrays.<PreferenceRecord>asList(
-                new PreferenceRecordImpl(oldRecord.getId(), Collections.<String, Object>singletonMap("name", "test2")),
-                new PreferenceRecordImpl(UUID.randomUUID(), Collections.<String, Object>singletonMap("name", "test3")));
+        Collection<PreferenceRecord> records = Arrays.asList(
+                new PreferenceRecordImpl(oldRecord.getId(), Collections.singletonMap("name", "test2")),
+                new PreferenceRecordImpl(UUID.randomUUID(), Collections.singletonMap("name", "test3")));
         _preferenceStore.updateOrCreate(records);
 
         _preferenceStore.close();
@@ -172,7 +170,7 @@ public class BDBPreferenceStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testReplace() throws Exception
+    public void testReplace()
     {
         _preferenceStore.openAndLoad(_updater);
 
@@ -180,9 +178,9 @@ public class BDBPreferenceStoreTest extends UnitTestBase
         PreferenceRecord oldRecord2 = _testInitialRecords.get(1);
 
         Collection<UUID> recordsToRemove = Collections.singleton(oldRecord1.getId());
-        Collection<PreferenceRecord> recordsToAddUpdate = Arrays.<PreferenceRecord>asList(
-                new PreferenceRecordImpl(oldRecord2.getId(), Collections.<String, Object>singletonMap("name", "test2")),
-                new PreferenceRecordImpl(UUID.randomUUID(), Collections.<String, Object>singletonMap("name", "test3")));
+        Collection<PreferenceRecord> recordsToAddUpdate = Arrays.asList(
+                new PreferenceRecordImpl(oldRecord2.getId(), Collections.singletonMap("name", "test2")),
+                new PreferenceRecordImpl(UUID.randomUUID(), Collections.singletonMap("name", "test3")));
         _preferenceStore.replace(recordsToRemove, recordsToAddUpdate);
 
         _preferenceStore.close();
@@ -191,11 +189,11 @@ public class BDBPreferenceStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testUpdateFailIfNotOpened() throws Exception
+    public void testUpdateFailIfNotOpened()
     {
         try
         {
-            _preferenceStore.updateOrCreate(Collections.<PreferenceRecord>emptyList());
+            _preferenceStore.updateOrCreate(Collections.emptyList());
             fail("Should not be able to update or create");
         }
         catch (IllegalStateException e)
@@ -205,11 +203,11 @@ public class BDBPreferenceStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testReplaceFailIfNotOpened() throws Exception
+    public void testReplaceFailIfNotOpened()
     {
         try
         {
-            _preferenceStore.replace(Collections.<UUID>emptyList(), Collections.<PreferenceRecord>emptyList());
+            _preferenceStore.replace(Collections.<UUID>emptyList(), Collections.emptyList());
             fail("Should not be able to replace");
         }
         catch (IllegalStateException e)

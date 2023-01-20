@@ -20,19 +20,14 @@
  */
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
@@ -63,13 +58,14 @@ public class TestStandardCarImpl extends TestAbstractCarImpl<TestStandardCarImpl
     @SuppressWarnings("unused")
     public static Map<String, Collection<String>> getSupportedChildTypes()
     {
-        Collection<String> types = Arrays.asList(TestPetrolEngineImpl.TEST_PETROL_ENGINE_TYPE, TestHybridEngineImpl.TEST_HYBRID_ENGINE_TYPE);
-        return Collections.singletonMap(TestEngine.class.getSimpleName(), types);
+        final Collection<String> types =
+                List.of(TestPetrolEngineImpl.TEST_PETROL_ENGINE_TYPE, TestHybridEngineImpl.TEST_HYBRID_ENGINE_TYPE);
+        return Map.of(TestEngine.class.getSimpleName(), types);
     }
 
     @Override
     public UserPreferences createUserPreferences(final ConfiguredObject<?> object)
     {
-        return new UserPreferencesImpl(getTaskExecutor(), object, _preferenceStore, Collections.<Preference>emptySet());
+        return new UserPreferencesImpl(getTaskExecutor(), object, _preferenceStore, Set.of());
     }
 }

@@ -20,13 +20,13 @@
  */
 package org.apache.qpid.tests.utils;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -35,7 +35,7 @@ public class ExternalQpidBrokerAdminImplTest extends UnitTestBase
     private ExternalQpidBrokerAdminImpl _admin;
     private QueueAdmin _queueAdmin;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _queueAdmin = mock(QueueAdmin.class);
@@ -99,5 +99,4 @@ public class ExternalQpidBrokerAdminImplTest extends UnitTestBase
         _admin.beforeTestMethod(null, null);
         verifyNoInteractions(_queueAdmin);
     }
-
 }

@@ -19,6 +19,8 @@
 
 package org.apache.qpid.server.util;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
@@ -29,37 +31,40 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class LoggerTestHelper
 {
     private final static ch.qos.logback.classic.Logger ROOT_LOGGER = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME));
 
     public static ListAppender createAndRegisterAppender(String appenderName)
     {
-        ListAppender appender = new ListAppender();
+        final ListAppender appender = new ListAppender();
         appender.setName(appenderName);
         ROOT_LOGGER.addAppender(appender);
         appender.start();
         return appender;
     }
 
-    public static void deleteAndUnregisterAppender(Appender appender)
+    public static void deleteAndUnregisterAppender(final Appender appender)
     {
         appender.stop();
         ROOT_LOGGER.detachAppender(appender);
     }
 
-    public static void deleteAndUnregisterAppender(String appenderName)
+    public static void deleteAndUnregisterAppender(final String appenderName)
     {
-        Appender appender = ROOT_LOGGER.getAppender(appenderName);
+        final Appender appender = ROOT_LOGGER.getAppender(appenderName);
         if (appender != null)
         {
             deleteAndUnregisterAppender(appender);
         }
     }
 
-    public static void assertLoggedEvent(ListAppender appender, boolean exists, String message, String loggerName, Level level)
+    public static void assertLoggedEvent(final ListAppender appender,
+                                         final boolean exists,
+                                         final String message,
+                                         final String loggerName,
+                                         final Level level)
     {
         List<ILoggingEvent> events;
         synchronized(appender)
@@ -68,7 +73,7 @@ public class LoggerTestHelper
         }
 
         boolean logged = false;
-        for (ILoggingEvent event: events)
+        for (final ILoggingEvent event: events)
         {
             if (event.getFormattedMessage().equals(message) && event.getLoggerName().equals(loggerName) && event.getLevel() == level)
             {
@@ -76,8 +81,7 @@ public class LoggerTestHelper
                 break;
             }
         }
-        assertEquals("Event " + message + " from logger " + loggerName + " of log level " + level
-                + " is " + (exists ? "not" : "") + " found", exists, logged);
+        assertEquals(exists, logged, "Event " + message + " from logger " + loggerName + " of log level " +
+                level + " is " + (exists ? "not" : "") + " found");
     }
-
 }

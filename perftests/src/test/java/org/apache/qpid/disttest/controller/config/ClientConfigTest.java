@@ -20,6 +20,8 @@
 package org.apache.qpid.disttest.controller.config;
 
 import static org.apache.qpid.disttest.controller.config.ConfigTestUtils.assertCommandForClient;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,8 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Assert;
-
 import org.apache.qpid.disttest.client.property.PropertyValue;
 import org.apache.qpid.disttest.client.property.SimplePropertyValue;
 import org.apache.qpid.disttest.controller.CommandForClient;
@@ -38,22 +38,9 @@ import org.apache.qpid.disttest.message.Command;
 import org.apache.qpid.disttest.message.CreateMessageProviderCommand;
 import org.apache.qpid.disttest.message.NoOpCommand;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ClientConfigTest extends UnitTestBase
 {
@@ -72,7 +59,7 @@ public class ClientConfigTest extends UnitTestBase
         ClientConfig clientConfig = createClientConfigWithConnectionConfigReturningChildCommands();
 
         List<CommandForClient> commands = clientConfig.createCommands();
-        assertEquals((long) 2, (long) commands.size());
+        assertEquals(2, (long) commands.size());
 
         assertCommandForClient(commands, 0, CLIENT1, NoOpCommand.class);
         assertCommandForClient(commands, 1, CLIENT1, NoOpCommand.class);
@@ -84,7 +71,7 @@ public class ClientConfigTest extends UnitTestBase
         ClientConfig clientConfig = createClientConfigWithMessageProviderConfigReturningCommands();
 
         List<CommandForClient> commands = clientConfig.createCommands();
-        assertEquals((long) 1, (long) commands.size());
+        assertEquals(1, (long) commands.size());
 
         assertCommandForClient(commands, 0, CLIENT1, CreateMessageProviderCommand.class);
     }
@@ -93,14 +80,14 @@ public class ClientConfigTest extends UnitTestBase
     public void testGetTotalNumberOfParticipants()
     {
         ClientConfig clientConfig = createClientConfigWithTwoParticipants();
-        assertEquals((long) 2, (long) clientConfig.getTotalNumberOfParticipants());
+        assertEquals(2, (long) clientConfig.getTotalNumberOfParticipants());
     }
 
     private ClientConfig createClientConfigWithConnectionConfigReturningChildCommands()
     {
         ConnectionConfig connectionConfig = mock(ConnectionConfig.class);
 
-        List<Command> commands = Arrays.asList((Command)new NoOpCommand(), (Command)new NoOpCommand());
+        List<Command> commands = Arrays.asList(new NoOpCommand(), new NoOpCommand());
         when(connectionConfig.createCommands()).thenReturn(commands);
 
         return new ClientConfig(CLIENT1, connectionConfig);
@@ -108,14 +95,14 @@ public class ClientConfigTest extends UnitTestBase
 
     private ClientConfig createClientConfigWithMessageProviderConfigReturningCommands()
     {
-        Map<String, PropertyValue> messageProperties = new HashMap<String, PropertyValue>();
+        Map<String, PropertyValue> messageProperties = new HashMap<>();
         messageProperties.put("test", new SimplePropertyValue("testValue"));
         MessageProviderConfig config = new MessageProviderConfig("test", messageProperties);
 
-        List<MessageProviderConfig> providerConfigs = new ArrayList<MessageProviderConfig>();
+        List<MessageProviderConfig> providerConfigs = new ArrayList<>();
         providerConfigs.add(config);
 
-        return new ClientConfig(CLIENT1, new ArrayList<ConnectionConfig>(), providerConfigs);
+        return new ClientConfig(CLIENT1, new ArrayList<>(), providerConfigs);
     }
 
     private ClientConfig createClientConfigWithTwoParticipants()

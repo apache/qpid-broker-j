@@ -19,18 +19,17 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -42,35 +41,45 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class PlainPasswordFileAuthenticationManagerFactoryTest extends UnitTestBase
 {
-
     private final ConfiguredObjectFactory _factory = BrokerModel.getInstance().getObjectFactory();
-    private final Map<String, Object> _configuration = new HashMap<String, Object>();
-    private final Broker _broker = BrokerTestHelper.createBrokerMock();
+    private final Map<String, Object> _configuration = new HashMap<>();
     private File _emptyPasswordFile;
+    private final Broker<?> _broker = BrokerTestHelper.createBrokerMock();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _emptyPasswordFile = File.createTempFile(getTestName(), "passwd");
         _emptyPasswordFile.deleteOnExit();
-        _configuration.put(AuthenticationProvider.ID, UUID.randomUUID());
+        _configuration.put(AuthenticationProvider.ID, randomUUID());
         _configuration.put(AuthenticationProvider.NAME, getTestName());
     }
 
+    @AfterEach
+    public void tearDown() throws Exception
+    {
+        if (_emptyPasswordFile != null && _emptyPasswordFile.exists())
+        {
+            _emptyPasswordFile.delete();
+        }
+    }
+
     @Test
-    public void testPlainInstanceCreated() throws Exception
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public void testPlainInstanceCreated()
     {
         _configuration.put(AuthenticationProvider.TYPE, PlainPasswordDatabaseAuthenticationManager.PROVIDER_TYPE);
         _configuration.put("path", _emptyPasswordFile.getAbsolutePath());
 
-        AuthenticationProvider manager = _factory.create(AuthenticationProvider.class, _configuration, _broker);
+        final AuthenticationProvider<?> manager = _factory.create(AuthenticationProvider.class, _configuration, _broker);
         assertNotNull(manager);
         assertTrue(manager instanceof PrincipalDatabaseAuthenticationManager);
         assertTrue(((PrincipalDatabaseAuthenticationManager)manager).getPrincipalDatabase() instanceof PlainPasswordFilePrincipalDatabase);
     }
 
     @Test
-    public void testPasswordFileNotFound() throws Exception
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public void testPasswordFileNotFound()
     {
         //delete the file
         _emptyPasswordFile.delete();
@@ -78,8 +87,7 @@ public class PlainPasswordFileAuthenticationManagerFactoryTest extends UnitTestB
         _configuration.put(AuthenticationProvider.TYPE, PlainPasswordDatabaseAuthenticationManager.PROVIDER_TYPE);
         _configuration.put("path", _emptyPasswordFile.getAbsolutePath());
 
-
-        AuthenticationProvider manager = _factory.create(AuthenticationProvider.class, _configuration, _broker);
+        final AuthenticationProvider<?> manager = _factory.create(AuthenticationProvider.class, _configuration, _broker);
 
         assertNotNull(manager);
         assertTrue(manager instanceof PrincipalDatabaseAuthenticationManager);
@@ -87,27 +95,13 @@ public class PlainPasswordFileAuthenticationManagerFactoryTest extends UnitTestB
     }
 
     @Test
-    public void testThrowsExceptionWhenConfigForPlainPDImplementationNoPasswordFileValueSpecified() throws Exception
+    @SuppressWarnings("unchecked")
+    public void testThrowsExceptionWhenConfigForPlainPDImplementationNoPasswordFileValueSpecified()
     {
         _configuration.put(AuthenticationProvider.TYPE, PlainPasswordDatabaseAuthenticationManager.PROVIDER_TYPE);
 
-        try
-        {
-            AuthenticationProvider manager = _factory.create(AuthenticationProvider.class, _configuration, _broker);
-            fail("No authentication manager should be created");
-        }
-        catch (IllegalArgumentException e)
-        {
-            // pass;
-        }
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        if (_emptyPasswordFile == null && _emptyPasswordFile.exists())
-        {
-            _emptyPasswordFile.delete();
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> _factory.create(AuthenticationProvider.class, _configuration, _broker),
+                "No authentication manager should be created");
     }
 }

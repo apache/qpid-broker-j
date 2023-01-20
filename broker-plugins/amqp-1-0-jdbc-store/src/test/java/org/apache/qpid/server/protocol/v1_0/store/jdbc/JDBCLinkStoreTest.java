@@ -20,7 +20,6 @@
 
 package org.apache.qpid.server.protocol.v1_0.store.jdbc;
 
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

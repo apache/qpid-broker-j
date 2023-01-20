@@ -21,10 +21,10 @@
 package org.apache.qpid.systests.jms_1_1.acknowledge;
 
 import static org.apache.qpid.systests.Utils.INDEX;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Set;
@@ -44,7 +44,8 @@ import javax.jms.Session;
 import javax.naming.NamingException;
 
 import com.google.common.collect.Sets;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.Utils;
@@ -108,14 +109,14 @@ public class AcknowledgeTest extends JmsTestBase
             Utils.sendMessages(session, queue, 2);
 
             Message message = consumer.receive(getReceiveTimeout());
-            assertNotNull("First message has not been received", message);
-            assertEquals("Unexpected message index received", 0, message.getIntProperty(INDEX));
+            assertNotNull(message, "First message has not been received");
+            assertEquals(0, message.getIntProperty(INDEX), "Unexpected message index received");
 
             acknowledge(ackMode, session, message);
 
             message = consumer.receive(getReceiveTimeout());
-            assertNotNull("Second message has not been received", message);
-            assertEquals("Unexpected message index received", 1, message.getIntProperty(INDEX));
+            assertNotNull(message, "Second message has not been received");
+            assertEquals(1, message.getIntProperty(INDEX), "Unexpected message index received");
         }
         finally
         {
@@ -136,8 +137,7 @@ public class AcknowledgeTest extends JmsTestBase
             MessageProducer producer = session.createProducer(queue);
             connection.start();
 
-            List<Integer> messageIndices = IntStream.rangeClosed(0, 2)
-                                                    .boxed().collect(Collectors.toList());
+            List<Integer> messageIndices = IntStream.rangeClosed(0, 2).boxed().collect(Collectors.toList());
 
             messageIndices.forEach(integer -> {
                 try
@@ -190,8 +190,10 @@ public class AcknowledgeTest extends JmsTestBase
             });
 
             boolean completed = completionLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertTrue(String.format("Message listener did not receive all messsages within permitted timeout %d ms", TIMEOUT), completed);
-            assertNull("Message listener encountered unexpected exception", exception.get());
+            assertTrue(completed,
+                    String.format("Message listener did not receive all messages within permitted timeout %d ms",
+                            TIMEOUT));
+            assertNull(exception.get(), "Message listener encountered unexpected exception");
         }
         finally
         {
@@ -213,15 +215,16 @@ public class AcknowledgeTest extends JmsTestBase
             if (ackMode == Session.SESSION_TRANSACTED || ackMode == Session.CLIENT_ACKNOWLEDGE)
             {
                 Message message = consumer.receive(getReceiveTimeout());
-                assertNotNull("Second message has not been received on new connection", message);
-                assertEquals("Unexpected message index received after restart", 1, message.getIntProperty(INDEX));
+                assertNotNull(message, "Second message has not been received on new connection");
+                assertEquals(1, message.getIntProperty(INDEX),
+                        "Unexpected message index received after restart");
 
                 acknowledge(ackMode, session, message);
             }
             else if (ackMode == Session.AUTO_ACKNOWLEDGE)
             {
                 Message message = consumer.receive(getReceiveTimeout());
-                assertNull("Unexpected message received on new connection", message);
+                assertNull(message, "Unexpected message received on new connection");
             }
             // With Session.DUPS_OK_ACKNOWLEDGE JMS does allow us to be certain if the message will be
             // delivered again or not.

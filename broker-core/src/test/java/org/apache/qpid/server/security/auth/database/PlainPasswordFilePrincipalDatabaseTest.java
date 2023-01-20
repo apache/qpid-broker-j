@@ -20,12 +20,14 @@
  */
 package org.apache.qpid.server.security.auth.database;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,22 +43,23 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.login.AccountNotFoundException;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.AbstractScramAuthenticationManager;
+
 public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFilePrincipalDatabaseTest
 {
     private final Principal _principal = new UsernamePrincipal(TEST_USERNAME, null);
-    private final List<File> _testPwdFiles = new ArrayList<File>();
     private PlainPasswordFilePrincipalDatabase _database;
+    private final List<File> _testPwdFiles = new ArrayList<>();
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        final PasswordCredentialManagingAuthenticationProvider
+        final PasswordCredentialManagingAuthenticationProvider<?>
                 mockAuthenticationProvider = mock(PasswordCredentialManagingAuthenticationProvider.class);
         when(mockAuthenticationProvider.getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT)).thenReturn(4096);
         _database = new PlainPasswordFilePrincipalDatabase(mockAuthenticationProvider);
@@ -64,7 +67,7 @@ public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFile
     }
 
     @Override
-    protected AbstractPasswordFilePrincipalDatabase getDatabase()
+    protected AbstractPasswordFilePrincipalDatabase<?> getDatabase()
     {
         return _database;
     }
@@ -74,75 +77,45 @@ public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFile
     @Test
     public void testCreatePrincipal()
     {
-        File testFile = createPasswordFile(1, 0);
-
+        final File testFile = createPasswordFile(1, 0);
         loadPasswordFile(testFile);
 
         final String CREATED_PASSWORD = "guest";
         final String CREATED_USERNAME = "createdUser";
+        final Principal principal = () -> CREATED_USERNAME;
 
-        Principal principal = new Principal()
-        {
-            @Override
-            public String getName()
-            {
-                return CREATED_USERNAME;
-            }
-        };
-
-        assertTrue("New user not created.", _database.createPrincipal(principal, CREATED_PASSWORD.toCharArray()));
-
+        assertTrue(_database.createPrincipal(principal, CREATED_PASSWORD.toCharArray()), "New user not created.");
 
         loadPasswordFile(testFile);
 
-        assertNotNull("Created User was not saved", _database.getUser(CREATED_USERNAME));
-
-        assertFalse("Duplicate user created.",
-                           _database.createPrincipal(principal, CREATED_PASSWORD.toCharArray()));
-
-
+        assertNotNull(_database.getUser(CREATED_USERNAME), "Created User was not saved");
+        assertFalse(_database.createPrincipal(principal, CREATED_PASSWORD.toCharArray()), "Duplicate user created.");
         testFile.delete();
     }
 
     @Test
     public void testCreatePrincipalIsSavedToFile()
     {
-
-        File testFile = createPasswordFile(1, 0);
-
+        final File testFile = createPasswordFile(1, 0);
         loadPasswordFile(testFile);
 
-        Principal principal = new Principal()
-        {
-            @Override
-            public String getName()
-            {
-                return TEST_USERNAME;
-            }
-        };
+        final Principal principal = () -> TEST_USERNAME;
 
         _database.createPrincipal(principal, TEST_PASSWORD_CHARS);
 
-        try
+        try (final BufferedReader reader = new BufferedReader(new FileReader(testFile)))
         {
-            BufferedReader reader = new BufferedReader(new FileReader(testFile));
+            assertTrue(reader.ready(), "File has no content");
+            assertEquals(TEST_COMMENT, reader.readLine(), "Comment line has been corrupted.");
+            assertTrue(reader.ready(), "File is missing user data.");
 
-            assertTrue("File has no content", reader.ready());
+            final String userLine = reader.readLine();
+            final String[] result = Pattern.compile(":").split(userLine);
 
-            assertEquals("Comment line has been corrupted.", TEST_COMMENT, reader.readLine());
-
-            assertTrue("File is missing user data.", reader.ready());
-
-            String userLine = reader.readLine();
-
-            String[] result = Pattern.compile(":").split(userLine);
-
-            assertEquals("User line not complete '" + userLine + "'", (long) 2, (long) result.length);
-
-            assertEquals("Username not correct,", TEST_USERNAME, result[0]);
-            assertEquals("Password not correct,", TEST_PASSWORD, result[1]);
-
-            assertFalse("File has more content", reader.ready());
+            assertEquals(2, (long) result.length, "User line not complete '" + userLine + "'");
+            assertEquals(TEST_USERNAME, result[0], "Username not correct,");
+            assertEquals(TEST_PASSWORD, result[1], "Password not correct,");
+            assertFalse(reader.ready(), "File has more content");
         }
         catch (IOException e)
         {
@@ -154,45 +127,21 @@ public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFile
     @Test
     public void testDeletePrincipal()
     {
-        File testFile = createPasswordFile(1, 1);
+        final File testFile = createPasswordFile(1, 1);
+        loadPasswordFile(testFile);
+
+        final Principal user = _database.getUser(TEST_USERNAME + "0");
+        assertNotNull(user, "Generated user not present.");
+
+        assertDoesNotThrow(() -> _database.deletePrincipal(user), "User should be present");
+
+        assertThrows(AccountNotFoundException.class, () -> _database.deletePrincipal(user),
+                "User should not be present");
 
         loadPasswordFile(testFile);
 
-        Principal user = _database.getUser(TEST_USERNAME + "0");
-        assertNotNull("Generated user not present.", user);
-
-        try
-        {
-            _database.deletePrincipal(user);
-        }
-        catch (AccountNotFoundException e)
-        {
-            fail("User should be present" + e.getMessage());
-        }
-
-        try
-        {
-            _database.deletePrincipal(user);
-            fail("User should not be present");
-        }
-        catch (AccountNotFoundException e)
-        {
-            //pass
-        }
-
-        loadPasswordFile(testFile);
-
-        try
-        {
-            _database.deletePrincipal(user);
-            fail("User should not be present");
-        }
-        catch (AccountNotFoundException e)
-        {
-            //pass
-        }
-
-        assertNull("Deleted user still present.", _database.getUser(TEST_USERNAME + "0"));
+        assertThrows(AccountNotFoundException.class, () -> _database.deletePrincipal(user), "User should not be present");
+        assertNull(_database.getUser(TEST_USERNAME + "0"), "Deleted user still present.");
 
         testFile.delete();
     }
@@ -200,38 +149,35 @@ public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFile
     @Test
     public void testGetUsers()
     {
-        int USER_COUNT = 10;
-        File testFile = createPasswordFile(1, USER_COUNT);
-
+        final int USER_COUNT = 10;
+        final File testFile = createPasswordFile(1, USER_COUNT);
         loadPasswordFile(testFile);
 
-        Principal user = _database.getUser("MISSING_USERNAME");
-        assertNull("Missing user present.", user);
+        final Principal user = _database.getUser("MISSING_USERNAME");
+        assertNull(user, "Missing user present.");
 
-        List<Principal> users = _database.getUsers();
+        final List<Principal> users = _database.getUsers();
 
-        assertNotNull("Users list is null.", users);
+        assertNotNull(users, "Users list is null.");
+        assertEquals(USER_COUNT, (long) users.size());
 
-        assertEquals((long) USER_COUNT, (long) users.size());
-
-        boolean[] verify = new boolean[USER_COUNT];
+        final boolean[] verify = new boolean[USER_COUNT];
         for (int i = 0; i < USER_COUNT; i++)
         {
-            Principal principal = users.get(i);
+            final Principal principal = users.get(i);
 
-            assertNotNull("Generated user not present.", principal);
+            assertNotNull(principal, "Generated user not present.");
 
-            String name = principal.getName();
+            final String name = principal.getName();
+            final int id = Integer.parseInt(name.substring(TEST_USERNAME.length()));
 
-            int id = Integer.parseInt(name.substring(TEST_USERNAME.length()));
-
-            assertFalse("Duplicated username retrieve", verify[id]);
+            assertFalse(verify[id], "Duplicated username retrieve");
             verify[id] = true;
         }
 
         for (int i = 0; i < USER_COUNT; i++)
         {
-            assertTrue("User " + i + " missing", verify[i]);
+            assertTrue(verify[i], "User " + i + " missing");
         }
 
         testFile.delete();
@@ -240,45 +186,29 @@ public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFile
     @Test
     public void testUpdatePasswordIsSavedToFile()
     {
-
-        File testFile = createPasswordFile(1, 1);
-
+        final File testFile = createPasswordFile(1, 1);
         loadPasswordFile(testFile);
 
-        Principal testUser = _database.getUser(TEST_USERNAME + "0");
+        final Principal testUser = _database.getUser(TEST_USERNAME + "0");
 
         assertNotNull(testUser);
 
-        String NEW_PASSWORD = "NewPassword";
-        try
+        final String NEW_PASSWORD = "NewPassword";
+        assertDoesNotThrow(() -> _database.updatePassword(testUser, NEW_PASSWORD.toCharArray()));
+
+        try (final BufferedReader reader = new BufferedReader(new FileReader(testFile)))
         {
-            _database.updatePassword(testUser, NEW_PASSWORD.toCharArray());
-        }
-        catch (AccountNotFoundException e)
-        {
-            fail(e.toString());
-        }
+            assertTrue(reader.ready(), "File has no content");
+            assertEquals(TEST_COMMENT, reader.readLine(), "Comment line has been corrupted.");
+            assertTrue(reader.ready(), "File is missing user data.");
 
-        try
-        {
-            BufferedReader reader = new BufferedReader(new FileReader(testFile));
+            final String userLine = reader.readLine();
+            final String[] result = Pattern.compile(":").split(userLine);
 
-            assertTrue("File has no content", reader.ready());
-
-            assertEquals("Comment line has been corrupted.", TEST_COMMENT, reader.readLine());
-
-            assertTrue("File is missing user data.", reader.ready());
-
-            String userLine = reader.readLine();
-
-            String[] result = Pattern.compile(":").split(userLine);
-
-            assertEquals("User line not complete '" + userLine + "'", (long) 2, (long) result.length);
-
-            assertEquals("Username not correct,", TEST_USERNAME + "0", result[0]);
-            assertEquals("New Password not correct,", NEW_PASSWORD, result[1]);
-
-            assertFalse("File has more content", reader.ready());
+            assertEquals(2, (long) result.length, "User line not complete '" + userLine + "'");
+            assertEquals(TEST_USERNAME + "0", result[0], "Username not correct,");
+            assertEquals(NEW_PASSWORD, result[1], "New Password not correct,");
+            assertFalse(reader.ready(), "File has more content");
         }
         catch (IOException e)
         {
@@ -296,7 +226,7 @@ public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFile
         }
         catch (FileNotFoundException fnfe)
         {
-            assertTrue(fnfe.getMessage(), fnfe.getMessage().startsWith("Cannot find password file"));
+            assertTrue(fnfe.getMessage().startsWith("Cannot find password file"), fnfe.getMessage());
         }
         catch (IOException e)
         {
@@ -308,9 +238,7 @@ public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFile
     @Test
     public void testSetPasswordFileWithReadOnlyFile()
     {
-
-        File testFile = createPasswordFile(0, 0);
-
+        final File testFile = createPasswordFile(0, 0);
         testFile.setReadOnly();
 
         try
@@ -330,16 +258,16 @@ public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFile
     }
     
     @Test
-    public void testCreateUserPrincipal() throws IOException
+    public void testCreateUserPrincipal()
     {
-        Principal newPrincipal = createUserPrincipal();
+        final Principal newPrincipal = createUserPrincipal();
         assertNotNull(newPrincipal);
         assertEquals(_principal.getName(), newPrincipal.getName());
     }
 
     private Principal createUserPrincipal()
     {
-        File testFile = createPasswordFile(0, 0);
+        final File testFile = createPasswordFile(0, 0);
         loadPasswordFile(testFile);
 
         _database.createPrincipal(_principal, TEST_PASSWORD_CHARS);
@@ -347,29 +275,23 @@ public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFile
     }
 
     @Test
-    public void testVerifyPassword() throws IOException, AccountNotFoundException
+    public void testVerifyPassword() throws AccountNotFoundException
     {
         createUserPrincipal();
         assertFalse(_database.verifyPassword(TEST_USERNAME, new char[]{}));
         assertFalse(_database.verifyPassword(TEST_USERNAME, "massword".toCharArray()));
         assertTrue(_database.verifyPassword(TEST_USERNAME, TEST_PASSWORD_CHARS));
 
-        try
-        {
-            _database.verifyPassword("made.up.username", TEST_PASSWORD_CHARS);
-            fail("Should not have been able to verify this non-existant users password.");
-        }
-        catch (AccountNotFoundException e)
-        {
-            // pass
-        }
+        assertThrows(AccountNotFoundException.class,
+                () -> _database.verifyPassword("made.up.username", TEST_PASSWORD_CHARS),
+                "Should not have been able to verify this non-existant users password.");
     }
     
     @Test
-    public void testUpdatePassword() throws IOException, AccountNotFoundException
+    public void testUpdatePassword() throws AccountNotFoundException
     {
         createUserPrincipal();
-        char[] newPwd = "newpassword".toCharArray();
+        final char[] newPwd = "newpassword".toCharArray();
         _database.updatePassword(_principal, newPwd);
         assertFalse(_database.verifyPassword(TEST_USERNAME, TEST_PASSWORD_CHARS));
         assertTrue(_database.verifyPassword(TEST_USERNAME, newPwd));

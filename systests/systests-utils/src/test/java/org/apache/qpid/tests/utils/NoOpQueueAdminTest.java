@@ -21,22 +21,21 @@
 
 package org.apache.qpid.tests.utils;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class NoOpQueueAdminTest extends UnitTestBase
 {
-
     private NoOpQueueAdmin _admin;
     private BrokerAdmin _brokerAdmin;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _admin = new NoOpQueueAdmin();

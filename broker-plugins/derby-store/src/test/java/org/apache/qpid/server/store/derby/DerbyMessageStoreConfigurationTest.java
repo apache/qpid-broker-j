@@ -20,13 +20,13 @@
  */
 package org.apache.qpid.server.store.derby;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.Before;
+import java.util.Objects;
+
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.VirtualHost;
@@ -37,11 +37,12 @@ import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
 public class DerbyMessageStoreConfigurationTest extends AbstractDurableConfigurationStoreTestCase
 {
-    @Before
+    @BeforeEach
     @Override
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.DERBY)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.DERBY),
+                "VirtualHostNodeStoreType should be DERBY");
         super.setUp();
     }
 
@@ -54,9 +55,8 @@ public class DerbyMessageStoreConfigurationTest extends AbstractDurableConfigura
     }
 
     @Override
-    protected DerbyConfigurationStore createConfigStore() throws Exception
+    protected DerbyConfigurationStore createConfigStore()
     {
         return new DerbyConfigurationStore(VirtualHost.class);
     }
-
 }

@@ -20,16 +20,16 @@
 
 package org.apache.qpid.server.session;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
 import java.util.Map;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.mockito.Mockito.verify;
 
 import javax.security.auth.Subject;
@@ -43,43 +43,41 @@ import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class AbstractAMQPSessionTest extends UnitTestBase
 {
-    private AMQPConnection _connection;
-    private AbstractAMQPSession mockAMQPSession;
-    private QueueManagingVirtualHost<?> _virtualHost;
-    private Broker _broker;
-    private TaskExecutor _taskExecutor;
-    private Subject _testSubject;
     public static final String TEST_USERNAME = "testUser";
 
-    @Before
+    private AMQPConnection<?> _connection;
+    private AbstractAMQPSession<?, ?> mockAMQPSession;
+    private TaskExecutor _taskExecutor;
+
+    @BeforeEach
     public void setUp() throws Exception
     {
         _connection = mock(AMQPConnection.class);
         _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         when(_connection.getChildExecutor()).thenReturn(_taskExecutor);
-        Model model = BrokerModel.getInstance();
+        final Model model = BrokerModel.getInstance();
         when(_connection.getModel()).thenReturn(model);
-        _testSubject = TestPrincipalUtils.createTestSubject(TEST_USERNAME);
-        when(_connection.getSubject()).thenReturn(_testSubject);
-        _broker = BrokerTestHelper.mockWithSystemPrincipal(Broker.class, mock(Principal.class));
-        when(_connection.getBroker()).thenReturn(_broker);
-        _virtualHost = mock(QueueManagingVirtualHost.class);
-        when(_connection.getAddressSpace()).thenReturn((VirtualHost)_virtualHost);
+        final Subject testSubject = TestPrincipalUtils.createTestSubject(TEST_USERNAME);
+        when(_connection.getSubject()).thenReturn(testSubject);
+        final Broker broker = BrokerTestHelper.mockWithSystemPrincipal(Broker.class, mock(Principal.class));
+        when(_connection.getBroker()).thenReturn(broker);
+        final QueueManagingVirtualHost<?> virtualHost = mock(QueueManagingVirtualHost.class);
+        when(_connection.getAddressSpace()).thenReturn(virtualHost);
         when(_connection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
         when(_connection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
         mockAMQPSession = new MockAMQPSession(_connection, 123);
 
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try

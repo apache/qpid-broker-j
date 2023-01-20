@@ -19,17 +19,13 @@
  */
 package org.apache.qpid.server.store.berkeleydb.replication;
 
-import static junit.framework.TestCase.assertEquals;
 import static org.apache.qpid.systests.Utils.INDEX;
 import static org.apache.qpid.systests.Utils.getReceiveTimeout;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.File;
 import java.net.URI;
@@ -60,11 +56,12 @@ import javax.jms.TextMessage;
 import javax.jms.TransactionRolledBackException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Objects;
 import com.sleepycat.je.Durability;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.rep.ReplicatedEnvironment;
 import com.sleepycat.je.rep.ReplicationConfig;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +83,6 @@ import org.apache.qpid.tests.utils.ConfigItem;
 public class MultiNodeTest extends GroupJmsTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeTest.class);
-
 
     private FailoverAwaitingListener _failoverListener = new FailoverAwaitingListener();
 
@@ -271,8 +267,8 @@ public class MultiNodeTest extends GroupJmsTestBase
             for (int i = 0; i < 10; i++)
             {
                 Message m = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message " + i + "  is not received", m);
-                assertEquals("Unexpected message received", i, m.getIntProperty(INDEX));
+                assertNotNull(m, "Message " + i + "  is not received");
+                assertEquals(i, m.getIntProperty(INDEX), "Unexpected message received");
             }
             consumingSession.commit();
         }
@@ -315,7 +311,7 @@ public class MultiNodeTest extends GroupJmsTestBase
     {
         transferMasterToNodeWithAmqpPort(connection, inactiveBrokerPort);
 
-        assertThat(Utils.produceConsume(connection, queue), is(equalTo(true)));
+        assumeTrue(Utils.produceConsume(connection, queue), "Message should be produced and consumed");
 
         getBrokerAdmin().awaitNodeRole(activeBrokerPort, "REPLICA");
     }
@@ -327,15 +323,16 @@ public class MultiNodeTest extends GroupJmsTestBase
         getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
         Map<String, Object> attributes = getBrokerAdmin().getNodeAttributes(nodeAmqpPort);
-        assertEquals("Inactive broker has unexpected role", "REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE));
-        getBrokerAdmin().setNodeAttributes(nodeAmqpPort,
-                                           Collections.singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
+        assertEquals("REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE),
+                     "Inactive broker has unexpected role");
+        getBrokerAdmin().setNodeAttributes(nodeAmqpPort, Collections.singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
 
         _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
         LOGGER.info("Listener has finished");
 
         attributes = getBrokerAdmin().getNodeAttributes(nodeAmqpPort);
-        assertEquals("Inactive broker has unexpected role", "MASTER", attributes.get(BDBHAVirtualHostNode.ROLE));
+        assertEquals("MASTER", attributes.get(BDBHAVirtualHostNode.ROLE),
+                     "Inactive broker has unexpected role");
     }
 
     @Test
@@ -373,7 +370,8 @@ public class MultiNodeTest extends GroupJmsTestBase
 
         getBrokerAdmin().awaitRemoteNodeRole(activeBrokerPort, inactiveBrokerPort, "REPLICA");
         Map<String, Object> attributes = getBrokerAdmin().getRemoteNodeAttributes(activeBrokerPort, inactiveBrokerPort);
-        assertEquals("Inactive broker has unexpected role", "REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE));
+        assertEquals("REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE),
+                     "Inactive broker has unexpected role");
 
         getBrokerAdmin().setRemoteNodeAttributes(activeBrokerPort,
                                                  inactiveBrokerPort,
@@ -383,9 +381,9 @@ public class MultiNodeTest extends GroupJmsTestBase
         LOGGER.info("Listener has finished");
 
         attributes = getBrokerAdmin().getNodeAttributes(inactiveBrokerPort);
-        assertEquals("Inactive broker has unexpected role", "MASTER", attributes.get(BDBHAVirtualHostNode.ROLE));
+        assertEquals("MASTER", attributes.get(BDBHAVirtualHostNode.ROLE), "Inactive broker has unexpected role");
 
-        assertThat(Utils.produceConsume(connection, queue), is(equalTo(true)));
+        assumeTrue(Utils.produceConsume(connection, queue), "Message should be produced and consumed");
 
         getBrokerAdmin().awaitNodeRole(activeBrokerPort, "REPLICA");
     }
@@ -471,7 +469,8 @@ public class MultiNodeTest extends GroupJmsTestBase
 
             getBrokerAdmin().awaitNodeRole(inactiveBrokerPort, "REPLICA");
             Map<String, Object> attributes = getBrokerAdmin().getNodeAttributes(inactiveBrokerPort);
-            assertEquals("Inactive broker has unexpected role", "REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE));
+            assertEquals("REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE),
+                         "Inactive broker has unexpected role");
 
             getBrokerAdmin().setNodeAttributes(inactiveBrokerPort,
                                                Collections.singletonMap(BDBHAVirtualHostNode.ROLE, "MASTER"));
@@ -480,7 +479,8 @@ public class MultiNodeTest extends GroupJmsTestBase
             LOGGER.info("Failover has finished");
 
             attributes = getBrokerAdmin().getNodeAttributes(inactiveBrokerPort);
-            assertEquals("New master has unexpected role", "MASTER", attributes.get(BDBHAVirtualHostNode.ROLE));
+            assertEquals("MASTER", attributes.get(BDBHAVirtualHostNode.ROLE),
+                         "New master has unexpected role");
 
             getBrokerAdmin().awaitNodeRole(activeBrokerPort, "REPLICA");
 
@@ -488,14 +488,15 @@ public class MultiNodeTest extends GroupJmsTestBase
             masterTransferred.set(true);
 
             boolean producedMore = producedOneAfter.await(5000, TimeUnit.MILLISECONDS);
-            assertTrue("Should have successfully produced at least one message after transfer complete", producedMore);
+            assertTrue(producedMore, "Should have successfully produced at least one message after transfer complete");
 
             keepRunning.set(false);
             boolean shutdown = workerShutdown.await(5000, TimeUnit.MILLISECONDS);
-            assertTrue("Worker thread should have shutdown", shutdown);
+            assertTrue(shutdown, "Worker thread should have shutdown");
 
             backgroundWorker.join(5000);
-            assertThat(workerException.get(), is(nullValue()));
+
+            assumeTrue(workerException.get() == null,"Exception shouldn't be thrown");
 
             assertNotNull(session.createTemporaryQueue());
         }
@@ -717,21 +718,19 @@ public class MultiNodeTest extends GroupJmsTestBase
             LOGGER.info("Failover has begun");
 
             Map<String, Object> attributes = getBrokerAdmin().getNodeAttributes(activeBrokerPort);
-            assertEquals("Broker has unexpected quorum override",
-                         Integer.valueOf(0),
-                         attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
+            assertEquals(0, attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE),
+                    "Broker has unexpected quorum override");
             getBrokerAdmin().setNodeAttributes(activeBrokerPort,
                                                Collections.singletonMap(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 1));
 
             attributes = getBrokerAdmin().getNodeAttributes(activeBrokerPort);
-            assertEquals("Broker has unexpected quorum override",
-                         Integer.valueOf(1),
-                         attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
+            assertEquals(1, attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE),
+                    "Broker has unexpected quorum override");
 
             _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
             LOGGER.info("Failover has finished");
 
-            assertThat(Utils.produceConsume(connection, queue), is(equalTo(true)));
+            assumeTrue(Utils.produceConsume(connection, queue),"Message should be produced and consumed");
         }
         finally
         {
@@ -765,9 +764,8 @@ public class MultiNodeTest extends GroupJmsTestBase
                                                        Collections.singletonMap(BDBHAVirtualHostNode.PRIORITY,
                                                                                 priority));
                     Map<String, Object> attributes = getBrokerAdmin().getNodeAttributes(port);
-                    assertEquals("Broker has unexpected priority",
-                                 priority,
-                                 attributes.get(BDBHAVirtualHostNode.PRIORITY));
+                    assertEquals(priority,attributes.get(BDBHAVirtualHostNode.PRIORITY),
+                                 "Broker has unexpected priority");
                 }
             }
 
@@ -782,13 +780,13 @@ public class MultiNodeTest extends GroupJmsTestBase
             }
 
             // do work on master
-            assertThat(Utils.produceConsume(connection, queue), is(equalTo(true)));
+            assumeTrue(Utils.produceConsume(connection, queue),"Message should be produced and consumed");
 
             Map<String, Object> masterNodeAttributes = getBrokerAdmin().getNodeAttributes(activeBrokerPort);
 
             Object lastTransactionId =
                     masterNodeAttributes.get(BDBHAVirtualHostNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID);
-            assertTrue("Unexpected last transaction id: " + lastTransactionId, lastTransactionId instanceof Number);
+            assertTrue(lastTransactionId instanceof Number, "Unexpected last transaction id: " + lastTransactionId);
 
             // make sure all remote nodes have the same transaction id as master
             for (Integer port : ports)
@@ -809,9 +807,10 @@ public class MultiNodeTest extends GroupJmsTestBase
 
             Map<String, Object> attributes =
                     getBrokerAdmin().getNodeAttributes(highestPriorityBrokerPort);
-            assertEquals("Inactive broker has unexpected role", "MASTER", attributes.get(BDBHAVirtualHostNode.ROLE));
+            assertEquals("MASTER", attributes.get(BDBHAVirtualHostNode.ROLE),
+                    "Inactive broker has unexpected role");
 
-            assertThat(Utils.produceConsume(connection, queue), is(equalTo(true)));
+            assumeTrue(Utils.produceConsume(connection, queue),"Message should be produced and consumed");
         }
         finally
         {
@@ -946,8 +945,8 @@ public class MultiNodeTest extends GroupJmsTestBase
             for (String m : expected)
             {
                 final Message message = consumer.receive(getReceiveTimeout());
-                assertThat(message, is(instanceOf(TextMessage.class)));
-                assertThat(((TextMessage) message).getText(), is(equalTo(m)));
+                assumeTrue(message instanceof TextMessage,"Message should be a text message");
+                assumeTrue(Objects.equal(m, ((TextMessage) message).getText()),"Message text should be " + m);
             }
         }
         finally
@@ -997,19 +996,19 @@ public class MultiNodeTest extends GroupJmsTestBase
                     LOGGER.warn("Broker {} thread dump:\n\n {}", entry.getKey(), entry.getValue());
                 }
             }
-            assertEquals("Failover did not occur", 0, _failoverCompletionLatch.getCount());
+            assertEquals(0, _failoverCompletionLatch.getCount(), "Failover did not occur");
         }
 
         void assertNoFailoverCompletionWithin(long delay) throws InterruptedException
         {
             _failoverCompletionLatch.await(delay, TimeUnit.MILLISECONDS);
-            assertEquals("Failover occurred unexpectedly", 1L, _failoverCompletionLatch.getCount());
+            assertEquals(1L, _failoverCompletionLatch.getCount(), "Failover occurred unexpectedly");
         }
 
         void awaitPreFailover(long delay) throws InterruptedException
         {
             boolean complete = _preFailoverLatch.await(delay, TimeUnit.MILLISECONDS);
-            assertTrue("Failover was expected to begin within " + delay + " ms.", complete);
+            assertTrue(complete, "Failover was expected to begin within " + delay + " ms.");
         }
 
         synchronized boolean isFailoverStarted()

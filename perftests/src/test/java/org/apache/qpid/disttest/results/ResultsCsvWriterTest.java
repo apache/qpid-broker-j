@@ -18,6 +18,7 @@
  */
 package org.apache.qpid.disttest.results;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -27,29 +28,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.google.common.io.Resources;
-import org.junit.Assert;
 
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.results.aggregation.ITestResult;
 import org.apache.qpid.disttest.results.formatting.CSVFormatter;
 import org.apache.qpid.test.utils.TestFileUtils;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ResultsCsvWriterTest extends UnitTestBase
 {
@@ -59,7 +47,7 @@ public class ResultsCsvWriterTest extends UnitTestBase
 
     private final ResultsCsvWriter _resultsFileWriter = new ResultsCsvWriter(_outputDir);
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _resultsFileWriter.setCsvFormater(_csvFormater);
@@ -88,23 +76,18 @@ public class ResultsCsvWriterTest extends UnitTestBase
 
         File resultsFile1 = new File(_outputDir, "config1.csv");
 
-        assertEquals(expectedCsvContents1,
-                            Resources.toString(resultsFile1.toURI().toURL(), StandardCharsets.UTF_8));
+        assertEquals(expectedCsvContents1, Resources.toString(resultsFile1.toURI().toURL(), StandardCharsets.UTF_8));
 
         _resultsFileWriter.writeResults(results2, "config2.json");
 
         File resultsFile2 = new File(_outputDir, "config2.csv");
-        assertEquals(expectedCsvContents2,
-                            Resources.toString(resultsFile2.toURI().toURL(), StandardCharsets.UTF_8));
+        assertEquals(expectedCsvContents2, Resources.toString(resultsFile2.toURI().toURL(), StandardCharsets.UTF_8));
 
         when(_csvFormater.format(any(List.class))).thenReturn(expectedSummaryFileContents);
 
         _resultsFileWriter.end();
 
         File summaryFile = new File(_outputDir, ResultsCsvWriter.TEST_SUMMARY_FILE_NAME);
-        assertEquals(expectedSummaryFileContents,
-                            Resources.toString(summaryFile.toURI().toURL(), StandardCharsets.UTF_8));
+        assertEquals(expectedSummaryFileContents, Resources.toString(summaryFile.toURI().toURL(), StandardCharsets.UTF_8));
     }
-
-
 }

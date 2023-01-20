@@ -26,14 +26,14 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyString;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 import java.util.Map;
 
 import org.hamcrest.Matchers;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.filter.AMQPFilterTypes;
@@ -159,7 +159,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
             assertThat(response.getConsumerCount(), is(equalTo(0L)));
         }
 
-        assumeThat(getBrokerAdmin().supportsRestart(), Matchers.is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
         getBrokerAdmin().restart();
 
         try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
@@ -224,7 +224,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
     @Test
     @SpecificationTest(section = "1.7.2.1",
             description = "The server MUST ignore the auto-delete field if the queue already exists.")
-    @Ignore("The server does not ignore the auto-delete field if the queue already exists.")
+    @Disabled("The server does not ignore the auto-delete field if the queue already exists.")
     public void queueDeclareAutoDeletePreexistingQueue() throws Exception
     {
         try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
@@ -587,7 +587,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
             assertThat(response.getReplyCode(), is(equalTo(ExchangeBoundOkBody.OK)));
         }
 
-        assumeThat(getBrokerAdmin().supportsRestart(), Matchers.is(true));
+        assumeTrue(getBrokerAdmin().supportsRestart());
         getBrokerAdmin().restart();
 
         try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())

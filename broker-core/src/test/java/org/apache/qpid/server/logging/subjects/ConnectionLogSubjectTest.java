@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 
 import java.security.Principal;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.apache.qpid.server.transport.AMQPConnection;
 
@@ -34,19 +34,15 @@ import org.apache.qpid.server.transport.AMQPConnection;
  */
 public class ConnectionLogSubjectTest extends AbstractTestLogSubject
 {
-
     private static final long CONNECTION_ID = 456L;
     private static final String USER = "InternalTestProtocolSession";
     private static final String IP_STRING = "127.0.0.1:1";
     private static final String VHOST = "test";
+    private AMQPConnection<?> _connection;
 
-    private AMQPConnection _connection;
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        super.setUp();
-
         final Principal principal = mock(Principal.class);
         when(principal.getName()).thenReturn(USER);
 
@@ -64,14 +60,13 @@ public class ConnectionLogSubjectTest extends AbstractTestLogSubject
      * @param message the message whose format needs validation
      */
     @Override
-    protected void validateLogStatement(String message)
+    protected void validateLogStatement(final String message)
     {
         verifyConnection(CONNECTION_ID, USER, IP_STRING, VHOST, message);
     }
 
-    public AMQPConnection getConnection()
+    public AMQPConnection<?> getConnection()
     {
         return _connection;
     }
-
 }

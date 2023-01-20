@@ -29,9 +29,9 @@ import static org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.NE
 import static org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.NEW_XID_DB_NAME;
 import static org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.OLD_CONTENT_DB_NAME;
 import static org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.OLD_XID_DB_NAME;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -50,7 +50,9 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.Transaction;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,7 +136,7 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
     }
 
     @Test
-    public void testPerformXidUpgrade() throws Exception
+    public void testPerformXidUpgrade()
     {
         File storeLocation = new File(TMP_FOLDER, getTestName());
         storeLocation.mkdirs();
@@ -164,27 +166,21 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
     {
         final DatabaseEntry value = new DatabaseEntry();
         final DatabaseEntry key = getXidKey();
-        new DatabaseTemplate(environment, NEW_XID_DB_NAME, null).run(new DatabaseRunnable()
-        {
-
-            @Override
-            public void run(Database xidDatabase, Database nullDatabase, Transaction transaction)
-            {
-                xidDatabase.get(null, key, value, LockMode.DEFAULT);
-            }
-        });
+        new DatabaseTemplate(environment, NEW_XID_DB_NAME, null).run((xidDatabase, nullDatabase, transaction) -> xidDatabase.get(null, key, value, LockMode.DEFAULT));
         NewPreparedTransactionBinding newBinding = new NewPreparedTransactionBinding();
         NewPreparedTransaction newTransaction = newBinding.entryToObject(value);
         NewRecordImpl[] newEnqueues = newTransaction.getEnqueues();
         NewRecordImpl[] newDequeues = newTransaction.getDequeues();
-        assertEquals("Unxpected new enqueus number", 1, newEnqueues.length);
+        assertEquals(1, newEnqueues.length, "Unexpected new enqueues number");
         NewRecordImpl enqueue = newEnqueues[0];
-        assertEquals("Unxpected queue id", UUIDGenerator.generateQueueUUID("TEST1", getVirtualHost().getName()), enqueue.getId());
-        assertEquals("Unxpected message id", 1, enqueue.getMessageNumber());
-        assertEquals("Unxpected new dequeues number", 1, newDequeues.length);
+        assertEquals(UUIDGenerator.generateQueueUUID("TEST1", getVirtualHost().getName()), enqueue.getId(),
+                "Unexpected queue id");
+        assertEquals(1, enqueue.getMessageNumber(), "Unexpected message id");
+        assertEquals(1, newDequeues.length, "Unexpected new dequeues number");
         NewRecordImpl dequeue = newDequeues[0];
-        assertEquals("Unxpected queue id", UUIDGenerator.generateQueueUUID("TEST2", getVirtualHost().getName()), dequeue.getId());
-        assertEquals("Unxpected message id", 2, dequeue.getMessageNumber());
+        assertEquals(UUIDGenerator.generateQueueUUID("TEST2", getVirtualHost().getName()), dequeue.getId(),
+                "Unexpected queue id");
+        assertEquals(2, dequeue.getMessageNumber(), "Unexpected message id");
     }
 
     private void populateOldXidEntries(Environment environment)
@@ -198,15 +194,7 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
         oldPreparedTransactionBinding.objectToEntry(oldPreparedTransaction, value);
 
         final DatabaseEntry key = getXidKey();
-        new DatabaseTemplate(environment, OLD_XID_DB_NAME, null).run(new DatabaseRunnable()
-        {
-
-            @Override
-            public void run(Database xidDatabase, Database nullDatabase, Transaction transaction)
-            {
-                xidDatabase.put(null, key, value);
-            }
-        });
+        new DatabaseTemplate(environment, OLD_XID_DB_NAME, null).run((xidDatabase, nullDatabase, transaction) -> xidDatabase.put(null, key, value));
     }
 
     protected DatabaseEntry getXidKey()
@@ -232,7 +220,7 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
                     DatabaseEntry key, DatabaseEntry value)
             {
                 NewQueueEntryKey newEntryRecord = newBinding.entryToObject(key);
-                assertTrue("Unexpected queue id", configuredObjects.containsKey(newEntryRecord.getQueueId()));
+                assertTrue(configuredObjects.containsKey(newEntryRecord.getQueueId()), "Unexpected queue id");
             }
         };
         new DatabaseTemplate(_environment, NEW_DELIVERY_DB_NAME, null).run(cursorOperation);
@@ -286,30 +274,30 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
     private void assertConfiguredObjects() throws Exception
     {
         Map<UUID, UpgradeConfiguredObjectRecord> configuredObjects = loadConfiguredObjects();
-        assertEquals("Unexpected number of configured objects", 21, configuredObjects.size());
+        assertEquals(21, configuredObjects.size(), "Unexpected number of configured objects");
 
-        Set<Map<String, Object>> expected = new HashSet<Map<String, Object>>(12);
-        List<UUID> expectedBindingIDs = new ArrayList<UUID>();
+        Set<Map<String, Object>> expected = new HashSet<>(12);
+        List<UUID> expectedBindingIDs = new ArrayList<>();
 
         expected.add(createExpectedQueueMap("myUpgradeQueue", Boolean.FALSE, null, null));
         expected.add(createExpectedQueueMap("clientid:mySelectorDurSubName", Boolean.TRUE, "clientid", null));
         expected.add(createExpectedQueueMap("clientid:myDurSubName", Boolean.TRUE, "clientid", null));
 
-        final Map<String, Object> queueWithOwnerArguments = new HashMap<String, Object>();
+        final Map<String, Object> queueWithOwnerArguments = new HashMap<>();
         queueWithOwnerArguments.put(QueueArgumentsConverter.X_QPID_PRIORITIES, 10);
         queueWithOwnerArguments.put(QueueArgumentsConverter.X_QPID_DESCRIPTION, "misused-owner-as-description");
         expected.add(createExpectedQueueMap("nonexclusive-with-erroneous-owner", Boolean.FALSE, null,queueWithOwnerArguments));
 
-        final Map<String, Object> priorityQueueArguments = new HashMap<String, Object>();
+        final Map<String, Object> priorityQueueArguments = new HashMap<>();
         priorityQueueArguments.put(QueueArgumentsConverter.X_QPID_PRIORITIES, 10);
         expected.add(createExpectedQueueMap(PRIORITY_QUEUE_NAME, Boolean.FALSE, null, priorityQueueArguments));
 
-        final Map<String, Object> queueWithDLQArguments = new HashMap<String, Object>();
+        final Map<String, Object> queueWithDLQArguments = new HashMap<>();
         queueWithDLQArguments.put("x-qpid-dlq-enabled", true);
         queueWithDLQArguments.put("x-qpid-maximum-delivery-count", 2);
         expected.add(createExpectedQueueMap(QUEUE_WITH_DLQ_NAME, Boolean.FALSE, null, queueWithDLQArguments));
 
-        final Map<String, Object> dlqArguments = new HashMap<String, Object>();
+        final Map<String, Object> dlqArguments = new HashMap<>();
         dlqArguments.put("x-qpid-dlq-enabled", false);
         dlqArguments.put("x-qpid-maximum-delivery-count", 0);
         expected.add(createExpectedQueueMap(QUEUE_WITH_DLQ_NAME + "_DLQ", Boolean.FALSE, null, dlqArguments));
@@ -333,7 +321,7 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
         expected.add(createExpectedQueueBindingMapAndID(QUEUE_WITH_DLQ_NAME, QUEUE_WITH_DLQ_NAME, "amq.direct", null, expectedBindingIDs));
         expected.add(createExpectedQueueBindingMapAndID(QUEUE_WITH_DLQ_NAME + "_DLQ", "dlq", QUEUE_WITH_DLQ_NAME + "_DLE", null, expectedBindingIDs));
 
-        Set<String> expectedTypes = new HashSet<String>();
+        Set<String> expectedTypes = new HashSet<>();
         expectedTypes.add(Queue.class.getName());
         expectedTypes.add(Exchange.class.getName());
         expectedTypes.add(Binding.class.getName());
@@ -343,39 +331,41 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
             UpgradeConfiguredObjectRecord object = entry.getValue();
             Map<String, Object> deserialized = jsonSerializer.deserialize(object.getAttributes());
 
-            assertTrue("Unexpected entry in a store - json [" + object.getAttributes() + "], map [" + deserialized + "]",
-                    expected.remove(deserialized));
+            assertTrue(expected.remove(deserialized),
+                    "Unexpected entry in a store - json [" + object.getAttributes() + "], map [" + deserialized + "]");
             String type = object.getType();
-            assertTrue("Unexpected type:" + type, expectedTypes.contains(type));
+            assertTrue(expectedTypes.contains(type), "Unexpected type:" + type);
             UUID key = entry.getKey();
 
-            assertNotNull("Key cannot be null", key);
+            assertNotNull(key, "Key cannot be null");
 
             if (type.equals(Exchange.class.getName()))
             {
                 String exchangeName = (String) deserialized.get(Exchange.NAME);
                 assertNotNull(exchangeName);
-                assertEquals("Unexpected key", key, UUIDGenerator.generateExchangeUUID(exchangeName, getVirtualHost().getName()));
+                assertEquals(key, UUIDGenerator.generateExchangeUUID(exchangeName, getVirtualHost().getName()),
+                        "Unexpected key");
             }
             else if (type.equals(Queue.class.getName()))
             {
                 String queueName = (String) deserialized.get(Queue.NAME);
                 assertNotNull(queueName);
-                assertEquals("Unexpected key", key, UUIDGenerator.generateQueueUUID(queueName, getVirtualHost().getName()));
+                assertEquals(key, UUIDGenerator.generateQueueUUID(queueName, getVirtualHost().getName()),
+                        "Unexpected key");
             }
             else if (type.equals(Binding.class.getName()))
             {
-                assertTrue("unexpected binding id", expectedBindingIDs.remove(key));
+                assertTrue(expectedBindingIDs.remove(key), "Unexpected binding id");
             }
         }
 
-        assertTrue("Not all expected configured objects found:" + expected, expected.isEmpty());
-        assertTrue("Not all expected bindings found:" + expectedBindingIDs, expectedBindingIDs.isEmpty());
+        assertTrue(expected.isEmpty(), "Not all expected configured objects found:" + expected);
+        assertTrue(expectedBindingIDs.isEmpty(), "Not all expected bindings found:" + expectedBindingIDs);
     }
 
     private Map<String, Object> createExpectedQueueBindingMapAndID(String queue, String bindingName, String exchangeName, Map<String, String> argumentMap, List<UUID> expectedBindingIDs)
     {
-        Map<String, Object> expectedQueueBinding = new HashMap<String, Object>();
+        final Map<String, Object> expectedQueueBinding = new HashMap<>();
         expectedQueueBinding.put("queue", UUIDGenerator.generateQueueUUID(queue, getVirtualHost().getName()).toString());
         expectedQueueBinding.put("name", bindingName);
         expectedQueueBinding.put("exchange", UUIDGenerator.generateExchangeUUID(exchangeName, getVirtualHost().getName()).toString());
@@ -391,7 +381,7 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
 
     private Map<String, Object> createExpectedQueueMap(String name, boolean exclusiveFlag, String owner, Map<String, Object> argumentMap)
     {
-        Map<String, Object> expectedQueueEntry = new HashMap<String, Object>();
+        final Map<String, Object> expectedQueueEntry = new HashMap<>();
         expectedQueueEntry.put(Queue.NAME, name);
         expectedQueueEntry.put(Queue.EXCLUSIVE, exclusiveFlag);
         expectedQueueEntry.put(Queue.OWNER, owner);
@@ -404,7 +394,7 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
 
     private Map<String, Object> createExpectedExchangeMap(String name, String type)
     {
-        Map<String, Object> expectedExchnageEntry = new HashMap<String, Object>();
+        final Map<String, Object> expectedExchnageEntry = new HashMap<>();
         expectedExchnageEntry.put(Exchange.NAME, name);
         expectedExchnageEntry.put(Exchange.TYPE, type);
         expectedExchnageEntry.put(Exchange.LIFETIME_POLICY, LifetimePolicy.PERMANENT.name());
@@ -413,7 +403,7 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
 
     private Map<UUID, UpgradeConfiguredObjectRecord> loadConfiguredObjects()
     {
-        final Map<UUID, UpgradeConfiguredObjectRecord> configuredObjectsRecords = new HashMap<UUID, UpgradeConfiguredObjectRecord>();
+        final Map<UUID, UpgradeConfiguredObjectRecord> configuredObjectsRecords = new HashMap<>();
         final ConfiguredObjectBinding binding = new ConfiguredObjectBinding();
         final UpgradeUUIDBinding uuidBinding = new UpgradeUUIDBinding();
         CursorOperation configuredObjectsCursor = new CursorOperation()
@@ -442,9 +432,9 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
                     DatabaseEntry key, DatabaseEntry value)
             {
                 long id = LongBinding.entryToLong(key);
-                assertTrue("Unexpected id", id > 0);
+                assertTrue(id > 0, "Unexpected id");
                 byte[] content = contentBinding.entryToObject(value);
-                assertNotNull("Unexpected content", content);
+                assertNotNull(content, "Unexpected content");
             }
         };
         new DatabaseTemplate(_environment, NEW_CONTENT_DB_NAME, null).run(contentCursorOperation);

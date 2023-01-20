@@ -20,7 +20,6 @@
 
 package org.apache.qpid.server.management.plugin.controller.v8_0.category;
 
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -40,15 +39,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.ManagementController;
 import org.apache.qpid.server.management.plugin.ManagementException;
 import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObject;
 import org.apache.qpid.server.management.plugin.controller.LegacyManagementController;
 import org.apache.qpid.server.model.ConfiguredObject;
-
 
 public class LegacyCategoryController_v8_0Test
 {
@@ -69,7 +67,7 @@ public class LegacyCategoryController_v8_0Test
     private ConfiguredObject _root;
     private ManagementController _nextVersionManagementController;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _nextVersionManagementController = mock(ManagementController.class);

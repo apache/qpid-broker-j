@@ -21,10 +21,10 @@
 
 package org.apache.qpid.systests.jms_1_1.queue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -35,7 +35,7 @@ import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 import javax.jms.TextMessage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -49,13 +49,13 @@ public class TemporaryQueueTest extends JmsTestBase
         {
             final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             final TemporaryQueue queue = session.createTemporaryQueue();
-            assertNotNull("Temporary queue cannot be null", queue);
+            assertNotNull(queue, "Temporary queue cannot be null");
             final MessageProducer producer = session.createProducer(queue);
             final MessageConsumer consumer = session.createConsumer(queue);
             connection.start();
             producer.send(session.createTextMessage("hello"));
             Message message = consumer.receive(getReceiveTimeout());
-            assertTrue("TextMessage should be received", message instanceof TextMessage);
+            assertTrue(message instanceof TextMessage, "TextMessage should be received");
             assertEquals("hello", ((TextMessage) message).getText());
         }
         finally
@@ -76,7 +76,7 @@ public class TemporaryQueueTest extends JmsTestBase
                 final Session session1 = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                 final Session session2 = connection2.createSession(false, Session.AUTO_ACKNOWLEDGE);
                 final TemporaryQueue queue = session1.createTemporaryQueue();
-                assertNotNull("Temporary queue cannot be null", queue);
+                assertNotNull(queue, "Temporary queue cannot be null");
 
                 try
                 {
@@ -111,7 +111,7 @@ public class TemporaryQueueTest extends JmsTestBase
                 final Session session1 = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                 final Session session2 = connection2.createSession(false, Session.AUTO_ACKNOWLEDGE);
                 final TemporaryQueue queue = session1.createTemporaryQueue();
-                assertNotNull("Temporary queue cannot be null", queue);
+                assertNotNull(queue, "Temporary queue cannot be null");
 
                 try
                 {
@@ -146,7 +146,7 @@ public class TemporaryQueueTest extends JmsTestBase
                 final Session session1 = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                 final Session session2 = connection2.createSession(false, Session.AUTO_ACKNOWLEDGE);
                 final TemporaryQueue queue = session1.createTemporaryQueue();
-                assertNotNull("Temporary queue cannot be null", queue);
+                assertNotNull(queue, "Temporary queue cannot be null");
 
                 MessageProducer producer = session2.createProducer(queue);
                 producer.send(session2.createMessage());
@@ -154,7 +154,7 @@ public class TemporaryQueueTest extends JmsTestBase
                 connection.start();
                 MessageConsumer consumer = session1.createConsumer(queue);
                 Message message = consumer.receive(getReceiveTimeout());
-                assertNotNull("Message not received", message);
+                assertNotNull(message, "Message not received");
             }
             finally
             {
@@ -175,7 +175,7 @@ public class TemporaryQueueTest extends JmsTestBase
         {
             final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             final TemporaryQueue queue = session.createTemporaryQueue();
-            assertNotNull("Temporary queue cannot be null", queue);
+            assertNotNull(queue, "Temporary queue cannot be null");
 
             MessageProducer producer = session.createProducer(queue);
             String messageText = "Hello World!";
@@ -186,8 +186,8 @@ public class TemporaryQueueTest extends JmsTestBase
 
             MessageConsumer consumer = session.createConsumer(queue);
             Message message = consumer.receive(getReceiveTimeout());
-            assertTrue("Received message not a text message", message instanceof TextMessage);
-            assertEquals("Incorrect message text", messageText, ((TextMessage) message).getText());
+            assertTrue(message instanceof TextMessage, "Received message not a text message");
+            assertEquals(messageText, ((TextMessage) message).getText(), "Incorrect message text");
         }
         finally
         {
@@ -204,7 +204,7 @@ public class TemporaryQueueTest extends JmsTestBase
             final Session session1 = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             final Session session2 = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             final TemporaryQueue queue = session1.createTemporaryQueue();
-            assertNotNull("Temporary queue cannot be null", queue);
+            assertNotNull(queue, "Temporary queue cannot be null");
 
             MessageProducer producer = session1.createProducer(queue);
             String messageText = "Hello World!";
@@ -215,8 +215,8 @@ public class TemporaryQueueTest extends JmsTestBase
             connection.start();
             MessageConsumer consumer = session2.createConsumer(queue);
             Message message = consumer.receive(getReceiveTimeout());
-            assertTrue("Received message not a text message", message instanceof TextMessage);
-            assertEquals("Incorrect message text", messageText, ((TextMessage) message).getText());
+            assertTrue(message instanceof TextMessage, "Received message not a text message");
+            assertEquals(messageText, ((TextMessage) message).getText(), "Incorrect message text");
         }
         finally
         {
@@ -233,7 +233,7 @@ public class TemporaryQueueTest extends JmsTestBase
         {
             final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             final TemporaryQueue queue = session.createTemporaryQueue();
-            assertNotNull("Temporary queue cannot be null", queue);
+            assertNotNull(queue, "Temporary queue cannot be null");
             final MessageConsumer consumer = session.createConsumer(queue);
             connection.start();
 
@@ -248,7 +248,8 @@ public class TemporaryQueueTest extends JmsTestBase
             }
 
             int numberOfQueuesAfterQueueDelete = getQueueCount();
-            assertEquals("Unexpected number of queue", 1, numberOfQueuesAfterQueueDelete - numberOfQueuesBeforeTest);
+            assertEquals(1, numberOfQueuesAfterQueueDelete - numberOfQueuesBeforeTest,
+                    "Unexpected number of queue");
 
             consumer.close();
 

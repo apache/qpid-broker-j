@@ -21,16 +21,15 @@
 package org.apache.qpid.tests.protocol.v0_10;
 
 import static org.hamcrest.CoreMatchers.both;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionClose;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionHeartbeat;
@@ -52,7 +51,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             description = "An AMQP client MUST handle incoming connection.start controls.")
     public void startOk() throws Exception
     {
-        assumeThat(getBrokerAdmin().isAnonymousSupported(), is(equalTo(true)));
+        assumeTrue(getBrokerAdmin().isAnonymousSupported());
         try(FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.ANONYMOUS_AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -69,7 +68,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                           + " Certain fields are negotiated, others provide capability information.")
     public void tuneOkAndOpen() throws Exception
     {
-        assumeThat(getBrokerAdmin().isAnonymousSupported(), is(equalTo(true)));
+        assumeTrue(getBrokerAdmin().isAnonymousSupported());
         try(FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.ANONYMOUS_AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -118,7 +117,7 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             description = "open-connection = C:protocol-header S:START C:START-OK *challenge S:TUNE C:TUNE-OK C:OPEN S:OPEN-OK")
     public void authenticationBypassAfterSendingStartOk() throws Exception
     {
-        assumeThat(getBrokerAdmin().isSASLMechanismSupported(ConnectionInteraction.SASL_MECHANISM_PLAIN), is(equalTo(true)));
+        assumeTrue(getBrokerAdmin().isSASLMechanismSupported(ConnectionInteraction.SASL_MECHANISM_PLAIN));
         try(FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
         {
             final Interaction interaction = transport.newInteraction();
@@ -162,8 +161,8 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             ConnectionTune response = interaction.authenticateConnection().getLatestResponse(ConnectionTune.class);
 
-            assumeThat(response.hasMaxFrameSize(), is(true));
-            assumeThat(response.getMaxFrameSize(), is(lessThan(0xFFFF)));
+            assumeTrue(response.hasMaxFrameSize());
+            assumeTrue(is(lessThan(0xFFFF)).matches(response.getMaxFrameSize()));
             interaction.connection().tuneOkChannelMax(response.getChannelMax())
                                     .tuneOkMaxFrameSize(response.getMaxFrameSize() + 1)
                                     .tuneOk()
@@ -183,10 +182,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             ConnectionTune response = interaction.authenticateConnection().getLatestResponse(ConnectionTune.class);
 
-            assumeThat(response.hasHeartbeatMin(), is(true));
-            assumeThat(response.hasHeartbeatMax(), is(true));
-            assumeThat(response.getHeartbeatMin(), is(greaterThanOrEqualTo(0)));
-            assumeThat(response.getHeartbeatMax(), is(greaterThanOrEqualTo(1)));
+            assumeTrue(response.hasHeartbeatMin());
+            assumeTrue(response.hasHeartbeatMax());
+            assumeTrue(is(greaterThanOrEqualTo(0)).matches(response.getHeartbeatMin()));
+            assumeTrue(is(greaterThanOrEqualTo(1)).matches(response.getHeartbeatMax()));
 
             final int heartbeatPeriod = 1;
 
@@ -225,10 +224,10 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             ConnectionTune response = interaction.authenticateConnection().getLatestResponse(ConnectionTune.class);
 
-            assumeThat(response.hasHeartbeatMin(), is(true));
-            assumeThat(response.hasHeartbeatMax(), is(true));
-            assumeThat(response.getHeartbeatMin(), is(greaterThanOrEqualTo(0)));
-            assumeThat(response.getHeartbeatMax(), is(greaterThanOrEqualTo(1)));
+            assumeTrue(response.hasHeartbeatMin());
+            assumeTrue(response.hasHeartbeatMax());
+            assumeTrue(is(greaterThanOrEqualTo(0)).matches(response.getHeartbeatMin()));
+            assumeTrue(is(greaterThanOrEqualTo(1)).matches(response.getHeartbeatMax()));
 
             final int heartbeatPeriod = 1;
 

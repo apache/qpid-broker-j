@@ -24,9 +24,9 @@ package org.apache.qpid.server.protocol.v0_10.transport;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -37,26 +37,25 @@ import java.util.UUID;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class BBEncoderTest extends UnitTestBase
 {
-
     @Test
     public void testGrow()
     {
         BBEncoder enc = new BBEncoder(4);
         enc.writeInt32(0xDEADBEEF);
         ByteBuffer buf = enc.buffer();
-        assertEquals((long) 0xDEADBEEF, (long) buf.getInt(0));
+        assertEquals(0xDEADBEEF, (long) buf.getInt(0));
         enc.writeInt32(0xBEEFDEAD);
         buf = enc.buffer();
-        assertEquals((long) 0xDEADBEEF, (long) buf.getInt(0));
-        assertEquals((long) 0xBEEFDEAD, (long) buf.getInt(4));
+        assertEquals(0xDEADBEEF, (long) buf.getInt(0));
+        assertEquals(0xBEEFDEAD, (long) buf.getInt(4));
     }
-
 
     @Test
     public void testReadWriteStruct()
@@ -68,17 +67,15 @@ public class BBEncoderTest extends UnitTestBase
 
         ByteBuffer buffer = encoder.buffer();
 
-        assertEquals("Unexpected size",
-                            (long) EncoderUtils.getStructLength(ReplyTo.TYPE, replyTo),
-                            (long) buffer.remaining());
+        assertEquals(EncoderUtils.getStructLength(ReplyTo.TYPE, replyTo), (long) buffer.remaining(), "Unexpected size");
 
         BBDecoder decoder = new BBDecoder();
         decoder.init(buffer);
 
         ReplyTo decoded = (ReplyTo)decoder.readStruct(ReplyTo.TYPE);
 
-        assertEquals("Unexpected exchange", replyTo.getExchange(), decoded.getExchange());
-        assertEquals("Unexpected routing key", replyTo.getRoutingKey(), decoded.getRoutingKey());
+        assertEquals(replyTo.getExchange(), decoded.getExchange(), "Unexpected exchange");
+        assertEquals(replyTo.getRoutingKey(), decoded.getRoutingKey(), "Unexpected routing key");
     }
 
     @Test
@@ -103,31 +100,23 @@ public class BBEncoderTest extends UnitTestBase
 
         ByteBuffer buffer = encoder.buffer();
 
-        assertEquals("Unexpected size",
-                            (long) EncoderUtils.getStruct32Length(messageProperties),
-                            (long) buffer.remaining());
+        assertEquals(EncoderUtils.getStruct32Length(messageProperties), (long) buffer.remaining(), "Unexpected size");
 
         BBDecoder decoder = new BBDecoder();
         decoder.init(buffer);
 
         MessageProperties decoded = (MessageProperties)decoder.readStruct32();
 
-        assertEquals("Unexpected content length",
-                            messageProperties.getContentLength(),
-                            decoded.getContentLength());
-        assertEquals("Unexpected message id", messageProperties.getMessageId(), decoded.getMessageId());
-        assertArrayEquals("Unexpected correlation id", messageProperties.getCorrelationId(), decoded.getCorrelationId
-                ());
-        assertEquals("Unexpected reply to", messageProperties.getReplyTo(), decoded.getReplyTo());
-        assertEquals("Unexpected content type", messageProperties.getContentType(), decoded.getContentType());
-        assertEquals("Unexpected content encoding",
-                            messageProperties.getContentEncoding(),
-                            decoded.getContentEncoding());
-        assertArrayEquals("Unexpected user id", messageProperties.getUserId(), decoded.getUserId());
-        assertArrayEquals("Unexpected application id", messageProperties.getAppId(), decoded.getAppId());
-        assertEquals("Unexpected application headers",
-                            messageProperties.getApplicationHeaders(),
-                            decoded.getApplicationHeaders());
+        assertEquals(messageProperties.getContentLength(), decoded.getContentLength(), "Unexpected content length");
+        assertEquals(messageProperties.getMessageId(), decoded.getMessageId(), "Unexpected message id");
+        assertArrayEquals(messageProperties.getCorrelationId(), decoded.getCorrelationId(),
+                "Unexpected correlation id");
+        assertEquals(messageProperties.getReplyTo(), decoded.getReplyTo(), "Unexpected reply to");
+        assertEquals(messageProperties.getContentType(), decoded.getContentType(), "Unexpected content type");
+        assertEquals(messageProperties.getContentEncoding(), decoded.getContentEncoding(), "Unexpected content encoding");
+        assertArrayEquals(messageProperties.getUserId(), decoded.getUserId(), "Unexpected user id");
+        assertArrayEquals(messageProperties.getAppId(), decoded.getAppId(), "Unexpected application id");
+        assertEquals(messageProperties.getApplicationHeaders(), decoded.getApplicationHeaders(), "Unexpected application headers");
     }
 
     @Test

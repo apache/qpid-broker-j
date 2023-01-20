@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.systests.jms_1_1.message;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -36,7 +36,7 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -61,10 +61,10 @@ public class JMSReplyToTest extends JmsTestBase
             producer.send(requestMessage);
 
             Message responseMessage = replyConsumer.receive(getReceiveTimeout());
-            assertNotNull("Response message not received", responseMessage);
-            assertEquals("Correlation id of the response should match message id of the request",
-                         responseMessage.getJMSCorrelationID(), requestMessage.getJMSMessageID());
-            assertNull("Unexpected exception in responder", exceptionHolder.get());
+            assertNotNull(responseMessage, "Response message not received");
+            assertEquals(responseMessage.getJMSCorrelationID(), requestMessage.getJMSMessageID(),
+                    "Correlation id of the response should match message id of the request");
+            assertNull(exceptionHolder.get(), "Unexpected exception in responder");
         }
         finally
         {
@@ -92,10 +92,10 @@ public class JMSReplyToTest extends JmsTestBase
             producer.send(requestMessage);
 
             Message responseMessage = replyConsumer.receive(getReceiveTimeout());
-            assertNotNull("Response message not received", responseMessage);
-            assertEquals("Correlation id of the response should match message id of the request",
-                         responseMessage.getJMSCorrelationID(), requestMessage.getJMSMessageID());
-            assertNull("Unexpected exception in responder", exceptionHolder.get());
+            assertNotNull(responseMessage, "Response message not received");
+            assertEquals(responseMessage.getJMSCorrelationID(), requestMessage.getJMSMessageID(),
+                    "Correlation id of the response should match message id of the request");
+            assertNull(exceptionHolder.get(), "Unexpected exception in responder");
         }
         finally
         {

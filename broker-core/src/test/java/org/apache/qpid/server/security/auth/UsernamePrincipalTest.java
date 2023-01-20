@@ -20,13 +20,12 @@
  */
 package org.apache.qpid.server.security.auth;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-
 
 /**
  * Tests the UsernamePrincipal.
@@ -37,7 +36,7 @@ public class UsernamePrincipalTest extends UnitTestBase
     public void testEqualitySameObject()
     {
         final UsernamePrincipal principal = new UsernamePrincipal("string", null);
-        assertTrue(principal.equals(principal));
+        assertEquals(principal, principal);
     }
 
     @Test
@@ -46,36 +45,36 @@ public class UsernamePrincipalTest extends UnitTestBase
         final String string = "string";
         final UsernamePrincipal principal1 = new UsernamePrincipal(string, null);
         final UsernamePrincipal principal2 = new UsernamePrincipal(string, null);
-        assertTrue(principal1.equals(principal2));
+        assertEquals(principal1, principal2);
     }
 
     @Test
     public void testEqualityEqualName()
     {
-        final UsernamePrincipal principal1 = new UsernamePrincipal(new String("string"), null);
-        final UsernamePrincipal principal2 = new UsernamePrincipal(new String("string"), null);
-        assertTrue(principal1.equals(principal2));
+        final UsernamePrincipal principal1 = new UsernamePrincipal("string", null);
+        final UsernamePrincipal principal2 = new UsernamePrincipal("string", null);
+        assertEquals(principal1, principal2);
     }
 
     @Test
     public void testInequalityDifferentUserPrincipals()
     {
-        UsernamePrincipal principal1 = new UsernamePrincipal("string1", null);
-        UsernamePrincipal principal2 = new UsernamePrincipal("string2", null);
-        assertFalse(principal1.equals(principal2));
+        final UsernamePrincipal principal1 = new UsernamePrincipal("string1", null);
+        final UsernamePrincipal principal2 = new UsernamePrincipal("string2", null);
+        assertNotEquals(principal1, principal2);
     }
 
     @Test
     public void testInequalityNonUserPrincipal()
     {
-        UsernamePrincipal principal = new UsernamePrincipal("string", null);
-        assertFalse(principal.equals(new String("string")));
+        final UsernamePrincipal principal = new UsernamePrincipal("string", null);
+        assertNotEquals(principal, "string");
     }
 
     @Test
     public void testInequalityNull()
     {
-        UsernamePrincipal principal = new UsernamePrincipal("string", null);
-        assertFalse(principal.equals(null));
+        final UsernamePrincipal principal = new UsernamePrincipal("string", null);
+        assertNotEquals(null, principal);
     }
 }

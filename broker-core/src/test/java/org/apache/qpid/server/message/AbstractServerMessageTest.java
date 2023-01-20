@@ -20,15 +20,13 @@
  */
 package org.apache.qpid.server.message;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.UUID;
-
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
@@ -89,26 +87,27 @@ public class AbstractServerMessageTest extends UnitTestBase
         }
     }
 
-    private TransactionLogResource createQueue(String name)
+    private TransactionLogResource createQueue(final String name)
     {
-        TransactionLogResource queue = mock(TransactionLogResource.class);
-        when(queue.getId()).thenReturn(UUID.randomUUID());
+        final TransactionLogResource queue = mock(TransactionLogResource.class);
+        when(queue.getId()).thenReturn(randomUUID());
         when(queue.getName()).thenReturn(name);
         return queue;
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testReferences()
     {
-        TransactionLogResource q1 = createQueue("1");
-        TransactionLogResource q2 = createQueue("2");
+        final TransactionLogResource q1 = createQueue("1");
+        final TransactionLogResource q2 = createQueue("2");
 
-        TestMessage<StorableMessageMetaData> msg = new TestMessage<StorableMessageMetaData>(mock(StoredMessage.class),this);
+        final TestMessage<StorableMessageMetaData> msg = new TestMessage<StorableMessageMetaData>(mock(StoredMessage.class),this);
 
         assertFalse(msg.isReferenced());
         assertFalse(msg.isReferenced(q1));
 
-        MessageReference<TestMessage<StorableMessageMetaData>> nonQueueRef = msg.newReference();
+        final MessageReference<TestMessage<StorableMessageMetaData>> nonQueueRef = msg.newReference();
         assertFalse(msg.isReferenced());
         assertFalse(msg.isReferenced(q1));
 
@@ -130,16 +129,8 @@ public class AbstractServerMessageTest extends UnitTestBase
         assertTrue(msg.isReferenced());
         assertTrue(msg.isReferenced(q1));
         assertTrue(msg.isReferenced(q2));
-
-        try
-        {
-            msg.newReference(q1);
-            fail("Should not be able to create a second reference to the same queue");
-        }
-        catch (MessageAlreadyReferencedException e)
-        {
-            // pass
-        }
+        assertThrows(MessageAlreadyReferencedException.class, () -> msg.newReference(q1),
+                "Should not be able to create a second reference to the same queue");
         q2ref.release();
         assertTrue(msg.isReferenced());
         assertTrue(msg.isReferenced(q1));
@@ -151,15 +142,7 @@ public class AbstractServerMessageTest extends UnitTestBase
 
         nonQueueRef.release();
 
-        try
-        {
-            msg.newReference(q1);
-            fail("Message should not allow new references as all references had been removed");
-        }
-        catch(MessageDeletedException e)
-        {
-            // pass
-        }
-
+        assertThrows(MessageDeletedException.class, () -> msg.newReference(q1),
+                "Message should not allow new references as all references had been removed");
     }
 }

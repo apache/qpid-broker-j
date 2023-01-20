@@ -22,8 +22,8 @@ package org.apache.qpid.systests;
 
 import static org.apache.qpid.systests.Utils.getAmqpManagementFacade;
 import static org.apache.qpid.systests.Utils.getJmsProvider;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -40,7 +40,8 @@ import javax.jms.Topic;
 import javax.jms.TopicConnection;
 import javax.naming.NamingException;
 
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
     private static JmsProvider _jmsProvider;
     private static AmqpManagementFacade _managementFacade;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpTestBase()
     {
         _managementFacade = getAmqpManagementFacade();
@@ -192,8 +193,8 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
                                                                 "org.apache.qpid.VirtualHost",
                                                                 arguments);
 
-        assertNotNull("Statistics is null", statistics);
-        assertTrue("Statistics is not map", statistics instanceof Map);
+        assertNotNull(statistics, "Statistics is null");
+        assertTrue(statistics instanceof Map, "Statistics is not map");
 
         return (Map<String, Object>) statistics;
     }

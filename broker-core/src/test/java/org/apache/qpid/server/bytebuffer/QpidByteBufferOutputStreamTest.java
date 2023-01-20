@@ -21,14 +21,14 @@
 
 package org.apache.qpid.server.bytebuffer;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.charset.StandardCharsets;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -38,34 +38,27 @@ public class QpidByteBufferOutputStreamTest extends UnitTestBase
     private static final int POOL_SIZE = 20;
     private static final double SPARSITY_FRACTION = 0.5;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         QpidByteBuffer.deinitialisePool();
         QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
-        {
-        }
-        finally
-        {
-            QpidByteBuffer.deinitialisePool();
-        }
+        QpidByteBuffer.deinitialisePool();
     }
 
     @Test
     public void testWriteByteByByte() throws Exception
     {
-        boolean direct = false;
-        try (QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 3))
+        final boolean direct = false;
+        try (final QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 3))
         {
             stream.write('a');
             stream.write('b');
-
             assertBufferContent(false, "ab".getBytes(StandardCharsets.UTF_8), stream.fetchAccumulatedBuffer());
         }
     }
@@ -73,12 +66,11 @@ public class QpidByteBufferOutputStreamTest extends UnitTestBase
     @Test
     public void testWriteByteArrays() throws Exception
     {
-        boolean direct = false;
-        try (QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 8))
+        final boolean direct = false;
+        try (final QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 8))
         {
             stream.write("abcd".getBytes(), 0, 4);
             stream.write("_ef_".getBytes(), 1, 2);
-
             assertBufferContent(direct, "abcdef".getBytes(StandardCharsets.UTF_8), stream.fetchAccumulatedBuffer());
         }
     }
@@ -86,35 +78,32 @@ public class QpidByteBufferOutputStreamTest extends UnitTestBase
     @Test
     public void testWriteMixed() throws Exception
     {
-        boolean direct = true;
-        try (QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 3))
+        final boolean direct = true;
+        try (final QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 3))
         {
             stream.write('a');
             stream.write("bcd".getBytes());
-
             assertBufferContent(direct, "abcd".getBytes(StandardCharsets.UTF_8), stream.fetchAccumulatedBuffer());
         }
     }
 
-
     @Test
     public void testWriteByteArrays_ArrayTooLargeForSingleBuffer() throws Exception
     {
-        boolean direct = false;
-        try (QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 8))
+        final boolean direct = false;
+        try (final QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 8))
         {
             stream.write("abcdefghi".getBytes());
-
             assertBufferContent(direct, "abcdefghi".getBytes(StandardCharsets.UTF_8), stream.fetchAccumulatedBuffer());
         }
     }
 
     private void assertBufferContent(final boolean isDirect, final byte[] expected, final QpidByteBuffer buffer)
     {
-        assertEquals("Unexpected buffer type", isDirect, buffer.isDirect());
-        byte[] buf = new byte[buffer.remaining()];
+        assertEquals(isDirect, buffer.isDirect(), "Unexpected buffer type");
+        final byte[] buf = new byte[buffer.remaining()];
         buffer.get(buf);
         buffer.dispose();
-        Assert.assertArrayEquals("Unexpected buffer content", expected, buf);
+        assertArrayEquals(expected, buf, "Unexpected buffer content");
     }
 }

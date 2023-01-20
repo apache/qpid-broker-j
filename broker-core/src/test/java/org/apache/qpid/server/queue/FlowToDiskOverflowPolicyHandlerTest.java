@@ -20,7 +20,7 @@
 
 package org.apache.qpid.server.queue;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -29,13 +29,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.MessageReference;
@@ -56,23 +57,30 @@ import org.apache.qpid.test.utils.UnitTestBase;
  */
 public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
 {
+    private VirtualHost<?> _virtualHost;
     private Queue<?> _queue;
-
     private Map<StoredMessage<?>, Boolean> _state;
 
-    @Before
+    @BeforeAll
+    public void beforeAll() throws Exception
+    {
+        _virtualHost = BrokerTestHelper.createVirtualHost(getTestClassName(), this);
+    }
+
+    @BeforeEach
     public void setUp() throws Exception
     {
-        BrokerTestHelper.setUp();
+        final Map<String, Object> attributes = Map.of(Queue.NAME, "testQueue",
+                Queue.OVERFLOW_POLICY, OverflowPolicy.FLOW_TO_DISK);
 
-        VirtualHost<?> virtualHost = BrokerTestHelper.createVirtualHost(getClass().getName(), this);
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(Queue.NAME, "testQueue");
-        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.FLOW_TO_DISK);
-
-        _queue = (AbstractQueue<?>) virtualHost.createChild(Queue.class, attributes);
+        _queue = (AbstractQueue<?>) _virtualHost.createChild(Queue.class, attributes);
         _state = new HashMap<>();
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
+        _queue.close();
     }
 
     /**
@@ -81,9 +89,9 @@ public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
     @Test
     public void overflowAfterLoweringLimit()
     {
-        _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 10));
+        _queue.setAttributes(Map.of(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 10));
 
-        List<ServerMessage<?>> messages = new ArrayList<>();
+        final List<ServerMessage<?>> messages = new ArrayList<>();
 
         for (int i = 0; i < 15; i ++)
         {
@@ -103,7 +111,7 @@ public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
             verify(messages.get(i).getStoredMessage(), never()).getContent(anyInt(), anyInt());
         }
 
-        _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 5));
+        _queue.setAttributes(Map.of(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 5));
 
         for (int i = 0; i < 5; i ++)
         {
@@ -130,9 +138,9 @@ public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
     @Test
     public void overflowAfterRisingLimit()
     {
-        _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 5));
+        _queue.setAttributes(Map.of(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 5));
 
-        List<ServerMessage<?>> messages = new ArrayList<>();
+        final List<ServerMessage<?>> messages = new ArrayList<>();
 
         for (int i = 0; i < 15; i ++)
         {
@@ -152,7 +160,7 @@ public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
             verify(messages.get(i).getStoredMessage(), never()).getContent(anyInt(), anyInt());
         }
 
-        _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 10));
+        _queue.setAttributes(Map.of(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 10));
 
         // first five messages should be neither be flowed to the disk nor restored to memory (nothing changed to them)
         for (int i = 0; i < 5; i ++)
@@ -179,55 +187,55 @@ public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
     @Test
     public void overflowOnSecondMessage()
     {
-        _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 10));
-        ServerMessage<?> message = createMessage(10L);
+        _queue.setAttributes(Map.of(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 10));
+        final ServerMessage<?> message = createMessage(10L);
         _queue.enqueue(message, null, null);
         StoredMessage<?> storedMessage = message.getStoredMessage();
         verify(storedMessage, never()).flowToDisk();
 
-        ServerMessage<?> message2 = createMessage(10L);
+        final ServerMessage<?> message2 = createMessage(10L);
         _queue.enqueue(message2, null, null);
-        StoredMessage<?> storedMessage2 = message2.getStoredMessage();
+        final StoredMessage<?> storedMessage2 = message2.getStoredMessage();
         verify(storedMessage2).flowToDisk();
     }
 
     @Test
     public void bytesOverflow()
     {
-        _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 0));
-        ServerMessage<?> message = createMessage(1L);
+        _queue.setAttributes(Map.of(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 0));
+        final ServerMessage<?> message = createMessage(1L);
         _queue.enqueue(message, null, null);
-        StoredMessage<?> storedMessage = message.getStoredMessage();
+        final StoredMessage<?> storedMessage = message.getStoredMessage();
         verify(storedMessage).flowToDisk();
     }
 
     @Test
     public void messagesOverflow()
     {
-        _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 0));
-        ServerMessage<?> message = createMessage(1L);
+        _queue.setAttributes(Map.of(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 0));
+        final ServerMessage<?> message = createMessage(1L);
         _queue.enqueue(message, null, null);
-        StoredMessage<?> storedMessage = message.getStoredMessage();
+        final StoredMessage<?> storedMessage = message.getStoredMessage();
         verify(storedMessage).flowToDisk();
     }
 
     @Test
     public void noOverflow()
     {
-        _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 10));
-        _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 10));
-        ServerMessage<?> message = createMessage(1L);
+        _queue.setAttributes(Map.of(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 10));
+        _queue.setAttributes(Map.of(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 10));
+        final ServerMessage<?> message = createMessage(1L);
         _queue.enqueue(message, null, null);
-        StoredMessage<?> storedMessage = message.getStoredMessage();
+        final StoredMessage<?> storedMessage = message.getStoredMessage();
         verify(storedMessage, never()).flowToDisk();
     }
 
     @Test
     public void oneByOneDeletion()
     {
-        _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 5));
+        _queue.setAttributes(Map.of(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 5));
 
-        List<ServerMessage<?>> messages = new ArrayList<>();
+        final List<ServerMessage<?>> messages = new ArrayList<>();
 
         for (int i = 0; i < 10; i ++)
         {
@@ -245,7 +253,7 @@ public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
             verify(messages.get(i).getStoredMessage()).flowToDisk();
         }
 
-        QueueEntryIterator it = _queue.queueEntryIterator();
+        final QueueEntryIterator it = _queue.queueEntryIterator();
         it.advance();
         _queue.deleteEntry(it.getNode());
 
@@ -315,9 +323,9 @@ public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
     @Test
     public void clearQueue()
     {
-        _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 5));
+        _queue.setAttributes(Map.of(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 5));
 
-        List<ServerMessage<?>> messages = new ArrayList<>();
+        final List<ServerMessage<?>> messages = new ArrayList<>();
 
         for (int i = 0; i < 15; i ++)
         {
@@ -368,10 +376,10 @@ public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
     @Test
     public void deleteMessagesAfterLimit()
     {
-        _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 5));
+        _queue.setAttributes(Map.of(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 5));
 
-        List<ServerMessage<?>> messages = new ArrayList<>();
-        List<QueueEntry> entries = new ArrayList<>();
+        final List<ServerMessage<?>> messages = new ArrayList<>();
+        final List<QueueEntry> entries = new ArrayList<>();
 
         for (int i = 0; i < 15; i ++)
         {
@@ -392,7 +400,7 @@ public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
             verify(messages.get(i).getStoredMessage(), never()).getContent(anyInt(), anyInt());
         }
 
-        QueueEntryIterator it = _queue.queueEntryIterator();
+        final QueueEntryIterator it = _queue.queueEntryIterator();
         while (it.advance())
         {
             entries.add(it.getNode());
@@ -432,10 +440,10 @@ public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
     @Test
     public void deleteMessagesAroundLimit()
     {
-        _queue.setAttributes(Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 5));
+        _queue.setAttributes(Map.of(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 5));
 
-        List<ServerMessage<?>> messages = new ArrayList<>();
-        List<QueueEntry> entries = new ArrayList<>();
+        final List<ServerMessage<?>> messages = new ArrayList<>();
+        final List<QueueEntry> entries = new ArrayList<>();
 
         for (int i = 0; i < 15; i ++)
         {
@@ -456,7 +464,7 @@ public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
             verify(messages.get(i).getStoredMessage(), never()).getContent(anyInt(), anyInt());
         }
 
-        QueueEntryIterator it = _queue.queueEntryIterator();
+        final QueueEntryIterator it = _queue.queueEntryIterator();
         while (it.advance())
         {
             entries.add(it.getNode());
@@ -492,32 +500,32 @@ public class FlowToDiskOverflowPolicyHandlerTest extends UnitTestBase
     }
 
     @SuppressWarnings("rawtypes")
-    private ServerMessage createMessage(long size)
+    private ServerMessage createMessage(final long size)
     {
-        ServerMessage message = mock(ServerMessage.class);
+        final ServerMessage message = mock(ServerMessage.class);
         when(message.getSizeIncludingHeader()).thenReturn(size);
         when(message.checkValid()).thenReturn(true);
         when(message.getValidationStatus()).thenReturn(ServerMessage.ValidationStatus.VALID);
 
-        StoredMessage storedMessage = mock(StoredMessage.class);
+        final StoredMessage storedMessage = mock(StoredMessage.class);
         _state.put(storedMessage, true);
         when(message.getStoredMessage()).thenReturn(storedMessage);
         when(storedMessage.isInContentInMemory()).thenAnswer(invocation -> _state.get(message.getStoredMessage()));
         when(storedMessage.getInMemorySize()).thenReturn(size);
         when(storedMessage.flowToDisk()).thenAnswer(invocation ->
         {
-            StoredMessage sm = (StoredMessage) invocation.getMock();
+            final StoredMessage sm = (StoredMessage) invocation.getMock();
             _state.put(sm, false);
             return true;
         });
         when(storedMessage.getContent(anyInt(), anyInt())).thenAnswer(invocation ->
         {
-            StoredMessage sm = (StoredMessage) invocation.getMock();
+            final StoredMessage sm = (StoredMessage) invocation.getMock();
             _state.put(sm, true);
             return QpidByteBuffer.allocate((int)size);
         });
 
-        MessageReference ref = mock(MessageReference.class);
+        final MessageReference ref = mock(MessageReference.class);
         when(ref.getMessage()).thenReturn(message);
 
         when(message.newReference()).thenReturn(ref);

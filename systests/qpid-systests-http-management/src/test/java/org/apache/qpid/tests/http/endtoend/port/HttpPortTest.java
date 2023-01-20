@@ -22,8 +22,9 @@ package org.apache.qpid.tests.http.endtoend.port;
 
 import static javax.servlet.http.HttpServletResponse.SC_CREATED;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -31,8 +32,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +91,7 @@ public class HttpPortTest extends HttpTestBase
         {
             // Extra logging to investigate unexpected exception
             LOGGER.debug("Unexpected connection exception", e);
-            Assert.fail("Unexpected exception " + e.getMessage());
+            fail("Unexpected exception " + e.getMessage());
         }
     }
 

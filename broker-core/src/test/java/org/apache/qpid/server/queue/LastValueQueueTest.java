@@ -20,40 +20,36 @@
  */
 package org.apache.qpid.server.queue;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Queue;
+
 public class LastValueQueueTest extends AbstractQueueTestBase
 {
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        Map<String,Object> arguments = new HashMap<>();
-        arguments.put(LastValueQueue.LVQ_KEY, "lvqKey");
-        arguments.put(Queue.TYPE, LastValueQueue.LAST_VALUE_QUEUE_TYPE);
+        final Map<String,Object> arguments = Map.of(LastValueQueue.LVQ_KEY, "lvqKey",
+                Queue.TYPE, LastValueQueue.LAST_VALUE_QUEUE_TYPE);
         setArguments(arguments);
-
         super.setUp();
     }
-
 
     @Override
     @Test
     public void testOldestMessage()
     {
-        Queue<?> queue = getQueue();
-        queue.enqueue(createMessage(1L, (byte)1, Collections.singletonMap("lvqKey", (Object) "Z"), 10L), null, null);
+        final Queue<?> queue = getQueue();
+        queue.enqueue(createMessage(1L, (byte)1, Map.of("lvqKey", "Z"), 10L), null, null);
         assertEquals(10L, queue.getOldestMessageArrivalTime());
-        queue.enqueue(createMessage(2L, (byte)4, Collections.singletonMap("lvqKey", (Object) "M"), 100L), null, null);
+        queue.enqueue(createMessage(2L, (byte)4, Map.of("lvqKey", "M"), 100L), null, null);
         assertEquals(10L, queue.getOldestMessageArrivalTime());
-        queue.enqueue(createMessage(3L, (byte)9, Collections.singletonMap("lvqKey", (Object) "Z"), 1000L), null, null);
+        queue.enqueue(createMessage(3L, (byte)9, Map.of("lvqKey", "Z"), 1000L), null, null);
         assertEquals(100L, queue.getOldestMessageArrivalTime());
     }
 }

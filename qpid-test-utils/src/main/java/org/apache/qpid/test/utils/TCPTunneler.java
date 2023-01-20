@@ -48,7 +48,6 @@ public class TCPTunneler implements AutoCloseable
     private final TCPWorker _tcpWorker;
 
     private final ExecutorService _executor;
-    private final int _bufferSize;
 
     public TCPTunneler(final int localPort, final String remoteHost,
                        final int remotePort,
@@ -58,7 +57,6 @@ public class TCPTunneler implements AutoCloseable
     {
         _executor = Executors.newFixedThreadPool(numberOfConcurrentClients * 2 + 1);
         _tcpWorker = new TCPWorker(localPort, remoteHost, remotePort, bufferSize, _executor);
-        _bufferSize = bufferSize;
     }
 
     public TCPTunneler(final int localPort, final String remoteHost,

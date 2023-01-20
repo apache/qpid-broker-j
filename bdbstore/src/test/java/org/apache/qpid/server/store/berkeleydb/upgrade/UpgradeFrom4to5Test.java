@@ -26,9 +26,9 @@ import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPrepare
 import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPreparer.QUEUE_WITH_DLQ_NAME;
 import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPreparer.SELECTOR_TOPIC_NAME;
 import static org.apache.qpid.server.store.berkeleydb.BDBStoreUpgradeTestPreparer.TOPIC_NAME;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -45,7 +45,8 @@ import com.sleepycat.bind.tuple.LongBinding;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Transaction;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
@@ -75,12 +76,12 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
     }
 
     @Test
-    public void testPerformUpgradeWithHandlerAnsweringYes() throws Exception
+    public void testPerformUpgradeWithHandlerAnsweringYes()
     {
         UpgradeFrom4To5 upgrade = new UpgradeFrom4To5();
         upgrade.performUpgrade(_environment, new StaticAnswerHandler(UpgradeInteractionResponse.YES), getVirtualHost());
 
-        assertQueues(new HashSet<String>(Arrays.asList(QUEUE_NAMES)));
+        assertQueues(new HashSet<>(Arrays.asList(QUEUE_NAMES)));
 
         assertDatabaseRecordCount(DELIVERY_DB_NAME, TOTAL_MESSAGE_NUMBER);
         assertDatabaseRecordCount(MESSAGE_META_DATA_DB_NAME, TOTAL_MESSAGE_NUMBER);
@@ -93,7 +94,7 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
 
         final List<BindingRecord> queueBindings = loadBindings();
 
-        assertEquals("Unxpected bindings size", TOTAL_BINDINGS, queueBindings.size());
+        assertEquals(TOTAL_BINDINGS, queueBindings.size(), "Unxpected bindings size");
         assertBindingRecord(queueBindings, DURABLE_SUBSCRIPTION_QUEUE, "amq.topic", TOPIC_NAME, "");
         assertBindingRecord(queueBindings, DURABLE_SUBSCRIPTION_QUEUE_WITH_SELECTOR, "amq.topic", SELECTOR_TOPIC_NAME, "testprop='true'");
         assertBindingRecord(queueBindings, QUEUE_NAME, "amq.direct", QUEUE_NAME, null);
@@ -106,12 +107,12 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
     }
 
     @Test
-    public void testPerformUpgradeWithHandlerAnsweringNo() throws Exception
+    public void testPerformUpgradeWithHandlerAnsweringNo()
     {
         UpgradeFrom4To5 upgrade = new UpgradeFrom4To5();
         upgrade.performUpgrade(_environment, new StaticAnswerHandler(UpgradeInteractionResponse.NO), getVirtualHost());
-        HashSet<String> queues = new HashSet<String>(Arrays.asList(QUEUE_NAMES));
-        assertTrue(NON_DURABLE_QUEUE_NAME + " should be in the list of queues" , queues.remove(NON_DURABLE_QUEUE_NAME));
+        HashSet<String> queues = new HashSet<>(Arrays.asList(QUEUE_NAMES));
+        assertTrue(queues.remove(NON_DURABLE_QUEUE_NAME), NON_DURABLE_QUEUE_NAME + " should be in the list of queues");
 
         assertQueues(queues);
 
@@ -126,7 +127,7 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
 
         final List<BindingRecord> queueBindings = loadBindings();
 
-        assertEquals("Unxpected list size", TOTAL_BINDINGS - 2, queueBindings.size());
+        assertEquals(TOTAL_BINDINGS - 2, queueBindings.size(), "Unexpected list size");
         assertBindingRecord(queueBindings, DURABLE_SUBSCRIPTION_QUEUE, "amq.topic", TOPIC_NAME, "");
         assertBindingRecord(queueBindings, DURABLE_SUBSCRIPTION_QUEUE_WITH_SELECTOR, "amq.topic",
                 SELECTOR_TOPIC_NAME, "testprop='true'");
@@ -140,7 +141,7 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
     private List<BindingRecord> loadBindings()
     {
         final BindingTuple bindingTuple = new BindingTuple();
-        final List<BindingRecord> queueBindings = new ArrayList<BindingRecord>();
+        final List<BindingRecord> queueBindings = new ArrayList<>();
         CursorOperation databaseOperation = new CursorOperation()
         {
 
@@ -174,13 +175,13 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
                 break;
             }
         }
-        assertNotNull("Binding is not found for queue " + queueName + " and exchange " + exchangeName, record);
-        assertEquals("Unexpected routing key", routingKey, record.getRoutingKey().toString());
+        assertNotNull(record, "Binding is not found for queue " + queueName + " and exchange " + exchangeName);
+        assertEquals(routingKey, record.getRoutingKey().toString(), "Unexpected routing key");
 
         if (selectorKey != null)
         {
-            assertEquals("Unexpected selector key for " + queueName, selectorKey,
-                    record.getArguments().get(AMQPFilterTypes.JMS_SELECTOR.getValue()));
+            assertEquals(selectorKey, record.getArguments().get(AMQPFilterTypes.JMS_SELECTOR.getValue()),
+                         "Unexpected selector key for " + queueName);
         }
     }
 
@@ -197,7 +198,7 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
     {
         final QueueEntryKeyBinding queueEntryKeyBinding = new QueueEntryKeyBinding();
         final AtomicInteger deliveryCounter = new AtomicInteger();
-        final Set<Long> messagesForQueue = new HashSet<Long>();
+        final Set<Long> messagesForQueue = new HashSet<>();
 
         CursorOperation deliveryDatabaseOperation = new CursorOperation()
         {
@@ -216,8 +217,8 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
         };
         new DatabaseTemplate(_environment, DELIVERY_DB_NAME, null).run(deliveryDatabaseOperation);
 
-        assertEquals("Unxpected number of entries in delivery db for queue " + queueName, expectedQueueSize,
-                deliveryCounter.get());
+        assertEquals(expectedQueueSize, deliveryCounter.get(),
+                     "Unxpected number of entries in delivery db for queue " + queueName);
 
         return messagesForQueue;
     }
@@ -244,8 +245,8 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
         };
         new DatabaseTemplate(_environment, MESSAGE_META_DATA_DB_NAME, null).run(databaseOperation);
 
-        assertEquals("Unxpected number of entries in metadata db for queue " + queueName, expectedQueueSize,
-                metadataCounter.get());
+        assertEquals(expectedQueueSize, metadataCounter.get(),
+                     "Unxpected number of entries in metadata db for queue " + queueName);
     }
 
     private void assertContentForQueue(String queueName, int expectedQueueSize, final Set<Long> messageIdsForQueue)
@@ -273,15 +274,15 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
         };
         new DatabaseTemplate(_environment, MESSAGE_CONTENT_DB_NAME, null).run(cursorOperation);
 
-        assertEquals("Unxpected number of entries in content db for queue " + queueName, expectedQueueSize,
-                contentCounter.get());
+        assertEquals(expectedQueueSize, contentCounter.get(),
+                     "Unxpected number of entries in content db for queue " + queueName);
     }
 
     private void assertQueues(Set<String> expectedQueueNames)
     {
         List<AMQShortString> durableSubNames = Collections.emptyList();
         final UpgradeFrom4To5.QueueRecordBinding binding = new UpgradeFrom4To5.QueueRecordBinding(durableSubNames);
-        final Set<String> actualQueueNames = new HashSet<String>();
+        final Set<String> actualQueueNames = new HashSet<>();
 
         CursorOperation queueNameCollector = new CursorOperation()
         {
@@ -297,14 +298,14 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
         };
         new DatabaseTemplate(_environment, "queueDb_v5", null).run(queueNameCollector);
 
-        assertEquals("Unexpected queue names", expectedQueueNames, actualQueueNames);
+        assertEquals(expectedQueueNames, actualQueueNames, "Unexpected queue names");
     }
 
     private void assertQueueHasOwner(String queueName, final String expectedOwner)
     {
         List<AMQShortString> durableSubNames = Collections.emptyList();
         final UpgradeFrom4To5.QueueRecordBinding binding = new UpgradeFrom4To5.QueueRecordBinding(durableSubNames);
-        final AtomicReference<String> actualOwner = new AtomicReference<String>();
+        final AtomicReference<String> actualOwner = new AtomicReference<>();
         final AtomicBoolean foundQueue = new AtomicBoolean(false);
 
         CursorOperation queueNameCollector = new CursorOperation()
@@ -325,8 +326,8 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
         };
         new DatabaseTemplate(_environment, "queueDb_v5", null).run(queueNameCollector);
 
-        assertTrue("Could not find queue in database", foundQueue.get());
-        assertEquals("Queue has unexpected owner", expectedOwner, actualOwner.get());
+        assertTrue(foundQueue.get(), "Could not find queue in database");
+        assertEquals(expectedOwner, actualOwner.get(), "Queue has unexpected owner");
     }
 
     private void assertContent()
@@ -340,9 +341,9 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
                     DatabaseEntry value)
             {
                 long id = LongBinding.entryToLong(key);
-                assertTrue("Unexpected id", id > 0);
+                assertTrue(id > 0, "Unexpected id");
                 ByteBuffer content = contentBinding.entryToObject(value);
-                assertNotNull("Unexpected content", content);
+                assertNotNull(content, "Unexpected content");
             }
         };
         new DatabaseTemplate(_environment, MESSAGE_CONTENT_DB_NAME, null).run(contentCursorOperation);

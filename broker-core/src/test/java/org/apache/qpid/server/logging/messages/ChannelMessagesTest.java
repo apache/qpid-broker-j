@@ -22,7 +22,7 @@ package org.apache.qpid.server.logging.messages;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test CHN Log Messges 
@@ -33,11 +33,11 @@ public class ChannelMessagesTest extends AbstractTestMessages
     public void testChannelCreate()
     {
         _logMessage = ChannelMessages.CREATE();
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
         // We use the MessageFormat here as that is what the ChannelMessage
         // will do, this makes the resulting value 12,345
-        String[] expected = {"Create"};
+        final String[] expected = {"Create"};
 
         validateLogMessage(log, "CHN-1001", expected);
     }
@@ -45,12 +45,12 @@ public class ChannelMessagesTest extends AbstractTestMessages
     @Test
     public void testChannelFlow()
     {
-        String flow = "ON";
+        final String flow = "ON";
 
         _logMessage = ChannelMessages.FLOW(flow);
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Flow", flow};
+        final String[] expected = {"Flow", flow};
 
         validateLogMessage(log, "CHN-1002", expected);
     }
@@ -59,9 +59,9 @@ public class ChannelMessagesTest extends AbstractTestMessages
     public void testChannelClose()
     {
         _logMessage = ChannelMessages.CLOSE();
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Close"};
+        final String[] expected = {"Close"};
 
         validateLogMessage(log, "CHN-1003", expected);
     }
@@ -70,9 +70,9 @@ public class ChannelMessagesTest extends AbstractTestMessages
     public void testChannelCloseForced()
     {
         _logMessage = ChannelMessages.CLOSE_FORCED(1, "Test");
-        List<Object> log = performLog();
+        final List<Object> log = performLog();
 
-        String[] expected = {"Close : 1 - Test"};
+        final String[] expected = {"Close : 1 - Test"};
 
         validateLogMessage(log, "CHN-1003", expected);
     }

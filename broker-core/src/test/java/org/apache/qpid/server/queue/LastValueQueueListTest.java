@@ -19,19 +19,18 @@
  */
 package org.apache.qpid.server.queue;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
@@ -45,23 +44,27 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class LastValueQueueListTest extends UnitTestBase
 {
     private static final String CONFLATION_KEY = "CONFLATION_KEY";
-
     private static final String TEST_KEY_VALUE = "testKeyValue";
     private static final String TEST_KEY_VALUE1 = "testKeyValue1";
     private static final String TEST_KEY_VALUE2 = "testKeyValue2";
 
+    private QueueManagingVirtualHost<?> _virtualHost;
     private LastValueQueueList _list;
     private LastValueQueueImpl _queue;
 
-    @Before
+    @BeforeAll
+    public void beforeAll() throws Exception
+    {
+        _virtualHost = BrokerTestHelper.createVirtualHost(getTestClassName(), this);
+    }
+
+    @BeforeEach
     public void setUp() throws Exception
     {
-        Map<String,Object> queueAttributes = new HashMap<String, Object>();
-        queueAttributes.put(Queue.ID, UUID.randomUUID());
-        queueAttributes.put(Queue.NAME, getTestName());
-        queueAttributes.put(LastValueQueue.LVQ_KEY, CONFLATION_KEY);
-        final QueueManagingVirtualHost virtualHost = BrokerTestHelper.createVirtualHost("testVH", this);
-        _queue = new LastValueQueueImpl(queueAttributes, virtualHost);
+        final Map<String,Object> queueAttributes = Map.of(Queue.ID, randomUUID(),
+                Queue.NAME, getTestName(),
+                LastValueQueue.LVQ_KEY, CONFLATION_KEY);
+        _queue = new LastValueQueueImpl(queueAttributes, _virtualHost);
         _queue.open();
         _list = _queue.getEntries();
     }
@@ -69,190 +72,180 @@ public class LastValueQueueListTest extends UnitTestBase
     @Test
     public void testListHasNoEntries()
     {
-        int numberOfEntries = countEntries(_list);
-        assertEquals((long) 0, (long) numberOfEntries);
+        final int numberOfEntries = countEntries(_list);
+        assertEquals(0, (long) numberOfEntries);
     }
 
     @Test
     public void testAddMessageWithoutConflationKeyValue()
     {
-        ServerMessage message = createTestServerMessage(null);
-
+        final ServerMessage<?> message = createTestServerMessage(null);
         _list.add(message, null);
-        int numberOfEntries = countEntries(_list);
-        assertEquals((long) 1, (long) numberOfEntries);
+        final int numberOfEntries = countEntries(_list);
+        assertEquals(1, (long) numberOfEntries);
     }
 
     @Test
     public void testAddAndDiscardMessageWithoutConflationKeyValue()
     {
-        ServerMessage message = createTestServerMessage(null);
-
-        QueueEntry addedEntry = _list.add(message, null);
+        final ServerMessage<?> message = createTestServerMessage(null);
+        final QueueEntry addedEntry = _list.add(message, null);
         addedEntry.acquire();
         addedEntry.delete();
 
-        int numberOfEntries = countEntries(_list);
-        assertEquals((long) 0, (long) numberOfEntries);
+        final int numberOfEntries = countEntries(_list);
+        assertEquals(0, (long) numberOfEntries);
     }
 
     @Test
     public void testAddMessageWithConflationKeyValue()
     {
-        ServerMessage message = createTestServerMessage(TEST_KEY_VALUE);
-
+        final ServerMessage<?> message = createTestServerMessage(TEST_KEY_VALUE);
         _list.add(message, null);
-        int numberOfEntries = countEntries(_list);
-        assertEquals((long) 1, (long) numberOfEntries);
+        final int numberOfEntries = countEntries(_list);
+        assertEquals(1, (long) numberOfEntries);
     }
 
     @Test
     public void testAddAndRemoveMessageWithConflationKeyValue()
     {
-        ServerMessage message = createTestServerMessage(TEST_KEY_VALUE);
-
-        QueueEntry addedEntry = _list.add(message, null);
+        final ServerMessage<?> message = createTestServerMessage(TEST_KEY_VALUE);
+        final QueueEntry addedEntry = _list.add(message, null);
         addedEntry.acquire();
         addedEntry.delete();
 
-        int numberOfEntries = countEntries(_list);
-        assertEquals((long) 0, (long) numberOfEntries);
+        final int numberOfEntries = countEntries(_list);
+        assertEquals(0, (long) numberOfEntries);
     }
 
     @Test
     public void testAddTwoMessagesWithDifferentConflationKeyValue()
     {
-        ServerMessage message1 = createTestServerMessage(TEST_KEY_VALUE1);
-        ServerMessage message2 = createTestServerMessage(TEST_KEY_VALUE2);
+        final ServerMessage<?> message1 = createTestServerMessage(TEST_KEY_VALUE1);
+        final ServerMessage<?> message2 = createTestServerMessage(TEST_KEY_VALUE2);
 
         _list.add(message1, null);
         _list.add(message2, null);
 
-        int numberOfEntries = countEntries(_list);
-        assertEquals((long) 2, (long) numberOfEntries);
+        final int numberOfEntries = countEntries(_list);
+        assertEquals(2, (long) numberOfEntries);
     }
 
     @Test
     public void testAddTwoMessagesWithSameConflationKeyValue()
     {
-        ServerMessage message1 = createTestServerMessage(TEST_KEY_VALUE);
-        ServerMessage message2 = createTestServerMessage(TEST_KEY_VALUE);
+        final ServerMessage<?> message1 = createTestServerMessage(TEST_KEY_VALUE);
+        final ServerMessage<?> message2 = createTestServerMessage(TEST_KEY_VALUE);
 
         _list.add(message1, null);
         _list.add(message2, null);
 
-        int numberOfEntries = countEntries(_list);
-        assertEquals((long) 1, (long) numberOfEntries);
+        final int numberOfEntries = countEntries(_list);
+        assertEquals(1, (long) numberOfEntries);
     }
 
     @Test
     public void testSupersededEntryIsDiscardedOnRelease()
     {
-        ServerMessage message1 = createTestServerMessage(TEST_KEY_VALUE);
-        ServerMessage message2 = createTestServerMessage(TEST_KEY_VALUE);
-
-        QueueEntry entry1 = _list.add(message1, null);
+        final ServerMessage<?> message1 = createTestServerMessage(TEST_KEY_VALUE);
+        final ServerMessage<?> message2 = createTestServerMessage(TEST_KEY_VALUE);
+        final QueueEntry entry1 = _list.add(message1, null);
         entry1.acquire(); // simulate an in-progress delivery to consumer
 
         _list.add(message2, null);
-        assertFalse(entry1.isDeleted());
 
-        assertEquals((long) 2, (long) countEntries(_list));
+        assertFalse(entry1.isDeleted());
+        assertEquals(2, (long) countEntries(_list));
 
         entry1.release(); // simulate consumer rollback/recover
 
-        assertEquals((long) 1, (long) countEntries(_list));
+        assertEquals(1, (long) countEntries(_list));
         assertTrue(entry1.isDeleted());
     }
 
     @Test
     public void testConflationMapMaintained()
     {
-        assertEquals((long) 0, (long) _list.getLatestValuesMap().size());
+        assertEquals(0, (long) _list.getLatestValuesMap().size());
 
-        ServerMessage message = createTestServerMessage(TEST_KEY_VALUE);
+        final ServerMessage<?> message = createTestServerMessage(TEST_KEY_VALUE);
+        final QueueEntry addedEntry = _list.add(message, null);
 
-        QueueEntry addedEntry = _list.add(message, null);
-
-        assertEquals((long) 1, (long) countEntries(_list));
-        assertEquals((long) 1, (long) _list.getLatestValuesMap().size());
+        assertEquals(1, (long) countEntries(_list));
+        assertEquals(1, (long) _list.getLatestValuesMap().size());
 
         addedEntry.acquire();
         addedEntry.delete();
 
-        assertEquals((long) 0, (long) countEntries(_list));
-        assertEquals((long) 0, (long) _list.getLatestValuesMap().size());
+        assertEquals(0, (long) countEntries(_list));
+        assertEquals(0, (long) _list.getLatestValuesMap().size());
     }
 
     @Test
     public void testConflationMapMaintainedWithDifferentConflationKeyValue()
     {
+        assertEquals(0, (long) _list.getLatestValuesMap().size());
 
-        assertEquals((long) 0, (long) _list.getLatestValuesMap().size());
+        final ServerMessage<?> message1 = createTestServerMessage(TEST_KEY_VALUE1);
+        final ServerMessage<?> message2 = createTestServerMessage(TEST_KEY_VALUE2);
+        final QueueEntry addedEntry1 = _list.add(message1, null);
+        final QueueEntry addedEntry2 = _list.add(message2, null);
 
-        ServerMessage message1 = createTestServerMessage(TEST_KEY_VALUE1);
-        ServerMessage message2 = createTestServerMessage(TEST_KEY_VALUE2);
-
-        QueueEntry addedEntry1 = _list.add(message1, null);
-        QueueEntry addedEntry2 = _list.add(message2, null);
-
-        assertEquals((long) 2, (long) countEntries(_list));
-        assertEquals((long) 2, (long) _list.getLatestValuesMap().size());
+        assertEquals(2, (long) countEntries(_list));
+        assertEquals(2, (long) _list.getLatestValuesMap().size());
 
         addedEntry1.acquire();
         addedEntry1.delete();
         addedEntry2.acquire();
         addedEntry2.delete();
 
-        assertEquals((long) 0, (long) countEntries(_list));
-        assertEquals((long) 0, (long) _list.getLatestValuesMap().size());
+        assertEquals(0, (long) countEntries(_list));
+        assertEquals(0, (long) _list.getLatestValuesMap().size());
     }
 
     @Test
     public void testGetLesserOldestEntry()
     {
-        LastValueQueueList queueEntryList = new LastValueQueueList(_queue, _queue.getQueueStatistics());
+        final LastValueQueueList queueEntryList = new LastValueQueueList(_queue, _queue.getQueueStatistics());
 
-        QueueEntry entry1 =  queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE1), null);
-        assertEquals("Unexpected last message", entry1, queueEntryList.getLeastSignificantOldestEntry());
+        final QueueEntry entry1 =  queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE1), null);
+        assertEquals(entry1, queueEntryList.getLeastSignificantOldestEntry(), "Unexpected last message");
 
-        QueueEntry entry2 =  queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE2), null);
-        assertEquals("Unexpected last message", entry1, queueEntryList.getLeastSignificantOldestEntry());
+        final QueueEntry entry2 =  queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE2), null);
+        assertEquals(entry1, queueEntryList.getLeastSignificantOldestEntry(), "Unexpected last message");
 
-        QueueEntry entry3 =  queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE1), null);
-        assertEquals("Unexpected last message", entry2, queueEntryList.getLeastSignificantOldestEntry());
+        final QueueEntry entry3 =  queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE1), null);
+        assertEquals(entry2, queueEntryList.getLeastSignificantOldestEntry(), "Unexpected last message");
 
         queueEntryList.add(createTestServerMessage(TEST_KEY_VALUE2), null);
-        assertEquals("Unexpected last message", entry3, queueEntryList.getLeastSignificantOldestEntry());
+        assertEquals(entry3, queueEntryList.getLeastSignificantOldestEntry(), "Unexpected last message");
     }
 
     private int countEntries(LastValueQueueList list)
     {
-        QueueEntryIterator iterator =
-                list.iterator();
+        final QueueEntryIterator iterator = list.iterator();
         int count = 0;
-        while(iterator.advance())
+        while (iterator.advance())
         {
             count++;
         }
         return count;
     }
 
-    private ServerMessage createTestServerMessage(String conflationKeyValue)
+    @SuppressWarnings("rawtypes")
+    private ServerMessage<?> createTestServerMessage(String conflationKeyValue)
     {
-        ServerMessage mockMessage = mock(ServerMessage.class);
+        final ServerMessage<?> mockMessage = mock(ServerMessage.class);
 
-        AMQMessageHeader messageHeader = mock(AMQMessageHeader.class);
+        final AMQMessageHeader messageHeader = mock(AMQMessageHeader.class);
         when(messageHeader.getHeader(CONFLATION_KEY)).thenReturn(conflationKeyValue);
         when(mockMessage.getMessageHeader()).thenReturn(messageHeader);
 
-        MessageReference messageReference = mock(MessageReference.class);
+        final MessageReference messageReference = mock(MessageReference.class);
         when(mockMessage.newReference()).thenReturn(messageReference);
         when(mockMessage.newReference(any(TransactionLogResource.class))).thenReturn(messageReference);
-
         when(messageReference.getMessage()).thenReturn(mockMessage);
 
         return mockMessage;
     }
-
 }

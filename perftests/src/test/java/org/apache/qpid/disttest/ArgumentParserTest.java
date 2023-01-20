@@ -19,27 +19,17 @@
  */
 package org.apache.qpid.disttest;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Assert;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ArgumentParserTest extends UnitTestBase
 {
@@ -55,11 +45,11 @@ public class ArgumentParserTest extends UnitTestBase
     public static final String JNDI_CONFIG_DEFAULT = "jndi.properties";
     public static final String DISTRIBUTED_DEFAULT = "false";
 
-    private final Map<String,String> _options = new HashMap<String, String>();
+    private final Map<String,String> _options = new HashMap<>();
 
     private ArgumentParser _parser;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _parser = new ArgumentParser();
@@ -93,13 +83,13 @@ public class ArgumentParserTest extends UnitTestBase
 
         _parser.parseArgumentsIntoConfig(_options, args);
 
-        assertEquals("unexpected config value", TEST_CONFIG_DEFAULT, _options.get(TEST_CONFIG_PROP));
-        assertEquals("unexpected config value", JNDI_CONFIG_DEFAULT, _options.get(JNDI_CONFIG_PROP));
-        assertEquals("unexpected config value", DISTRIBUTED_DEFAULT, _options.get(DISTRIBUTED_PROP));
+        assertEquals(TEST_CONFIG_DEFAULT, _options.get(TEST_CONFIG_PROP), "unexpected config value");
+        assertEquals(JNDI_CONFIG_DEFAULT, _options.get(JNDI_CONFIG_PROP), "unexpected config value");
+        assertEquals(DISTRIBUTED_DEFAULT, _options.get(DISTRIBUTED_PROP), "unexpected config value");
     }
 
     @Test
-    public void testConfigurationParsingOverridesDefault() throws Exception
+    public void testConfigurationParsingOverridesDefault()
     {
         String[] args = new String[]{TEST_CONFIG_PROP + "=" + TEST_CONFIG_FILENAME,
                 JNDI_CONFIG_PROP + "=" + JNDI_CONFIG_FILENAME,
@@ -107,11 +97,10 @@ public class ArgumentParserTest extends UnitTestBase
 
         _parser.parseArgumentsIntoConfig(_options, args);
 
-        assertEquals("unexpected config value", TEST_CONFIG_FILENAME, _options.get(TEST_CONFIG_PROP));
-        assertEquals("unexpected config value", JNDI_CONFIG_FILENAME, _options.get(JNDI_CONFIG_PROP));
-        assertEquals("unexpected config value", DISTRIBUTED_MODE, _options.get(DISTRIBUTED_PROP));
-        assertFalse("override value was the same as the default",
-                           DISTRIBUTED_MODE.equalsIgnoreCase(_options.get(DISTRIBUTED_DEFAULT)));
-
+        assertEquals(TEST_CONFIG_FILENAME, _options.get(TEST_CONFIG_PROP), "unexpected config value");
+        assertEquals(JNDI_CONFIG_FILENAME, _options.get(JNDI_CONFIG_PROP), "unexpected config value");
+        assertEquals(DISTRIBUTED_MODE, _options.get(DISTRIBUTED_PROP), "unexpected config value");
+        assertFalse(DISTRIBUTED_MODE.equalsIgnoreCase(_options.get(DISTRIBUTED_DEFAULT)),
+                "override value was the same as the default");
     }
 }

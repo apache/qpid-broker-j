@@ -32,8 +32,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
@@ -44,7 +44,7 @@ public class MethodFilterTest extends UnitTestBase
 {
     private MethodFilter _methodFilter;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         final HttpManagementConfiguration httManagement = mock(HttpManagement.class);

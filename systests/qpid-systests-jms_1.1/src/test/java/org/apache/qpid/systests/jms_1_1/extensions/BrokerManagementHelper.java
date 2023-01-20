@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions;
 
-
 import java.io.Closeable;
 import java.util.Collections;
 import java.util.HashMap;
@@ -67,8 +66,7 @@ public class BrokerManagementHelper implements Closeable
 
     public BrokerManagementHelper createKeyStore(final String keyStoreName,
                                                  final String keyStoreLocation,
-                                                 final String keyStorePassword)
-            throws JMSException
+                                                 final String keyStorePassword) throws JMSException
     {
         final Map<String, Object> keyStoreAttributes = new HashMap<>();
         keyStoreAttributes.put("storeUrl", keyStoreLocation);

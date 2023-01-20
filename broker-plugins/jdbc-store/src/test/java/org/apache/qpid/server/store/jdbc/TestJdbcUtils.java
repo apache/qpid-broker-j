@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.store.jdbc;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -36,13 +36,12 @@ public class TestJdbcUtils
 
     static void assertTablesExistence(Collection<String> expectedTables,
                                       Collection<String> actualTables,
-                                      boolean exists) throws SQLException
+                                      boolean exists)
     {
         for (String tableName : expectedTables)
         {
-            assertEquals(String.format("Table %s %s", tableName, (exists ? " is not found" : " actually exist")),
-                         exists,
-                         actualTables.contains(tableName));
+            assertEquals(exists, actualTables.contains(tableName),
+                    String.format("Table %s %s", tableName, (exists ? " is not found" : " actually exist")));
         }
     }
 
@@ -62,27 +61,18 @@ public class TestJdbcUtils
 
     public static void shutdownDerby(String connectionURL) throws SQLException
     {
-        Connection connection = null;
-        try
+        try (Connection connection = DriverManager.getConnection(connectionURL + ";shutdown=true"))
         {
-            connection = DriverManager.getConnection(connectionURL + ";shutdown=true");
         }
-        catch(SQLException e)
+        catch (SQLException e)
         {
-            if (e.getSQLState().equalsIgnoreCase("08006"))
+            if (e.getSQLState().equalsIgnoreCase("08006") || e.getSQLState().equalsIgnoreCase("XJ004"))
             {
                 //expected and represents a clean shutdown of this database only, do nothing.
             }
             else
             {
                 throw e;
-            }
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                connection.close();
             }
         }
     }

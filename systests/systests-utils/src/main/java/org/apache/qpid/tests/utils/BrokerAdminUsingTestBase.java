@@ -20,24 +20,37 @@
 
 package org.apache.qpid.tests.utils;
 
-import org.junit.Rule;
-import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@RunWith(QpidTestRunner.class)
+@ExtendWith(QpidTestExtension.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class BrokerAdminUsingTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerAdminUsingTestBase.class);
-    @Rule
-    public final TestName _testName = new TestName();
 
     private BrokerAdmin _brokerAdmin;
 
-    public void init(final BrokerAdmin brokerAdmin)
+    /**
+     * JUnit TestInfo
+     */
+    protected TestInfo _testInfo;
+
+    @BeforeEach
+    public void init(final TestInfo testInfo)
+    {
+        _testInfo = testInfo;
+    }
+
+    public BrokerAdminUsingTestBase setBrokerAdmin(final BrokerAdmin brokerAdmin)
     {
         _brokerAdmin = brokerAdmin;
+        return this;
     }
 
     public BrokerAdmin getBrokerAdmin()
@@ -47,6 +60,6 @@ public abstract class BrokerAdminUsingTestBase
 
     protected String getTestName()
     {
-        return _testName.getMethodName();
+        return _testInfo.getTestMethod().orElseThrow(() -> new RuntimeException("Failed to resolve test method")).getName();
     }
 }

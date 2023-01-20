@@ -29,7 +29,7 @@ import org.apache.qpid.server.model.StatisticUnit;
 @ManagedObject( defaultType = TestTemperatureSensorImpl.TEST_TEMPERATURE_SENSOR_TYPE)
 public interface TestSensor<X extends TestSensor<X>> extends ConfiguredObject<X>
 {
-
     @ManagedStatistic(metricName = "alert_count", statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT)
+    @SuppressWarnings("unused")
     int getNumberOfAlerts();
 }

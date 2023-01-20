@@ -20,18 +20,20 @@
  */
 package org.apache.qpid.server.logging.actors;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.LogMessage;
-import org.apache.qpid.server.logging.LogSubject;
 
 import javax.security.auth.Subject;
 import java.security.PrivilegedAction;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test : AMQPConnectionActorTest
@@ -44,7 +46,7 @@ import org.junit.Test;
  */
 public class AMQPConnectionActorTest extends BaseConnectionActorTestCase
 {
-    @Before
+    @BeforeEach
     public void setUp()
     {
         //Prevent logger creation
@@ -67,77 +69,56 @@ public class AMQPConnectionActorTest extends BaseConnectionActorTestCase
         getRawLogger().clearLogMessages();
         final String message = sendLogMessage();
 
-        List<Object> logs = getRawLogger().getLogMessages();
+        final List<Object> logs = getRawLogger().getLogMessages();
 
-        Assert.assertEquals("Message log size not as expected.", (long) 1, (long) logs.size());
+        assertEquals(1, (long) logs.size(), "Message log size not as expected.");
 
         // Verify that the logged message is present in the output
-        Assert.assertTrue("Message was not found in log message", logs.get(0).toString().contains(message));
+        assertTrue(logs.get(0).toString().contains(message), "Message was not found in log message");
 
         // Verify that the message has the correct type
-        Assert.assertTrue("Message does not contain the [con: prefix", logs.get(0).toString().contains("[con:"));
+        assertTrue(logs.get(0).toString().contains("[con:"), "Message does not contain the [con: prefix");
 
         // Verify that all the values were presented to the MessageFormatter
         // so we will not end up with '{n}' entries in the log.
-        Assert.assertFalse("Verify that the string does not contain any '{'.", logs.get(0).toString().contains("{"));
+        assertFalse(logs.get(0).toString().contains("{"), "Verify that the string does not contain any '{'.");
 
         // Verify that the logged message does not contains the 'ch:' marker
-        Assert.assertFalse("Message was logged with a channel identifier." + logs.get(0),
-                           logs.get(0).toString().contains("/ch:"));
-
+        assertFalse(logs.get(0).toString().contains("/ch:"), "Message was logged with a channel identifier." + logs.get(0));
     }
 
     @Test
     public void testConnectionLoggingOff() throws Exception
     {
         setStatusUpdatesEnabled(false);
-
         super.setUp();
-
         sendLogMessage();
-
-        List<Object> logs = getRawLogger().getLogMessages();
-
-        Assert.assertEquals("Message log size not as expected.", (long) 0, (long) logs.size());
+        final List<Object> logs = getRawLogger().getLogMessages();
+        assertEquals(0, (long) logs.size(), "Message log size not as expected.");
     }
 
     private String sendLogMessage()
     {
         final String message = "test logging";
-        Subject subject = new Subject(false, Collections.singleton(new ConnectionPrincipal(getConnection())), Collections.emptySet(), Collections.emptySet());
-        Subject.doAs(subject, new PrivilegedAction<Object>()
+        final Subject subject = new Subject(false, Set.of(new ConnectionPrincipal(getConnection())), Set.of(), Set.of());
+        Subject.doAs(subject, (PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
+            getEventLogger().message(() -> "[AMQPActorTest]", new LogMessage()
             {
-                getEventLogger().message(new LogSubject()
-                                  {
-                                      @Override
-                                      public String toLogString()
-                                      {
-                                          return "[AMQPActorTest]";
-                                      }
+                @Override
+                public String toString()
+                {
+                    return message;
+                }
 
-                                  }, new LogMessage()
-                                  {
-                                      @Override
-                                      public String toString()
-                                      {
-                                          return message;
-                                      }
-
-                                      @Override
-                                      public String getLogHierarchy()
-                                      {
-                                          return "test.hierarchy";
-                                      }
-                                  }
-                                 );
-                return null;
-
-            }
+                @Override
+                public String getLogHierarchy()
+                {
+                    return "test.hierarchy";
+                }
+            });
+            return null;
         });
         return message;
     }
-
 }

@@ -49,6 +49,7 @@ public class TestAbstractSensorImpl<X extends TestAbstractSensorImpl<X>> extends
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
+    @SuppressWarnings({"unused"})
     private ListenableFuture<Void> onActivate()
     {
         setState(State.ACTIVE);

@@ -21,8 +21,8 @@
 
 package org.apache.qpid.systests.jms_1_1.message;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import javax.jms.Connection;
 import javax.jms.Message;
@@ -35,7 +35,7 @@ import javax.jms.Topic;
 import javax.jms.TopicConnection;
 import javax.jms.TopicSubscriber;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -63,8 +63,8 @@ public class TimeToLiveTest extends JmsTestBase
             connection.start();
             Message message = consumer.receive(getReceiveTimeout());
 
-            assertTrue("TextMessage should be received", message instanceof TextMessage);
-            assertEquals("Unexpected message received", "B", ((TextMessage)message).getText());
+            assertTrue(message instanceof TextMessage, "TextMessage should be received");
+            assertEquals("B", ((TextMessage)message).getText(), "Unexpected message received");
         }
         finally
         {
@@ -92,16 +92,18 @@ public class TimeToLiveTest extends JmsTestBase
             connection.start();
             Message message = consumer.receive(getReceiveTimeout());
 
-            assertTrue("TextMessage should be received", message instanceof TextMessage);
-            assertEquals("Unexpected message received", "A", ((TextMessage) message).getText());
+            assertTrue(message instanceof TextMessage, "TextMessage should be received");
+            assertEquals("A", ((TextMessage) message).getText(), "Unexpected message received");
 
             Thread.sleep(timeToLiveMillis);
 
             session.rollback();
             message = consumer.receive(getReceiveTimeout());
 
-            assertTrue("TextMessage should be received after waiting for TTL", message instanceof TextMessage);
-            assertEquals("Unexpected message received after waiting for TTL", "B", ((TextMessage) message).getText());
+            assertTrue(message instanceof TextMessage,
+                    "TextMessage should be received after waiting for TTL");
+            assertEquals("B", ((TextMessage) message).getText(),
+                    "Unexpected message received after waiting for TTL");
         }
         finally
         {
@@ -130,16 +132,18 @@ public class TimeToLiveTest extends JmsTestBase
             connection.start();
             Message message = durableSubscriber.receive(getReceiveTimeout());
 
-            assertTrue("TextMessage should be received", message instanceof TextMessage);
-            assertEquals("Unexpected message received", "A", ((TextMessage)message).getText());
+            assertTrue(message instanceof TextMessage, "TextMessage should be received");
+            assertEquals("A", ((TextMessage)message).getText(), "Unexpected message received");
 
             Thread.sleep(timeToLiveMillis);
 
             session.rollback();
             message = durableSubscriber.receive(getReceiveTimeout());
 
-            assertTrue("TextMessage should be received after waiting for TTL", message instanceof TextMessage);
-            assertEquals("Unexpected message received after waiting for TTL", "B", ((TextMessage) message).getText());
+            assertTrue(message instanceof TextMessage,
+                    "TextMessage should be received after waiting for TTL");
+            assertEquals("B", ((TextMessage) message).getText(),
+                    "Unexpected message received after waiting for TTL");
         }
         finally
         {
@@ -170,8 +174,8 @@ public class TimeToLiveTest extends JmsTestBase
             connection.start();
             Message message = durableSubscriber.receive(getReceiveTimeout());
 
-            assertTrue("TextMessage should be received", message instanceof TextMessage);
-            assertEquals("Unexpected message received", "B", ((TextMessage)message).getText());
+            assertTrue(message instanceof TextMessage, "TextMessage should be received");
+            assertEquals("B", ((TextMessage)message).getText(), "Unexpected message received");
         }
         finally
         {

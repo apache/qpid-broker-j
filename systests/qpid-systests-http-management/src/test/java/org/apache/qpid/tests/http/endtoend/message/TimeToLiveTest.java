@@ -37,10 +37,10 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.tests.http.HttpRequestConfig;
 import org.apache.qpid.tests.http.HttpTestBase;
@@ -52,19 +52,19 @@ public class TimeToLiveTest extends HttpTestBase
     private static final long HOUSE_KEEPING_CHECK_PERIOD = 100;
     private static final long ONE_DAY_MILLISECONDS = 24 * 60 * 60 * 1000L;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(QUEUE_NAME);
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() throws Exception
     {
         System.setProperty("virtualhost.housekeepingCheckPeriod", String.valueOf(HOUSE_KEEPING_CHECK_PERIOD));
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownClass()
     {
         System.clearProperty("virtualhost.housekeepingCheckPeriod");

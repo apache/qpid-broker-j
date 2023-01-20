@@ -42,8 +42,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.logback.VirtualHostFileLogger;
 import org.apache.qpid.server.logging.logback.VirtualHostNameAndLevelLogInclusionRule;
@@ -67,7 +67,7 @@ public class ReadTest extends HttpTestBase
     private static final String QUEUE1_URL = String.format("queue/%s", QUEUE1_NAME);
     private static final String QUEUE2_URL = String.format("queue/%s", QUEUE2_NAME);
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(QUEUE1_NAME);

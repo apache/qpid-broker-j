@@ -20,21 +20,17 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.UnitTestMessageLogger;
-import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
@@ -56,27 +52,15 @@ public abstract class AbstractTestLogSubject extends UnitTestBase
 {
     protected LogSubject _subject = null;
 
-    @Before
-    public void setUp() throws Exception
-    {
-        BrokerTestHelper.setUp();
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        BrokerTestHelper.tearDown();
-    }
-
-    protected List<Object> performLog(boolean statusUpdatesEnabled)
+    protected List<Object> performLog(final boolean statusUpdatesEnabled)
     {
         if (_subject == null)
         {
             throw new NullPointerException("LogSubject has not been set");
         }
 
-        UnitTestMessageLogger logger = new UnitTestMessageLogger(statusUpdatesEnabled);
-        EventLogger eventLogger = new EventLogger(logger);
+        final UnitTestMessageLogger logger = new UnitTestMessageLogger(statusUpdatesEnabled);
+        final EventLogger eventLogger = new EventLogger(logger);
 
         eventLogger.message(_subject, new LogMessage()
         {
@@ -105,36 +89,39 @@ public abstract class AbstractTestLogSubject extends UnitTestBase
      * @param vhost        - the virtualhost that the user connected to.
      * @param message      - the message these values should appear in.
      */
-    protected void verifyConnection(long connectionID, String user, String ipString, String vhost, String message)
+    protected void verifyConnection(final long connectionID,
+                                    final String user,
+                                    final String ipString,
+                                    final String vhost,
+                                    final String message)
     {
         // This should return us MockProtocolSessionUser@null/test
-        String connectionSlice = getSlice("con:" + connectionID, message);
+        final String connectionSlice = getSlice("con:" + connectionID, message);
 
-        assertNotNull("Unable to find connection 'con:" + connectionID + "' in '" + message + "'",
-                             connectionSlice);
+        assertNotNull(connectionSlice, "Unable to find connection 'con:" + connectionID + "' in '" + message + "'");
 
         // Extract the userName
-        String[] userNameParts = connectionSlice.split("@");
+        final String[] userNameParts = connectionSlice.split("@");
 
-        assertEquals("Unable to split Username from rest of Connection:"
-                            + connectionSlice, (long) 2, (long) userNameParts.length);
+        assertEquals(2, (long) userNameParts.length,
+                "Unable to split Username from rest of Connection:" + connectionSlice);
 
-        assertEquals("Username not as expected", userNameParts[0], user);
+        assertEquals(userNameParts[0], user, "Username not as expected");
 
         // Extract IP.
         // The connection will be of the format - guest@/127.0.0.1:1/test
         // and so our userNamePart will be '/127.0.0.1:1/test'
-        String[] ipParts = userNameParts[1].split("/");
+        final String[] ipParts = userNameParts[1].split("/");
 
         // We will have three sections
-        assertEquals("Unable to split IP from rest of Connection:"
-                            + userNameParts[1] + " in '" + message + "'", (long) 3, (long) ipParts.length);
+        assertEquals(3, (long) ipParts.length, "Unable to split IP from rest of Connection:" +
+                userNameParts[1] + " in '" + message + "'");
 
         // We need to skip the first '/' split will be empty so validate 1 as IP
-        assertEquals("IP not as expected", ipString, ipParts[1]);
+        assertEquals(ipString, ipParts[1], "IP not as expected");
 
         //Finally check vhost which is section 2
-        assertEquals("Virtualhost name not as expected.", vhost, ipParts[2]);
+        assertEquals(vhost, ipParts[2], "Virtualhost name not as expected.");
     }
 
     /**
@@ -143,13 +130,13 @@ public abstract class AbstractTestLogSubject extends UnitTestBase
      * @param message    The message to check
      * @param routingKey The routing key to check against
      */
-    protected void verifyRoutingKey(String message, String routingKey)
+    protected void verifyRoutingKey(final String message, final String routingKey)
     {
-        String routingKeySlice = getSlice("rk", message);
+        final String routingKeySlice = getSlice("rk", message);
 
-        assertNotNull("Routing Key not found:" + message, routingKeySlice);
+        assertNotNull(routingKeySlice, "Routing Key not found:" + message);
 
-        assertEquals("Routing key not correct", routingKey, routingKeySlice);
+        assertEquals(routingKey, routingKeySlice, "Routing key not correct");
     }
 
     /**
@@ -158,13 +145,13 @@ public abstract class AbstractTestLogSubject extends UnitTestBase
      * @param message The message to check
      * @param queue   The queue to check against
      */
-    protected void verifyQueue(String message, Queue<?> queue)
+    protected void verifyQueue(final String message, final Queue<?> queue)
     {
-        String queueSlice = getSlice("qu", message);
+        final String queueSlice = getSlice("qu", message);
 
-        assertNotNull("Queue not found:" + message, queueSlice);
+        assertNotNull(queueSlice, "Queue not found:" + message);
 
-        assertEquals("Queue name not correct", queue.getName(), queueSlice);
+        assertEquals(queue.getName(), queueSlice, "Queue name not correct");
     }
 
     /**
@@ -174,19 +161,19 @@ public abstract class AbstractTestLogSubject extends UnitTestBase
      * @param message  The message to check
      * @param exchange the exchange to check against
      */
-    protected void verifyExchange(String message, Exchange<?> exchange)
+    protected void verifyExchange(final String message, final Exchange<?> exchange)
     {
-        String exchangeSlice = getSlice("ex", message);
+        final String exchangeSlice = getSlice("ex", message);
 
-        assertNotNull("Exchange not found:" + message, exchangeSlice);
+        assertNotNull(exchangeSlice, "Exchange not found:" + message);
 
-        String[] exchangeParts = exchangeSlice.split("/");
+        final String[] exchangeParts = exchangeSlice.split("/");
 
-        assertEquals("Exchange should be in two parts ex(type/name)", (long) 2, (long) exchangeParts.length);
+        assertEquals(2, (long) exchangeParts.length, "Exchange should be in two parts ex(type/name)");
 
-        assertEquals("Exchange type not correct", exchange.getType(), exchangeParts[0]);
+        assertEquals(exchange.getType(), exchangeParts[0], "Exchange type not correct");
 
-        assertEquals("Exchange name not correct", exchange.getName(), exchangeParts[1]);
+        assertEquals(exchange.getName(), exchangeParts[1], "Exchange name not correct");
     }
 
     /**
@@ -196,13 +183,13 @@ public abstract class AbstractTestLogSubject extends UnitTestBase
      * @param message the message to search
      * @param vhost   the vhostName to check against
      */
-    static public void verifyVirtualHost(String message, VirtualHost<?> vhost)
+    static public void verifyVirtualHost(final String message, final VirtualHost<?> vhost)
     {
-        String vhostSlice = getSlice("vh", message);
+        final String vhostSlice = getSlice("vh", message);
 
-        assertNotNull("Virtualhost not found:" + message, vhostSlice);
+        assertNotNull(vhostSlice, "Virtualhost not found:" + message);
 
-        assertEquals("Virtualhost not correct", "/" + vhost.getName(), vhostSlice);
+        assertEquals("/" + vhost.getName(), vhostSlice, "Virtualhost not correct");
     }
 
     /**
@@ -223,24 +210,23 @@ public abstract class AbstractTestLogSubject extends UnitTestBase
      *
      * @return the slice if found otherwise null is returned
      */
-    static public String getSlice(String sliceID, String message)
+    static public String getSlice(final String sliceID, final String message)
     {
-        int indexOfSlice = message.indexOf(sliceID + "(");
+        final int indexOfSlice = message.indexOf(sliceID + "(");
 
         if (indexOfSlice == -1)
         {
             return null;
         }
 
-        int endIndex = message.indexOf(')', indexOfSlice);
+        final int endIndex = message.indexOf(')', indexOfSlice);
 
         if (endIndex == -1)
         {
             return null;
         }
 
-        return message.substring(indexOfSlice + 1 + sliceID.length(),
-                                 endIndex);
+        return message.substring(indexOfSlice + 1 + sliceID.length(), endIndex);
     }
 
     /**
@@ -250,9 +236,9 @@ public abstract class AbstractTestLogSubject extends UnitTestBase
     @Test
     public void testEnabled()
     {
-        List<Object> logs = performLog(true);
+        final List<Object> logs = performLog(true);
 
-        assertEquals("Log has incorrect message count", (long) 1, (long) logs.size());
+        assertEquals(1, (long) logs.size(), "Log has incorrect message count");
 
         validateLogStatement(String.valueOf(logs.get(0)));
     }
@@ -263,7 +249,7 @@ public abstract class AbstractTestLogSubject extends UnitTestBase
      *
      * @param message the message whose format needs validation
      */
-    protected abstract void validateLogStatement(String message);
+    protected abstract void validateLogStatement(final String message);
 
     /**
      * Ensure that when status updates are off this does not perform logging
@@ -271,9 +257,8 @@ public abstract class AbstractTestLogSubject extends UnitTestBase
     @Test
     public void testDisabled()
     {
-        List<Object> logs = performLog(false);
+        final List<Object> logs = performLog(false);
 
-        assertEquals("Log has incorrect message count", (long) 0, (long) logs.size());
+        assertEquals(0, (long) logs.size(), "Log has incorrect message count");
     }
-
 }

@@ -22,7 +22,6 @@
 package org.apache.qpid.tests.http.v6_1;
 
 import static javax.servlet.http.HttpServletResponse.SC_CREATED;
-import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
@@ -36,8 +35,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.tests.http.HttpRequestConfig;
@@ -48,7 +47,7 @@ public class BindingTest extends HttpTestBase
 {
     private static final String QUEUE_NAME = "myqueue";
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(QUEUE_NAME);

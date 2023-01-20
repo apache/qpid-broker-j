@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,9 +40,11 @@ import ch.qos.logback.core.rolling.RollingPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.TriggeringPolicy;
 import ch.qos.logback.core.rolling.helper.CompressionMode;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,16 +54,15 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class AppenderUtilsTest extends UnitTestBase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AppenderUtilsTest.class);
-
     public static final String LAYOUT = "%d %-5p [%t] \\(%c{2}\\) # %m%n";
     public static final int MAX_FILE_SIZE = 101;
     public static final int MAX_HISTORY = 13;
-    private FileLoggerSettings _settings;
 
+    private FileLoggerSettings _settings;
     private File _testLogFile;
     private String _testLogFileName;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _testLogFile = File.createTempFile(getTestName(), ".log");
@@ -77,8 +78,8 @@ public class AppenderUtilsTest extends UnitTestBase
         when(_settings.getExecutorService()).thenReturn(mock(ScheduledExecutorService.class));
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    public void tearDown()
     {
         _testLogFile.delete();
     }
@@ -89,31 +90,30 @@ public class AppenderUtilsTest extends UnitTestBase
         final RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
         AppenderUtils.configureRollingFileAppender(_settings, new LoggerContext(), appender);
 
-        assertEquals("Unexpected appender file name", _testLogFileName, appender.getFile());
+        assertEquals(_testLogFileName, appender.getFile(), "Unexpected appender file name");
 
         RollingPolicy rollingPolicy = appender.getRollingPolicy();
         final boolean condition2 = rollingPolicy instanceof RollingPolicyDecorator;
-        assertTrue("Unexpected rolling policy", condition2);
+        assertTrue(condition2, "Unexpected rolling policy");
         rollingPolicy = ((RollingPolicyDecorator)rollingPolicy).getDecorated();
         final boolean condition1 = rollingPolicy instanceof TimeBasedRollingPolicy;
-        assertTrue("Unexpected decorated rolling policy", condition1);
-        assertEquals("Unexpected max history",
-                            (long) MAX_HISTORY,
-                            (long) ((TimeBasedRollingPolicy) rollingPolicy).getMaxHistory());
+        assertTrue(condition1, "Unexpected decorated rolling policy");
+        assertEquals(MAX_HISTORY, (long) ((TimeBasedRollingPolicy<?>) rollingPolicy).getMaxHistory(),
+                "Unexpected max history");
 
-        assertEquals("Unexpected file name pattern",
-                            _testLogFileName + ".%d{yyyy-MM-dd}.%i.gz",
-                            ((TimeBasedRollingPolicy) rollingPolicy).getFileNamePattern());
+        assertEquals(_testLogFileName + ".%d{yyyy-MM-dd}.%i.gz",
+                ((TimeBasedRollingPolicy<?>) rollingPolicy).getFileNamePattern(),
+                "Unexpected file name pattern");
 
-        assertEquals("Unexpected compression mode", CompressionMode.GZ, rollingPolicy.getCompressionMode());
+        assertEquals(CompressionMode.GZ, rollingPolicy.getCompressionMode(), "Unexpected compression mode");
 
-        TriggeringPolicy triggeringPolicy = ((TimeBasedRollingPolicy) rollingPolicy).getTimeBasedFileNamingAndTriggeringPolicy();
+        final TriggeringPolicy<?> triggeringPolicy = ((TimeBasedRollingPolicy<?>) rollingPolicy).getTimeBasedFileNamingAndTriggeringPolicy();
         final boolean condition = triggeringPolicy instanceof AppenderUtils.DailyTriggeringPolicy;
-        assertTrue("Unexpected triggering policy", condition);
-        assertEquals("Unexpected triggering policy",
-                            String.valueOf(MAX_FILE_SIZE) + " MB",
-                            ((AppenderUtils.DailyTriggeringPolicy) triggeringPolicy).getMaxFileSize().toString());
-        assertEquals("Unexpected layout", LAYOUT, ((PatternLayoutEncoder) appender.getEncoder()).getPattern());
+        assertTrue(condition, "Unexpected triggering policy");
+        assertEquals(MAX_FILE_SIZE + " MB",
+                ((AppenderUtils.DailyTriggeringPolicy) triggeringPolicy).getMaxFileSize().toString(),
+                "Unexpected triggering policy");
+        assertEquals(LAYOUT, ((PatternLayoutEncoder) appender.getEncoder()).getPattern(), "Unexpected layout");
     }
 
     @Test
@@ -122,58 +122,51 @@ public class AppenderUtilsTest extends UnitTestBase
         when(_settings.isRollDaily()).thenReturn(Boolean.FALSE);
         when(_settings.isCompressOldFiles()).thenReturn(Boolean.FALSE);
 
-        RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
+        final RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
         AppenderUtils.configureRollingFileAppender(_settings, new LoggerContext(), appender);
 
-        assertEquals("Unexpected appender file name", _testLogFileName, appender.getFile());
+        assertEquals(_testLogFileName, appender.getFile(), "Unexpected appender file name");
 
         RollingPolicy rollingPolicy = appender.getRollingPolicy();
         final boolean condition2 = rollingPolicy instanceof RollingPolicyDecorator;
-        assertTrue("Unexpected rolling policy", condition2);
+        assertTrue(condition2, "Unexpected rolling policy");
         rollingPolicy = ((RollingPolicyDecorator)rollingPolicy).getDecorated();
         final boolean condition1 = rollingPolicy instanceof AppenderUtils.SimpleRollingPolicy;
-        assertTrue("Unexpected decorated rolling policy", condition1);
-        assertEquals("Unexpected max history",
-                            (long) MAX_HISTORY,
-                            (long) ((AppenderUtils.SimpleRollingPolicy) rollingPolicy).getMaxIndex());
-        assertEquals("Unexpected file name pattern",
-                            _testLogFileName + ".%i",
-                            ((AppenderUtils.SimpleRollingPolicy) rollingPolicy).getFileNamePattern());
-        assertEquals("Unexpected compression mode", CompressionMode.NONE, rollingPolicy.getCompressionMode());
+        assertTrue(condition1, "Unexpected decorated rolling policy");
+        assertEquals(MAX_HISTORY, (long) ((AppenderUtils.SimpleRollingPolicy) rollingPolicy).getMaxIndex(),
+                "Unexpected max history");
+        assertEquals(_testLogFileName + ".%i",
+                ((AppenderUtils.SimpleRollingPolicy) rollingPolicy).getFileNamePattern(),
+                "Unexpected file name pattern");
+        assertEquals(CompressionMode.NONE, rollingPolicy.getCompressionMode(), "Unexpected compression mode");
 
-        TriggeringPolicy triggeringPolicy = appender.getTriggeringPolicy();
-        assertEquals("Unexpected triggering policy",
-                            String.valueOf(MAX_FILE_SIZE) + " MB",
-                            ((AppenderUtils.SizeTriggeringPolicy) triggeringPolicy).getMaxFileSize().toString());
+        final TriggeringPolicy<?> triggeringPolicy = appender.getTriggeringPolicy();
+        assertEquals(MAX_FILE_SIZE + " MB",
+                ((AppenderUtils.SizeTriggeringPolicy) triggeringPolicy).getMaxFileSize().toString(),
+                "Unexpected triggering policy");
 
-        Encoder encoder = appender.getEncoder();
+        final Encoder<?> encoder = appender.getEncoder();
         final boolean condition = encoder instanceof PatternLayoutEncoder;
-        assertTrue("Unexpected encoder", condition);
-        assertEquals("Unexpected layout pattern", LAYOUT, ((PatternLayoutEncoder)encoder).getPattern());
+        assertTrue(condition, "Unexpected encoder");
+        assertEquals(LAYOUT, ((PatternLayoutEncoder)encoder).getPattern(), "Unexpected layout pattern");
     }
 
     @Test
-    public void testMaxFileSizeLimit() throws Exception
+    public void testMaxFileSizeLimit()
     {
-        try
-        {
-            AppenderUtils.validateMaxFileSize(0);
-            fail("exception not thrown.");
-        }
-        catch (IllegalConfigurationException ice)
-        {
-            // pass
-        }
+        assertThrows(IllegalConfigurationException.class,
+                () -> AppenderUtils.validateMaxFileSize(0),
+                "Exception not thrown");
     }
 
     @Test
     public void testUnwritableLogFileTarget() throws Exception
     {
-        File unwriteableFile = File.createTempFile(getTestName(), null);
+        final File unwriteableFile = File.createTempFile(getTestName(), null);
 
         try
         {
-            assertTrue("could not set log target permissions for test", unwriteableFile.setWritable(false));
+            assertTrue(unwriteableFile.setWritable(false), "could not set log target permissions for test");
             doValidateLogTarget(unwriteableFile);
         }
         finally
@@ -185,12 +178,12 @@ public class AppenderUtilsTest extends UnitTestBase
     @Test
     public void testUnwritableLogDirectoryTarget() throws Exception
     {
-        Path unwriteableLogTargetPath = Files.createTempDirectory(getTestName());
-        File unwriteableLogTarget = unwriteableLogTargetPath.toFile();
+        final Path unwriteableLogTargetPath = Files.createTempDirectory(getTestName());
+        final File unwriteableLogTarget = unwriteableLogTargetPath.toFile();
 
         try
         {
-            if(unwriteableLogTarget.setWritable(false))
+            if (unwriteableLogTarget.setWritable(false))
             {
                 doValidateLogTarget(new File(unwriteableLogTarget.getAbsolutePath(), "nonExistingFile.log"));
             }
@@ -208,8 +201,8 @@ public class AppenderUtilsTest extends UnitTestBase
     @Test
     public void testDirectoryLogTarget() throws Exception
     {
-        Path unwriteableLogTargetPath = Files.createTempDirectory(getTestName());
-        File unwriteableLogTarget = unwriteableLogTargetPath.toFile();
+        final Path unwriteableLogTargetPath = Files.createTempDirectory(getTestName());
+        final File unwriteableLogTarget = unwriteableLogTargetPath.toFile();
 
         try
         {
@@ -223,15 +216,8 @@ public class AppenderUtilsTest extends UnitTestBase
 
     private void doValidateLogTarget(File target)
     {
-        try
-        {
-            AppenderUtils.validateLogFilePermissions(target);
-            fail("test did not throw");
-        }
-        catch (IllegalConfigurationException ice)
-        {
-            // pass
-        }
+        assertThrows(IllegalConfigurationException.class,
+                () -> AppenderUtils.validateLogFilePermissions(target),
+                "Exception not thrown");
     }
-
 }

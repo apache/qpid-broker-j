@@ -20,24 +20,24 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
@@ -47,17 +47,18 @@ public class CoalescingCommitterTest extends UnitTestBase
     private EnvironmentFacade _environmentFacade;
     private CoalescingCommiter _coalescingCommitter;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.BDB),
+                "VirtualHostNodeStoreType should be BDB");
 
         _environmentFacade = mock(EnvironmentFacade.class);
         _coalescingCommitter = new CoalescingCommiter("Test", 8, 500, _environmentFacade);
         _coalescingCommitter.start();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         if (_coalescingCommitter != null)
@@ -67,7 +68,7 @@ public class CoalescingCommitterTest extends UnitTestBase
     }
 
     @Test
-    public void testCommitterEnvironmentFacadeInteractionsOnSyncCommit() throws Exception
+    public void testCommitterEnvironmentFacadeInteractionsOnSyncCommit()
     {
         RuntimeException testFailure = new RuntimeException("Test");
         doThrow(testFailure).when(_environmentFacade).flushLog();
@@ -79,7 +80,7 @@ public class CoalescingCommitterTest extends UnitTestBase
         }
         catch(RuntimeException e)
         {
-            assertEquals("Unexpected failure", testFailure, e);
+            assertEquals(testFailure, e, "Unexpected failure");
         }
 
         verify(_environmentFacade, times(1)).flushLog();
@@ -105,7 +106,7 @@ public class CoalescingCommitterTest extends UnitTestBase
         }
         catch (ExecutionException e)
         {
-            assertEquals("Unexpected failure", testFailure, e.getCause());
+            assertEquals(testFailure, e.getCause(), "Unexpected failure");
         }
 
         verify(_environmentFacade, times(1)).flushLog();
@@ -114,7 +115,7 @@ public class CoalescingCommitterTest extends UnitTestBase
         final String expectedResult = "Test";
         ListenableFuture<?> future =  _coalescingCommitter.commitAsync(null, expectedResult);
         Object result = future.get(1000, TimeUnit.MILLISECONDS);
-        assertEquals("Unexpected result", expectedResult, result);
+        assertEquals(expectedResult, result, "Unexpected result");
 
         verify(_environmentFacade, times(2)).flushLog();
         verify(_environmentFacade, times(1)).flushLogFailed(testFailure);

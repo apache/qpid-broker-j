@@ -21,19 +21,18 @@
 
 package org.apache.qpid.server.virtualhost;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
@@ -50,20 +49,23 @@ public class FlowToDiskCheckingTaskTest extends UnitTestBase
 {
     private static final int FLOW_TO_DISK_CHECK_PERIOD = 0;
     private AbstractVirtualHost<?> _virtualHost;
-    private Queue _queue;
-    private AbstractVirtualHost.FlowToDiskCheckingTask _task;
+    private Queue<?> _queue;
+    private AbstractVirtualHost<?>.FlowToDiskCheckingTask _task;
 
-    @Before
+    @BeforeAll
+    public void beforeAll() throws Exception
+    {
+        final Map<String, Object> attributes = Map.of(VirtualHost.NAME, getTestClassName(),
+                VirtualHost.TYPE,  TestMemoryVirtualHost.VIRTUAL_HOST_TYPE,
+                VirtualHost.CONTEXT, Map.of(QueueManagingVirtualHost.FLOW_TO_DISK_CHECK_PERIOD, FLOW_TO_DISK_CHECK_PERIOD));
+        _virtualHost = (AbstractVirtualHost<?>) BrokerTestHelper.createVirtualHost(attributes, this);
+    }
+
+    @BeforeEach
     public void setUp() throws Exception
     {
-        final Map<String, Object> attributes = new HashMap<>();
-        attributes.put(VirtualHost.NAME, getTestName());
-        attributes.put(VirtualHost.TYPE,  TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
-        attributes.put(VirtualHost.CONTEXT, Collections.singletonMap(QueueManagingVirtualHost.FLOW_TO_DISK_CHECK_PERIOD,
-                                                                     FLOW_TO_DISK_CHECK_PERIOD));
-        _virtualHost = (AbstractVirtualHost)BrokerTestHelper.createVirtualHost(attributes, this);
         _task = _virtualHost. new FlowToDiskCheckingTask();
-        _queue = _virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, getTestName()));
+        _queue = _virtualHost.createChild(Queue.class, Map.of(Queue.NAME, getTestName()));
         _queue.enqueue(InternalMessage.createMessage(_virtualHost.getMessageStore(),
                                                      mock(AMQMessageHeader.class),
                                                      "test",
@@ -71,23 +73,19 @@ public class FlowToDiskCheckingTaskTest extends UnitTestBase
                                                      _queue.getName()), null, null);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         if (_queue != null)
         {
             _queue.close();
         }
-        if (_virtualHost !=  null)
-        {
-            _virtualHost.close();
-        }
     }
 
     @Test
     public void testFlowToDiskInMemoryMessage()
     {
-        final ServerMessage message = createMessage(10, 20);
+        final ServerMessage<?> message = createMessage(10, 20);
         _queue.enqueue(message, null, null);
 
         makeVirtualHostTargetSizeExceeded();
@@ -110,9 +108,10 @@ public class FlowToDiskCheckingTaskTest extends UnitTestBase
         assertTrue(_virtualHost.isOverTargetSize());
     }
 
+    @SuppressWarnings("rawtypes")
     private ServerMessage createMessage(final int headerSize, final int payloadSize)
     {
-        long totalSize = headerSize + payloadSize;
+        final long totalSize = headerSize + payloadSize;
         final long id = System.currentTimeMillis();
         final ServerMessage message = mock(ServerMessage.class);
         when(message.getMessageNumber()).thenReturn(id);
@@ -129,7 +128,6 @@ public class FlowToDiskCheckingTaskTest extends UnitTestBase
 
         final MessageReference ref = mock(MessageReference.class);
         when(ref.getMessage()).thenReturn(message);
-
         when(message.newReference()).thenReturn(ref);
         when(message.newReference(any(TransactionLogResource.class))).thenReturn(ref);
 

@@ -20,21 +20,20 @@
  */
 package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -51,10 +50,11 @@ public class BDBVirtualHostNodeTest extends UnitTestBase
     private Broker<?> _broker;
     private File _storePath;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(Objects.equals(getVirtualHostNodeStoreType(), VirtualHostNodeStoreType.BDB),
+                "VirtualHostNodeStoreType should be BDB");
 
         _broker = BrokerTestHelper.createBrokerMock();
         TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
@@ -64,7 +64,7 @@ public class BDBVirtualHostNodeTest extends UnitTestBase
         _storePath = TestFileUtils.createTestDirectory();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         if (_storePath != null)
@@ -78,7 +78,7 @@ public class BDBVirtualHostNodeTest extends UnitTestBase
     {
         String nodeName = getTestName();
         File file = new File(_storePath + File.separator + nodeName);
-        assertTrue("Empty file is not created", file.createNewFile());
+        assertTrue(file.createNewFile(), "Empty file is not created");
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(BDBVirtualHostNode.ID, UUID.randomUUID());
         attributes.put(BDBVirtualHostNode.TYPE, BDBVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE);
@@ -93,8 +93,8 @@ public class BDBVirtualHostNodeTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertTrue("Unexpected exception " + e.getMessage(),
-                              e.getMessage().startsWith("Cannot open node configuration store"));
+            assertTrue(e.getMessage().startsWith("Cannot open node configuration store"),
+                    "Unexpected exception " + e.getMessage());
         }
     }
 

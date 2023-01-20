@@ -20,16 +20,17 @@
 package org.apache.qpid.server.logging.logback.jdbc;
 
 import static org.apache.qpid.server.logging.logback.jdbc.JDBCLoggerHelper.ROOT_LOGGER;
-import static org.junit.Assert.fail;
+
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -39,7 +40,7 @@ public class JDBCSettingsDrivenConnectionSourceTest extends InMemoryDatabaseTest
 {
     private JDBCSettingsDrivenConnectionSource _connectionSource;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         final JDBCSettings jdbcSettings = mock(JDBCSettings.class);
@@ -50,7 +51,7 @@ public class JDBCSettingsDrivenConnectionSourceTest extends InMemoryDatabaseTest
         _connectionSource.setContext(ROOT_LOGGER.getLoggerContext());
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         if (_connectionSource != null)

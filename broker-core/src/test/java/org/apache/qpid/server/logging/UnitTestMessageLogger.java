@@ -26,30 +26,30 @@ import java.util.List;
 
 public class UnitTestMessageLogger extends AbstractMessageLogger
 {
-    private final List<Object> _log = new LinkedList<Object>();
+    private final List<Object> _log = new LinkedList<>();
     
     public UnitTestMessageLogger()
     {
 
     }
 
-    public UnitTestMessageLogger(boolean statusUpdatesEnabled)
+    public UnitTestMessageLogger(final boolean statusUpdatesEnabled)
     {
         super(statusUpdatesEnabled);
     }
 
     @Override
-    public void rawMessage(String message, String logHierarchy)
+    public void rawMessage(final String message, final String logHierarchy)
     {
         _log.add(message);
     }
 
     @Override
-    public void rawMessage(String message, Throwable throwable, String logHierarchy)
+    public void rawMessage(final String message, final Throwable throwable, final String logHierarchy)
     {
         _log.add(message);
 
-        if(throwable != null)
+        if (throwable != null)
         {
             _log.add(throwable);
         }

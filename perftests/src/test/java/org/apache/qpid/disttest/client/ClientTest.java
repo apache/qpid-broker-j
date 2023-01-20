@@ -19,6 +19,7 @@
  */
 package org.apache.qpid.disttest.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -37,26 +38,13 @@ import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.message.Response;
 import org.apache.qpid.disttest.message.StopClientCommand;
 
-import org.junit.Assert;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ClientTest extends UnitTestBase
 {
@@ -67,7 +55,7 @@ public class ClientTest extends UnitTestBase
     private ParticipantExecutorRegistry _participantRegistry;
     private Participant _participant;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _delegate = mock(ClientJmsDelegate.class);
@@ -84,31 +72,31 @@ public class ClientTest extends UnitTestBase
     }
 
     @Test
-    public void testInitialState() throws Exception
+    public void testInitialState()
     {
-        assertEquals("Expected client to be in CREATED state", ClientState.CREATED, _client.getState());
+        assertEquals(ClientState.CREATED, _client.getState(), "Expected client to be in CREATED state");
     }
 
     @Test
-    public void testStart() throws Exception
+    public void testStart()
     {
         _client.start();
         final InOrder inOrder = inOrder(_delegate);
         inOrder.verify(_delegate).setInstructionListener(_client);
         inOrder.verify(_delegate).sendRegistrationMessage();
-        assertEquals("Expected client to be in STARTED state", ClientState.READY, _client.getState());
+        assertEquals(ClientState.READY, _client.getState(), "Expected client to be in STARTED state");
     }
 
     @Test
-    public void testStopClient() throws Exception
+    public void testStopClient()
     {
         _client.stop();
 
-        assertEquals("Expected client to be in STOPPED state", ClientState.STOPPED, _client.getState());
+        assertEquals(ClientState.STOPPED, _client.getState(), "Expected client to be in STOPPED state");
     }
 
     @Test
-    public void testProcessInstructionVisitsCommandAndResponds() throws Exception
+    public void testProcessInstructionVisitsCommandAndResponds()
     {
         // has to be declared to be of supertype Command otherwise Mockito verify()
         // refers to wrong method
@@ -120,7 +108,7 @@ public class ClientTest extends UnitTestBase
     }
 
     @Test
-    public void testWaitUntilStopped() throws Exception
+    public void testWaitUntilStopped()
     {
         stopClientLater(500);
         _client.waitUntilStopped(1000);
@@ -128,7 +116,7 @@ public class ClientTest extends UnitTestBase
     }
 
     @Test
-    public void testStartTest() throws Exception
+    public void testStartTest()
     {
         _client.start();
         _client.addParticipant(_participant);
@@ -143,7 +131,7 @@ public class ClientTest extends UnitTestBase
     }
 
     @Test
-    public void testTearDownTest() throws Exception
+    public void testTearDownTest()
     {
         // before we can tear down the test the client needs to be in the "running test" state, which requires a participant
         _client.start();
@@ -158,7 +146,7 @@ public class ClientTest extends UnitTestBase
     }
 
     @Test
-    public void testResults() throws Exception
+    public void testResults()
     {
         ParticipantResult testResult = mock(ParticipantResult.class);
         _client.reportResult(testResult);

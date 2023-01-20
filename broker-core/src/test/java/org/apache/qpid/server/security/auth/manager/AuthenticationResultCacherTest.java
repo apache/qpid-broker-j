@@ -19,19 +19,19 @@
 
 package org.apache.qpid.server.security.auth.manager;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.InetSocketAddress;
 import java.security.PrivilegedAction;
-import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 import javax.security.auth.Subject;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
@@ -47,75 +47,59 @@ public class AuthenticationResultCacherTest extends UnitTestBase
             new AuthenticationResult(new AuthenticatedPrincipal(new UsernamePrincipal("TestUser", null)));
     private int _loadCallCount;
     private Subject _subject;
-    private AMQPConnection _connection;
+    private AMQPConnection<?> _connection;
     private Callable<AuthenticationResult> _loader;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _connection = mock(AMQPConnection.class);
         when(_connection.getRemoteSocketAddress()).thenReturn(new InetSocketAddress("example.com", 9999));
-        _subject = new Subject(true,
-                               Collections.singleton(new ConnectionPrincipal(_connection)),
-                               Collections.emptySet(),
-                               Collections.emptySet());
+        _subject = new Subject(true, Set.of(new ConnectionPrincipal(_connection)), Set.of(), Set.of());
         _authenticationResultCacher = new AuthenticationResultCacher(10, 10 * 60L, 2);
 
         _loadCallCount = 0;
-        _loader = new Callable<AuthenticationResult>()
+        _loader = () ->
         {
-            @Override
-            public AuthenticationResult call() throws Exception
-            {
-                _loadCallCount += 1;
-                return _successfulAuthenticationResult;
-            }
+            _loadCallCount += 1;
+            return _successfulAuthenticationResult;
         };
     }
 
     @Test
-    public void testCacheHit() throws Exception
+    public void testCacheHit()
     {
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                AuthenticationResult result;
-                result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
-                assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
-                assertEquals("Unexpected number of loads before cache hit", (long) 1, (long) _loadCallCount);
-                result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
-                assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
-                assertEquals("Unexpected number of loads after cache hit", (long) 1, (long) _loadCallCount);
-                return null;
-            }
+            AuthenticationResult result;
+            result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
+            assertEquals(_successfulAuthenticationResult, result, "Unexpected AuthenticationResult");
+            assertEquals(1, (long) _loadCallCount, "Unexpected number of loads before cache hit");
+            result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
+            assertEquals(_successfulAuthenticationResult, result, "Unexpected AuthenticationResult");
+            assertEquals(1, (long) _loadCallCount, "Unexpected number of loads after cache hit");
+            return null;
         });
     }
 
     @Test
-    public void testCacheMissDifferentCredentials() throws Exception
+    public void testCacheMissDifferentCredentials()
     {
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                AuthenticationResult result;
-                result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
-                assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
-                assertEquals("Unexpected number of loads before cache hit", (long) 1, (long) _loadCallCount);
-                result = _authenticationResultCacher.getOrLoad(new String[]{"other credentials"}, _loader);
-                assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
-                assertEquals("Unexpected number of loads before cache hit", (long) 2, (long) _loadCallCount);
-                return null;
-            }
+            AuthenticationResult result;
+            result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
+            assertEquals(_successfulAuthenticationResult, result, "Unexpected AuthenticationResult");
+            assertEquals(1, (long) _loadCallCount, "Unexpected number of loads before cache hit");
+            result = _authenticationResultCacher.getOrLoad(new String[]{"other credentials"}, _loader);
+            assertEquals(_successfulAuthenticationResult, result, "Unexpected AuthenticationResult");
+            assertEquals(2, (long) _loadCallCount, "Unexpected number of loads before cache hit");
+            return null;
         });
     }
 
-
     @Test
-    public void testCacheMissDifferentRemoteAddressHosts() throws Exception
+    public void testCacheMissDifferentRemoteAddressHosts()
     {
         final String credentials = "credentials";
         assertGetOrLoad(credentials, _successfulAuthenticationResult, 1);
@@ -124,7 +108,7 @@ public class AuthenticationResultCacherTest extends UnitTestBase
     }
 
     @Test
-    public void testCacheHitDifferentRemoteAddressPorts() throws Exception
+    public void testCacheHitDifferentRemoteAddressPorts()
     {
         final int expectedHitCount = 1;
         final AuthenticationResult expectedResult = _successfulAuthenticationResult;
@@ -140,12 +124,12 @@ public class AuthenticationResultCacherTest extends UnitTestBase
     {
         final String credentials = "credentials";
         final AuthenticationResult result1 = _authenticationResultCacher.getOrLoad(new String[]{credentials}, _loader);
-        assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result1);
-        assertEquals("Unexpected number of loads before cache hit", 1, _loadCallCount);
+        assertEquals(_successfulAuthenticationResult, result1, "Unexpected AuthenticationResult");
+        assertEquals(1, _loadCallCount, "Unexpected number of loads before cache hit");
 
         final AuthenticationResult result2 = _authenticationResultCacher.getOrLoad(new String[]{credentials}, _loader);
-        assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result2);
-        assertEquals("Unexpected number of loads before cache hit", 1, _loadCallCount);
+        assertEquals(_successfulAuthenticationResult, result2, "Unexpected AuthenticationResult");
+        assertEquals(1, _loadCallCount, "Unexpected number of loads before cache hit");
     }
 
     private void assertGetOrLoad(final String credentials,
@@ -155,8 +139,8 @@ public class AuthenticationResultCacherTest extends UnitTestBase
         Subject.doAs(_subject, (PrivilegedAction<Void>) () -> {
             AuthenticationResult result;
             result = _authenticationResultCacher.getOrLoad(new String[]{credentials}, _loader);
-            assertEquals("Unexpected AuthenticationResult", expectedResult, result);
-            assertEquals("Unexpected number of loads before cache hit", (long)expectedHitCount, (long) _loadCallCount);
+            assertEquals(expectedResult, result, "Unexpected AuthenticationResult");
+            assertEquals(expectedHitCount, (long) _loadCallCount, "Unexpected number of loads before cache hit");
             return null;
         });
     }

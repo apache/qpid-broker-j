@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.exchange;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,8 +28,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -50,7 +50,7 @@ public class ProducerTest extends UnitTestBase
     private PublishingLink _link;
     private MessageSender _sender;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _virtualHost = BrokerTestHelper.createVirtualHost("test", this);

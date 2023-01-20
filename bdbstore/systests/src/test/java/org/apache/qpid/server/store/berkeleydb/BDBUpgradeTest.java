@@ -23,15 +23,13 @@ package org.apache.qpid.server.store.berkeleydb;
 import static org.apache.qpid.systests.JmsTestBase.DEFAULT_BROKER_CONFIG;
 import static org.apache.qpid.systests.Utils.INDEX;
 import static org.apache.qpid.systests.Utils.sendMessages;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -52,8 +50,9 @@ import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import com.google.common.base.Objects;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Exchange;
@@ -84,11 +83,12 @@ public class BDBUpgradeTest extends UpgradeTestBase
     private static final String PRIORITY_QUEUE_NAME = "myPriorityQueue";
     private static final String QUEUE_WITH_DLQ_NAME = "myQueueWithDLQ";
 
-    @BeforeClass
+    @BeforeAll
     public static void verifyClient()
     {
-        assumeThat(System.getProperty("virtualhostnode.type", "BDB"), is(equalTo("BDB")));
-        assumeThat(getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
+        assumeTrue("BDB".equals(System.getProperty("virtualhostnode.type", "BDB")),
+                "System property 'virtualhostnode.type' should be 'BDB'");
+        assumeTrue(Objects.equal(getProtocol(), Protocol.AMQP_1_0), "AMQP protocol should be 1.0");
     }
 
     /**
@@ -125,14 +125,14 @@ public class BDBUpgradeTest extends UpgradeTestBase
             TopicSubscriber subscriber =
                     session.createDurableSubscriber(topic, SELECTOR_SUB_NAME, "testprop='true'", false);
             Message migrated = subscriber.receive(getReceiveTimeout());
-            assertThat("Failed to receive migrated message", migrated, is(notNullValue()));
+            assertNotNull(migrated, "Failed to receive migrated message");
 
             Message received = subscriber.receive(getReceiveTimeout());
             session.commit();
-            assertThat("Failed to receive published message", received, is(notNullValue()));
-            assertThat("Message is not Text message", received, is(instanceOf(TextMessage.class)));
-            assertThat("Unexpected text", ((TextMessage) received).getText(), is(equalTo("B")));
-            assertThat("Unexpected index", received.getIntProperty("ID"), is(equalTo(index)));
+            assertNotNull(received, "Failed to receive published message");
+            assertTrue(received instanceof TextMessage, "Message is not Text message");
+            assertEquals("B", ((TextMessage) received).getText(), "Unexpected text");
+            assertEquals(received.getIntProperty("ID"), index, "Unexpected index");
 
             session.close();
         }
@@ -174,21 +174,21 @@ public class BDBUpgradeTest extends UpgradeTestBase
 
             TopicSubscriber subscriber = session.createDurableSubscriber(topic, SUB_NAME);
             Message migrated = subscriber.receive(getReceiveTimeout());
-            assertThat("Failed to receive migrated message", migrated, is(notNullValue()));
+            assertNotNull(migrated, "Failed to receive migrated message");
 
             Message receivedA = subscriber.receive(getReceiveTimeout());
             session.commit();
-            assertThat("Failed to receive published message A", receivedA, is(notNullValue()));
-            assertThat("Message A is not Text message", receivedA, is(instanceOf(TextMessage.class)));
-            assertThat("Unexpected text for A", ((TextMessage) receivedA).getText(), is(equalTo("A")));
-            assertThat("Unexpected index", receivedA.getIntProperty("ID"), is(equalTo(index)));
+            assertNotNull(receivedA, "Failed to receive published message A");
+            assertTrue(receivedA instanceof TextMessage, "Message A is not Text message");
+            assertEquals(((TextMessage) receivedA).getText(),"A", "Unexpected text for A");
+            assertEquals(receivedA.getIntProperty("ID"), index, "Unexpected index");
 
             Message receivedB = subscriber.receive(getReceiveTimeout());
             session.commit();
-            assertThat("Failed to receive published message B", receivedB, is(notNullValue()));
-            assertThat("Message B is not Text message", receivedB, is(instanceOf(TextMessage.class)));
-            assertThat("Unexpected text for B", ((TextMessage) receivedB).getText(), is(equalTo("B")));
-            assertThat("Unexpected index  for B", receivedB.getIntProperty("ID"), is(equalTo(index)));
+            assertNotNull(receivedB, "Failed to receive published message B");
+            assertTrue(receivedB instanceof TextMessage, "Message B is not Text message");
+            assertEquals(((TextMessage) receivedB).getText(), "B", "Unexpected text for B");
+            assertEquals(receivedB.getIntProperty("ID"), index, "Unexpected index  for B");
 
             session.commit();
             session.close();
@@ -208,20 +208,15 @@ public class BDBUpgradeTest extends UpgradeTestBase
     public void testQueueExclusivity() throws Exception
     {
         Map<String, Object> result = getQueueAttributes(QUEUE_NAME);
-        assertThat("Exclusive policy attribute is not found",
-                   result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE),
-                   is(notNullValue()));
-        assertThat("Queue should not have been marked as Exclusive during upgrade",
-                   ExclusivityPolicy.valueOf(String.valueOf(result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE))),
-                   is(equalTo(ExclusivityPolicy.NONE)));
+        assertNotNull(result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE), "Exclusive policy attribute is not found");
+        assertEquals(ExclusivityPolicy.valueOf(String.valueOf(result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE))),
+                ExclusivityPolicy.NONE, "Queue should not have been marked as Exclusive during upgrade");
 
         result = getQueueAttributes("clientid" + ":" + SUB_NAME);
-        assertThat("Exclusive policy attribute is not found",
-                   result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE),
-                   is(notNullValue()));
-        assertThat("DurableSubscription backing queue should have been marked as Exclusive during upgrade",
-                   ExclusivityPolicy.valueOf(String.valueOf(result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE))),
-                   is(not(equalTo(ExclusivityPolicy.NONE))));
+        assertNotNull(result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE), "Exclusive policy attribute is not found");
+        assertNotEquals(ExclusivityPolicy.valueOf(String.valueOf(result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE))),
+                ExclusivityPolicy.NONE,
+                "DurableSubscription backing queue should have been marked as Exclusive during upgrade");
     }
 
     /**
@@ -313,14 +308,14 @@ public class BDBUpgradeTest extends UpgradeTestBase
             MessageConsumer consumer = session.createConsumer(queue);
 
             Message message1 = consumer.receive(getReceiveTimeout());
-            assertThat("expected message was not received", message1, is(instanceOf(TextMessage.class)));
-            assertThat(((TextMessage) message1).getText(), is(equalTo("C")));
+            assertTrue(message1 instanceof TextMessage, "expected message was not received");
+            assertEquals(((TextMessage) message1).getText(), "C");
             Message message2 = consumer.receive(getReceiveTimeout());
-            assertThat("expected message was not received", message2, is(instanceOf(TextMessage.class)));
-            assertThat(((TextMessage) message2).getText(), is(equalTo("A")));
+            assertTrue(message2 instanceof TextMessage, "expected message was not received");
+            assertEquals(((TextMessage) message2).getText(), "A");
             Message message3 = consumer.receive(getReceiveTimeout());
-            assertThat("expected message was not received", message3, is(instanceOf(TextMessage.class)));
-            assertThat(((TextMessage) message3).getText(), is(equalTo("B")));
+            assertTrue(message3 instanceof TextMessage, "expected message was not received");
+            assertEquals(((TextMessage) message3).getText(), "B");
         }
         finally
         {
@@ -341,39 +336,35 @@ public class BDBUpgradeTest extends UpgradeTestBase
     {
         //verify the DLE exchange exists, has the expected type, and a single binding for the DLQ
         Map<String, Object> exchangeAttributes = getExchangeAttributes(QUEUE_WITH_DLQ_NAME + "_DLE");
-        assertThat("Wrong exchange type",
-                   exchangeAttributes.get(Exchange.TYPE),
-                   is(equalTo("org.apache.qpid.FanoutExchange")));
+        assertEquals(exchangeAttributes.get(Exchange.TYPE), "org.apache.qpid.FanoutExchange", "Wrong exchange type");
 
         @SuppressWarnings("unchecked")
         Collection<Map<String, Object>> bindings = (Collection<Map<String, Object>>) exchangeAttributes.get("bindings");
-        assertThat(bindings.size(), is(equalTo(1)));
+        assertEquals(bindings.size(), 1);
         for (Map<String, Object> binding : bindings)
         {
             String bindingKey = (String) binding.get("bindingKey");
             String queueName = (String) binding.get("destination");
 
             //Because its a fanout exchange, we just return a single '*' key with all bound queues
-            assertThat("unexpected binding key", bindingKey, is(equalTo("dlq")));
-            assertThat("unexpected queue name", queueName, is(equalTo(QUEUE_WITH_DLQ_NAME + "_DLQ")));
+            assertEquals(bindingKey, "dlq", "unexpected binding key");
+            assertEquals(queueName, QUEUE_WITH_DLQ_NAME + "_DLQ", "unexpected queue name");
         }
 
         //verify the queue exists, has the expected alternate exchange and max delivery count
         Map<String, Object> queueAttributes = getQueueAttributes(QUEUE_WITH_DLQ_NAME);
-        assertThat("Queue does not have the expected AlternateExchange",
-                   queueAttributes.get(Exchange.ALTERNATE_BINDING),
-                   is(equalTo(Collections.singletonMap(AlternateBinding.DESTINATION, QUEUE_WITH_DLQ_NAME + "_DLE"))));
+        assertEquals(queueAttributes.get(Exchange.ALTERNATE_BINDING),
+                Collections.singletonMap(AlternateBinding.DESTINATION, QUEUE_WITH_DLQ_NAME + "_DLE"),
+                "Queue does not have the expected AlternateExchange");
 
-        assertThat("Unexpected maximum delivery count",
-                   ((Number) queueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS)).intValue(),
-                   is(equalTo(2)));
+        assertEquals(((Number) queueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS)).intValue(),
+                2, "Unexpected maximum delivery count");
 
         Map<String, Object> dlQueueAttributes = getQueueAttributes(QUEUE_WITH_DLQ_NAME + "_DLQ");
-        assertThat("Queue should not have an AlternateExchange",
-                   dlQueueAttributes.get(org.apache.qpid.server.model.Queue.ALTERNATE_BINDING), is(nullValue()));
-        assertThat("Unexpected maximum delivery count",
-                   ((Number) dlQueueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS)).intValue(),
-                   is(equalTo(0)));
+        assertNull(dlQueueAttributes.get(org.apache.qpid.server.model.Queue.ALTERNATE_BINDING),
+                "Queue should not have an AlternateExchange");
+        assertEquals(((Number) dlQueueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS)).intValue(),
+                0, "Unexpected maximum delivery count");
 
         try
         {
@@ -383,7 +374,7 @@ public class BDBUpgradeTest extends UpgradeTestBase
         }
         catch (AmqpManagementFacade.OperationUnsuccessfulException e)
         {
-            assertThat(e.getStatusCode(), is(equalTo(404)));
+            assertEquals(e.getStatusCode(), 404);
         }
     }
 
@@ -406,8 +397,8 @@ public class BDBUpgradeTest extends UpgradeTestBase
     private void consumeDurableSubscriptionMessages(Connection connection, boolean selector) throws Exception
     {
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Topic topic = null;
-        TopicSubscriber durSub = null;
+        Topic topic;
+        TopicSubscriber durSub;
 
         if (selector)
         {
@@ -422,19 +413,17 @@ public class BDBUpgradeTest extends UpgradeTestBase
 
         // Retrieve the matching message
         Message m = durSub.receive(getReceiveTimeout());
-        assertThat("Failed to receive an expected message", m, is(notNullValue()));
+        assertNotNull(m, "Failed to receive an expected message");
         if (selector)
         {
-            assertThat("Selector property did not match", m.getStringProperty("testprop"), is(equalTo("true")));
+            assertEquals(m.getStringProperty("testprop"), "true", "Selector property did not match");
         }
-        assertThat("ID property did not match", m.getIntProperty("ID"), is(equalTo(1)));
-        assertThat("Message content was not as expected",
-                   ((TextMessage) m).getText(),
-                   is(equalTo(generateString(1024))));
+        assertEquals(m.getIntProperty("ID"), 1, "ID property did not match");
+        assertEquals(((TextMessage) m).getText(), generateString(1024), "Message content was not as expected");
 
         // Verify that no more messages are received
         m = durSub.receive(getReceiveTimeout());
-        assertThat("No more messages should have been recieved", m, is(nullValue()));
+        assertNull(m, "No more messages should have been recieved");
 
         durSub.close();
         session.close();
@@ -452,32 +441,30 @@ public class BDBUpgradeTest extends UpgradeTestBase
         for (int i = 1; i <= 5; i++)
         {
             m = consumer.receive(getReceiveTimeout());
-            assertThat("Failed to receive an expected message", m, is(notNullValue()));
-            assertThat("ID property did not match", m.getIntProperty("ID"), is(equalTo(i)));
-            assertThat("Message content was not as expected",
-                       ((TextMessage) m).getText(),
-                       is(equalTo(STRING_1024_256)));
+            assertNotNull(m, "Failed to receive an expected message");
+            assertEquals(m.getIntProperty("ID"), i, "ID property did not match");
+            assertEquals(((TextMessage) m).getText(), STRING_1024_256, "Message content was not as expected");
         }
         for (int i = 1; i <= 5; i++)
         {
             m = consumer.receive(getReceiveTimeout());
-            assertThat("Failed to receive an expected message", m, is(notNullValue()));
-            assertThat("ID property did not match", m.getIntProperty("ID"), is(equalTo(i)));
-            assertThat("Message content was not as expected", ((TextMessage) m).getText(), is((equalTo(STRING_1024))));
+            assertNotNull(m, "Failed to receive an expected message");
+            assertEquals(m.getIntProperty("ID"), i, "ID property did not match");
+            assertEquals(((TextMessage) m).getText(), STRING_1024, "Message content was not as expected");
         }
 
         if (extraMessage)
         {
             //verify that the extra message is received
             m = consumer.receive(getReceiveTimeout());
-            assertThat("Failed to receive an expected message", m, is(notNullValue()));
-            assertThat("ID property did not match", m.getIntProperty(INDEX), is(equalTo(0)));
+            assertNotNull(m, "Failed to receive an expected message");
+            assertEquals(m.getIntProperty(INDEX), 0, "ID property did not match");
         }
         else
         {
             // Verify that no more messages are received
             m = consumer.receive(getReceiveTimeout());
-            assertThat("No more messages should have been recieved", m, is(nullValue()));
+            assertNull(m, "No more messages should have been recieved");
         }
 
         consumer.close();
@@ -500,5 +487,4 @@ public class BDBUpgradeTest extends UpgradeTestBase
         }
         return new String(chars);
     }
-
 }

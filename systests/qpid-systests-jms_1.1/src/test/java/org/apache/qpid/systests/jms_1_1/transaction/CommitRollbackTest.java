@@ -21,11 +21,11 @@
 package org.apache.qpid.systests.jms_1_1.transaction;
 
 import static org.apache.qpid.systests.Utils.INDEX;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +41,8 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,9 +79,9 @@ public class CommitRollbackTest extends JmsTestBase
 
             MessageConsumer messageConsumer = session.createConsumer(queue);
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertTrue("Text message should be received", message instanceof TextMessage);
+            assertTrue(message instanceof TextMessage, "Text message should be received");
             TextMessage textMessage = (TextMessage) message;
-            assertEquals("Unexpected message received", "B", textMessage.getText());
+            assertEquals("B", textMessage.getText(), "Unexpected message received");
         }
         finally
         {
@@ -107,8 +108,8 @@ public class CommitRollbackTest extends JmsTestBase
             connection.start();
             MessageConsumer messageConsumer = session.createConsumer(queue);
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertTrue("Text message should be received", message instanceof TextMessage);
-            assertEquals("Unexpected message received", "B", ((TextMessage) message).getText());
+            assertTrue(message instanceof TextMessage, "Text message should be received");
+            assertEquals("B", ((TextMessage) message).getText(), "Unexpected message received");
         }
         finally
         {
@@ -144,9 +145,9 @@ public class CommitRollbackTest extends JmsTestBase
             connection2.start();
 
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertTrue("Text message should be received", message instanceof TextMessage);
+            assertTrue(message instanceof TextMessage, "Text message should be received");
             TextMessage textMessage = (TextMessage) message;
-            assertEquals("Unexpected message received", "B", textMessage.getText());
+            assertEquals("B", textMessage.getText(), "Unexpected message received");
         }
         finally
         {
@@ -179,9 +180,9 @@ public class CommitRollbackTest extends JmsTestBase
             connection2.start();
 
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertTrue("Text message should be received", message instanceof TextMessage);
+            assertTrue(message instanceof TextMessage, "Text message should be received");
             TextMessage textMessage = (TextMessage) message;
-            assertEquals("Unexpected message received", "A", textMessage.getText());
+            assertEquals("A", textMessage.getText(), "Unexpected message received");
         }
         finally
         {
@@ -202,9 +203,9 @@ public class CommitRollbackTest extends JmsTestBase
             Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
             MessageConsumer messageConsumer = session.createConsumer(queue);
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertTrue("Text message should be received", message instanceof TextMessage);
+            assertTrue(message instanceof TextMessage, "Text message should be received");
             TextMessage textMessage = (TextMessage) message;
-            assertEquals("Unexpected message received", "A", textMessage.getText());
+            assertEquals("A", textMessage.getText(), "Unexpected message received");
         }
         finally
         {
@@ -219,9 +220,9 @@ public class CommitRollbackTest extends JmsTestBase
             MessageConsumer messageConsumer = session.createConsumer(queue);
 
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertTrue("Text message should be received", message instanceof TextMessage);
+            assertTrue(message instanceof TextMessage, "Text message should be received");
             TextMessage textMessage = (TextMessage) message;
-            assertEquals("Unexpected message received", "A", textMessage.getText());
+            assertEquals("A", textMessage.getText(), "Unexpected message received");
         }
         finally
         {
@@ -242,9 +243,9 @@ public class CommitRollbackTest extends JmsTestBase
             Session transactedSession = connection.createSession(true, Session.SESSION_TRANSACTED);
             MessageConsumer transactedConsumer = transactedSession.createConsumer(queue);
             Message message = transactedConsumer.receive(getReceiveTimeout());
-            assertTrue("Text message should be received", message instanceof TextMessage);
+            assertTrue(message instanceof TextMessage, "Text message should be received");
             TextMessage textMessage = (TextMessage) message;
-            assertEquals("Unexpected message received", "A", textMessage.getText());
+            assertEquals("A", textMessage.getText(), "Unexpected message received");
 
             transactedSession.close();
 
@@ -252,8 +253,8 @@ public class CommitRollbackTest extends JmsTestBase
             MessageConsumer messageConsumer = session.createConsumer(queue);
 
             Message message2 = messageConsumer.receive(getReceiveTimeout());
-            assertTrue("Text message should be received", message2 instanceof TextMessage);
-            assertEquals("Unexpected message received", "A", ((TextMessage) message2).getText());
+            assertTrue(message2 instanceof TextMessage, "Text message should be received");
+            assertEquals("A", ((TextMessage) message2).getText(), "Unexpected message received");
         }
         finally
         {
@@ -274,9 +275,9 @@ public class CommitRollbackTest extends JmsTestBase
             Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
             MessageConsumer messageConsumer = session.createConsumer(queue);
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertTrue("Text message should be received", message instanceof TextMessage);
+            assertTrue(message instanceof TextMessage, "Text message should be received");
             TextMessage textMessage = (TextMessage) message;
-            assertEquals("Unexpected message received", "A", textMessage.getText());
+            assertEquals("A", textMessage.getText(), "Unexpected message received");
             session.rollback();
         }
         finally
@@ -292,9 +293,9 @@ public class CommitRollbackTest extends JmsTestBase
             connection2.start();
 
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertTrue("Text message should be received", message instanceof TextMessage);
+            assertTrue(message instanceof TextMessage, "Text message should be received");
             TextMessage textMessage = (TextMessage) message;
-            assertEquals("Unexpected message received", "A", textMessage.getText());
+            assertEquals("A", textMessage.getText(), "Unexpected message received");
         }
         finally
         {
@@ -315,8 +316,8 @@ public class CommitRollbackTest extends JmsTestBase
             Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
             MessageConsumer messageConsumer = session.createConsumer(queue);
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertNotNull("Message not received", message);
-            assertEquals("Unexpected message received", 0, message.getIntProperty(INDEX));
+            assertNotNull(message, "Message not received");
+            assertEquals(0, message.getIntProperty(INDEX), "Unexpected message received");
             session.commit();
         }
         finally
@@ -332,8 +333,8 @@ public class CommitRollbackTest extends JmsTestBase
             connection2.start();
 
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertNotNull("Message not received", message);
-            assertEquals("Unexpected message received", 1, message.getIntProperty(INDEX));
+            assertNotNull(message, "Message not received");
+            assertEquals(1, message.getIntProperty(INDEX), "Unexpected message received");
         }
         finally
         {
@@ -354,8 +355,8 @@ public class CommitRollbackTest extends JmsTestBase
             Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
             MessageConsumer messageConsumer = session.createConsumer(queue);
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertNotNull("Message not received", message);
-            assertEquals("Unexpected message received", 0, message.getIntProperty(INDEX));
+            assertNotNull(message, "Message not received");
+            assertEquals(0, message.getIntProperty(INDEX), "Unexpected message received");
             messageConsumer.close();
             session.commit();
         }
@@ -372,8 +373,8 @@ public class CommitRollbackTest extends JmsTestBase
             connection2.start();
 
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertNotNull("Message not received", message);
-            assertEquals("Unexpected message received", 1, message.getIntProperty(INDEX));
+            assertNotNull(message, "Message not received");
+            assertEquals(1, message.getIntProperty(INDEX), "Unexpected message received");
         }
         finally
         {
@@ -394,8 +395,8 @@ public class CommitRollbackTest extends JmsTestBase
             Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
             MessageConsumer messageConsumer = session.createConsumer(queue);
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertNotNull("Message not received", message);
-            assertEquals("Unexpected message received", 0, message.getIntProperty(INDEX));
+            assertNotNull(message, "Message not received");
+            assertEquals(0, message.getIntProperty(INDEX), "Unexpected message received");
             messageConsumer.close();
             session.rollback();
         }
@@ -412,8 +413,8 @@ public class CommitRollbackTest extends JmsTestBase
             connection2.start();
 
             Message message = messageConsumer.receive(getReceiveTimeout());
-            assertNotNull("Message not received", message);
-            assertEquals("Unexpected message received", 0, message.getIntProperty(INDEX));
+            assertNotNull(message, "Message not received");
+            assertEquals(0, message.getIntProperty(INDEX), "Unexpected message received");
         }
         finally
         {
@@ -440,44 +441,38 @@ public class CommitRollbackTest extends JmsTestBase
             connection.start();
 
             Message message1 = messageConsumer1.receive(getReceiveTimeout());
-            assertTrue("Text message not received from first queue", message1 instanceof TextMessage);
-            assertEquals("Unexpected message received from first queue",
-                         "queue1Message1",
-                         ((TextMessage) message1).getText());
+            assertTrue(message1 instanceof TextMessage, "Text message not received from first queue");
+            assertEquals("queue1Message1", ((TextMessage) message1).getText(),
+                    "Unexpected message received from first queue");
 
             Message message2 = messageConsumer2.receive(getReceiveTimeout());
-            assertTrue("Text message not received from second queue", message2 instanceof TextMessage);
-            assertEquals("Unexpected message received from second queue",
-                         "queue2Message1",
-                         ((TextMessage) message2).getText());
+            assertTrue(message2 instanceof TextMessage, "Text message not received from second queue");
+            assertEquals("queue2Message1", ((TextMessage) message2).getText(),
+                    "Unexpected message received from second queue");
 
             session.rollback();
 
             message1 = messageConsumer1.receive(getReceiveTimeout());
-            assertTrue("Text message not received from first queue", message1 instanceof TextMessage);
-            assertEquals("Unexpected message received from first queue",
-                         "queue1Message1",
-                         ((TextMessage) message1).getText());
+            assertTrue(message1 instanceof TextMessage, "Text message not received from first queue");
+            assertEquals("queue1Message1", ((TextMessage) message1).getText(),
+                    "Unexpected message received from first queue");
 
             message2 = messageConsumer2.receive(getReceiveTimeout());
-            assertTrue("Text message not received from second queue", message2 instanceof TextMessage);
-            assertEquals("Unexpected message received from second queue",
-                         "queue2Message1",
-                         ((TextMessage) message2).getText());
+            assertTrue(message2 instanceof TextMessage, "Text message not received from second queue");
+            assertEquals("queue2Message1", ((TextMessage) message2).getText(),
+                    "Unexpected message received from second queue");
 
             session.commit();
 
             Message message3 = messageConsumer1.receive(getReceiveTimeout());
-            assertTrue("Text message not received from first queue", message3 instanceof TextMessage);
-            assertEquals("Unexpected message received from first queue",
-                         "queue1Message2",
-                         ((TextMessage) message3).getText());
+            assertTrue(message3 instanceof TextMessage, "Text message not received from first queue");
+            assertEquals("queue1Message2", ((TextMessage) message3).getText(),
+                    "Unexpected message received from first queue");
 
             Message message4 = messageConsumer2.receive(getReceiveTimeout());
-            assertTrue("Text message not received from second queue", message4 instanceof TextMessage);
-            assertEquals("Unexpected message received from second queue",
-                         "queue2Message2",
-                         ((TextMessage) message4).getText());
+            assertTrue(message4 instanceof TextMessage, "Text message not received from second queue");
+            assertEquals("queue2Message2", ((TextMessage) message4).getText(),
+                    "Unexpected message received from second queue");
         }
         finally
         {
@@ -500,11 +495,12 @@ public class CommitRollbackTest extends JmsTestBase
             final AtomicReference<Throwable> messageConsumerThrowable = new AtomicReference<>();
             MessageConsumer messageConsumer = session.createConsumer(queue);
 
-            messageConsumer.setMessageListener(message -> {
+            messageConsumer.setMessageListener(message ->
+            {
                 try
                 {
                     LOGGER.info("received message " + message);
-                    assertEquals("Unexpected message received", commitCounter.get(), message.getIntProperty(INDEX));
+                    assertEquals(commitCounter.get(), message.getIntProperty(INDEX), "Unexpected message received");
                     LOGGER.info("commit session");
                     session.commit();
                     commitCounter.incrementAndGet();
@@ -521,10 +517,10 @@ public class CommitRollbackTest extends JmsTestBase
             });
             connection.start();
 
-            assertTrue("Messages not received in expected time",
-                       receiveLatch.await(getReceiveTimeout() * messageNumber, TimeUnit.MILLISECONDS));
-            assertNull("Unexpected exception: " + messageConsumerThrowable.get(), messageConsumerThrowable.get());
-            assertEquals("Unexpected number of commits", messageNumber, commitCounter.get());
+            assertTrue(receiveLatch.await(getReceiveTimeout() * messageNumber, TimeUnit.MILLISECONDS),
+                    "Messages not received in expected time");
+            assertNull(messageConsumerThrowable.get(), "Unexpected exception: " + messageConsumerThrowable.get());
+            assertEquals(messageNumber, commitCounter.get(), "Unexpected number of commits");
         }
         finally
         {
@@ -565,11 +561,11 @@ public class CommitRollbackTest extends JmsTestBase
                 }
             });
 
-            assertTrue("Timeout waiting for messages",
-                       receiveLatch.await(getReceiveTimeout() * 4, TimeUnit.MILLISECONDS));
-            assertNull("Exception occurred: " + messageListenerThrowable.get(),
-                       messageListenerThrowable.get());
-            assertEquals("Unexpected number of received messages", 4, receiveCounter.get());
+            assertTrue(receiveLatch.await(getReceiveTimeout() * 4, TimeUnit.MILLISECONDS),
+                                  "Timeout waiting for messages");
+            assertNull(messageListenerThrowable.get(),
+                                  "Exception occurred: " + messageListenerThrowable.get());
+            assertEquals(4, receiveCounter.get(), "Unexpected number of received messages");
         }
         finally
         {
@@ -595,8 +591,8 @@ public class CommitRollbackTest extends JmsTestBase
             for (int i = 0; i < maxPrefetch; i++)
             {
                 final Message message = messageConsumer.receive(getReceiveTimeout());
-                assertNotNull(String.format("Message %d not received", i), message);
-                assertEquals("Unexpected message received", i, message.getIntProperty(INDEX));
+                assertNotNull(message, String.format("Message %d not received", i));
+                assertEquals(i, message.getIntProperty(INDEX), "Unexpected message received");
             }
 
             session.rollback();
@@ -604,15 +600,15 @@ public class CommitRollbackTest extends JmsTestBase
             for (int i = 0; i < maxPrefetch; i++)
             {
                 final Message message = messageConsumer.receive(getReceiveTimeout());
-                assertNotNull(String.format("Message %d not received after rollback", i), message);
-                assertEquals("Unexpected message received after rollback", i, message.getIntProperty(INDEX));
+                assertNotNull(message, String.format("Message %d not received after rollback", i));
+                assertEquals(i, message.getIntProperty(INDEX), "Unexpected message received after rollback");
             }
 
             session.commit();
 
             final Message message = messageConsumer.receive(getReceiveTimeout());
-            assertNotNull(String.format("Message %d not received", maxPrefetch), message);
-            assertEquals("Unexpected message received", maxPrefetch, message.getIntProperty(INDEX));
+            assertNotNull(message, String.format("Message %d not received", maxPrefetch));
+            assertEquals(maxPrefetch, message.getIntProperty(INDEX), "Unexpected message received");
         }
         finally
         {
@@ -638,8 +634,8 @@ public class CommitRollbackTest extends JmsTestBase
             while (expectedIndex < messageNumber)
             {
                 Message message = consumer.receive(getReceiveTimeout());
-                assertNotNull(String.format("Expected message '%d' is not received", expectedIndex), message);
-                assertEquals("Received message out of order", expectedIndex, message.getIntProperty(INDEX));
+                assertNotNull(message, String.format("Expected message '%d' is not received", expectedIndex));
+                assertEquals(expectedIndex, message.getIntProperty(INDEX), "Received message out of order");
 
                 //don't commit transaction for the message until we receive it 5 times
                 if (messageSeen < 5)
@@ -648,8 +644,8 @@ public class CommitRollbackTest extends JmsTestBase
                     for (int m = expectedIndex + 1; m < messageNumber; m++)
                     {
                         Message remaining = consumer.receive(getReceiveTimeout());
-                        assertNotNull(String.format("Expected remaining message '%d' is not received", m), message);
-                        assertEquals("Received remaining message out of order", m, remaining.getIntProperty(INDEX));
+                        assertNotNull(message, String.format("Expected remaining message '%d' is not received", m));
+                        assertEquals(m, remaining.getIntProperty(INDEX), "Received remaining message out of order");
                     }
 
                     LOGGER.debug(String.format("Rolling back transaction for message with index %d", expectedIndex));
@@ -685,7 +681,7 @@ public class CommitRollbackTest extends JmsTestBase
             connection.close();
         }
 
-        assertNotNull("Session cannot be null", transactedSession);
+        assertNotNull(transactedSession, "Session cannot be null");
         try
         {
             transactedSession.commit();

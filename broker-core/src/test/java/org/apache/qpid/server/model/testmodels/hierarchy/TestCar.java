@@ -32,25 +32,28 @@ import org.apache.qpid.server.model.StatisticType;
 import org.apache.qpid.server.model.StatisticUnit;
 
 @ManagedObject( defaultType = TestStandardCarImpl.TEST_STANDARD_CAR_TYPE)
+@SuppressWarnings("unused")
 public interface TestCar<X extends TestCar<X>> extends ConfiguredObject<X>, EventLoggerProvider
 {
-    enum Colour { BLACK, RED, BLUE, GREY };
+    enum Colour { BLACK, RED, BLUE, GREY }
 
     String TEST_CONTEXT_VAR = "TEST_CONTEXT_VAR";
+
     @ManagedContextDefault(name = TEST_CONTEXT_VAR)
     String testContextVar = "a value";
 
     String TEST_CONTEXT_VAR_WITH_ANCESTOR_REF = "TEST_CONTEXT_VAR_WITH_ANCESTOR_REF";
+
     @ManagedContextDefault(name = TEST_CONTEXT_VAR_WITH_ANCESTOR_REF)
     String testContextVarWithAncestorRef = "a value ${ancestor:testcar:name}";
 
     String TEST_CONTEXT_VAR_WITH_THIS_REF = "TEST_CONTEXT_VAR_WITH_THIS_REF";
+
     @ManagedContextDefault(name = TEST_CONTEXT_VAR_WITH_THIS_REF)
     String testContextVarWithThisRef = "a value ${this:name}";
 
     @ManagedAttribute
     Colour getBodyColour();
-
 
     @ManagedAttribute(validValues = {"GREY", "BLACK"})
     Colour getInteriorColour();

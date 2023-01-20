@@ -26,19 +26,21 @@ import org.apache.qpid.server.plugin.MessageMetaDataType;
 public class TestMessageMetaData implements StorableMessageMetaData
 {
     public static final MessageMetaDataType.Factory<TestMessageMetaData> FACTORY = new TestMessageMetaDataFactory();
-
     private static final TestMessageMetaDataType TYPE = new TestMessageMetaDataType();
+    // message id, long, 8bytes/64bits
+    // content size, int, 4bytes/32bits
+    private static final int STOREABLE_SIZE = 8 + 4;
 
     private final int _contentSize;
     private final long _messageId;
     private final boolean _persistent;
 
-    public TestMessageMetaData(long messageId, int contentSize)
+    public TestMessageMetaData(final long messageId, final int contentSize)
     {
         this(messageId, contentSize, true);
     }
 
-    public TestMessageMetaData(long messageId, int contentSize, boolean persistent)
+    public TestMessageMetaData(final long messageId, final int contentSize, final boolean persistent)
     {
         _contentSize = contentSize;
         _messageId = messageId;
@@ -54,10 +56,7 @@ public class TestMessageMetaData implements StorableMessageMetaData
     @Override
     public int getStorableSize()
     {
-        int storeableSize = 8 + //message id, long, 8bytes/64bits
-                            4;  //content size, int, 4bytes/32bits
-
-        return storeableSize;
+        return STOREABLE_SIZE;
     }
 
     @Override
@@ -91,10 +90,9 @@ public class TestMessageMetaData implements StorableMessageMetaData
     }
 
     @Override
-    public void writeToBuffer(QpidByteBuffer dest)
+    public void writeToBuffer(final QpidByteBuffer dest)
     {
         dest.putLong(_messageId);
         dest.putInt(_contentSize);
-    };
-
+    }
 }

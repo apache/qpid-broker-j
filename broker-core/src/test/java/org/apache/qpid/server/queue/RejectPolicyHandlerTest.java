@@ -19,12 +19,12 @@
 
 package org.apache.qpid.server.queue;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageInstance;
@@ -40,10 +40,10 @@ public class RejectPolicyHandlerTest extends UnitTestBase
     private RejectPolicyHandler _rejectOverflowPolicyHandler;
     private Queue<?> _queue;
 
-    @Before
+    @BeforeEach
+    @SuppressWarnings("unchecked")
     public void setUp() throws Exception
     {
-
         _queue = mock(Queue.class);
         when(_queue.getName()).thenReturn("testQueue");
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(-1L);
@@ -51,46 +51,29 @@ public class RejectPolicyHandlerTest extends UnitTestBase
         when(_queue.getOverflowPolicy()).thenReturn(OverflowPolicy.REJECT);
         when(_queue.getQueueDepthMessages()).thenReturn(0);
         when(_queue.getVirtualHost()).thenReturn(mock(QueueManagingVirtualHost.class));
-
         _rejectOverflowPolicyHandler = new RejectPolicyHandler(_queue);
     }
 
     @Test
-    public void testOverfullBytes() throws Exception
+    public void testOverfullBytes()
     {
-        ServerMessage incomingMessage = createIncomingMessage(6);
+        final ServerMessage<?> incomingMessage = createIncomingMessage(6);
         when(_queue.getQueueDepthBytes()).thenReturn(5L);
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(10L);
         when(_queue.getQueueDepthMessages()).thenReturn(1);
-
-        try
-        {
-            _rejectOverflowPolicyHandler.checkReject(incomingMessage);
-            fail("Exception expected");
-        }
-        catch (MessageUnacceptableException e)
-        {
-            // pass
-        }
+        assertThrows(MessageUnacceptableException.class, () -> _rejectOverflowPolicyHandler.checkReject(incomingMessage),
+                "Exception expected");
     }
 
     @Test
-    public void testOverfullMessages() throws Exception
+    public void testOverfullMessages()
     {
-        ServerMessage incomingMessage = createIncomingMessage(5);
+        final ServerMessage<?> incomingMessage = createIncomingMessage(5);
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(7L);
         when(_queue.getQueueDepthMessages()).thenReturn(7);
         when(_queue.getQueueDepthBytes()).thenReturn(10L);
-
-        try
-        {
-            _rejectOverflowPolicyHandler.checkReject(incomingMessage);
-            fail("Exception expected");
-        }
-        catch (MessageUnacceptableException e)
-        {
-            // pass
-        }
+        assertThrows(MessageUnacceptableException.class, () -> _rejectOverflowPolicyHandler.checkReject(incomingMessage),
+                "Exception expected");
     }
 
     @Test
@@ -98,30 +81,30 @@ public class RejectPolicyHandlerTest extends UnitTestBase
     {
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(1L);
 
-        ServerMessage incomingMessage1 = createIncomingMessage(2);
-        MessageInstance messageInstance1 = mock(MessageInstance.class);
+        final ServerMessage<?> incomingMessage1 = createIncomingMessage(2);
+        final MessageInstance messageInstance1 = mock(MessageInstance.class);
         when(messageInstance1.getMessage()).thenReturn(incomingMessage1);
 
-        ServerMessage incomingMessage2 = createIncomingMessage(2);
+        final ServerMessage<?> incomingMessage2 = createIncomingMessage(2);
 
         _rejectOverflowPolicyHandler.checkReject(incomingMessage1);
         _rejectOverflowPolicyHandler.postEnqueue(messageInstance1);
-
         _rejectOverflowPolicyHandler.checkReject(incomingMessage2);
    }
+
     @Test
     public void testNotOverfullBytes() throws Exception
     {
         when(_queue.getMaximumQueueDepthBytes()).thenReturn(9L);
-        ServerMessage incomingMessage1 = createIncomingMessage(5);
-        MessageInstance messageInstance1 = mock(MessageInstance.class);
+
+        final ServerMessage<?> incomingMessage1 = createIncomingMessage(5);
+        final MessageInstance messageInstance1 = mock(MessageInstance.class);
         when(messageInstance1.getMessage()).thenReturn(incomingMessage1);
 
-        ServerMessage incomingMessage2 = createIncomingMessage(5);
+        final ServerMessage<?> incomingMessage2 = createIncomingMessage(5);
 
         _rejectOverflowPolicyHandler.checkReject(incomingMessage1);
         _rejectOverflowPolicyHandler.postEnqueue(messageInstance1);
-
         _rejectOverflowPolicyHandler.checkReject(incomingMessage2);
     }
 
@@ -130,20 +113,19 @@ public class RejectPolicyHandlerTest extends UnitTestBase
     {
         when(_queue.getMaximumQueueDepthMessages()).thenReturn(1L);
 
-        ServerMessage incomingMessage1 = createIncomingMessage(2);
-
-        ServerMessage incomingMessage2 = createIncomingMessage(2);
+        final ServerMessage<?> incomingMessage1 = createIncomingMessage(2);
+        final ServerMessage<?> incomingMessage2 = createIncomingMessage(2);
 
         _rejectOverflowPolicyHandler.checkReject(incomingMessage1);
         _rejectOverflowPolicyHandler.messageDeleted(incomingMessage1.getStoredMessage());
-
         _rejectOverflowPolicyHandler.checkReject(incomingMessage2);
     }
 
-    private ServerMessage createIncomingMessage(final long size)
+    @SuppressWarnings("unchecked")
+    private ServerMessage<?> createIncomingMessage(final long size)
     {
-        AMQMessageHeader incomingMessageHeader = mock(AMQMessageHeader.class);
-        ServerMessage incomingMessage = mock(ServerMessage.class);
+        final AMQMessageHeader incomingMessageHeader = mock(AMQMessageHeader.class);
+        final ServerMessage<?> incomingMessage = mock(ServerMessage.class);
         when(incomingMessage.getMessageHeader()).thenReturn(incomingMessageHeader);
         when(incomingMessage.getSizeIncludingHeader()).thenReturn(size);
         when(incomingMessage.getStoredMessage()).thenReturn(mock(StoredMessage.class));

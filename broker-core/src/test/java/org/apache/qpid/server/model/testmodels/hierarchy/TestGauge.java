@@ -28,5 +28,6 @@ import org.apache.qpid.server.model.ManagedObject;
 public interface TestGauge<X extends TestGauge<X>> extends ConfiguredObject<X>
 {
     @ManagedAttribute
+    @SuppressWarnings("unused")
     TestSensor<?> getSensor();
 }

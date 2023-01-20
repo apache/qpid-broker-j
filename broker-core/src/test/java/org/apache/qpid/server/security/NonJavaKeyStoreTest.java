@@ -19,11 +19,10 @@
 
 package org.apache.qpid.server.security;
 
-
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -39,17 +38,16 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.KeyManager;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -71,18 +69,19 @@ import org.apache.qpid.test.utils.tls.TlsResourceHelper;
 
 public class NonJavaKeyStoreTest extends UnitTestBase
 {
-    @ClassRule
+    @RegisterExtension
     public static final TlsResource TLS_RESOURCE = new TlsResource();
 
     private static final String DN_FOO = "CN=foo";
     private static final String NAME = "myTestTrustStore";
     private static final String NON_JAVA_KEY_STORE = "NonJavaKeyStore";
-    private static final Broker BROKER = BrokerTestHelper.createBrokerMock();
+    private static final Broker<?> BROKER = BrokerTestHelper.createBrokerMock();
     private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
+
     private MessageLogger _messageLogger;
     private KeyCertificatePair _keyCertPair;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _messageLogger = mock(MessageLogger.class);
@@ -108,18 +107,16 @@ public class NonJavaKeyStoreTest extends UnitTestBase
 
     private void assertCreationOfTrustStoreFromValidPrivateKeyAndCertificate(Path privateKeyFile, Path certificateFile) throws Exception
     {
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(NonJavaKeyStore.NAME, NAME);
-        attributes.put("privateKeyUrl", privateKeyFile.toFile().getAbsolutePath());
-        attributes.put("certificateUrl", certificateFile.toFile().getAbsolutePath());
-        attributes.put(NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
-
+        final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, NAME,
+                "privateKeyUrl", privateKeyFile.toFile().getAbsolutePath(),
+                "certificateUrl", certificateFile.toFile().getAbsolutePath(),
+                NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
         final NonJavaKeyStore<?> fileTrustStore = (NonJavaKeyStore<?>)  createTestKeyStore(attributes);
+        final KeyManager[] keyManagers = fileTrustStore.getKeyManagers();
 
-        KeyManager[] keyManagers = fileTrustStore.getKeyManagers();
         assertNotNull(keyManagers);
-        assertEquals("Unexpected number of key managers", 1, keyManagers.length);
-        assertNotNull("Key manager is null", keyManagers[0]);
+        assertEquals(1, keyManagers.length, "Unexpected number of key managers");
+        assertNotNull(keyManagers[0], "Key manager is null");
     }
 
     @Test
@@ -127,12 +124,10 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     {
         final Path privateKeyFile = TLS_RESOURCE.savePrivateKeyAsPem(_keyCertPair.getPrivateKey());
         final Path certificateFile = TLS_RESOURCE.createFile(".cer");
-
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(NonJavaKeyStore.NAME, NAME);
-        attributes.put("privateKeyUrl", privateKeyFile.toFile().getAbsolutePath());
-        attributes.put("certificateUrl", certificateFile.toFile().getAbsolutePath());
-        attributes.put(NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
+        final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, NAME,
+                "privateKeyUrl", privateKeyFile.toFile().getAbsolutePath(),
+                "certificateUrl", certificateFile.toFile().getAbsolutePath(),
+                NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
                 "Cannot load private key or certificate(s)");
@@ -143,12 +138,10 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     {
         final Path privateKeyFile =  TLS_RESOURCE.createFile(".pk");
         final Path certificateFile = TLS_RESOURCE.saveCertificateAsPem(_keyCertPair.getCertificate());
-
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(NonJavaKeyStore.NAME, NAME);
-        attributes.put("privateKeyUrl", privateKeyFile.toFile().getAbsolutePath());
-        attributes.put("certificateUrl", certificateFile.toFile().getAbsolutePath());
-        attributes.put(NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
+        final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, NAME,
+                "privateKeyUrl", privateKeyFile.toFile().getAbsolutePath(),
+                "certificateUrl", certificateFile.toFile().getAbsolutePath(),
+                NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
                 "Cannot load private key or certificate(s): java.security.spec.InvalidKeySpecException: " +
@@ -159,20 +152,17 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     public void testExpiryCheckingFindsExpired() throws Exception
     {
         doCertExpiryChecking(1);
-
         verify(_messageLogger, times(1)).message(argThat(new LogMessageArgumentMatcher()));
-
     }
 
     @Test
     public void testExpiryCheckingIgnoresValid() throws Exception
     {
         doCertExpiryChecking(-1);
-
         verify(_messageLogger, never()).message(argThat(new LogMessageArgumentMatcher()));
-
     }
 
+    @SuppressWarnings("unchecked")
     private void doCertExpiryChecking(final int expiryOffset) throws Exception
     {
         when(BROKER.scheduleHouseKeepingTask(anyLong(), any(TimeUnit.class), any(Runnable.class))).thenReturn(mock(ScheduledFuture.class));
@@ -180,13 +170,11 @@ public class NonJavaKeyStoreTest extends UnitTestBase
         final Path privateKeyFile =  TLS_RESOURCE.savePrivateKeyAsDer(_keyCertPair.getPrivateKey());
         final Path certificateFile = TLS_RESOURCE.saveCertificateAsDer(_keyCertPair.getCertificate());
         final long expiryDays = ChronoUnit.DAYS.between(Instant.now(), _keyCertPair.getCertificate().getNotAfter().toInstant());
-
-        Map<String,Object> attributes = new HashMap<>();
-        attributes.put(NonJavaKeyStore.NAME, NAME);
-        attributes.put("privateKeyUrl", privateKeyFile.toFile().getAbsolutePath());
-        attributes.put("certificateUrl", certificateFile.toFile().getAbsolutePath());
-        attributes.put("context", Collections.singletonMap(KeyStore.CERTIFICATE_EXPIRY_WARN_PERIOD, expiryDays + expiryOffset));
-        attributes.put(NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
+        final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, NAME,
+                "privateKeyUrl", privateKeyFile.toFile().getAbsolutePath(),
+                "certificateUrl", certificateFile.toFile().getAbsolutePath(),
+                "context", Map.of(KeyStore.CERTIFICATE_EXPIRY_WARN_PERIOD, expiryDays + expiryOffset),
+                NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
         createTestKeyStore(attributes);
     }
 
@@ -194,12 +182,10 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     public void testCreationOfKeyStoreWithNonMatchingPrivateKeyAndCertificate()throws Exception
     {
         final KeyCertificatePair keyCertPair2 = generateSelfSignedCertificate();
-
-        final Map<String,Object> attributes = new HashMap<>();
-        attributes.put(NonJavaKeyStore.NAME, NAME);
-        attributes.put(NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.getPrivateKey()));
-        attributes.put(NonJavaKeyStore.CERTIFICATE_URL, getCertificateAsDataUrl(keyCertPair2.getCertificate()));
-        attributes.put(NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
+        final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, NAME,
+                NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.getPrivateKey()),
+                NonJavaKeyStore.CERTIFICATE_URL, getCertificateAsDataUrl(keyCertPair2.getCertificate()),
+                NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
                 "Private key does not match certificate");
@@ -208,25 +194,17 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     @Test
     public void testUpdateKeyStoreToNonMatchingCertificate()throws Exception
     {
-        final Map<String,Object> attributes = new HashMap<>();
-        attributes.put(NonJavaKeyStore.NAME, getTestName());
-        attributes.put(NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.getPrivateKey()));
-        attributes.put(NonJavaKeyStore.CERTIFICATE_URL, getCertificateAsDataUrl(_keyCertPair.getCertificate()));
-        attributes.put(NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
-
+        final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, getTestName(),
+                NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.getPrivateKey()),
+                NonJavaKeyStore.CERTIFICATE_URL, getCertificateAsDataUrl(_keyCertPair.getCertificate()),
+                NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
         final KeyStore<?> trustStore = createTestKeyStore(attributes);
-
         final KeyCertificatePair keyCertPair2 = generateSelfSignedCertificate();
-        try
-        {
-            final String certUrl = getCertificateAsDataUrl(keyCertPair2.getCertificate());
-            trustStore.setAttributes(Collections.singletonMap("certificateUrl", certUrl));
-            fail("Created key store from invalid certificate");
-        }
-        catch(IllegalConfigurationException e)
-        {
-            // pass
-        }
+        final String certUrl = getCertificateAsDataUrl(keyCertPair2.getCertificate());
+
+        assertThrows(IllegalConfigurationException.class,
+                () -> trustStore.setAttributes(Map.of("certificateUrl", certUrl)),
+                "Created key store from invalid certificate");
     }
 
     @SuppressWarnings("unchecked")

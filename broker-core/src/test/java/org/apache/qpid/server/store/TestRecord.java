@@ -28,9 +28,9 @@ import org.apache.qpid.server.store.Transaction.EnqueueRecord;
 public class TestRecord implements EnqueueRecord, Transaction.DequeueRecord, MessageEnqueueRecord
 {
     private final TransactionLogResource _queue;
-    private final EnqueueableMessage _message;
+    private final EnqueueableMessage<?> _message;
 
-    public TestRecord(TransactionLogResource queue, EnqueueableMessage message)
+    public TestRecord(final TransactionLogResource queue, final EnqueueableMessage<?> message)
     {
         super();
         _queue = queue;
@@ -44,7 +44,7 @@ public class TestRecord implements EnqueueRecord, Transaction.DequeueRecord, Mes
     }
 
     @Override
-    public EnqueueableMessage getMessage()
+    public EnqueueableMessage<?> getMessage()
     {
         return _message;
     }
@@ -60,7 +60,7 @@ public class TestRecord implements EnqueueRecord, Transaction.DequeueRecord, Mes
     }
 
     @Override
-    public boolean equals(Object obj)
+    public boolean equals(final Object obj)
     {
         if (this == obj)
         {
@@ -74,7 +74,7 @@ public class TestRecord implements EnqueueRecord, Transaction.DequeueRecord, Mes
         {
             return false;
         }
-        EnqueueRecord other = (EnqueueRecord) obj;
+        final EnqueueRecord other = (EnqueueRecord) obj;
         if (_message == null && other.getMessage() != null)
         {
             return false;

@@ -21,9 +21,9 @@
 
 package org.apache.qpid.server.management.plugin;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -32,8 +32,7 @@ public class HttpManagementUtilTest extends UnitTestBase
     @Test
     public void testEnsureFilenameIsRfc2183()
     {
-        assertEquals("Unexpected conversion",
-                            "aBC8-d.json",
-                            HttpManagementUtil.ensureFilenameIsRfc2183("aBC8-d.json\n\r\t:/\\"));
+        assertEquals("aBC8-d.json", HttpManagementUtil.ensureFilenameIsRfc2183("aBC8-d.json\n\r\t:/\\"),
+                "Unexpected conversion");
     }
 }

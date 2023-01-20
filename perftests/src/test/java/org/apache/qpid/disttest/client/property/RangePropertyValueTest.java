@@ -18,30 +18,19 @@
  */
 package org.apache.qpid.disttest.client.property;
 
-import org.junit.Assert;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class RangePropertyValueTest extends UnitTestBase
 {
     private RangePropertyValue _generator;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _generator = new RangePropertyValue();
@@ -54,11 +43,11 @@ public class RangePropertyValueTest extends UnitTestBase
     @Test
     public void testGetters()
     {
-        assertEquals("Unexpected upper boundary", Double.valueOf(10.0), (Object) _generator.getUpper());
-        assertEquals("Unexpected lower boundary", Double.valueOf(0.0), (Object) _generator.getLower());
-        assertEquals("Unexpected step", Double.valueOf(2.0), (Object) _generator.getStep());
-        assertEquals("Unexpected type", "double", _generator.getType());
-        assertTrue("Unexpected cyclic", _generator.isCyclic());
+        assertEquals(10.0, (Object) _generator.getUpper(), "Unexpected upper boundary");
+        assertEquals(0.0, (Object) _generator.getLower(), "Unexpected lower boundary");
+        assertEquals(2.0, (Object) _generator.getStep(), "Unexpected step");
+        assertEquals("double", _generator.getType(), "Unexpected type");
+        assertTrue(_generator.isCyclic(), "Unexpected cyclic");
     }
 
     @Test
@@ -67,12 +56,12 @@ public class RangePropertyValueTest extends UnitTestBase
         double[] expected = { 0.0, 2.0, 4.0, 6.0, 8.0, 10.0 };
         for (int j = 0; j < 2; j++)
         {
-            for (int i = 0; i < expected.length; i++)
+            for (final double v : expected)
             {
                 Object value = _generator.getValue();
                 final boolean condition = value instanceof Double;
-                assertTrue("Should be Double", condition);
-                assertEquals("Unexpected value ", expected[i], value);
+                assertTrue(condition, "Should be Double");
+                assertEquals(v, value, "Unexpected value ");
             }
         }
     }
@@ -82,17 +71,17 @@ public class RangePropertyValueTest extends UnitTestBase
     {
         _generator.setCyclic(false);
         double[] expected = { 0.0, 2.0, 4.0, 6.0, 8.0, 10.0 };
-        for (int i = 0; i < expected.length; i++)
+        for (final double v : expected)
         {
             Object value = _generator.getValue();
             final boolean condition = value instanceof Double;
-            assertTrue("Should be Double", condition);
-            assertEquals("Unexpected value ", expected[i], value);
+            assertTrue(condition, "Should be Double");
+            assertEquals(v, value, "Unexpected value ");
         }
         for (int i = 0; i < expected.length; i++)
         {
             Object value = _generator.getValue();
-            assertEquals("Unexpected value ", expected[expected.length - 1], value);
+            assertEquals(expected[expected.length - 1], value, "Unexpected value ");
         }
     }
 
@@ -103,12 +92,12 @@ public class RangePropertyValueTest extends UnitTestBase
         int[] expected = { 0, 2, 4, 6, 8, 10 };
         for (int j = 0; j < 2; j++)
         {
-            for (int i = 0; i < expected.length; i++)
+            for (final int k : expected)
             {
                 Object value = _generator.getValue();
                 final boolean condition = value instanceof Integer;
-                assertTrue("Should be Double", condition);
-                assertEquals("Unexpected value ", expected[i], value);
+                assertTrue(condition, "Should be Double");
+                assertEquals(k, value, "Unexpected value ");
             }
         }
     }
@@ -120,12 +109,12 @@ public class RangePropertyValueTest extends UnitTestBase
         byte[] expected = { 0, 2, 4, 6, 8, 10 };
         for (int j = 0; j < 2; j++)
         {
-            for (int i = 0; i < expected.length; i++)
+            for (final byte b : expected)
             {
                 Object value = _generator.getValue();
                 final boolean condition = value instanceof Byte;
-                assertTrue("Should be Double", condition);
-                assertEquals("Unexpected value ", expected[i], value);
+                assertTrue(condition, "Should be Double");
+                assertEquals(b, value, "Unexpected value ");
             }
         }
     }
@@ -137,12 +126,12 @@ public class RangePropertyValueTest extends UnitTestBase
         long[] expected = { 0, 2, 4, 6, 8, 10 };
         for (int j = 0; j < 2; j++)
         {
-            for (int i = 0; i < expected.length; i++)
+            for (final long l : expected)
             {
                 Object value = _generator.getValue();
                 final boolean condition = value instanceof Long;
-                assertTrue("Should be Double", condition);
-                assertEquals("Unexpected value ", expected[i], value);
+                assertTrue(condition, "Should be Double");
+                assertEquals(l, value, "Unexpected value ");
             }
         }
     }
@@ -154,12 +143,12 @@ public class RangePropertyValueTest extends UnitTestBase
         short[] expected = { 0, 2, 4, 6, 8, 10 };
         for (int j = 0; j < 2; j++)
         {
-            for (int i = 0; i < expected.length; i++)
+            for (final short item : expected)
             {
                 Object value = _generator.getValue();
                 final boolean condition = value instanceof Short;
-                assertTrue("Should be Double", condition);
-                assertEquals("Unexpected value ", expected[i], value);
+                assertTrue(condition, "Should be Double");
+                assertEquals(item, value, "Unexpected value ");
             }
         }
     }
@@ -171,12 +160,12 @@ public class RangePropertyValueTest extends UnitTestBase
         float[] expected = { 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f };
         for (int j = 0; j < 2; j++)
         {
-            for (int i = 0; i < expected.length; i++)
+            for (final float v : expected)
             {
                 Object value = _generator.getValue();
                 final boolean condition = value instanceof Float;
-                assertTrue("Should be Double", condition);
-                assertEquals("Unexpected value ", expected[i], value);
+                assertTrue(condition, "Should be Double");
+                assertEquals(v, value, "Unexpected value ");
             }
         }
     }

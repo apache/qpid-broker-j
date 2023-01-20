@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.management.plugin.report;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,10 +34,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
@@ -53,17 +52,17 @@ public class ReportRunnerTest extends UnitTestBase
     public void testTextReportCountsMessages()
     {
         ReportRunner<String> runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME,
-                                                                                       Collections.<String, String[]>emptyMap());
+                                                                                       Collections.emptyMap());
         Queue queue = createMockQueue();
         assertEquals("There are 0 messages on the queue.", runner.runReport(queue));
 
         runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME,
-                                                                  Collections.<String, String[]>emptyMap());
+                                                                  Collections.emptyMap());
         Queue queue1 = createMockQueue(createMockMessageForQueue());
         assertEquals("There are 1 messages on the queue.", runner.runReport(queue1));
 
         runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME,
-                                                                  Collections.<String, String[]>emptyMap());
+                                                                  Collections.emptyMap());
         Queue queue2 = createMockQueue(createMockMessageForQueue(), createMockMessageForQueue());
         assertEquals("There are 2 messages on the queue.", runner.runReport(queue2));
     }
@@ -87,7 +86,8 @@ public class ReportRunnerTest extends UnitTestBase
         parameterMap.put("stringParam", new String[]{"hello world"});
         ReportRunner<String> runner =
                 (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME, parameterMap);
-        assertEquals("There are 2 messages on the queue. stringParam = hello world.", runner.runReport(queue2));
+        assertEquals("There are 2 messages on the queue. stringParam = hello world.",
+                runner.runReport(queue2));
     }
 
     @Test
@@ -100,7 +100,7 @@ public class ReportRunnerTest extends UnitTestBase
         ReportRunner<String> runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME, parameterMap);
 
         assertEquals("There are 0 messages on the queue. stringArrayParam = [hello world, goodbye].",
-                            runner.runReport(queue));
+                runner.runReport(queue));
     }
 
 
@@ -113,8 +113,7 @@ public class ReportRunnerTest extends UnitTestBase
         parameterMap.put("stringParam", new String[]{"hello world"});
         parameterMap.put("stringArrayParam", new String[] { "hello world", "goodbye"});
         ReportRunner<String> runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME, parameterMap);
-        assertEquals(
-                "There are 0 messages on the queue. stringParam = hello world. stringArrayParam = [hello world, goodbye].",
+        assertEquals("There are 0 messages on the queue. stringParam = hello world. stringArrayParam = [hello world, goodbye].",
                 runner.runReport(queue));
     }
 
@@ -135,10 +134,10 @@ public class ReportRunnerTest extends UnitTestBase
     @Test
     public void testBinaryReportWithLimit() throws Exception
     {
-        Queue queue = createMockQueue(createMessageWithAppProperties(Collections.<String,Object>singletonMap("key",1)),
-                                      createMessageWithAppProperties(Collections.<String,Object>singletonMap("key",2)),
-                                      createMessageWithAppProperties(Collections.<String, Object>singletonMap("key", 3)),
-                                      createMessageWithAppProperties(Collections.<String, Object>singletonMap("key", 4)));
+        Queue queue = createMockQueue(createMessageWithAppProperties(Collections.singletonMap("key", 1)),
+                                      createMessageWithAppProperties(Collections.singletonMap("key", 2)),
+                                      createMessageWithAppProperties(Collections.singletonMap("key", 3)),
+                                      createMessageWithAppProperties(Collections.singletonMap("key", 4)));
         Map<String, String[]> parameterMap = new HashMap<>();
         parameterMap.put("propertyName", new String[]{"key"});
         parameterMap.put("limit", new String[] { "3" });
@@ -153,7 +152,7 @@ public class ReportRunnerTest extends UnitTestBase
         objects.flush();
         byte[] expected = bytes.toByteArray();
         byte[] actual = runner.runReport(queue);
-        assertTrue("Output not as expected", Arrays.equals(expected, actual));
+        assertTrue(Arrays.equals(expected, actual), "Output not as expected");
     }
 
     private ServerMessage<?> createMessageWithAppProperties(final Map<String,Object> props)
@@ -162,14 +161,10 @@ public class ReportRunnerTest extends UnitTestBase
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(message.getMessageHeader()).thenReturn(header);
         final ArgumentCaptor<String> headerNameCaptor = ArgumentCaptor.forClass(String.class);
-        when(header.getHeader(headerNameCaptor.capture())).thenAnswer(new Answer<Object>()
+        when(header.getHeader(headerNameCaptor.capture())).thenAnswer(invocation ->
         {
-            @Override
-            public Object answer(final InvocationOnMock invocation) throws Throwable
-            {
-                String header = headerNameCaptor.getValue();
-                return props.get(header);
-            }
+            String header1 = headerNameCaptor.getValue();
+            return props.get(header1);
         });
         when(header.getHeaderNames()).thenReturn(props.keySet());
         when(message.getContent()).thenReturn(QpidByteBuffer.emptyQpidByteBuffer());
@@ -180,21 +175,17 @@ public class ReportRunnerTest extends UnitTestBase
     {
         final Queue<?> queue = mock(Queue.class);
         final ArgumentCaptor<QueueEntryVisitor> captor = ArgumentCaptor.forClass(QueueEntryVisitor.class);
-        doAnswer(new Answer()
+        doAnswer(invocation ->
         {
-            @Override
-            public Object answer(final InvocationOnMock invocation) throws Throwable
+            QueueEntryVisitor visitor = captor.getValue();
+            for(ServerMessage<?> message : messages)
             {
-                QueueEntryVisitor visitor = captor.getValue();
-                for(ServerMessage<?> message : messages)
+                if(visitor.visit(makeEntry(queue, message)))
                 {
-                    if(visitor.visit(makeEntry(queue, message)))
-                    {
-                        break;
-                    }
+                    break;
                 }
-                return null;
             }
+            return null;
         }).when(queue).visit(captor.capture());
         return queue;
     }

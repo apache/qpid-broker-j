@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.exchange;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,8 +30,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -56,7 +56,7 @@ public class HeadersBindingTest extends UnitTestBase
     private static class MockHeader implements AMQMessageHeader
     {
 
-        private final Map<String, Object> _headers = new HashMap<String, Object>();
+        private final Map<String, Object> _headers = new HashMap<>();
 
         @Override
         public String getCorrelationId()
@@ -171,14 +171,14 @@ public class HeadersBindingTest extends UnitTestBase
         }
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _count++;
         _queue = mock(Queue.class);
-        TaskExecutor executor = new CurrentThreadTaskExecutor();
+        final TaskExecutor executor = new CurrentThreadTaskExecutor();
         executor.start();
-        QueueManagingVirtualHost vhost = mock(QueueManagingVirtualHost.class);
+        final QueueManagingVirtualHost vhost = mock(QueueManagingVirtualHost.class);
         when(_queue.getVirtualHost()).thenReturn(vhost);
         when(_queue.getModel()).thenReturn(BrokerModel.getInstance());
         when(_queue.getTaskExecutor()).thenReturn(executor);
@@ -189,13 +189,14 @@ public class HeadersBindingTest extends UnitTestBase
         when(vhost.getTaskExecutor()).thenReturn(executor);
         when(vhost.getChildExecutor()).thenReturn(executor);
 
-        _exchange = mock(Exchange.class);
-        when(_exchange.getType()).thenReturn(ExchangeDefaults.HEADERS_EXCHANGE_CLASS);
-        when(_exchange.getEventLogger()).thenReturn(eventLogger);
-        when(_exchange.getModel()).thenReturn(BrokerModel.getInstance());
-        when(_exchange.getTaskExecutor()).thenReturn(executor);
-        when(_exchange.getChildExecutor()).thenReturn(executor);
+        final Exchange<?> exchange = mock(Exchange.class);
+        when(exchange.getType()).thenReturn(ExchangeDefaults.HEADERS_EXCHANGE_CLASS);
+        when(exchange.getEventLogger()).thenReturn(eventLogger);
+        when(exchange.getModel()).thenReturn(BrokerModel.getInstance());
+        when(exchange.getTaskExecutor()).thenReturn(executor);
+        when(exchange.getChildExecutor()).thenReturn(executor);
 
+        bindHeaders.clear();
     }
 
     protected String getQueueName()
@@ -210,8 +211,7 @@ public class HeadersBindingTest extends UnitTestBase
 
         matchHeaders.setString("A", "Value of A");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
@@ -223,8 +223,7 @@ public class HeadersBindingTest extends UnitTestBase
         matchHeaders.setString("A", "Value of A");
         matchHeaders.setString("B", "Value of B");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
@@ -235,8 +234,7 @@ public class HeadersBindingTest extends UnitTestBase
 
         matchHeaders.setString("A", "Altered value of A");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertFalse(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
@@ -248,8 +246,7 @@ public class HeadersBindingTest extends UnitTestBase
 
         matchHeaders.setString("A", "Value of A");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
@@ -262,8 +259,7 @@ public class HeadersBindingTest extends UnitTestBase
 
         matchHeaders.setString("A", "Value of A");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertFalse(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
@@ -277,8 +273,7 @@ public class HeadersBindingTest extends UnitTestBase
         matchHeaders.setString("A", "Value of A");
         matchHeaders.setString("B", "Value of B");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
@@ -293,8 +288,7 @@ public class HeadersBindingTest extends UnitTestBase
         matchHeaders.setString("B", "Value of B");
         matchHeaders.setString("C", "Value of C");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
@@ -309,8 +303,7 @@ public class HeadersBindingTest extends UnitTestBase
         matchHeaders.setString("B", "Altered value of B");
         matchHeaders.setString("C", "Value of C");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertFalse(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
@@ -322,8 +315,7 @@ public class HeadersBindingTest extends UnitTestBase
 
         matchHeaders.setString("A", "Value of A");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
@@ -336,8 +328,7 @@ public class HeadersBindingTest extends UnitTestBase
 
         matchHeaders.setString("A", "Value of A");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
@@ -351,8 +342,7 @@ public class HeadersBindingTest extends UnitTestBase
         matchHeaders.setString("A", "Value of A");
         matchHeaders.setString("B", "Value of B");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
@@ -367,8 +357,7 @@ public class HeadersBindingTest extends UnitTestBase
         matchHeaders.setString("B", "Value of B");
         matchHeaders.setString("C", "Value of C");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
@@ -383,8 +372,7 @@ public class HeadersBindingTest extends UnitTestBase
         matchHeaders.setString("B", "Altered value of B");
         matchHeaders.setString("C", "Value of C");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
@@ -399,14 +387,7 @@ public class HeadersBindingTest extends UnitTestBase
         matchHeaders.setString("B", "Altered value of B");
         matchHeaders.setString("C", "Value of C");
 
-        AbstractExchange.BindingIdentifier b =
-                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        final AbstractExchange.BindingIdentifier b = new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
         assertFalse(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
-    }
-
-
-    public static junit.framework.Test suite()
-    {
-        return new junit.framework.TestSuite(HeadersBindingTest.class);
     }
 }

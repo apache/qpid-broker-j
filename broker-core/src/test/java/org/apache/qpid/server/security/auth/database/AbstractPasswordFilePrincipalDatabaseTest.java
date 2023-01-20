@@ -19,7 +19,9 @@
 
 package org.apache.qpid.server.security.auth.database;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -29,12 +31,11 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.test.utils.UnitTestBase;
-
 
 public abstract class AbstractPasswordFilePrincipalDatabaseTest extends UnitTestBase
 {
@@ -43,56 +44,51 @@ public abstract class AbstractPasswordFilePrincipalDatabaseTest extends UnitTest
     protected static final String TEST_PASSWORD = "testPassword";
     protected static final char[] TEST_PASSWORD_CHARS = TEST_PASSWORD.toCharArray();
 
-    private final List<File> _testPwdFiles = new ArrayList<File>();
+    private final List<File> _testPwdFiles = new ArrayList<>();
     private final Principal _principal = new UsernamePrincipal(TEST_USERNAME, null);
 
-    protected abstract AbstractPasswordFilePrincipalDatabase getDatabase();
+    protected abstract AbstractPasswordFilePrincipalDatabase<?> getDatabase();
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
+        //clean up any additional files and their backups
+        for (final File f : _testPwdFiles)
         {
-            //clean up any additional files and their backups
-            for (File f : _testPwdFiles)
+            final File oldPwdFile = new File(f.getAbsolutePath() + ".old");
+            if (oldPwdFile.exists())
             {
-                File oldPwdFile = new File(f.getAbsolutePath() + ".old");
-                if (oldPwdFile.exists())
-                {
-                    oldPwdFile.delete();
-                }
-
-                f.delete();
+                oldPwdFile.delete();
             }
-        }
-        finally
-        {
+
+            f.delete();
         }
     }
 
-    protected File createPasswordFile(int commentLines, int users)
+    protected File createPasswordFile(final int commentLines, final int users)
     {
         try
         {
-            File testFile = File.createTempFile(getTestName(), "tmp");
+            final File testFile = File.createTempFile(getTestName(), "tmp");
             testFile.deleteOnExit();
 
-            BufferedWriter writer = new BufferedWriter(new FileWriter(testFile));
-
-            for (int i = 0; i < commentLines; i++)
+            try (final BufferedWriter writer = new BufferedWriter(new FileWriter(testFile)))
             {
-                writer.write(TEST_COMMENT);
-                writer.newLine();
-            }
 
-            for (int i = 0; i < users; i++)
-            {
-                writer.write(TEST_USERNAME + i + ":Password");
-                writer.newLine();
-            }
+                for (int i = 0; i < commentLines; i++)
+                {
+                    writer.write(TEST_COMMENT);
+                    writer.newLine();
+                }
 
-            writer.flush();
-            writer.close();
+                for (int i = 0; i < users; i++)
+                {
+                    writer.write(TEST_USERNAME + i + ":Password");
+                    writer.newLine();
+                }
+
+                writer.flush();
+            }
 
             _testPwdFiles.add(testFile);
 
@@ -108,69 +104,44 @@ public abstract class AbstractPasswordFilePrincipalDatabaseTest extends UnitTest
     }
 
 
-    protected void loadPasswordFile(File file)
+    protected void loadPasswordFile(final File file)
     {
-        try
-        {
-            getDatabase().open(file);
-        }
-        catch (IOException e)
-        {
-            fail("Password File was not created." + e.getMessage());
-        }
+        assertDoesNotThrow(() -> getDatabase().open(file), "Password File was not created");
     }
 
 
     @Test
-    public void testRejectUsernameWithColon() throws Exception
+    public void testRejectUsernameWithColon()
     {
-        String usernameWithColon = "user:name";
-        Principal principal = new UsernamePrincipal(usernameWithColon, null);
-
-        File testFile = createPasswordFile(0, 0);
+        final String usernameWithColon = "user:name";
+        final Principal principal = new UsernamePrincipal(usernameWithColon, null);
+        final File testFile = createPasswordFile(0, 0);
         loadPasswordFile(testFile);
 
-        try
-        {
-            getDatabase().createPrincipal(principal, TEST_PASSWORD_CHARS);
-            fail("Username with colon should be rejected");
-        }
-        catch (IllegalArgumentException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> getDatabase().createPrincipal(principal, TEST_PASSWORD_CHARS),
+                "Username with colon should be rejected");
     }
 
     @Test
-    public void testRejectPasswordWithColon() throws Exception
+    public void testRejectPasswordWithColon()
     {
-        String username = "username";
-        String passwordWithColon = "pass:word";
-        Principal principal = new UsernamePrincipal(username, null);
-
-        File testFile = createPasswordFile(0, 0);
+        final String username = "username";
+        final String passwordWithColon = "pass:word";
+        final Principal principal = new UsernamePrincipal(username, null);
+        final File testFile = createPasswordFile(0, 0);
         loadPasswordFile(testFile);
 
-        try
-        {
-            getDatabase().createPrincipal(principal, passwordWithColon.toCharArray());
-            fail("Password with colon should be rejected");
-        }
-        catch (IllegalArgumentException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> getDatabase().createPrincipal(principal, passwordWithColon.toCharArray()),
+                "Password with colon should be rejected");
 
         getDatabase().createPrincipal(_principal, TEST_PASSWORD_CHARS);
-        try
-        {
-            getDatabase().updatePassword(_principal, passwordWithColon.toCharArray());
-            fail("Password with colon should be rejected");
-        }
-        catch (IllegalArgumentException e)
-        {
-            // pass
-        }
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> getDatabase().updatePassword(_principal, passwordWithColon.toCharArray()),
+                "Password with colon should be rejected");
     }
 
 }

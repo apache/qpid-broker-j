@@ -20,10 +20,11 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -43,11 +44,11 @@ import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -107,7 +108,7 @@ public class Session_1_0Test extends UnitTestBase
     private int _handle;
     private CurrentThreadTaskExecutor _taskExecutor;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         Map<String, Object> virtualHostAttributes = new HashMap<>();
@@ -120,14 +121,14 @@ public class Session_1_0Test extends UnitTestBase
         this._session = createSession_1_0(_connection, 0);
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    public void tearDown()
     {
         _taskExecutor.stop();
     }
 
     @Test
-    public void testReceiveAttachTopicNonDurableNoContainer() throws Exception
+    public void testReceiveAttachTopicNonDurableNoContainer()
     {
         final String linkName = "testLink";
         final String address = "amq.direct/" + TOPIC_NAME;
@@ -140,7 +141,7 @@ public class Session_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testReceiveAttachTopicNonDurableWithContainer() throws Exception
+    public void testReceiveAttachTopicNonDurableWithContainer()
     {
         final String linkName = "testLink";
         final String address = "amq.direct/" + TOPIC_NAME;
@@ -153,7 +154,7 @@ public class Session_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testReceiveAttachTopicDurableNoContainer() throws Exception
+    public void testReceiveAttachTopicDurableNoContainer()
     {
         final String linkName = "testLink";
         final String address = "amq.direct/" + TOPIC_NAME;
@@ -166,7 +167,7 @@ public class Session_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testReceiveAttachTopicDurableWithContainer() throws Exception
+    public void testReceiveAttachTopicDurableWithContainer()
     {
         final String linkName = "testLink";
         final String address = "amq.direct/" + TOPIC_NAME;
@@ -184,16 +185,14 @@ public class Session_1_0Test extends UnitTestBase
 
         assertAttachSent(secondConnection, secondSession, attach2);
         Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals(
-                "Unexpected number of queues after second subscription with the same subscription name but different "
-                + "container id ",
-                (long) 2,
-                (long) queues.size());
+        assertEquals(2, (long) queues.size(),
+                "Unexpected number of queues after second subscription with the same subscription name but different " +
+                "container id ");
 
     }
 
     @Test
-    public void testReceiveAttachSharedTopicNonDurableNoContainer() throws Exception
+    public void testReceiveAttachSharedTopicNonDurableNoContainer()
     {
         final String linkName = "testLink";
         final String address = "amq.direct/" + TOPIC_NAME;
@@ -214,15 +213,15 @@ public class Session_1_0Test extends UnitTestBase
         assertQueues(TOPIC_NAME, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
 
         final Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after attach", (long) 1, (long) queues.size());
+        assertEquals(1, (long) queues.size(), "Unexpected number of queues after attach");
         Queue<?> queue = queues.iterator().next();
 
         Collection<QueueConsumer<?,?>> consumers = queue.getConsumers();
-        assertEquals("Unexpected number of consumers", (long) 2, (long) consumers.size());
+        assertEquals(2, (long) consumers.size(), "Unexpected number of consumers");
     }
 
     @Test
-    public void testReceiveAttachSharedTopicNonDurableWithContainer() throws Exception
+    public void testReceiveAttachSharedTopicNonDurableWithContainer()
     {
         final String linkName = "testLink";
         final String address = "amq.direct/" + TOPIC_NAME;
@@ -242,19 +241,18 @@ public class Session_1_0Test extends UnitTestBase
         assertAttachSent(secondConnection, secondSession, attach2);
 
         final Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after attach", (long) 2, (long) queues.size());
+        assertEquals(2, (long) queues.size(), "Unexpected number of queues after attach");
 
         for (Queue<?> queue : queues)
         {
             Collection<QueueConsumer<?,?>> consumers = queue.getConsumers();
-            assertEquals("Unexpected number of consumers on queue " + queue.getName(),
-                                (long) 1,
-                                (long) consumers.size());
+            assertEquals(1, (long) consumers.size(),
+                    "Unexpected number of consumers on queue " + queue.getName());
         }
     }
 
     @Test
-    public void testSeparateSubscriptionNameSpaces() throws Exception
+    public void testSeparateSubscriptionNameSpaces()
     {
         AMQPConnection_1_0 secondConnection = createAmqpConnection_1_0();
         Session_1_0 secondSession = createSession_1_0(secondConnection, 0);
@@ -267,66 +265,60 @@ public class Session_1_0Test extends UnitTestBase
         assertAttachSent(_connection, _session, durableSharedWithContainerId, 0);
 
         Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId", (long) 1, (long)
-                queues.size());
+        assertEquals(1, (long) queues.size(),
+                "Unexpected number of queues after durable non shared with containerId");
 
         Attach durableNonSharedWithContainerId = createTopicAttach(true, linkName, address, false);
         _session.receiveAttach(durableNonSharedWithContainerId);
         assertAttachFailed(_connection, _session, durableNonSharedWithContainerId, 1);
 
         queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId",
-                            (long) 1,
-                            (long) queues.size());
+        assertEquals(1, (long) queues.size(),
+                "Unexpected number of queues after durable non shared with containerId");
 
         Attach nonDurableSharedWithContainerId = createSharedTopicAttach(false, linkName + "|3", address, false);
         _session.receiveAttach(nonDurableSharedWithContainerId);
         assertAttachSent(_connection, _session, nonDurableSharedWithContainerId, 3);
 
         queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId",
-                            (long) 2,
-                            (long) queues.size());
+        assertEquals(2, (long) queues.size(),
+                "Unexpected number of queues after durable non shared with containerId");
 
         Attach durableSharedWithoutContainerId = createSharedTopicAttach(true, linkName + "|4", address, true);
         secondSession.receiveAttach(durableSharedWithoutContainerId);
         assertAttachSent(secondConnection, secondSession, durableSharedWithoutContainerId, 0);
 
         queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId",
-                            (long) 3,
-                            (long) queues.size());
+        assertEquals(3, (long) queues.size(),
+                "Unexpected number of queues after durable non shared with containerId");
 
         Attach nonDurableSharedWithoutContainerId = createSharedTopicAttach(false, linkName + "|5", address, true);
         secondSession.receiveAttach(nonDurableSharedWithoutContainerId);
         assertAttachSent(secondConnection, secondSession, nonDurableSharedWithoutContainerId, 1);
 
         queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId",
-                            (long) 4,
-                            (long) queues.size());
+        assertEquals(4, (long) queues.size(),
+                "Unexpected number of queues after durable non shared with containerId");
 
         Attach nonDurableNonSharedWithoutContainerId = createTopicAttach(false, linkName + "|6", address, true);
         secondSession.receiveAttach(nonDurableNonSharedWithoutContainerId);
         assertAttachSent(secondConnection, secondSession, nonDurableNonSharedWithoutContainerId, 2);
 
         queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId",
-                            (long) 5,
-                            (long) queues.size());
+        assertEquals(5, (long) queues.size(),
+                "Unexpected number of queues after durable non shared with containerId");
 
         Attach nonDurableNonSharedWithContainerId = createTopicAttach(false, linkName + "|6", address, false);
         _session.receiveAttach(nonDurableNonSharedWithContainerId);
         assertAttachSent(_connection, _session, nonDurableNonSharedWithContainerId, 4);
 
         queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after durable non shared with containerId",
-                            (long) 6,
-                            (long) queues.size());
+        assertEquals(6, (long) queues.size(),
+                "Unexpected number of queues after durable non shared with containerId");
     }
 
     @Test
-    public void testReceiveAttachForInvalidUnsubscribe() throws Exception
+    public void testReceiveAttachForInvalidUnsubscribe()
     {
         final String linkName = "testLink";
         final String address = "amq.direct/" + TOPIC_NAME;
@@ -338,11 +330,11 @@ public class Session_1_0Test extends UnitTestBase
         assertAttachFailed(_connection, _session, unsubscribeAttach);
 
         Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after unsubscribe", (long) 0, (long) queues.size());
+        assertEquals(0, (long) queues.size(), "Unexpected number of queues after unsubscribe");
     }
 
     @Test
-    public void testNullSourceLookup() throws Exception
+    public void testNullSourceLookup()
     {
         final String linkName = "testLink";
         final String address = "amq.direct/" + TOPIC_NAME;
@@ -363,21 +355,21 @@ public class Session_1_0Test extends UnitTestBase
         verify(_connection, times(3)).sendFrame(eq(_session.getChannelId()), frameCapture.capture());
         Attach sentAttach = (Attach) frameCapture.getAllValues().get(2);
 
-        assertEquals("Unexpected name", nullSourceAttach.getName(), sentAttach.getName());
-        assertEquals("Unexpected role", Role.SENDER, sentAttach.getRole());
-        assertNotNull("Unexpected source", sentAttach.getSource());
+        assertEquals(nullSourceAttach.getName(), sentAttach.getName(), "Unexpected name");
+        assertEquals(Role.SENDER, sentAttach.getRole(), "Unexpected role");
+        assertNotNull(sentAttach.getSource(), "Unexpected source");
         Source source = (Source)sentAttach.getSource();
-        assertEquals("Unexpected address", address, source.getAddress());
-        assertTrue("Unexpected source capabilities",
-                          Arrays.asList(source.getCapabilities()).contains(Symbol.valueOf("topic")));
+        assertEquals(address, source.getAddress(), "Unexpected address");
+        assertTrue(Arrays.asList(source.getCapabilities()).contains(Symbol.valueOf("topic")),
+                "Unexpected source capabilities");
 
 
         Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after unsubscribe", (long) 1, (long) queues.size());
+        assertEquals(1, (long) queues.size(), "Unexpected number of queues after unsubscribe");
     }
 
     @Test
-    public void testReceiveDetachClosed() throws Exception
+    public void testReceiveDetachClosed()
     {
         final String linkName = "testLink";
         final String address = "amq.direct/" + TOPIC_NAME;
@@ -391,11 +383,11 @@ public class Session_1_0Test extends UnitTestBase
         sendDetach(_session, attach.getHandle(), true);
 
         Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after unsubscribe", (long) 0, (long) queues.size());
+        assertEquals(0, (long) queues.size(), "Unexpected number of queues after unsubscribe");
     }
 
     @Test
-    public void testReceiveAttachToExistingQueue() throws Exception
+    public void testReceiveAttachToExistingQueue()
     {
         final String linkName = "testLink";
         Attach attach = createQueueAttach(false, linkName, QUEUE_NAME);
@@ -410,7 +402,7 @@ public class Session_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testReceiveAttachToNonExistingQueue() throws Exception
+    public void testReceiveAttachToNonExistingQueue()
     {
         final String linkName = "testLink";
         Attach attach = createQueueAttach(false, linkName, QUEUE_NAME);
@@ -479,7 +471,7 @@ public class Session_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testReceiveAttachTopicNonDurableNoContainerWithInvalidSelector() throws Exception
+    public void testReceiveAttachTopicNonDurableNoContainerWithInvalidSelector()
     {
         final String linkName = "testLink";
         final String address = "amq.direct/" + TOPIC_NAME;
@@ -490,11 +482,11 @@ public class Session_1_0Test extends UnitTestBase
 
         assertAttachFailed(_connection, _session, attach);
         final Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after attach", (long) 0, (long) queues.size());
+        assertEquals((long) 0, (long) queues.size(), "Unexpected number of queues after attach");
     }
 
     @Test
-    public void testReceiveAttachTopicNonDurableNoContainerWithValidSelector() throws Exception
+    public void testReceiveAttachTopicNonDurableNoContainerWithValidSelector()
     {
         final String linkName = "testLink";
         final String address = "amq.direct/" + TOPIC_NAME;
@@ -506,19 +498,18 @@ public class Session_1_0Test extends UnitTestBase
 
         Attach sentAttach = captureAttach(_connection, _session, 0);
 
-        assertEquals("Unexpected name", attach.getName(), sentAttach.getName());
-        assertEquals("Unexpected role", Role.SENDER, sentAttach.getRole());
+        assertEquals(attach.getName(), sentAttach.getName(), "Unexpected name");
+        assertEquals(Role.SENDER, sentAttach.getRole(), "Unexpected role");
         assertFilter(sentAttach, selectorExpression);
 
         assertQueues(TOPIC_NAME, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
 
         Binding binding = findBinding("amq.direct", TOPIC_NAME);
-        assertNotNull("Binding is not found", binding);
+        assertNotNull(binding, "Binding is not found");
         Map<String,Object> arguments = binding.getArguments();
-        assertNotNull("Unexpected arguments", arguments);
-        assertEquals("Unexpected filter on binding",
-                            selectorExpression,
-                            arguments.get(AMQPFilterTypes.JMS_SELECTOR.toString()));
+        assertNotNull(arguments, "Unexpected arguments");
+        assertEquals(selectorExpression, arguments.get(AMQPFilterTypes.JMS_SELECTOR.toString()),
+                "Unexpected filter on binding");
     }
 
     @Test
@@ -532,7 +523,7 @@ public class Session_1_0Test extends UnitTestBase
         session1.receiveAttach(attach);
 
         Link_1_0<?,?> link = _virtualHost.getSendingLink(connection1.getRemoteContainerId(), attach.getName());
-        assertNotNull("Link is not created", link);
+        assertNotNull(link, "Link is not created");
         assertAttachSent(connection1, session1, attach);
 
         AMQPConnection_1_0 connection2 = createAmqpConnection_1_0(connection1.getRemoteContainerId());
@@ -586,23 +577,21 @@ public class Session_1_0Test extends UnitTestBase
     public void assertQueueDurability(final String queueName, final boolean expectedDurability)
     {
         final Queue queue = _virtualHost.getChildByName(Queue.class, queueName);
-        assertNotNull("Queue not found", queue);
-        assertEquals("Unexpected durability", queue.isDurable(), expectedDurability);
+        assertNotNull(queue, "Queue not found");
+        assertEquals(queue.isDurable(), expectedDurability, "Unexpected durability");
     }
 
     private void assertFilter(final Attach sentAttach, final String selectorExpression)
     {
         Source source = (Source)sentAttach.getSource();
         Map<Symbol, Filter> filter = source.getFilter();
-        assertNotNull("Filter is not set in response", filter);
-        assertEquals("Unexpected filter size", (long) 1, (long) filter.size());
-        assertTrue("Selector is not found", filter.containsKey(JMS_SELECTOR_FILTER));
+        assertNotNull(filter, "Filter is not set in response");
+        assertEquals(1, filter.size(), "Unexpected filter size");
+        assertTrue(filter.containsKey(JMS_SELECTOR_FILTER), "Selector is not found");
         Filter jmsSelectorFilter = filter.get(JMS_SELECTOR_FILTER);
         final boolean condition = jmsSelectorFilter instanceof JMSSelectorFilter;
-        assertTrue("Unexpected selector filter", condition);
-        assertEquals("Unexpected selector",
-                            selectorExpression,
-                            ((JMSSelectorFilter) jmsSelectorFilter).getValue());
+        assertTrue(condition, "Unexpected selector filter");
+        assertEquals(selectorExpression, ((JMSSelectorFilter) jmsSelectorFilter).getValue(), "Unexpected selector");
     }
 
     private Binding findBinding(final String exchangeName, final String bindingName)
@@ -632,37 +621,37 @@ public class Session_1_0Test extends UnitTestBase
     private void assertAttachActions(final Queue<?> queue, final Attach receivedAttach)
     {
         Collection<QueueConsumer<?,?>> consumers = queue.getConsumers();
-        assertEquals("Unexpected consumers size", (long) 1, (long) consumers.size());
+        assertEquals(1, (long) consumers.size(), "Unexpected consumers size");
 
         ArgumentCaptor<FrameBody> frameCapture = ArgumentCaptor.forClass(FrameBody.class);
         verify(_connection).sendFrame(eq(_session.getChannelId()), frameCapture.capture());
         Attach sentAttach = (Attach) frameCapture.getValue();
 
-        assertEquals("Unexpected name", receivedAttach.getName(), sentAttach.getName());
-        assertEquals("Unexpected role", Role.SENDER, sentAttach.getRole());
+        assertEquals(receivedAttach.getName(), sentAttach.getName(), "Unexpected name");
+        assertEquals(Role.SENDER, sentAttach.getRole(), "Unexpected role");
 
         Source receivedSource = (Source) receivedAttach.getSource();
         Source sentSource = (Source) sentAttach.getSource();
-        assertEquals("Unexpected source address", receivedSource.getAddress(), sentSource.getAddress());
-        assertArrayEquals("Unexpected source capabilities", receivedSource.getCapabilities(), sentSource.getCapabilities());
-        assertEquals("Unexpected source durability", receivedSource.getDurable(), sentSource.getDurable());
-        assertEquals("Unexpected source expiry policy",
-                            receivedSource.getExpiryPolicy(),
-                            sentSource.getExpiryPolicy());
-        assertEquals("Unexpected source dynamic flag", receivedSource.getDynamic(), sentSource.getDynamic());
+        assertEquals(receivedSource.getAddress(), sentSource.getAddress(), "Unexpected source address");
+        assertArrayEquals(receivedSource.getCapabilities(), sentSource.getCapabilities(),
+                "Unexpected source capabilities");
+        assertEquals(receivedSource.getDurable(), sentSource.getDurable(), "Unexpected source durability");
+        assertEquals(receivedSource.getExpiryPolicy(), sentSource.getExpiryPolicy(),
+                "Unexpected source expiry policy");
+        assertEquals(receivedSource.getDynamic(), sentSource.getDynamic(), "Unexpected source dynamic flag");
 
         Target receivedTarget = (Target) receivedAttach.getTarget();
         Target sentTarget = (Target) sentAttach.getTarget();
-        assertEquals("Unexpected target address", receivedTarget.getAddress(), sentTarget.getAddress());
-        assertArrayEquals("Unexpected target capabilities", receivedTarget.getCapabilities(), sentTarget.getCapabilities());
-        assertEquals("Unexpected target durability", receivedTarget.getDurable(), sentTarget.getDurable());
-        assertEquals("Unexpected target expiry policy",
-                            receivedTarget.getExpiryPolicy(),
-                            sentTarget.getExpiryPolicy());
-        assertEquals("Unexpected target dynamic flag", receivedTarget.getDynamic(), sentTarget.getDynamic());
+        assertEquals(receivedTarget.getAddress(), sentTarget.getAddress(), "Unexpected target address");
+        assertArrayEquals(receivedTarget.getCapabilities(), sentTarget.getCapabilities(),
+                "Unexpected target capabilities");
+        assertEquals(receivedTarget.getDurable(), sentTarget.getDurable(), "Unexpected target durability");
+        assertEquals(receivedTarget.getExpiryPolicy(), sentTarget.getExpiryPolicy(),
+                "Unexpected target expiry policy");
+        assertEquals(receivedTarget.getDynamic(), sentTarget.getDynamic(), "Unexpected target dynamic flag");
 
         final Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after attach", (long) 1, (long) queues.size());
+        assertEquals(1, (long) queues.size(), "Unexpected number of queues after attach");
     }
 
     private void assertDetachSent(final AMQPConnection_1_0 connection,
@@ -675,12 +664,10 @@ public class Session_1_0Test extends UnitTestBase
         List<FrameBody> sentFrames = frameCapture.getAllValues();
 
         final boolean condition = sentFrames.get(invocationOffset) instanceof Detach;
-        assertTrue("unexpected Frame sent", condition);
+        assertTrue(condition, "unexpected Frame sent");
         Detach sentDetach = (Detach) sentFrames.get(invocationOffset);
-        assertTrue("Unexpected closed state", sentDetach.getClosed());
-        assertEquals("Closed with unexpected error condition",
-                            expectedError,
-                            sentDetach.getError().getCondition());
+        assertTrue(sentDetach.getClosed(), "Unexpected closed state");
+        assertEquals(expectedError, sentDetach.getError().getCondition(), "Closed with unexpected error condition");
     }
 
     private void assertAttachSent(final AMQPConnection_1_0 connection,
@@ -697,8 +684,8 @@ public class Session_1_0Test extends UnitTestBase
     {
         Attach sentAttach = captureAttach(connection, session, invocationOffset);
 
-        assertEquals("Unexpected name", receivedAttach.getName(), sentAttach.getName());
-        assertEquals("Unexpected role", Role.SENDER, sentAttach.getRole());
+        assertEquals(receivedAttach.getName(), sentAttach.getName(), "Unexpected name");
+        assertEquals(Role.SENDER, sentAttach.getRole(), "Unexpected role");
     }
 
     private Attach captureAttach(final AMQPConnection_1_0 connection,
@@ -714,18 +701,16 @@ public class Session_1_0Test extends UnitTestBase
     private void assertQueues(final String publishingLinkName, final LifetimePolicy expectedLifetimePolicy)
     {
         final Collection<Queue> queues = _virtualHost.getChildren(Queue.class);
-        assertEquals("Unexpected number of queues after attach", (long) 1, (long) queues.size());
+        assertEquals(1, (long) queues.size(), "Unexpected number of queues after attach");
         Queue<?> queue = queues.iterator().next();
-        assertEquals("Unexpected queue durability", expectedLifetimePolicy, queue.getLifetimePolicy());
+        assertEquals(expectedLifetimePolicy, queue.getLifetimePolicy(), "Unexpected queue durability");
 
         Collection<PublishingLink> queuePublishingLinks = queue.getPublishingLinks();
-        assertEquals("Unexpected number of publishing links", (long) 1, (long) queuePublishingLinks.size());
-        assertEquals("Unexpected link name",
-                            publishingLinkName,
-                            queuePublishingLinks.iterator().next().getName());
+        assertEquals(1, (long) queuePublishingLinks.size(), "Unexpected number of publishing links");
+        assertEquals(publishingLinkName, queuePublishingLinks.iterator().next().getName(), "Unexpected link name");
 
         Exchange<?> exchange = _virtualHost.getChildByName(Exchange.class, "amq.direct");
-        assertTrue("Binding should exist", exchange.hasBinding(publishingLinkName, queue));
+        assertTrue(exchange.hasBinding(publishingLinkName, queue), "Binding should exist");
     }
 
     private void assertAttachFailed(final AMQPConnection_1_0 connection, final Session_1_0 session, final Attach attach, int invocationOffset)
@@ -735,16 +720,16 @@ public class Session_1_0Test extends UnitTestBase
         List<FrameBody> sentFrames = frameCapture.getAllValues();
 
         final boolean condition1 = sentFrames.get(invocationOffset) instanceof Attach;
-        assertTrue("unexpected Frame sent", condition1);
+        assertTrue(condition1, "unexpected Frame sent");
         Attach sentAttach = (Attach) sentFrames.get(invocationOffset);
-        assertEquals("Unexpected name", attach.getName(), sentAttach.getName());
-        assertEquals("Unexpected role", Role.SENDER, sentAttach.getRole());
-        assertEquals("Unexpected source", null, sentAttach.getSource());
+        assertEquals(attach.getName(), sentAttach.getName(), "Unexpected name");
+        assertEquals(Role.SENDER, sentAttach.getRole(), "Unexpected role");
+        assertNull(sentAttach.getSource(), "Unexpected source");
 
         final boolean condition = sentFrames.get(invocationOffset + 1) instanceof Detach;
-        assertTrue("unexpected Frame sent", condition);
+        assertTrue(condition, "unexpected Frame sent");
         Detach sentDetach = (Detach) sentFrames.get(invocationOffset + 1);
-        assertTrue("Unexpected closed state", sentDetach.getClosed());
+        assertTrue(sentDetach.getClosed(), "Unexpected closed state");
     }
 
     private void assertAttachFailed(final AMQPConnection_1_0 connection, final Session_1_0 session, final Attach attach)
@@ -848,14 +833,10 @@ public class Session_1_0Test extends UnitTestBase
         when(connection.getDescribedTypeRegistry()).thenReturn(DESCRIBED_TYPE_REGISTRY);
         when(connection.getMaxFrameSize()).thenReturn(512);
         final ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
-        when(connection.doOnIOThreadAsync(runnableCaptor.capture())).thenAnswer(new Answer<ListenableFuture<Void>>()
+        when(connection.doOnIOThreadAsync(runnableCaptor.capture())).thenAnswer((Answer<ListenableFuture<Void>>) invocation ->
         {
-            @Override
-            public ListenableFuture<Void> answer(final InvocationOnMock invocation) throws Throwable
-            {
-                runnableCaptor.getValue().run();
-                return Futures.immediateFuture(null);
-            }
+            runnableCaptor.getValue().run();
+            return Futures.immediateFuture(null);
         });
         AggregateTicker mockTicker = mock(AggregateTicker.class);
         when(connection.getAggregateTicker()).thenReturn(mockTicker);

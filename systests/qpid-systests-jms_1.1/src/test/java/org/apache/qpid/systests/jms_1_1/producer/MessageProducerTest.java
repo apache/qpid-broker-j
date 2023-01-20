@@ -25,9 +25,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import javax.jms.Connection;
 import javax.jms.InvalidDestinationException;
@@ -36,7 +35,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.JmsTestBase;
@@ -46,7 +45,7 @@ public class MessageProducerTest extends JmsTestBase
     @Test
     public void produceToUnknownQueue() throws Exception
     {
-        assumeThat("QPID-7818", getProtocol(), is(not(equalTo(Protocol.AMQP_0_10))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_0_10))).matches(getProtocol()), "QPID-7818");
 
         Connection connection = getConnectionBuilder().setSyncPublish(true).build();
 
@@ -81,7 +80,7 @@ public class MessageProducerTest extends JmsTestBase
     @Test
     public void anonymousSenderSendToUnknownQueue() throws Exception
     {
-        assumeThat("QPID-7818", getProtocol(), is(not(equalTo(Protocol.AMQP_0_10))));
+        assumeTrue(is(not(equalTo(Protocol.AMQP_0_10))).matches(getProtocol()), "QPID-7818");
 
         Connection connection = getConnectionBuilder().setSyncPublish(true).build();
 
@@ -106,12 +105,10 @@ public class MessageProducerTest extends JmsTestBase
                            getProtocol(), is(not(equalTo(Protocol.AMQP_1_0))));
                 //PASS
             }
-
         }
         finally
         {
             connection.close();
         }
     }
-
 }

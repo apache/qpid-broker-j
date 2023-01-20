@@ -28,10 +28,10 @@ import static org.apache.qpid.server.test.KerberosUtilities.LOGIN_CONFIG;
 import static org.apache.qpid.server.test.KerberosUtilities.REALM;
 import static org.apache.qpid.server.test.KerberosUtilities.SERVER_PROTOCOL;
 import static org.apache.qpid.server.test.KerberosUtilities.SERVICE_PRINCIPAL_NAME;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,9 +40,9 @@ import java.security.Principal;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Base64;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.security.auth.Subject;
 import javax.security.auth.kerberos.KerberosPrincipal;
@@ -51,10 +51,10 @@ import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslClient;
 
 import org.apache.qpid.server.security.TokenCarryingPrincipal;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AuthenticationProvider;
@@ -63,9 +63,9 @@ import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
-import org.apache.qpid.server.test.EmbeddedKdcResource;
 import org.apache.qpid.server.test.KerberosUtilities;
 import org.apache.qpid.server.util.StringUtil;
+import org.apache.qpid.test.utils.EmbeddedKdcExtension;
 import org.apache.qpid.test.utils.SystemPropertySetter;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -75,13 +75,11 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
     private static final String ANOTHER_SERVICE_FULL_NAME = ANOTHER_SERVICE + "@" + REALM;
     private static final KerberosUtilities UTILS = new KerberosUtilities();
 
-    @ClassRule
-    public static final EmbeddedKdcResource KDC = new EmbeddedKdcResource(HOST_NAME,
-                                                                          0,
-                                                                          "QpidTestKerberosServer",
-                                                                          REALM);
+    @RegisterExtension
+    public static final EmbeddedKdcExtension KDC = new EmbeddedKdcExtension(
+            HOST_NAME, 0, "QpidTestKerberosServer", REALM);
 
-    @ClassRule
+    @RegisterExtension
     public static final SystemPropertySetter SYSTEM_PROPERTY_SETTER = new SystemPropertySetter();
 
     private static File _clientKeyTabFile;
@@ -91,7 +89,7 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
     private Broker<?> _broker;
     private SpnegoAuthenticator _spnegoAuthenticator;
 
-    @BeforeClass
+    @BeforeAll
     public static void createKeyTabs() throws Exception
     {
         KDC.createPrincipal("another.keytab", ANOTHER_SERVICE_FULL_NAME);
@@ -99,7 +97,7 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
         _clientKeyTabFile = UTILS.prepareKeyTabs(KDC);
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         SYSTEM_PROPERTY_SETTER.setSystemProperty(LOGIN_CONFIG, _config);
@@ -116,13 +114,12 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
         final SaslNegotiator negotiator = _kerberosAuthenticationProvider.createSaslNegotiator(GSSAPI_MECHANISM,
                                                                                                saslSettings,
                                                                                                null);
-        assertNotNull("Could not create SASL negotiator", negotiator);
+        assertNotNull(negotiator, "Could not create SASL negotiator");
         try
         {
             final AuthenticationResult result = authenticate(negotiator);
             assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus());
-            assertEquals(new KerberosPrincipal(CLIENT_PRINCIPAL_FULL_NAME).getName(),
-                         result.getMainPrincipal().getName());
+            assertEquals(new KerberosPrincipal(CLIENT_PRINCIPAL_FULL_NAME).getName(), result.getMainPrincipal().getName());
         }
         finally
         {
@@ -134,48 +131,32 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
     public void testSeveralKerberosAuthenticationProviders()
     {
         final Map<String, Object> attributes =
-                Collections.singletonMap(AuthenticationProvider.NAME, getTestName() + "2");
+                Map.of(AuthenticationProvider.NAME, getTestName() + "2");
         final KerberosAuthenticationManager kerberosAuthenticationProvider =
                 new KerberosAuthenticationManager(attributes, _broker);
-        try
-        {
-            kerberosAuthenticationProvider.create();
-            fail("Exception expected");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
+
+        assertThrows(IllegalConfigurationException.class, kerberosAuthenticationProvider::create, "Exception expected");
     }
 
     @Test
     public void testCreateKerberosAuthenticationProvidersWithNonExistingJaasLoginModule()
     {
-        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Collections.emptySet());
-        SYSTEM_PROPERTY_SETTER.setSystemProperty(LOGIN_CONFIG,
-                                                 "config.module." + System.nanoTime());
-        final Map<String, Object> attributes = Collections.singletonMap(AuthenticationProvider.NAME, getTestName());
+        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Set.of());
+        SYSTEM_PROPERTY_SETTER.setSystemProperty(LOGIN_CONFIG, "config.module." + System.nanoTime());
+        final Map<String, Object> attributes = Map.of(AuthenticationProvider.NAME, getTestName());
         final KerberosAuthenticationManager kerberosAuthenticationProvider =
                 new KerberosAuthenticationManager(attributes, _broker);
-        try
-        {
-            kerberosAuthenticationProvider.create();
-            fail("Exception expected");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
+
+        assertThrows(IllegalConfigurationException.class, kerberosAuthenticationProvider::create, "Exception expected");
     }
 
     @Test
     public void testAuthenticateUsingNegotiationToken() throws Exception
     {
-        byte[] negotiationTokenBytes =
+        final byte[] negotiationTokenBytes =
                 UTILS.buildToken(CLIENT_PRINCIPAL_NAME, _clientKeyTabFile, SERVICE_PRINCIPAL_NAME);
         final String token = Base64.getEncoder().encodeToString(negotiationTokenBytes);
         final String authenticationHeader = SpnegoAuthenticator.NEGOTIATE_PREFIX + token;
-
         final AuthenticationResult result = _kerberosAuthenticationProvider.authenticate(authenticationHeader);
 
         assertNotNull(result);
@@ -187,14 +168,14 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
     {
         final String token = Base64.getEncoder().encodeToString(buildToken(SERVICE_PRINCIPAL_NAME));
         final String authenticationHeader = SpnegoAuthenticator.NEGOTIATE_PREFIX + token;
-
         final AuthenticationResult result = _spnegoAuthenticator.authenticate(authenticationHeader);
 
         assertNotNull(result);
         assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus());
+
         final Principal principal = result.getMainPrincipal();
         assertTrue(principal instanceof TokenCarryingPrincipal);
-        assertEquals(KerberosUtilities.CLIENT_PRINCIPAL_FULL_NAME, principal.getName());
+        assertEquals(CLIENT_PRINCIPAL_FULL_NAME, principal.getName());
 
         final Map<String, String> tokens = ((TokenCarryingPrincipal)principal).getTokens();
         assertNotNull(tokens);
@@ -265,14 +246,13 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
 
     private KerberosAuthenticationManager createKerberosAuthenticationProvider(String acceptScope)
     {
-        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Collections.emptyList());
-        final Map<String, String> context = Collections.singletonMap(KerberosAuthenticationManager.GSSAPI_SPNEGO_CONFIG, acceptScope);
-        final Map<String, Object> attributes = new HashMap<>();
-        attributes.put(AuthenticationProvider.NAME, getTestName());
-        attributes.put(AuthenticationProvider.CONTEXT, context);
+        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(List.of());
+        final Map<String, String> context = Map.of(KerberosAuthenticationManager.GSSAPI_SPNEGO_CONFIG, acceptScope);
+        final Map<String, Object> attributes = Map.of(AuthenticationProvider.NAME, getTestName(),
+                AuthenticationProvider.CONTEXT, context);
         KerberosAuthenticationManager kerberosAuthenticationProvider = new KerberosAuthenticationManager(attributes, _broker);
         kerberosAuthenticationProvider.create();
-        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Collections.singleton(kerberosAuthenticationProvider));
+        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Set.of(kerberosAuthenticationProvider));
         return kerberosAuthenticationProvider;
     }
 
@@ -283,8 +263,7 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
 
     private AuthenticationResult authenticate(final SaslNegotiator negotiator) throws Exception
     {
-        final LoginContext lc = UTILS.createKerberosKeyTabLoginContext(getTestName(),
-                                                                       CLIENT_PRINCIPAL_FULL_NAME,
+        final LoginContext lc = UTILS.createKerberosKeyTabLoginContext(getTestName(),CLIENT_PRINCIPAL_FULL_NAME,
                                                                        _clientKeyTabFile);
 
         Subject clientSubject = null;
@@ -305,7 +284,7 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
         }
     }
 
-    private void debug(String message, Object... args)
+    private void debug(final String message, final Object... args)
     {
         UTILS.debug(message, args);
     }
@@ -324,7 +303,8 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
             {
                 initiated = true;
                 debug("Sending initial challenge");
-                response = Subject.doAs(clientSubject, (PrivilegedExceptionAction<byte[]>) () -> {
+                response = Subject.doAs(clientSubject, (PrivilegedExceptionAction<byte[]>) () ->
+                {
                     if (saslClient.hasInitialResponse())
                     {
                         return saslClient.evaluateChallenge(new byte[0]);
@@ -337,14 +317,13 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
             debug("Handling response: {}", StringUtil.toHex(response));
             result = negotiator.handleResponse(response);
 
-            byte[] challenge = result.getChallenge();
+            final byte[] challenge = result.getChallenge();
 
             if (challenge != null)
             {
                 debug("Challenge: {}", StringUtil.toHex(challenge));
-                response = Subject.doAs(clientSubject,
-                                        (PrivilegedExceptionAction<byte[]>) () -> saslClient.evaluateChallenge(
-                                                challenge));
+                response = Subject.doAs(clientSubject, (PrivilegedExceptionAction<byte[]>) () ->
+                        saslClient.evaluateChallenge(challenge));
             }
         }
         while (result.getStatus() == AuthenticationResult.AuthenticationStatus.CONTINUE);
@@ -355,17 +334,10 @@ public class KerberosAuthenticationManagerTest extends UnitTestBase
 
     private SaslClient createSaslClient(final Subject clientSubject) throws PrivilegedActionException
     {
-        return Subject.doAs(clientSubject, (PrivilegedExceptionAction<SaslClient>) () -> {
-
-            final Map<String, String> props =
-                    Collections.singletonMap("javax.security.sasl.server.authentication", "true");
-
-            return Sasl.createSaslClient(new String[]{GSSAPI_MECHANISM},
-                                         null,
-                                         SERVER_PROTOCOL,
-                                         HOST_NAME,
-                                         props,
-                                         null);
+        return Subject.doAs(clientSubject, (PrivilegedExceptionAction<SaslClient>) () ->
+        {
+            final Map<String, String> props = Map.of("javax.security.sasl.server.authentication", "true");
+            return Sasl.createSaslClient(new String[]{GSSAPI_MECHANISM}, null, SERVER_PROTOCOL, HOST_NAME, props, null);
         });
     }
 }

@@ -19,10 +19,10 @@
 
 package org.apache.qpid.server.model.testmodels.lifecycle;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -39,10 +39,10 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.plugin.ConfiguredObjectAttributeInjector;
 import org.apache.qpid.server.plugin.ConfiguredObjectRegistration;
 
 @ManagedObject
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class TestConfiguredObject extends AbstractConfiguredObject
 {
     private boolean _opened;
@@ -62,7 +62,7 @@ public class TestConfiguredObject extends AbstractConfiguredObject
 
     public TestConfiguredObject(String name, ConfiguredObject<?> parent, TaskExecutor taskExecutor)
     {
-        this(parent, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, name), taskExecutor, TestConfiguredObjectModel.INSTANCE);
+        this(parent, Map.of(ConfiguredObject.NAME, name), taskExecutor, TestConfiguredObjectModel.INSTANCE);
     }
 
     public TestConfiguredObject(ConfiguredObject<?> parent, Map<String, Object> attributes, TaskExecutor taskExecutor, Model model)
@@ -126,6 +126,7 @@ public class TestConfiguredObject extends AbstractConfiguredObject
     }
 
     @StateTransition( currentState = {State.ERRORED, State.UNINITIALIZED}, desiredState = State.ACTIVE )
+    @SuppressWarnings("unused")
     protected ListenableFuture<Void> activate()
     {
         if (_throwExceptionOnActivate)
@@ -194,16 +195,16 @@ public class TestConfiguredObject extends AbstractConfiguredObject
 
     public static class TestConfiguredObjectModel extends  Model
     {
-        private static final Collection<Class<? extends ConfiguredObject>> CATEGORIES = Collections.<Class<? extends ConfiguredObject>>singleton(TestConfiguredObject.class);
         private static final TestConfiguredObjectModel INSTANCE = new TestConfiguredObjectModel();
 
+        private final Collection<Class<? extends ConfiguredObject>> CATEGORIES = Set.of(TestConfiguredObject.class);
         private final ConfiguredObjectFactoryImpl _configuredObjectFactory;
         private final ConfiguredObjectTypeRegistry _configuredObjectTypeRegistry;
 
         private TestConfiguredObjectModel()
         {
             _configuredObjectFactory = new ConfiguredObjectFactoryImpl(this);
-            ConfiguredObjectRegistration configuredObjectRegistration = new ConfiguredObjectRegistration()
+            final ConfiguredObjectRegistration configuredObjectRegistration = new ConfiguredObjectRegistration()
             {
                 @Override
                 public Collection<Class<? extends ConfiguredObject>> getConfiguredObjectClasses()
@@ -217,8 +218,8 @@ public class TestConfiguredObject extends AbstractConfiguredObject
                     return TestConfiguredObjectModel.class.getSimpleName();
                 }
             };
-            _configuredObjectTypeRegistry = new ConfiguredObjectTypeRegistry(Arrays.asList(configuredObjectRegistration),
-                                                                             Collections.<ConfiguredObjectAttributeInjector>emptySet(),
+            _configuredObjectTypeRegistry = new ConfiguredObjectTypeRegistry(List.of(configuredObjectRegistration),
+                                                                             Set.of(),
                                                                              CATEGORIES,
                                                                              _configuredObjectFactory);
         }
@@ -234,7 +235,7 @@ public class TestConfiguredObject extends AbstractConfiguredObject
         {
             return TestConfiguredObject.class.isAssignableFrom(parent)
                     ? CATEGORIES
-                    : Collections.<Class<? extends ConfiguredObject>>emptySet();
+                    : Set.of();
         }
 
         @Override

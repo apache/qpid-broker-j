@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.server.management.plugin;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,8 +30,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
@@ -44,84 +46,76 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class HttpManagementTest extends UnitTestBase
 {
-    private UUID _id;
-    private Broker _broker;
     private HttpManagement _management;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        _id = UUID.randomUUID();
-        _broker = mock(Broker.class);
+        UUID id = UUID.randomUUID();
+        Broker broker = mock(Broker.class);
         ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
 
-        when(_broker.getObjectFactory()).thenReturn(objectFactory);
-        when(_broker.getModel()).thenReturn(objectFactory.getModel());
-        when(_broker.getCategoryClass()).thenReturn(Broker.class);
-        when(_broker.getEventLogger()).thenReturn(mock(EventLogger.class));
+        when(broker.getObjectFactory()).thenReturn(objectFactory);
+        when(broker.getModel()).thenReturn(objectFactory.getModel());
+        when(broker.getCategoryClass()).thenReturn(Broker.class);
+        when(broker.getEventLogger()).thenReturn(mock(EventLogger.class));
         TaskExecutor taskExecutor = new TaskExecutorImpl();
         taskExecutor.start();
-        when(_broker.getTaskExecutor()).thenReturn(taskExecutor);
-        when(_broker.getChildExecutor()).thenReturn(taskExecutor);
+        when(broker.getTaskExecutor()).thenReturn(taskExecutor);
+        when(broker.getChildExecutor()).thenReturn(taskExecutor);
 
 
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put(HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, false);
         attributes.put(HttpManagement.HTTPS_BASIC_AUTHENTICATION_ENABLED, true);
         attributes.put(HttpManagement.HTTP_SASL_AUTHENTICATION_ENABLED, false);
         attributes.put(HttpManagement.HTTPS_SASL_AUTHENTICATION_ENABLED, true);
         attributes.put(HttpManagement.NAME, getTestName());
         attributes.put(HttpManagement.TIME_OUT, 10000L);
-        attributes.put(ConfiguredObject.ID, _id);
+        attributes.put(ConfiguredObject.ID, id);
         attributes.put(HttpManagement.DESIRED_STATE, State.QUIESCED);
-        _management = new HttpManagement(attributes, _broker);
+        _management = new HttpManagement(attributes, broker);
         _management.open();
     }
 
     @Test
     public void testGetSessionTimeout()
     {
-        assertEquals("Unexpected session timeout", 10000L, (long) _management.getSessionTimeout());
+        assertEquals(10000L, _management.getSessionTimeout(), "Unexpected session timeout");
     }
 
     @Test
     public void testGetName()
     {
-        assertEquals("Unexpected name", getTestName(), _management.getName());
+        assertEquals(getTestName(), _management.getName(), "Unexpected name");
     }
 
     @Test
     public void testIsHttpsSaslAuthenticationEnabled()
     {
-        assertEquals("Unexpected value for the https sasl enabled attribute",
-                            true,
-                            _management.isHttpsSaslAuthenticationEnabled());
+        assertTrue(_management.isHttpsSaslAuthenticationEnabled(),
+                "Unexpected value for the https sasl enabled attribute");
 
     }
 
     @Test
     public void testIsHttpSaslAuthenticationEnabled()
     {
-        assertEquals("Unexpected value for the http sasl enabled attribute",
-                            false,
-                            _management.isHttpSaslAuthenticationEnabled());
+        assertFalse(_management.isHttpSaslAuthenticationEnabled(),
+                "Unexpected value for the http sasl enabled attribute");
     }
 
     @Test
     public void testIsHttpsBasicAuthenticationEnabled()
     {
-        assertEquals("Unexpected value for the https basic authentication enabled attribute",
-                            true,
-                            _management.isHttpsBasicAuthenticationEnabled());
+        assertTrue(_management.isHttpsBasicAuthenticationEnabled(),
+                "Unexpected value for the https basic authentication enabled attribute");
     }
 
     @Test
     public void testIsHttpBasicAuthenticationEnabled()
     {
-        assertEquals("Unexpected value for the http basic authentication enabled attribute",
-                            false,
-                            _management.isHttpBasicAuthenticationEnabled());
+        assertFalse(_management.isHttpBasicAuthenticationEnabled(),
+                "Unexpected value for the http basic authentication enabled attribute");
     }
-
-
 }

@@ -18,18 +18,17 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.qpid.test.utils.UnitTestBase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.Collections;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public class ObjectPropertiesTest extends UnitTestBase
 {
@@ -227,8 +226,8 @@ public class ObjectPropertiesTest extends UnitTestBase
         assertNotEquals(first, another);
         assertNotEquals(another, first);
 
-        assertFalse(first.equals("first"));
-        assertFalse(first.equals(null));
+        assertNotEquals("first", first);
+        assertNotEquals(null, first);
     }
 
     @Test

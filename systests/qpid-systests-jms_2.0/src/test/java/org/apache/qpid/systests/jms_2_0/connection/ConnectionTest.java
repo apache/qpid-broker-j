@@ -20,11 +20,11 @@
 
 package org.apache.qpid.systests.jms_2_0.connection;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import javax.jms.Connection;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.systests.JmsTestBase;
 
@@ -37,6 +37,5 @@ public class ConnectionTest extends JmsTestBase
         {
             assertNotNull(con);
         }
-
     }
 }

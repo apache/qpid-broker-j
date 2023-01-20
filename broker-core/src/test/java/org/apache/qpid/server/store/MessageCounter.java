@@ -24,12 +24,10 @@ import org.apache.qpid.server.store.handler.MessageHandler;
 
 public class MessageCounter implements MessageHandler
 {
-
     private int _count;
 
-
     @Override
-    public boolean handle(StoredMessage<?> storedMessage)
+    public boolean handle(final StoredMessage<?> storedMessage)
     {
         _count++;
         return true;

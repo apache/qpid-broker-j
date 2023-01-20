@@ -27,12 +27,10 @@ import static org.mockito.Mockito.mock;
 
 public class MemoryMessageStoreTest extends MessageStoreTestCase
 {
-
     @Override
-    protected VirtualHost createVirtualHost()
+    protected VirtualHost<?> createVirtualHost()
     {
-        final TestMemoryVirtualHost parent = mock(TestMemoryVirtualHost.class);
-        return parent;
+        return mock(TestMemoryVirtualHost.class);
     }
 
     @Override
@@ -48,9 +46,8 @@ public class MemoryMessageStoreTest extends MessageStoreTestCase
     }
 
     @Override
-    protected void reopenStore() throws Exception
+    protected void reopenStore()
     {
         // cannot re-open memory message store as it is not persistent
     }
-
 }

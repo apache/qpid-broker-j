@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,7 +29,8 @@ import java.util.Collection;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
@@ -39,15 +40,7 @@ import org.apache.qpid.test.utils.UnitTestBase;
 public class UnacknowledgedMessageMapTest extends UnitTestBase
 {
     public static final Function<MessageConsumerAssociation, MessageInstance>
-            MESSAGE_INSTANCE_FUNCTION = new Function<MessageConsumerAssociation, MessageInstance>()
-
-    {
-        @Override
-        public MessageInstance apply(final MessageConsumerAssociation input)
-        {
-            return input.getMessageInstance();
-        }
-    };
+            MESSAGE_INSTANCE_FUNCTION = input -> input.getMessageInstance();
     private final MessageInstanceConsumer _consumer = mock(MessageInstanceConsumer.class);
 
     @Test
@@ -56,14 +49,14 @@ public class UnacknowledgedMessageMapTest extends UnitTestBase
         UnacknowledgedMessageMap map = new UnacknowledgedMessageMapImpl(100, mock(CreditRestorer.class));
         final int expectedSize = 5;
         MessageInstance[] msgs = populateMap(map,expectedSize);
-        assertEquals((long) expectedSize, (long) map.size());
+        assertEquals(expectedSize, (long) map.size());
         Collection<MessageConsumerAssociation> acknowledged = map.acknowledge(100, true);
         Collection<MessageInstance> acknowledgedMessages = Collections2.transform(acknowledged, MESSAGE_INSTANCE_FUNCTION);
-        assertEquals((long) expectedSize, (long) acknowledged.size());
-        assertEquals((long) 0, (long) map.size());
+        assertEquals(expectedSize, (long) acknowledged.size());
+        assertEquals(0, (long) map.size());
         for(int i = 0; i < expectedSize; i++)
         {
-            assertTrue("Message " + i + " is missing", acknowledgedMessages.contains(msgs[i]));
+            assertTrue(acknowledgedMessages.contains(msgs[i]), "Message " + i + " is missing");
         }
 
         map = new UnacknowledgedMessageMapImpl(100, mock(CreditRestorer.class));
@@ -72,17 +65,16 @@ public class UnacknowledgedMessageMapTest extends UnitTestBase
         when(msgs[2].makeAcquisitionUnstealable(_consumer)).thenReturn(Boolean.FALSE);
         when(msgs[4].makeAcquisitionUnstealable(_consumer)).thenReturn(Boolean.FALSE);
 
-        assertEquals((long) expectedSize, (long) map.size());
+        assertEquals(expectedSize, (long) map.size());
 
         acknowledged = map.acknowledge(100, true);
         acknowledgedMessages = Collections2.transform(acknowledged, MESSAGE_INSTANCE_FUNCTION);
-        assertEquals((long) (expectedSize - 2), (long) acknowledged.size());
-        assertEquals((long) 0, (long) map.size());
+        assertEquals(expectedSize - 2, (long) acknowledged.size());
+        assertEquals(0, (long) map.size());
         for(int i = 0; i < expectedSize; i++)
         {
             assertEquals(i != 2 && i != 4, acknowledgedMessages.contains(msgs[i]));
         }
-
     }
 
     public MessageInstance[] populateMap(final UnacknowledgedMessageMap map, int size)

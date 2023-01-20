@@ -21,11 +21,11 @@
 
 package org.apache.qpid.tests.utils;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -33,7 +33,7 @@ public class BrokerAdminFactoryTest extends UnitTestBase
 {
     private BrokerAdminFactory _factory;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _factory = new BrokerAdminFactory();

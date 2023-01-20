@@ -18,6 +18,9 @@
  */
 package org.apache.qpid.server.security.access.firewall;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.Collections;
 
 import javax.security.auth.Subject;
@@ -30,11 +33,9 @@ import org.apache.qpid.server.security.access.config.RulePredicate;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-import org.junit.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.mockito.Mockito;
 
 public class FirewallRuleTest extends UnitTestBase
 {
@@ -75,5 +76,4 @@ public class FirewallRuleTest extends UnitTestBase
         assertFalse(RulePredicate.any().and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
         assertFalse(rule2.and(RulePredicate.any()).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
     }
-
 }

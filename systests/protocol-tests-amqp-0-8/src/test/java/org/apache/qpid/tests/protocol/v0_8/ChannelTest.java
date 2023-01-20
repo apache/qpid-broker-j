@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;

@@ -20,27 +20,26 @@
  */
 package org.apache.qpid.server.model.adapter;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -64,59 +63,60 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.model.port.PortFactory;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class PortFactoryTest extends UnitTestBase
 {
-    private final UUID _portId = UUID.randomUUID();
-    private final Set<String> _tcpStringSet = Collections.singleton(Transport.TCP.name());
-    private final Set<Transport> _tcpTransports = Collections.singleton(Transport.TCP);
-    private final Set<String> _sslStringSet = Collections.singleton(Transport.SSL.name());
-    private final Set<Transport> _sslTransports = Collections.singleton(Transport.SSL);
+    private final UUID _portId = randomUUID();
+    private final Set<String> _tcpStringSet = Set.of(Transport.TCP.name());
+    private final Set<Transport> _tcpTransports = Set.of(Transport.TCP);
+    private final Set<String> _sslStringSet = Set.of(Transport.SSL.name());
+    private final Set<Transport> _sslTransports = Set.of(Transport.SSL);
     private final Broker _broker = BrokerTestHelper.mockWithSystemPrincipal(Broker.class, mock(Principal.class));
-    private final KeyStore _keyStore = mock(KeyStore.class);
-    private final TrustStore _trustStore = mock(TrustStore.class);
+    private final KeyStore<?> _keyStore = mock(KeyStore.class);
+    private final TrustStore<?> _trustStore = mock(TrustStore.class);
     private final String _authProviderName = "authProvider";
     private final AuthenticationProvider _authProvider = mock(AuthenticationProvider.class);
 
-    private Map<String, Object> _attributes = new HashMap<String, Object>();
+    private Map<String, Object> _attributes = new HashMap<>();
     private int _portNumber;
     private ConfiguredObjectFactoryImpl _factory;
     private Port<?> _port;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        SystemConfig systemConfig = mock(SystemConfig.class);
+        final SystemConfig systemConfig = mock(SystemConfig.class);
         _portNumber = findFreePort();
-        TaskExecutor executor = CurrentThreadTaskExecutor.newStartedInstance();
+        final TaskExecutor executor = CurrentThreadTaskExecutor.newStartedInstance();
         when(_authProvider.getName()).thenReturn(_authProviderName);
-        when(_broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Collections.singleton(_authProvider));
+        when(_broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Set.of(_authProvider));
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
         when(_broker.getParent()).thenReturn(systemConfig);
         when(_broker.getTypeClass()).thenReturn(Broker.class);
 
-        ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
+        final ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(_broker.getObjectFactory()).thenReturn(objectFactory);
         when(_broker.getModel()).thenReturn(objectFactory.getModel());
         when(_authProvider.getModel()).thenReturn(objectFactory.getModel());
         when(_authProvider.getObjectFactory()).thenReturn(objectFactory);
         when(_authProvider.getCategoryClass()).thenReturn(AuthenticationProvider.class);
-        when(_authProvider.getMechanisms()).thenReturn(Arrays.asList("PLAIN"));
-
+        when(_authProvider.getMechanisms()).thenReturn(List.of("PLAIN"));
 
         when(_keyStore.getModel()).thenReturn(objectFactory.getModel());
         when(_keyStore.getObjectFactory()).thenReturn(objectFactory);
         when(_trustStore.getModel()).thenReturn(objectFactory.getModel());
         when(_trustStore.getObjectFactory()).thenReturn(objectFactory);
 
-        for(ConfiguredObject obj : new ConfiguredObject[]{_authProvider, _broker, _keyStore, _trustStore})
+        for (final ConfiguredObject obj : List.of(_authProvider, _broker, _keyStore, _trustStore))
         {
             when(obj.getTaskExecutor()).thenReturn(executor);
             when(obj.getChildExecutor()).thenReturn(executor);
         }
 
-
         _factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
+
+        _attributes.clear();
         _attributes.put(Port.ID, _portId);
         _attributes.put(Port.NAME, getTestName());
         _attributes.put(Port.PORT, _portNumber);
@@ -126,52 +126,39 @@ public class PortFactoryTest extends UnitTestBase
         _attributes.put(Port.BINDING_ADDRESS, "127.0.0.1");
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
-        try
+        if (_port != null)
         {
-            if (_port != null)
-            {
-                _port.close();
-            }
-        }
-        finally
-        {
+            _port.close();
         }
     }
 
     @Test
     public void testCreatePortWithMinimumAttributes()
     {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Port.PORT, _portNumber);
-        attributes.put(Port.NAME, getTestName());
-        attributes.put(Port.AUTHENTICATION_PROVIDER, _authProviderName);
-        attributes.put(Port.DESIRED_STATE, State.QUIESCED);
+        final Map<String, Object> attributes = Map.of(Port.PORT, _portNumber,
+                Port.NAME, getTestName(),
+                Port.AUTHENTICATION_PROVIDER, _authProviderName,
+                Port.DESIRED_STATE, State.QUIESCED);
 
         _port = _factory.create(Port.class, attributes, _broker);
 
         assertNotNull(_port);
         final boolean condition = _port instanceof AmqpPort;
         assertTrue(condition);
-        assertEquals("Unexpected _port", (long) _portNumber, (long) _port.getPort());
-        assertEquals("Unexpected transports",
-                            Collections.singleton(PortFactory.DEFAULT_TRANSPORT),
-                            _port.getTransports());
+        assertEquals(_portNumber, (long) _port.getPort(), "Unexpected _port");
+        assertEquals(Set.of(PortFactory.DEFAULT_TRANSPORT),_port.getTransports(), "Unexpected transports");
 
-        assertEquals("Unexpected need client auth",
-                            PortFactory.DEFAULT_AMQP_NEED_CLIENT_AUTH,
-                            _port.getAttribute(Port.NEED_CLIENT_AUTH));
-        assertEquals("Unexpected want client auth",
-                            PortFactory.DEFAULT_AMQP_WANT_CLIENT_AUTH,
-                            _port.getAttribute(Port.WANT_CLIENT_AUTH));
-        assertEquals("Unexpected tcp no delay",
-                            PortFactory.DEFAULT_AMQP_TCP_NO_DELAY,
-                            _port.getAttribute(Port.TCP_NO_DELAY));
-        assertEquals("Unexpected binding",
-                            PortFactory.DEFAULT_AMQP_BINDING,
-                            _port.getAttribute(Port.BINDING_ADDRESS));
+        assertEquals(PortFactory.DEFAULT_AMQP_NEED_CLIENT_AUTH, _port.getAttribute(Port.NEED_CLIENT_AUTH),
+                "Unexpected need client auth");
+        assertEquals(PortFactory.DEFAULT_AMQP_WANT_CLIENT_AUTH, _port.getAttribute(Port.WANT_CLIENT_AUTH),
+                "Unexpected want client auth");
+        assertEquals(PortFactory.DEFAULT_AMQP_TCP_NO_DELAY, _port.getAttribute(Port.TCP_NO_DELAY),
+                "Unexpected tcp no delay");
+        assertEquals(PortFactory.DEFAULT_AMQP_BINDING, _port.getAttribute(Port.BINDING_ADDRESS),
+                "Unexpected binding");
     }
 
     @Test
@@ -183,55 +170,42 @@ public class PortFactoryTest extends UnitTestBase
     @Test
     public void testCreateAmqpPortUsingSslFailsWithoutKeyStore()
     {
-        try
-        {
-            createAmqpPortTestImpl(true, false, false, null, null);
-            fail("expected exception due to lack of SSL keystore");
-        }
-        catch(IllegalConfigurationException e)
-        {
-            //expected
-        }
+        assertThrows(IllegalConfigurationException.class,
+                () -> createAmqpPortTestImpl(true, false, false, null, null),
+                "Expected exception due to lack of SSL keystore");
     }
 
     @Test
     public void testCreateAmqpPortUsingSslSucceedsWithKeyStore()
     {
-        String keyStoreName = "myKeyStore";
+        final String keyStoreName = "myKeyStore";
         when(_keyStore.getName()).thenReturn(keyStoreName);
-        when(_broker.getChildren(eq(KeyStore.class))).thenReturn(Collections.singletonList(_keyStore));
-
+        when(_broker.getChildren(eq(KeyStore.class))).thenReturn(List.of(_keyStore));
         createAmqpPortTestImpl(true, false, false, keyStoreName, null);
     }
 
     @Test
     public void testCreateAmqpPortNeedingClientAuthFailsWithoutTrustStore()
     {
-        String keyStoreName = "myKeyStore";
+        final String keyStoreName = "myKeyStore";
         when(_keyStore.getName()).thenReturn(keyStoreName);
-        when(_broker.getChildren(eq(KeyStore.class))).thenReturn(Collections.singletonList(_keyStore));
-        when(_broker.getChildren(eq(TrustStore.class))).thenReturn(Collections.emptyList());
-        try
-        {
-            createAmqpPortTestImpl(true, true, false, keyStoreName, null);
-            fail("expected exception due to lack of SSL truststore");
-        }
-        catch(IllegalConfigurationException e)
-        {
-            //expected
-        }
+        when(_broker.getChildren(eq(KeyStore.class))).thenReturn(List.of(_keyStore));
+        when(_broker.getChildren(eq(TrustStore.class))).thenReturn(List.of());
+        assertThrows(IllegalConfigurationException.class,
+                () -> createAmqpPortTestImpl(true, true, false, keyStoreName, null),
+                "Expected exception due to lack of SSL truststore");
     }
 
     @Test
     public void testCreateAmqpPortNeedingClientAuthSucceedsWithTrustStore()
     {
-        String keyStoreName = "myKeyStore";
+        final String keyStoreName = "myKeyStore";
         when(_keyStore.getName()).thenReturn(keyStoreName);
-        when(_broker.getChildren(eq(KeyStore.class))).thenReturn(Collections.singletonList(_keyStore));
+        when(_broker.getChildren(eq(KeyStore.class))).thenReturn(List.of(_keyStore));
 
-        String trustStoreName = "myTrustStore";
+        final String trustStoreName = "myTrustStore";
         when(_trustStore.getName()).thenReturn(trustStoreName);
-        when(_broker.getChildren(eq(TrustStore.class))).thenReturn(Collections.singletonList(_trustStore));
+        when(_broker.getChildren(eq(TrustStore.class))).thenReturn(List.of(_trustStore));
 
         createAmqpPortTestImpl(true, true, false, keyStoreName, new String[]{trustStoreName});
     }
@@ -239,63 +213,59 @@ public class PortFactoryTest extends UnitTestBase
     @Test
     public void testCreateAmqpPortWantingClientAuthFailsWithoutTrustStore()
     {
-        String keyStoreName = "myKeyStore";
+        final String keyStoreName = "myKeyStore";
         when(_keyStore.getName()).thenReturn(keyStoreName);
-        when(_broker.getChildren(eq(KeyStore.class))).thenReturn(Collections.singletonList(_keyStore));
-
-        try
-        {
-            createAmqpPortTestImpl(true, false, true, keyStoreName, null);
-            fail("expected exception due to lack of SSL truststore");
-        }
-        catch(IllegalConfigurationException e)
-        {
-            //expected
-        }
+        when(_broker.getChildren(eq(KeyStore.class))).thenReturn(List.of(_keyStore));
+        assertThrows(IllegalConfigurationException.class,
+                () -> createAmqpPortTestImpl(true, false, true, keyStoreName, null),
+                "Expected exception due to lack of SSL truststore");
     }
 
     @Test
     public void testCreateAmqpPortWantingClientAuthSucceedsWithTrustStore()
     {
-        String keyStoreName = "myKeyStore";
+        final String keyStoreName = "myKeyStore";
         when(_keyStore.getName()).thenReturn(keyStoreName);
-        when(_broker.getChildren(eq(KeyStore.class))).thenReturn(Collections.singletonList(_keyStore));
+        when(_broker.getChildren(eq(KeyStore.class))).thenReturn(List.of(_keyStore));
 
-        String trustStoreName = "myTrustStore";
+        final String trustStoreName = "myTrustStore";
         when(_trustStore.getName()).thenReturn(trustStoreName);
-        when(_broker.getChildren(eq(TrustStore.class))).thenReturn(Collections.singletonList(_trustStore));
+        when(_broker.getChildren(eq(TrustStore.class))).thenReturn(List.of(_trustStore));
 
         createAmqpPortTestImpl(true, false, true, keyStoreName, new String[]{trustStoreName});
     }
 
-    public void createAmqpPortTestImpl(boolean useSslTransport, boolean needClientAuth, boolean wantClientAuth,
-                                       String keystoreName, String[] trustStoreNames)
+    public void createAmqpPortTestImpl(final boolean useSslTransport,
+                                       final boolean needClientAuth,
+                                       final boolean wantClientAuth,
+                                       final String keystoreName,
+                                       final String[] trustStoreNames)
     {
-        Set<Protocol> amqp010ProtocolSet = Collections.singleton(Protocol.AMQP_0_10);
-        Set<String> amqp010StringSet = Collections.singleton(Protocol.AMQP_0_10.name());
+        final Set<Protocol> amqp010ProtocolSet = Set.of(Protocol.AMQP_0_10);
+        final Set<String> amqp010StringSet = Set.of(Protocol.AMQP_0_10.name());
         _attributes.put(Port.PROTOCOLS, amqp010StringSet);
 
-        if(useSslTransport)
+        if (useSslTransport)
         {
             _attributes.put(Port.TRANSPORTS, _sslStringSet);
         }
 
-        if(needClientAuth)
+        if (needClientAuth)
         {
             _attributes.put(Port.NEED_CLIENT_AUTH, "true");
         }
 
-        if(wantClientAuth)
+        if (wantClientAuth)
         {
             _attributes.put(Port.WANT_CLIENT_AUTH, "true");
         }
 
-        if(keystoreName != null)
+        if (keystoreName != null)
         {
             _attributes.put(Port.KEY_STORE, keystoreName);
         }
 
-        if(trustStoreNames != null)
+        if (trustStoreNames != null)
         {
             _attributes.put(Port.TRUST_STORES, Arrays.asList(trustStoreNames));
         }
@@ -308,8 +278,8 @@ public class PortFactoryTest extends UnitTestBase
         final boolean condition = _port instanceof AmqpPort;
         assertTrue(condition);
         assertEquals(_portId, _port.getId());
-        assertEquals((long) _portNumber, (long) _port.getPort());
-        if(useSslTransport)
+        assertEquals(_portNumber, (long) _port.getPort());
+        if (useSslTransport)
         {
             assertEquals(_sslTransports, _port.getTransports());
         }
@@ -318,17 +288,17 @@ public class PortFactoryTest extends UnitTestBase
             assertEquals(_tcpTransports, _port.getTransports());
         }
         assertEquals(amqp010ProtocolSet, _port.getProtocols());
-        assertEquals("Unexpected need client auth", needClientAuth, _port.getAttribute(Port.NEED_CLIENT_AUTH));
-        assertEquals("Unexpected want client auth", wantClientAuth, _port.getAttribute(Port.WANT_CLIENT_AUTH));
-        assertEquals("Unexpected tcp no delay", true, _port.getAttribute(Port.TCP_NO_DELAY));
-        assertEquals("Unexpected binding", "127.0.0.1", _port.getAttribute(Port.BINDING_ADDRESS));
+        assertEquals(needClientAuth, _port.getAttribute(Port.NEED_CLIENT_AUTH), "Unexpected need client auth");
+        assertEquals(wantClientAuth, _port.getAttribute(Port.WANT_CLIENT_AUTH), "Unexpected want client auth");
+        assertEquals(true, _port.getAttribute(Port.TCP_NO_DELAY), "Unexpected tcp no delay");
+        assertEquals("127.0.0.1", _port.getAttribute(Port.BINDING_ADDRESS), "Unexpected binding");
     }
 
     @Test
     public void testCreateHttpPort()
     {
-        Set<Protocol> httpProtocolSet = Collections.singleton(Protocol.HTTP);
-        Set<String> httpStringSet = Collections.singleton(Protocol.HTTP.name());
+        final Set<Protocol> httpProtocolSet = Set.of(Protocol.HTTP);
+        final Set<String> httpStringSet = Set.of(Protocol.HTTP.name());
         _attributes = new HashMap<>();
         _attributes.put(Port.PROTOCOLS, httpStringSet);
         _attributes.put(Port.AUTHENTICATION_PROVIDER, _authProviderName);
@@ -341,9 +311,9 @@ public class PortFactoryTest extends UnitTestBase
 
         assertNotNull(_port);
         final boolean condition = _port instanceof AmqpPort;
-        assertFalse("Port should not be an AMQP-specific subclass", condition);
+        assertFalse(condition, "Port should not be an AMQP-specific subclass");
         assertEquals(_portId, _port.getId());
-        assertEquals((long) _portNumber, (long) _port.getPort());
+        assertEquals(_portNumber, (long) _port.getPort());
         assertEquals(_tcpTransports, _port.getTransports());
         assertEquals(httpProtocolSet, _port.getProtocols());
     }
@@ -351,8 +321,8 @@ public class PortFactoryTest extends UnitTestBase
     @Test
     public void testCreateHttpPortWithPartiallySetAttributes()
     {
-        Set<Protocol> httpProtocolSet = Collections.singleton(Protocol.HTTP);
-        Set<String> httpStringSet = Collections.singleton(Protocol.HTTP.name());
+        final Set<Protocol> httpProtocolSet = Set.of(Protocol.HTTP);
+        final Set<String> httpStringSet = Set.of(Protocol.HTTP.name());
         _attributes = new HashMap<>();
         _attributes.put(Port.PROTOCOLS, httpStringSet);
         _attributes.put(Port.AUTHENTICATION_PROVIDER, _authProviderName);
@@ -364,43 +334,30 @@ public class PortFactoryTest extends UnitTestBase
 
         assertNotNull(_port);
         final boolean condition = _port instanceof AmqpPort;
-        assertFalse("Port not be an AMQP-specific _port subclass", condition);
+        assertFalse(condition, "Port not be an AMQP-specific _port subclass");
         assertEquals(_portId, _port.getId());
-        assertEquals((long) _portNumber, (long) _port.getPort());
-        assertEquals(Collections.singleton(PortFactory.DEFAULT_TRANSPORT), _port.getTransports());
+        assertEquals(_portNumber, (long) _port.getPort());
+        assertEquals(Set.of(PortFactory.DEFAULT_TRANSPORT), _port.getTransports());
         assertEquals(httpProtocolSet, _port.getProtocols());
     }
 
     @Test
     public void testCreateMixedAmqpAndNonAmqpThrowsException()
     {
-        Set<String> mixedProtocolSet = new HashSet<>(Arrays.asList(Protocol.AMQP_0_10.name(), Protocol.HTTP.name()));
+        final Set<String> mixedProtocolSet = Set.of(Protocol.AMQP_0_10.name(), Protocol.HTTP.name());
         _attributes.put(Port.PROTOCOLS, mixedProtocolSet);
-
-        try
-        {
-            _port = _factory.create(Port.class, _attributes, _broker);
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalConfigurationException.class,
+                () -> _port = _factory.create(Port.class, _attributes, _broker),
+                "Exception not thrown");
     }
 
     @Test
     public void testCreatePortWithoutAuthenticationMechanism()
     {
-        when(_authProvider.getDisabledMechanisms()).thenReturn(Arrays.asList("PLAIN"));
-        try
-        {
-            createAmqpPortTestImpl(false, false, false, null, null);
-            fail("Port creation should fail due to no authentication mechanism being available.");
-        }
-        catch(IllegalConfigurationException e)
-        {
-            // pass
-        }
-        when(_authProvider.getDisabledMechanisms()).thenReturn(Collections.emptyList());
+        when(_authProvider.getDisabledMechanisms()).thenReturn(List.of("PLAIN"));
+        assertThrows(IllegalConfigurationException.class,
+                () -> createAmqpPortTestImpl(false, false, false, null, null),
+                "Port creation should fail due to no authentication mechanism being available");
+        when(_authProvider.getDisabledMechanisms()).thenReturn(List.of());
     }
 }

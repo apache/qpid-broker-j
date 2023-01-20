@@ -40,9 +40,11 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
@@ -59,7 +61,6 @@ import org.apache.qpid.systests.end_to_end_conversion.utils.LoggingOutputStream;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
-
 public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
 {
     public static final String TEMPORARY_QUEUE_JNDI_NAME = "<TEMPORARY>";
@@ -69,13 +70,13 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
     private static final Logger CLIENT_LOGGER = LoggerFactory.getLogger(Client.class);
     private ListeningExecutorService _executorService;
 
-    @Before
+    @BeforeEach
     public void setupExecutor()
     {
         _executorService = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
     }
 
-    @After
+    @AfterEach
     public void teardownExecutor() throws InterruptedException
     {
         if (_executorService != null)
@@ -89,7 +90,7 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
         }
     }
 
-    @AfterClass
+    @AfterAll
     public static void reportStats()
     {
         System.out.println("LQDEBUG: " + ClasspathQuery.getCacheStats());

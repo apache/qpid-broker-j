@@ -20,15 +20,13 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
@@ -50,9 +48,10 @@ import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.rep.NoConsistencyRequiredPolicy;
 import com.sleepycat.je.rep.ReplicatedEnvironment;
 import com.sleepycat.je.rep.ReplicationConfig;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,17 +82,19 @@ import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 public class BDBHAVirtualHostNodeTest extends UnitTestBase
 {
     private final static Logger LOGGER = LoggerFactory.getLogger(BDBHAVirtualHostNodeTest.class);
-    private final PortHelper _portHelper = new PortHelper();
-    private BDBHAVirtualHostNodeTestHelper _helper;
 
-    @Before
+    private BDBHAVirtualHostNodeTestHelper _helper;
+    private final PortHelper _portHelper = new PortHelper();
+
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(getVirtualHostNodeStoreType(), is(equalTo(VirtualHostNodeStoreType.BDB)));
+        assumeTrue(VirtualHostNodeStoreType.BDB.equals(getVirtualHostNodeStoreType()),
+                "VirtualHostNodeStoreType should be BDB");
         _helper = new BDBHAVirtualHostNodeTestHelper(getTestName());
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         try
@@ -131,7 +132,7 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         catch (RuntimeException e)
         {
             final boolean condition = e.getCause() instanceof IllegalArgumentException;
-            assertTrue("Unexpected Exception being thrown.", condition);
+            assertTrue(condition, "Unexpected Exception being thrown.");
         }
         context.put(EnvironmentConfig.ENV_IS_TRANSACTIONAL, "true");
         BDBHAVirtualHostNode<?> node = _helper.createHaVHN(attributes);
@@ -139,14 +140,13 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         node.start();
         _helper.assertNodeRole(node, NodeRole.MASTER, NodeRole.REPLICA);
 
-        assertEquals("Unexpected node state", State.ACTIVE, node.getState());
+        assertEquals(State.ACTIVE, node.getState(), "Unexpected node state");
 
         DurableConfigurationStore store = node.getConfigurationStore();
         assertNotNull(store);
 
         BDBConfigurationStore bdbConfigurationStore = (BDBConfigurationStore) store;
         ReplicatedEnvironmentFacade environmentFacade = (ReplicatedEnvironmentFacade) bdbConfigurationStore.getEnvironmentFacade();
-
 
         assertEquals(nodeName, environmentFacade.getNodeName());
         assertEquals(groupName, environmentFacade.getGroupName());
@@ -157,23 +157,22 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
 
         _helper.awaitForVirtualhost(node);
         VirtualHost<?> virtualHost = node.getVirtualHost();
-        assertNotNull("Virtual host child was not added", virtualHost);
-        assertEquals("Unexpected virtual host name", groupName, virtualHost.getName());
-        assertEquals("Unexpected virtual host store",
-                            bdbConfigurationStore.getMessageStore(),
-                            virtualHost.getMessageStore());
-        assertEquals("Unexpected virtual host state", State.ACTIVE, virtualHost.getState());
+        assertNotNull(virtualHost, "Virtual host child was not added");
+        assertEquals(groupName, virtualHost.getName(), "Unexpected virtual host name");
+        assertEquals(bdbConfigurationStore.getMessageStore(), virtualHost.getMessageStore(),
+                     "Unexpected virtual host store");
+        assertEquals(State.ACTIVE, virtualHost.getState(), "Unexpected virtual host state");
 
         node.stop();
-        assertEquals("Unexpected state returned after stop", State.STOPPED, node.getState());
-        assertEquals("Unexpected state", State.STOPPED, node.getState());
+        assertEquals(State.STOPPED, node.getState(), "Unexpected state returned after stop");
+        assertEquals(State.STOPPED, node.getState(), "Unexpected state");
 
-        assertNull("Virtual host is not destroyed", node.getVirtualHost());
+        assertNull(node.getVirtualHost(), "Virtual host is not destroyed");
 
         node.delete();
-        assertEquals("Unexpected state returned after delete", State.DELETED, node.getState());
-        assertEquals("Unexpected state", State.DELETED, node.getState());
-        assertFalse("Store still exists " + messageStorePath, new File(messageStorePath).exists());
+        assertEquals(State.DELETED, node.getState(), "Unexpected state returned after delete");
+        assertEquals(State.DELETED, node.getState(), "Unexpected state");
+        assertFalse(new File(messageStorePath).exists(), "Store still exists " + messageStorePath);
     }
 
     @Test
@@ -187,11 +186,10 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         Map<String, Object> attributes = _helper.createNodeAttributes(nodeName, groupName, helperAddress, helperAddress, nodeName, node1PortNumber);
         BDBHAVirtualHostNode<?> node = _helper.createAndStartHaVHN(attributes);
 
-        assertEquals("Unexpected node priority value before mutation", (long) 1, (long) node.getPriority());
-        assertFalse("Unexpected designated primary value before mutation", node.isDesignatedPrimary());
-        assertEquals("Unexpected electable group override value before mutation",
-                            (long) 0,
-                            (long) node.getQuorumOverride());
+        assertEquals(1, (long) node.getPriority(), "Unexpected node priority value before mutation");
+        assertFalse(node.isDesignatedPrimary(), "Unexpected designated primary value before mutation");
+        assertEquals(0, (long) node.getQuorumOverride(),
+                     "Unexpected electable group override value before mutation");
 
         Map<String, Object> update = new HashMap<>();
         update.put(BDBHAVirtualHostNode.PRIORITY,  2);
@@ -199,15 +197,14 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         update.put(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 1);
         node.setAttributes(update);
 
-        assertEquals("Unexpected node priority value after mutation", (long) 2, (long) node.getPriority());
-        assertTrue("Unexpected designated primary value after mutation", node.isDesignatedPrimary());
-        assertEquals("Unexpected electable group override value after mutation",
-                            (long) 1,
-                            (long) node.getQuorumOverride());
+        assertEquals(2, (long) node.getPriority(), "Unexpected node priority value after mutation");
+        assertTrue(node.isDesignatedPrimary(), "Unexpected designated primary value after mutation");
+        assertEquals(1, (long) node.getQuorumOverride(),
+                     "Unexpected electable group override value after mutation");
 
-        assertNotNull("Join time should be set", node.getJoinTime());
-        assertNotNull("Last known replication transaction id should be set",
-                             node.getLastKnownReplicationTransactionId());
+        assertNotNull(node.getJoinTime(), "Join time should be set");
+        assertNotNull(node.getLastKnownReplicationTransactionId(),
+                      "Last known replication transaction id should be set");
     }
 
     @Test
@@ -230,11 +227,10 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         Map<String, Object> node3Attributes = _helper.createNodeAttributes("node3", groupName, "localhost:" + node3PortNumber, helperAddress, nodeName);
         BDBHAVirtualHostNode<?> node3 = _helper.createAndStartHaVHN(node3Attributes);
 
-        assertEquals("Unexpected node priority value before mutation", (long) 1, (long) node1.getPriority());
-        assertFalse("Unexpected designated primary value before mutation", node1.isDesignatedPrimary());
-        assertEquals("Unexpected electable group override value before mutation",
-                            (long) 0,
-                            (long) node1.getQuorumOverride());
+        assertEquals(1, (long) node1.getPriority(), "Unexpected node priority value before mutation");
+        assertFalse(node1.isDesignatedPrimary(), "Unexpected designated primary value before mutation");
+        assertEquals(0, (long) node1.getQuorumOverride(),
+                     "Unexpected electable group override value before mutation");
 
         node2.close();
         node3.close();
@@ -249,11 +245,10 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
 
         _helper.awaitForVirtualhost(node1);
 
-        assertEquals("Unexpected node priority value after mutation", (long) 200, (long) node1.getPriority());
-        assertTrue("Unexpected designated primary value after mutation", node1.isDesignatedPrimary());
-        assertEquals("Unexpected electable group override value after mutation",
-                            (long) 1,
-                            (long) node1.getQuorumOverride());
+        assertEquals(200, (long) node1.getPriority(), "Unexpected node priority value after mutation");
+        assertTrue(node1.isDesignatedPrimary(), "Unexpected designated primary value after mutation");
+        assertEquals(1, (long) node1.getQuorumOverride(),
+                     "Unexpected electable group override value after mutation");
     }
 
     @Test
@@ -278,7 +273,7 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
 
         BDBHAVirtualHostNode<?> replica = _helper.awaitAndFindNodeInRole(NodeRole.REPLICA);
 
-        replica.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.ROLE,  NodeRole.MASTER));
+        replica.setAttributes(Collections.singletonMap(BDBHAVirtualHostNode.ROLE, NodeRole.MASTER));
 
         _helper.assertNodeRole(replica, NodeRole.MASTER);
     }
@@ -319,12 +314,13 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         Map<String, Object> node3Attributes = _helper.createNodeAttributes("node3", groupName, "localhost:" + node3PortNumber, helperAddress, nodeName);
         BDBHAVirtualHostNode<?> node3 = _helper.createAndStartHaVHN(node3Attributes);
 
-        assertTrue("Replication nodes have not been seen during 5s", remoteNodeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(remoteNodeLatch.await(5, TimeUnit.SECONDS),
+                   "Replication nodes have not been seen during 5s");
 
         BDBHARemoteReplicationNodeImpl replicaRemoteNode = (BDBHARemoteReplicationNodeImpl)lastSeenReplica.get();
         _helper.awaitForAttributeChange(replicaRemoteNode, BDBHARemoteReplicationNodeImpl.ROLE, NodeRole.REPLICA);
 
-        replicaRemoteNode.setAttributes(Collections.<String,Object>singletonMap(BDBHARemoteReplicationNode.ROLE, NodeRole.MASTER));
+        replicaRemoteNode.setAttributes(Collections.singletonMap(BDBHARemoteReplicationNode.ROLE, NodeRole.MASTER));
 
         BDBHAVirtualHostNode<?> replica = replicaRemoteNode.getName().equals(node2.getName())? node2 : node3;
         _helper.assertNodeRole(replica, NodeRole.MASTER);
@@ -344,7 +340,7 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
 
         try
         {
-            node.setAttributes(Collections.<String,Object>singletonMap(BDBHAVirtualHostNode.ROLE, NodeRole.REPLICA));
+            node.setAttributes(Collections.singletonMap(BDBHAVirtualHostNode.ROLE, NodeRole.REPLICA));
             fail("Role mutation should fail");
         }
         catch(IllegalStateException e)
@@ -387,14 +383,14 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         BDBHAVirtualHostNode<?> replica = _helper.awaitAndFindNodeInRole(NodeRole.REPLICA);
         _helper.awaitRemoteNodes(replica, 2);
 
-        assertNotNull("Remote node " + replica.getName() + " is not found",
-                             _helper.findRemoteNode(master, replica.getName()));
+        assertNotNull(_helper.findRemoteNode(master, replica.getName()),
+                "Remote node " + replica.getName() + " is not found");
         replica.delete();
 
         _helper.awaitRemoteNodes(master, 1);
 
-        assertNull("Remote node " + replica.getName() + " is not found",
-                          _helper.findRemoteNode(master, replica.getName()));
+        assertNull(_helper.findRemoteNode(master, replica.getName()),
+                   "Remote node " + replica.getName() + " is not found");
 
     }
 
@@ -411,23 +407,21 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
 
         node.start();
         _helper.assertNodeRole(node, NodeRole.MASTER, NodeRole.REPLICA);
-        assertEquals("Unexpected node state", State.ACTIVE, node.getState());
+        assertEquals(State.ACTIVE, node.getState(), "Unexpected node state");
 
         _helper.awaitForVirtualhost(node);
         BDBHAVirtualHostImpl virtualHost = (BDBHAVirtualHostImpl)node.getVirtualHost();
-        assertNotNull("Virtual host is not created", virtualHost);
+        assertNotNull(virtualHost, "Virtual host is not created");
 
         _helper.awaitForAttributeChange(virtualHost, BDBHAVirtualHostImpl.COALESCING_SYNC, true);
 
-        assertEquals("Unexpected local transaction synchronization policy",
-                            "SYNC",
-                            virtualHost.getLocalTransactionSynchronizationPolicy());
-        assertEquals("Unexpected remote transaction synchronization policy",
-                            "NO_SYNC",
-                            virtualHost.getRemoteTransactionSynchronizationPolicy());
-        assertTrue("CoalescingSync is not ON", virtualHost.isCoalescingSync());
+        assertEquals("SYNC", virtualHost.getLocalTransactionSynchronizationPolicy(),
+                     "Unexpected local transaction synchronization policy");
+        assertEquals("NO_SYNC", virtualHost.getRemoteTransactionSynchronizationPolicy(),
+                     "Unexpected remote transaction synchronization policy");
+        assertTrue(virtualHost.isCoalescingSync(), "CoalescingSync is not ON");
 
-        Map<String, Object> virtualHostAttributes = new HashMap<String,Object>();
+        Map<String, Object> virtualHostAttributes = new HashMap<>();
         virtualHostAttributes.put(BDBHAVirtualHost.LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY, "WRITE_NO_SYNC");
         virtualHostAttributes.put(BDBHAVirtualHost.REMOTE_TRANSACTION_SYNCHRONIZATION_POLICY, "SYNC");
         virtualHost.setAttributes(virtualHostAttributes);
@@ -435,16 +429,14 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         virtualHost.stop();
         virtualHost.start();
 
-        assertEquals("Unexpected local transaction synchronization policy",
-                            "WRITE_NO_SYNC",
-                            virtualHost.getLocalTransactionSynchronizationPolicy());
-        assertEquals("Unexpected remote transaction synchronization policy",
-                            "SYNC",
-                            virtualHost.getRemoteTransactionSynchronizationPolicy());
-        assertFalse("CoalescingSync is not OFF", virtualHost.isCoalescingSync());
+        assertEquals("WRITE_NO_SYNC", virtualHost.getLocalTransactionSynchronizationPolicy(),
+                     "Unexpected local transaction synchronization policy");
+        assertEquals("SYNC", virtualHost.getRemoteTransactionSynchronizationPolicy(),
+                     "Unexpected remote transaction synchronization policy");
+        assertFalse(virtualHost.isCoalescingSync(), "CoalescingSync is not OFF");
         try
         {
-            virtualHost.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHost.LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY, "INVALID"));
+            virtualHost.setAttributes(Collections.singletonMap(BDBHAVirtualHost.LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY, "INVALID"));
             fail("Invalid synchronization policy is set");
         }
         catch(IllegalArgumentException e)
@@ -454,7 +446,7 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
 
         try
         {
-            virtualHost.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHost.REMOTE_TRANSACTION_SYNCHRONIZATION_POLICY, "INVALID"));
+            virtualHost.setAttributes(Collections.singletonMap(BDBHAVirtualHost.REMOTE_TRANSACTION_SYNCHRONIZATION_POLICY, "INVALID"));
             fail("Invalid synchronization policy is set");
         }
         catch(IllegalArgumentException e)
@@ -490,9 +482,8 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         }
         catch(IllegalConfigurationException e)
         {
-            assertEquals("Unexpected exception message",
-                                String.format("Node using address '%s' is not permitted to join the group 'group'", "localhost:" + node3PortNumber, groupName),
-                                e.getMessage());
+            assertEquals(String.format("Node using address '%s' is not permitted to join the group 'group'",
+                    "localhost:" + node3PortNumber), e.getMessage(), "Unexpected exception message");
         }
     }
 
@@ -534,9 +525,9 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         }
         catch(IllegalArgumentException e)
         {
-            assertEquals("Unexpected exception message",
-                                String.format("The current group node '%s' cannot be removed from '%s' as its already a group member", node3Address, BDBHAVirtualHostNode.PERMITTED_NODES),
-                                e.getMessage());
+            assertEquals(String.format("The current group node '%s' cannot be removed from '%s' as its already a group member", node3Address, BDBHAVirtualHostNode.PERMITTED_NODES),
+                    e.getMessage(),
+                    "Unexpected exception message");
         }
     }
 
@@ -580,24 +571,24 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         BDBHAVirtualHostNode<?> nonMasterNode = _helper.findNodeInRole(NodeRole.REPLICA);
         try
         {
-            nonMasterNode.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, amendedPermittedNodes));
+            nonMasterNode.setAttributes(Collections.singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, amendedPermittedNodes));
             fail("Operation to update permitted nodes should have failed from non MASTER node");
         }
         catch(IllegalArgumentException e)
         {
-            assertEquals("Unexpected exception message",
-                                String.format("Attribute '%s' can only be set on '%s' node or node in '%s' or '%s' state", BDBHAVirtualHostNode.PERMITTED_NODES, NodeRole.MASTER, State.STOPPED, State.ERRORED),
-                                e.getMessage());
+            assertEquals(String.format("Attribute '%s' can only be set on '%s' node or node in '%s' or '%s' state", BDBHAVirtualHostNode.PERMITTED_NODES, NodeRole.MASTER, State.STOPPED, State.ERRORED),
+                    e.getMessage(),
+                    "Unexpected exception message");
         }
 
         // Try to update the permitted nodes attributes using the new list on MASTER - should succeed
         BDBHAVirtualHostNode<?> masterNode = _helper.findNodeInRole(NodeRole.MASTER);
-        masterNode.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, amendedPermittedNodes));
+        masterNode.setAttributes(Collections.singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, amendedPermittedNodes));
 
         // Try to update the permitted nodes attributes using the new list on a STOPPED node - should succeed
         nonMasterNode.stop();
         amendedPermittedNodes.add(node5Address);
-        nonMasterNode.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, amendedPermittedNodes));
+        nonMasterNode.setAttributes(Collections.singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, amendedPermittedNodes));
     }
 
     @Test
@@ -630,8 +621,8 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         Durability durability = Durability.parse((String) node1Attributes.get(BDBHAVirtualHostNode.DURABILITY));
         joinIntruder(intruderPortNumber, "intruder", groupName, helperAddress, durability, environmentPathFile);
 
-        assertTrue("Intruder protection was not triggered during expected timeout",
-                          stopLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(stopLatch.await(10, TimeUnit.SECONDS),
+                "Intruder protection was not triggered during expected timeout");
 
         final CountDownLatch stateChangeLatch = new CountDownLatch(1);
         final CountDownLatch roleChangeLatch = new CountDownLatch(1);
@@ -659,7 +650,7 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
             }
         });
 
-        // Try top re start the ERRORED node and ensure exception is thrown
+        // Try top restart the ERRORED node and ensure exception is thrown
         try
         {
             node.start();
@@ -667,14 +658,14 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         }
         catch (IllegalStateException ise)
         {
-            assertEquals("Unexpected exception when restarting node post intruder detection",
-                                "Intruder node detected: " + "localhost:" + intruderPortNumber,
-                                ise.getMessage());
+            assertEquals("Intruder node detected: " + "localhost:" + intruderPortNumber,
+                    ise.getMessage(),
+                    "Unexpected exception when restarting node post intruder detection");
         }
 
         // verify that intruder detection is triggered after restart and environment is closed
-        assertTrue("Node state was not set to ERRORED", stateChangeLatch.await(10, TimeUnit.SECONDS));
-        assertTrue("Node role was not set to DETACHED", roleChangeLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(stateChangeLatch.await(10, TimeUnit.SECONDS), "Node state was not set to ERRORED");
+        assertTrue(roleChangeLatch.await(10, TimeUnit.SECONDS), "Node role was not set to DETACHED");
     }
 
     @Test
@@ -715,8 +706,8 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
 
         LOGGER.debug("Permitted and intruder nodes are created");
 
-        assertTrue("Intruder protection was not triggered during expected timeout",
-                          stopLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(stopLatch.await(10, TimeUnit.SECONDS),
+                "Intruder protection was not triggered during expected timeout");
 
         LOGGER.debug("Master node transited into ERRORED state due to intruder protection");
         when(_helper.getBroker().isManagementMode()).thenReturn(true);
@@ -752,8 +743,8 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         LOGGER.debug("Node is started");
 
         // verify that intruder detection is triggered after restart and environment is closed
-        assertTrue("Node state was not set to ERRORED", stateChangeLatch.await(10, TimeUnit.SECONDS));
-        assertTrue("Node role was not set to DETACHED", roleChangeLatch.await(10, TimeUnit.SECONDS));
+        assertTrue(stateChangeLatch.await(10, TimeUnit.SECONDS), "Node state was not set to ERRORED");
+        assertTrue(roleChangeLatch.await(10, TimeUnit.SECONDS), "Node role was not set to DETACHED");
     }
 
     @Test
@@ -772,7 +763,7 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         Map<String, Object> node2Attributes = _helper.createNodeAttributes("node2", groupName, "localhost:" + node2PortNumber, helperAddress, nodeName);
         node2Attributes.put(BDBHAVirtualHostNode.PRIORITY, 0);
         BDBHAVirtualHostNode<?> node2 = _helper.createAndStartHaVHN(node2Attributes);
-        assertEquals("Unexpected role", NodeRole.REPLICA, node2.getRole());
+        assertEquals(NodeRole.REPLICA, node2.getRole(), "Unexpected role");
         _helper.awaitRemoteNodes(node2, 1);
 
         BDBHARemoteReplicationNode<?> remote = _helper.findRemoteNode(node2, node1.getName());
@@ -793,29 +784,23 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         });
         List<String> permittedNodes = new ArrayList<>(node1.getPermittedNodes());
         permittedNodes.add("localhost:5000");
-        node1.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, permittedNodes));
+        node1.setAttributes(Collections.singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, permittedNodes));
 
-        assertTrue("Permitted nodes were not changed on Replica",
-                          _permittedNodesLatch.await(10, TimeUnit.SECONDS));
-        assertEquals("Not the same permitted nodes",
-                            new HashSet<>(node1.getPermittedNodes()),
-                            new HashSet<>(node2.getPermittedNodes()));
-        assertEquals("Unexpected counter of changes permitted nodes",
-                            (long) 1,
-                            (long) permittedNodesChangeCounter.get());
+        assertTrue(_permittedNodesLatch.await(10, TimeUnit.SECONDS), "Permitted nodes were not changed on Replica");
+        assertEquals(new HashSet<>(node1.getPermittedNodes()), new HashSet<>(node2.getPermittedNodes()),
+                "Not the same permitted nodes");
+        assertEquals(1, (long) permittedNodesChangeCounter.get(), "Unexpected counter of changes permitted nodes");
 
         // change the order of permitted nodes
         Collections.swap(permittedNodes, 0, 2);
-        node1.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, permittedNodes));
+        node1.setAttributes(Collections.singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, permittedNodes));
 
         // make sure that node2 onNodeState was invoked by performing transaction on master and making sure that it was replicated
         performTransactionAndAwaitForRemoteNodeToGetAware(node1, remote);
 
         // perform transaction second time because permitted nodes are changed after last transaction id
         performTransactionAndAwaitForRemoteNodeToGetAware(node1, remote);
-        assertEquals("Unexpected counter of changes permitted nodes",
-                            (long) 1,
-                            (long) permittedNodesChangeCounter.get());
+        assertEquals(1, (long) permittedNodesChangeCounter.get(), "Unexpected counter of changes permitted nodes");
     }
 
     private void performTransactionAndAwaitForRemoteNodeToGetAware(BDBHAVirtualHostNode<?> node1, BDBHARemoteReplicationNode<?> remote) throws InterruptedException
@@ -827,9 +812,8 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         {
             Thread.sleep(100L);
         }
-        assertEquals("Last transaction was not replicated",
-                            Long.valueOf(remote.getLastKnownReplicationTransactionId()),
-                            node1.getLastKnownReplicationTransactionId());
+        assertEquals(Long.valueOf(remote.getLastKnownReplicationTransactionId()), node1.getLastKnownReplicationTransactionId(),
+                "Last transaction was not replicated");
     }
 
     @Test
@@ -864,8 +848,8 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         Durability durability = Durability.parse((String) node1Attributes.get(BDBHAVirtualHostNode.DURABILITY));
         joinIntruder(node2PortNumber, node2Name, groupName, helperAddress, durability, environmentPathFile);
 
-        assertTrue("Intruder protection was not triggered during expected timeout",
-                          stopLatch.await(20, TimeUnit.SECONDS));
+        assertTrue(stopLatch.await(20, TimeUnit.SECONDS),
+                "Intruder protection was not triggered during expected timeout");
     }
 
     private void joinIntruder(final int nodePortNumber,
@@ -924,9 +908,9 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         }
         catch(ExternalServiceException e)
         {
-            assertEquals("Unexpected exception on connection to non-existing helper address",
-                                String.format("Cannot connect to existing node '%s' at '%s'", "node2", "localhost:" + node2PortNumber),
-                                e.getMessage());
+            assertEquals(String.format("Cannot connect to existing node '%s' at '%s'", "node2", "localhost:" + node2PortNumber),
+                    e.getMessage(),
+                    "Unexpected exception on connection to non-existing helper address");
         }
     }
 
@@ -948,9 +932,9 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
             }
             catch(IllegalConfigurationException e)
             {
-                assertEquals("Unexpected exception on attempt to create node with already bound address",
-                                    String.format("Cannot bind to address '%s'. Address is already in use.", "localhost:" + node1PortNumber),
-                                    e.getMessage());
+                assertEquals(String.format("Cannot bind to address '%s'. Address is already in use.", "localhost:" + node1PortNumber),
+                        e.getMessage(),
+                        "Unexpected exception on attempt to create node with already bound address");
             }
         }
     }
@@ -976,9 +960,9 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
             }
             catch (IllegalConfigurationException e)
             {
-                assertEquals("Unexpected exception on attempt to create environment in invalid location",
-                                    String.format("Store path '%s' is not a folder", storePath.getAbsoluteFile()),
-                                    e.getMessage());
+                assertEquals(String.format("Store path '%s' is not a folder", storePath.getAbsoluteFile()),
+                        e.getMessage(),
+                        "Unexpected exception on attempt to create environment in invalid location");
             }
         }
         finally

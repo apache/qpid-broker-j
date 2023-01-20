@@ -25,8 +25,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,10 +40,10 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.systests.end_to_end_conversion.client.ClientInstruction;
@@ -62,13 +62,22 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     private static final String JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE = "jms.messageIDPolicy.messageIDType";
 
     private HashMap<String, String> _defaultDestinations;
-    @Rule
-    public TestName _testName = new TestName();
 
-    @Before
+    /**
+     * JUnit TestInfo
+     */
+    private TestInfo _testInfo;
+
+    @BeforeEach
+    public void init(final TestInfo testInfo)
+    {
+        _testInfo = testInfo;
+    }
+
+    @BeforeEach
     public void setup()
     {
-        final String queueName = _testName.getMethodName();
+        final String queueName = _testInfo.getTestMethod().orElseThrow(() -> new RuntimeException("Failed to resolve test method")).getName();
         getBrokerAdmin().createQueue(queueName);
 
         _defaultDestinations = new HashMap<>();
@@ -187,8 +196,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void providerAssignedMessageId09_010() throws Exception
     {
-        assumeTrue(AMQP_PRE010_PROTOCOLS.contains(getPublisherProtocolVersion())
-                   && EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
+        assumeTrue(AMQP_PRE010_PROTOCOLS.contains(getPublisherProtocolVersion()) &&
+                EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
 
         List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
 
@@ -202,8 +211,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void providerAssignedMessageId09_10() throws Exception
     {
-        assumeTrue(AMQP_PRE010_PROTOCOLS.contains(getPublisherProtocolVersion())
-                   && EnumSet.of(Protocol.AMQP_1_0).contains(getSubscriberProtocolVersion()));
+        assumeTrue(AMQP_PRE010_PROTOCOLS.contains(getPublisherProtocolVersion()) &&
+                EnumSet.of(Protocol.AMQP_1_0).contains(getSubscriberProtocolVersion()));
 
         List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
 
@@ -220,8 +229,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void providerAssignedMessageId010_09() throws Exception
     {
-        assumeTrue(EnumSet.of(Protocol.AMQP_0_10).contains(getPublisherProtocolVersion())
-                   && AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
+        assumeTrue(EnumSet.of(Protocol.AMQP_0_10).contains(getPublisherProtocolVersion()) &&
+                AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
 
         List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
 
@@ -236,8 +245,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void providerAssignedMessageId010_10() throws Exception
     {
-        assumeTrue(EnumSet.of(Protocol.AMQP_0_10).contains(getPublisherProtocolVersion())
-                   && EnumSet.of(Protocol.AMQP_1_0).contains(getSubscriberProtocolVersion()));
+        assumeTrue(EnumSet.of(Protocol.AMQP_0_10).contains(getPublisherProtocolVersion()) &&
+                EnumSet.of(Protocol.AMQP_1_0).contains(getSubscriberProtocolVersion()));
 
         List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
 
@@ -256,8 +265,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void providerAssignedMessageId_DefaultMode_10_09() throws Exception
     {
-        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
-                   && AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
+                AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
 
         List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
 
@@ -271,9 +280,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void providerAssignedMessageId_UuidMode_10_09() throws Exception
     {
-        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
-                   && AMQP_PRE010_PROTOCOLS
-                           .contains(getSubscriberProtocolVersion()));
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
+                AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
 
         List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
                 JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "UUID"));
@@ -292,8 +300,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void providerAssignedMessageId_UuidStringMode_10_09() throws Exception
     {
-        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
-                   && AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
+                AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
 
         List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
                 JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "UUID_STRING"));
@@ -313,8 +321,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void providerAssignedMessageId_PrefixedUuidStringMode_10_09() throws Exception
     {
-        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
-                   && AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
+                AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
 
         List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
                 JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "PREFIXED_UUID_STRING"));
@@ -333,8 +341,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void providerAssignedMessageId_DefaultMode_10_010() throws Exception
     {
-        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
-                   && EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
+                EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
 
         List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
 
@@ -350,8 +358,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void providerAssignedMessageId_UuidMode_10_010() throws Exception
     {
-        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
-                   && EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
+                EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
 
         List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
                 JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "UUID"));
@@ -370,8 +378,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void providerAssignedMessageId_UuidStringMode_10_010() throws Exception
     {
-        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
-                   && EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
+                EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
 
         List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
                 JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "UUID_STRING"));
@@ -390,8 +398,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void providerAssignedMessageId_PrefixedUuidStringMode_10_010() throws Exception
     {
-        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion())
-                   && EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
+                EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
 
         List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
                 JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "PREFIXED_UUID_STRING"));
@@ -426,7 +434,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void replyToStaticQueue() throws Exception
     {
-        final String replyQueueName = _testName.getMethodName() + "ReplyQueue";
+        final String replyQueueName = _testInfo.getTestMethod().orElseThrow(() -> new RuntimeException("Failed to resolve test method")).getName() + "ReplyQueue";
         final String replyQueueJndiName = "replyQueue";
         _defaultDestinations.put("queue." + replyQueueJndiName, replyQueueName);
         getBrokerAdmin().createQueue(replyQueueName);
@@ -442,8 +450,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void replyToAmqp10Topic() throws Exception
     {
-        assumeTrue("This test is for AMQP 1.0 publisher",
-                    EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()));
+        assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()),
+                "This test is for AMQP 1.0 publisher");
 
         final String replyTopicJndiName = "replyTopic";
         _defaultDestinations.put("topic." + replyTopicJndiName, "amq.topic/topic");
@@ -453,8 +461,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void replyToAmqp0xTopic() throws Exception
     {
-        assumeFalse("This test is for AMQP 0-x publisher",
-                    EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()));
+        assumeFalse(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()),
+                "This test is for AMQP 0-x publisher");
 
         String jndiName = "testTopic";
         _defaultDestinations.put("topic." + jndiName, "myTopic");
@@ -464,11 +472,11 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void replyToBURLDestination() throws Exception
     {
-        assumeFalse("This test is for AMQP 0-x publisher",
-                   EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()));
+        assumeFalse(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()),
+                "This test is for AMQP 0-x publisher");
 
         String jndiName = "testDestination";
-        String testDestination = _testName.getMethodName() + "MyQueue";
+        String testDestination = _testInfo.getTestMethod().orElseThrow(() -> new RuntimeException("Failed to resolve test method")).getName() + "MyQueue";
         _defaultDestinations.put("destination." + jndiName,
                                  String.format("BURL:direct://amq.direct//%s?routingkey='%s'", testDestination, testDestination));
 
@@ -480,15 +488,15 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     @Test
     public void replyToAddressDestination() throws Exception
     {
-        assumeFalse("This test is for AMQP 0-x publisher",
-                    EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()));
+        assumeFalse(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()),
+                "This test is for AMQP 0-x publisher");
 
-        assumeTrue("QPID-7902: setJMSReplyTo for address based destination is broken on client side for 0-8...0-9-1",
-                    EnumSet.of(Protocol.AMQP_0_10).contains(getPublisherProtocolVersion()));
+        assumeTrue(EnumSet.of(Protocol.AMQP_0_10).contains(getPublisherProtocolVersion()),
+                "QPID-7902: setJMSReplyTo for address based destination is broken on client side for 0-8...0-9-1");
 
         String replyToJndiName = "replyToJndiName";
         String consumeReplyToJndiName = "consumeReplyToJndiName";
-        String testDestination = _testName.getMethodName() + "MyQueue";
+        String testDestination = _testInfo.getTestMethod().orElseThrow(() -> new RuntimeException("Failed to resolve test method")).getName() + "MyQueue";
         _defaultDestinations.put("destination." + replyToJndiName, "ADDR: amq.fanout/testReplyToQueue");
         _defaultDestinations.put("destination." + consumeReplyToJndiName,
                                  "ADDR: testReplyToQueue; {create:always, node: {type: queue, x-bindings:[{exchange: 'amq.fanout', key: testReplyToQueue}]}}");

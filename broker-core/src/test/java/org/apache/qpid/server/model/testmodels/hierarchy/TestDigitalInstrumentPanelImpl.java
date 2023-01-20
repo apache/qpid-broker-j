@@ -30,7 +30,6 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 public class TestDigitalInstrumentPanelImpl extends TestAbstractInstrumentPanelImpl<TestDigitalInstrumentPanelImpl>
         implements TestInstrumentPanel<TestDigitalInstrumentPanelImpl>
 {
-
     public static final String TEST_DIGITAL_INSTRUMENT_PANEL_TYPE = "digital";
 
     @ManagedObjectFactoryConstructor

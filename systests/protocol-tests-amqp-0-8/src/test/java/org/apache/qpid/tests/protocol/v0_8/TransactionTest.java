@@ -27,8 +27,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import java.util.Collections;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.properties.ConnectionStartProperties;
 import org.apache.qpid.server.protocol.ErrorCodes;
@@ -40,7 +40,7 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 public class TransactionTest extends BrokerAdminUsingTestBase
 {
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);

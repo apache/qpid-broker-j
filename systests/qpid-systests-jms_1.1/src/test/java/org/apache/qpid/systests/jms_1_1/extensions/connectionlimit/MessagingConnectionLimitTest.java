@@ -18,6 +18,8 @@
  */
 package org.apache.qpid.systests.jms_1_1.extensions.connectionlimit;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,12 +30,11 @@ import javax.jms.JMSException;
 import javax.naming.NamingException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.user.connection.limits.plugins.ConnectionLimitRule;
 import org.apache.qpid.systests.JmsTestBase;
-
-import static org.junit.Assert.fail;
 
 public class MessagingConnectionLimitTest extends JmsTestBase
 {

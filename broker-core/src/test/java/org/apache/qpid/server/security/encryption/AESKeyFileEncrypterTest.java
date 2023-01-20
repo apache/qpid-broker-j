@@ -21,28 +21,24 @@
 package org.apache.qpid.server.security.encryption;
 
 import static org.apache.qpid.server.security.encryption.AbstractAESKeyFileEncrypterFactoryTest.isStrongEncryptionEnabled;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.charset.StandardCharsets;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-import javax.crypto.Cipher;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -52,28 +48,28 @@ public class AESKeyFileEncrypterTest extends UnitTestBase
     public static final String PLAINTEXT = "secret";
     private static SecretKeySpec secretKey;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
-        assumeThat(isStrongEncryptionEnabled(), is(true));
+        assumeTrue(isStrongEncryptionEnabled());
         final byte[] keyData = new byte[32];
         _random.nextBytes(keyData);
         secretKey = new SecretKeySpec(keyData, "AES");
     }
 
     @Test
-    public void testSimpleEncryptDecrypt() throws Exception
+    public void testSimpleEncryptDecrypt()
     {
         doTestSimpleEncryptDecrypt(PLAINTEXT);
     }
 
 
     @Test
-    public void testRepeatedEncryptionsReturnDifferentValues() throws Exception
+    public void testRepeatedEncryptionsReturnDifferentValues()
     {
-        AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(secretKey);
+        final AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(secretKey);
 
-        Set<String> encryptions = new HashSet<>();
+        final Set<String> encryptions = new HashSet<>();
 
         int iterations = 10;
 
@@ -82,79 +78,62 @@ public class AESKeyFileEncrypterTest extends UnitTestBase
             encryptions.add(encrypter.encrypt(PLAINTEXT));
         }
 
-        assertEquals("Not all encryptions were distinct", (long) iterations, (long) encryptions.size());
+        assertEquals(iterations, (long) encryptions.size(), "Not all encryptions were distinct");
 
-        for (String encrypted : encryptions)
+        for (final String encrypted : encryptions)
         {
-            assertEquals("Not all encryptions decrypt correctly", PLAINTEXT, encrypter.decrypt(encrypted));
+            assertEquals(PLAINTEXT, encrypter.decrypt(encrypted), "Not all encryptions decrypt correctly");
         }
     }
 
     @Test
     public void testCreationFailsOnInvalidSecret() throws Exception
     {
-        try
-        {
-            new AESKeyFileEncrypter(null);
-            fail("An encrypter should not be creatable from a null key");
-        }
-        catch (NullPointerException e)
-        {
-            // pass
-        }
+        assertThrows(NullPointerException.class,
+                () -> new AESKeyFileEncrypter(null),
+                "An encrypter should not be creatable from a null key");
 
-        try
-        {
-            PBEKeySpec keySpec = new PBEKeySpec("password".toCharArray());
-            SecretKeyFactory factory = SecretKeyFactory.getInstance("PBEWithMD5AndDES");
-            new AESKeyFileEncrypter(factory.generateSecret(keySpec));
-            fail("An encrypter should not be creatable from the wrong type of secret key");
-        }
-        catch (IllegalArgumentException e)
-        {
-            // pass
-        }
+        final PBEKeySpec keySpec = new PBEKeySpec("password".toCharArray());
+        final SecretKeyFactory factory = SecretKeyFactory.getInstance("PBEWithMD5AndDES");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new AESKeyFileEncrypter(factory.generateSecret(keySpec)),
+                "An encrypter should not be creatable from the wrong type of secret key");
     }
 
     @Test
-    public void testEncryptionOfEmptyString() throws Exception
+    public void testEncryptionOfEmptyString()
     {
         doTestSimpleEncryptDecrypt("");
     }
 
     private void doTestSimpleEncryptDecrypt(final String text)
     {
-        AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(secretKey);
+        final AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(secretKey);
 
-        String encrypted = encrypter.encrypt(text);
-        assertNotNull("Encrypter did not return a result from encryption", encrypted);
-        assertFalse("Plain text and encrypted version are equal", text.equals(encrypted));
-        String decrypted = encrypter.decrypt(encrypted);
-        assertNotNull("Encrypter did not return a result from decryption", decrypted);
-        assertTrue("Encryption was not reversible", text.equals(decrypted));
+        final String encrypted = encrypter.encrypt(text);
+        assertNotNull(encrypted, "Encrypter did not return a result from encryption");
+        assertNotEquals(text, encrypted, "Plain text and encrypted version are equal");
+        final String decrypted = encrypter.decrypt(encrypted);
+        assertNotNull(decrypted, "Encrypter did not return a result from decryption");
+        assertEquals(text, decrypted, "Encryption was not reversible");
     }
 
     @Test
-    public void testEncryptingNullFails() throws Exception
+    public void testEncryptingNullFails()
     {
-        AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(secretKey);
+        final AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(secretKey);
 
-        try
-        {
-            String encrypted = encrypter.encrypt(null);
-            fail("Attempting to encrypt null should fail");
-        }
-        catch (NullPointerException e)
-        {
-            // pass
-        }
+        assertThrows(NullPointerException.class,
+                () -> encrypter.encrypt(null),
+                "Attempting to encrypt null should fail");
     }
 
     @Test
-    public void testEncryptingVeryLargeSecret() throws Exception
+    public void testEncryptingVeryLargeSecret()
     {
-        Random random = new Random();
-        byte[] data = new byte[4096];
+        final Random random = new Random();
+        final byte[] data = new byte[4096];
         random.nextBytes(data);
         for (int i = 0; i < data.length; i++)
         {
@@ -164,47 +143,20 @@ public class AESKeyFileEncrypterTest extends UnitTestBase
     }
 
     @Test
-    public void testDecryptNonsense() throws Exception
+    public void testDecryptNonsense()
     {
-        AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(secretKey);
-        try
-        {
-            encrypter.decrypt(null);
-            fail("Should not decrypt a null value");
-        }
-        catch (NullPointerException e)
-        {
-            // pass
-        }
-
-        try
-        {
-            encrypter.decrypt("");
-            fail("Should not decrypt the empty String");
-        }
-        catch (IllegalArgumentException e)
-        {
-            // pass
-        }
-
-        try
-        {
-            encrypter.decrypt("thisisnonsense");
-            fail("Should not decrypt a small amount of nonsense");
-        }
-        catch (IllegalArgumentException e)
-        {
-            // pass
-        }
-
-        try
-        {
-            String answer = encrypter.decrypt("thisisn'tvalidBase64!soitshouldfailwithanIllegalArgumentException");
-            fail("Should not decrypt a larger amount of nonsense");
-        }
-        catch (IllegalArgumentException e)
-        {
-            // pass
-        }
+        final AESKeyFileEncrypter encrypter = new AESKeyFileEncrypter(secretKey);
+        assertThrows(NullPointerException.class,
+                () -> encrypter.decrypt(null),
+                "Should not decrypt a null value");
+        assertThrows(IllegalArgumentException.class,
+                () -> encrypter.decrypt(""),
+                "Should not decrypt the empty String");
+        assertThrows(IllegalArgumentException.class,
+                () -> encrypter.decrypt("thisisnonsense"),
+                "Should not decrypt a small amount of nonsense");
+        assertThrows(IllegalArgumentException.class,
+                () -> encrypter.decrypt("thisisn'tvalidBase64!soitshouldfailwithanIllegalArgumentException"),
+                "Should not decrypt a larger amount of nonsense");
     }
 }

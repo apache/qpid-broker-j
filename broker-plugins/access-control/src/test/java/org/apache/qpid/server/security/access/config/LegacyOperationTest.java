@@ -18,10 +18,11 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import junit.framework.TestCase;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class LegacyOperationTest extends TestCase
+import org.junit.jupiter.api.Test;
+
+public class LegacyOperationTest
 {
     @Test
     public void testToString() {

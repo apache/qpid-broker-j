@@ -20,23 +20,20 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.ProtocolVersion;
@@ -54,13 +51,11 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AMQDecoderTest extends UnitTestBase
 {
-
     private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.allocate(0);
     private ClientDecoder _decoder;
     private FrameCreatingMethodProcessor _methodProcessor;
 
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _methodProcessor = new FrameCreatingMethodProcessor(ProtocolVersion.v0_91);
@@ -68,7 +63,7 @@ public class AMQDecoderTest extends UnitTestBase
     }
 
 
-    private ByteBuffer getHeartbeatBodyBuffer() throws IOException
+    private ByteBuffer getHeartbeatBodyBuffer()
     {
         TestSender sender = new TestSender();
         HeartbeatBody.FRAME.writePayload(sender);
@@ -76,15 +71,15 @@ public class AMQDecoderTest extends UnitTestBase
     }
 
     @Test
-    public void testSingleFrameDecode() throws AMQProtocolVersionException, AMQFrameDecodingException, IOException
+    public void testSingleFrameDecode() throws AMQProtocolVersionException, AMQFrameDecodingException
     {
         ByteBuffer msg = getHeartbeatBodyBuffer();
         _decoder.decodeBuffer(msg);
         List<AMQDataBlock> frames = _methodProcessor.getProcessedMethods();
         if (frames.get(0) instanceof AMQFrame)
         {
-            assertEquals((long) HeartbeatBody.FRAME.getBodyFrame().getFrameType(),
-                                (long) ((AMQFrame) frames.get(0)).getBodyFrame().getFrameType());
+            assertEquals(HeartbeatBody.FRAME.getBodyFrame().getFrameType(),
+                    (long) ((AMQFrame) frames.get(0)).getBodyFrame().getFrameType());
 
         }
         else
@@ -95,7 +90,7 @@ public class AMQDecoderTest extends UnitTestBase
 
 
     @Test
-    public void testContentHeaderPropertiesFrame() throws AMQProtocolVersionException, AMQFrameDecodingException, IOException
+    public void testContentHeaderPropertiesFrame() throws AMQProtocolVersionException, AMQFrameDecodingException
     {
         final BasicContentHeaderProperties props = new BasicContentHeaderProperties();
         Map<String, Object> headersMap = new LinkedHashMap<>();
@@ -114,8 +109,7 @@ public class AMQDecoderTest extends UnitTestBase
         AMQDataBlock firstFrame = frames.get(0);
         if (firstFrame instanceof AMQFrame)
         {
-            assertEquals((long) ContentHeaderBody.TYPE,
-                                (long) ((AMQFrame) firstFrame).getBodyFrame().getFrameType());
+            assertEquals(ContentHeaderBody.TYPE, (long) ((AMQFrame) firstFrame).getBodyFrame().getFrameType());
             BasicContentHeaderProperties decodedProps = ((ContentHeaderBody)((AMQFrame)firstFrame).getBodyFrame()).getProperties();
             final Map<String, Object> headers = decodedProps.getHeadersAsMap();
             assertEquals("world", headers.get("hello"));
@@ -128,7 +122,7 @@ public class AMQDecoderTest extends UnitTestBase
 
 
     @Test
-    public void testDecodeWithManyBuffers() throws AMQProtocolVersionException, AMQFrameDecodingException, IOException
+    public void testDecodeWithManyBuffers() throws AMQProtocolVersionException, AMQFrameDecodingException
     {
         Random random = new Random();
         final byte[] payload = new byte[2048];
@@ -150,8 +144,7 @@ public class AMQDecoderTest extends UnitTestBase
         List<AMQDataBlock> frames = _methodProcessor.getProcessedMethods();
         if (frames.get(0) instanceof AMQFrame)
         {
-            assertEquals((long) ContentBody.TYPE,
-                                (long) ((AMQFrame) frames.get(0)).getBodyFrame().getFrameType());
+            assertEquals(ContentBody.TYPE, (long) ((AMQFrame) frames.get(0)).getBodyFrame().getFrameType());
             ContentBody decodedBody = (ContentBody) ((AMQFrame) frames.get(0)).getBodyFrame();
             byte[] bodyBytes;
             try (QpidByteBuffer payloadBuffer = decodedBody.getPayload())
@@ -159,7 +152,7 @@ public class AMQDecoderTest extends UnitTestBase
                 bodyBytes = new byte[payloadBuffer.remaining()];
                 payloadBuffer.get(bodyBytes);
             }
-            assertTrue("Body was corrupted", Arrays.equals(payload, bodyBytes));
+            assertArrayEquals(payload, bodyBytes, "Body was corrupted");
         }
         else
         {
@@ -168,7 +161,7 @@ public class AMQDecoderTest extends UnitTestBase
     }
 
     @Test
-    public void testPartialFrameDecode() throws AMQProtocolVersionException, AMQFrameDecodingException, IOException
+    public void testPartialFrameDecode() throws AMQProtocolVersionException, AMQFrameDecodingException
     {
         ByteBuffer msg = getHeartbeatBodyBuffer();
         ByteBuffer msgA = msg.slice();
@@ -180,14 +173,14 @@ public class AMQDecoderTest extends UnitTestBase
 
         _decoder.decodeBuffer(msgA);
         List<AMQDataBlock> frames = _methodProcessor.getProcessedMethods();
-        assertEquals((long) 0, (long) frames.size());
+        assertEquals(0, (long) frames.size());
 
         _decoder.decodeBuffer(msgB);
-        assertEquals((long) 1, (long) frames.size());
+        assertEquals(1, (long) frames.size());
         if (frames.get(0) instanceof AMQFrame)
         {
-            assertEquals((long) HeartbeatBody.FRAME.getBodyFrame().getFrameType(), (long) ((AMQFrame) frames.get
-                    (0)).getBodyFrame().getFrameType());
+            assertEquals(HeartbeatBody.FRAME.getBodyFrame().getFrameType(),
+                    (long) ((AMQFrame) frames.get(0)).getBodyFrame().getFrameType());
         }
         else
         {
@@ -196,7 +189,7 @@ public class AMQDecoderTest extends UnitTestBase
     }
 
     @Test
-    public void testMultipleFrameDecode() throws AMQProtocolVersionException, AMQFrameDecodingException, IOException
+    public void testMultipleFrameDecode() throws AMQProtocolVersionException, AMQFrameDecodingException
     {
         ByteBuffer msgA = getHeartbeatBodyBuffer();
         ByteBuffer msgB = getHeartbeatBodyBuffer();
@@ -206,13 +199,13 @@ public class AMQDecoderTest extends UnitTestBase
         msg.flip();
         _decoder.decodeBuffer(msg);
         List<AMQDataBlock> frames = _methodProcessor.getProcessedMethods();
-        assertEquals((long) 2, (long) frames.size());
+        assertEquals(2, (long) frames.size());
         for (AMQDataBlock frame : frames)
         {
             if (frame instanceof AMQFrame)
             {
-                assertEquals((long) HeartbeatBody.FRAME.getBodyFrame().getFrameType(),
-                                    (long) ((AMQFrame) frame).getBodyFrame().getFrameType());
+                assertEquals(HeartbeatBody.FRAME.getBodyFrame().getFrameType(),
+                        (long) ((AMQFrame) frame).getBodyFrame().getFrameType());
             }
             else
             {
@@ -222,7 +215,7 @@ public class AMQDecoderTest extends UnitTestBase
     }
 
     @Test
-    public void testMultiplePartialFrameDecode() throws AMQProtocolVersionException, AMQFrameDecodingException, IOException
+    public void testMultiplePartialFrameDecode() throws AMQProtocolVersionException, AMQFrameDecodingException
     {
         ByteBuffer msgA = getHeartbeatBodyBuffer();
         ByteBuffer msgB = getHeartbeatBodyBuffer();
@@ -247,19 +240,19 @@ public class AMQDecoderTest extends UnitTestBase
 
         _decoder.decodeBuffer(sliceA);
         List<AMQDataBlock> frames = _methodProcessor.getProcessedMethods();
-        assertEquals((long) 1, (long) frames.size());
+        assertEquals(1, (long) frames.size());
         frames.clear();
         _decoder.decodeBuffer(sliceB);
-        assertEquals((long) 1, (long) frames.size());
+        assertEquals(1, (long) frames.size());
         frames.clear();
         _decoder.decodeBuffer(msgC);
-        assertEquals((long) 1, (long) frames.size());
+        assertEquals(1, (long) frames.size());
         for (AMQDataBlock frame : frames)
         {
             if (frame instanceof AMQFrame)
             {
-                assertEquals((long) HeartbeatBody.FRAME.getBodyFrame().getFrameType(),
-                                    (long) ((AMQFrame) frame).getBodyFrame().getFrameType());
+                assertEquals(HeartbeatBody.FRAME.getBodyFrame().getFrameType(),
+                        (long) ((AMQFrame) frame).getBodyFrame().getFrameType());
             }
             else
             {

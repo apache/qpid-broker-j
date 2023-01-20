@@ -21,17 +21,17 @@
 package org.apache.qpid.server.exchange;
 
 import static org.apache.qpid.server.filter.AMQPFilterTypes.JMS_SELECTOR;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -49,12 +49,11 @@ public class ExchangeStatisticsTest extends UnitTestBase
     private VirtualHost<?> _vhost;
     private Exchange<?> _exchange;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _vhost = BrokerTestHelper.createVirtualHost(getTestName(), this);
-        final Map<String, Object> attributes = Map.of(
-                Exchange.NAME, "test",
+        final Map<String, Object> attributes = Map.of(Exchange.NAME, "test",
                 Exchange.DURABLE, false,
                 Exchange.TYPE, ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
         _exchange = _vhost.createChild(Exchange.class, attributes);
@@ -105,10 +104,10 @@ public class ExchangeStatisticsTest extends UnitTestBase
         final Queue<?> queue = _vhost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_queue"));
 
         boolean bind = _exchange.bind(queue.getName(), "test", Map.of(JMS_SELECTOR.toString(), "prop = True"), false);
-        assertTrue("Bind operation should be successful", bind);
+        assertTrue(bind, "Bind operation should be successful");
 
         final RoutingResult<ServerMessage<?>> result = _exchange.route(matchingMessage, "test", instanceProperties);
-        assertTrue("Message with matching selector not routed to queue", result.hasRoutes());
+        assertTrue(result.hasRoutes(), "Message with matching selector not routed to queue");
 
         assertEquals(1L, _exchange.getStatistics().get("bindingCount"));
         assertEquals(0L, _exchange.getStatistics().get("bytesDropped"));
@@ -135,10 +134,10 @@ public class ExchangeStatisticsTest extends UnitTestBase
         final Queue<?> queue = _vhost.createChild(Queue.class, Map.of(Queue.NAME, getTestName() + "_queue"));
 
         boolean bind = _exchange.bind(queue.getName(), "test", Map.of(JMS_SELECTOR.toString(), "prop = True"), false);
-        assertTrue("Bind operation should be successful", bind);
+        assertTrue(bind, "Bind operation should be successful");
 
         final RoutingResult<ServerMessage<?>> result = _exchange.route(unmatchingMessage, "test", instanceProperties);
-        assertFalse("Message without matching selector unexpectedly routed to queue", result.hasRoutes());
+        assertFalse(result.hasRoutes(), "Message without matching selector unexpectedly routed to queue");
 
         assertEquals(1L, _exchange.getStatistics().get("bindingCount"));
         assertEquals(100L, _exchange.getStatistics().get("bytesDropped"));

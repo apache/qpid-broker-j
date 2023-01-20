@@ -20,25 +20,26 @@
  */
 package org.apache.qpid.server.logging.actors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.PrivilegedAction;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import javax.security.auth.Subject;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
 import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
+
 public class HttpManagementActorTest extends BaseActorTestCase
 {
     public static final LogMessage EMPTY_MESSAGE = new LogMessage()
@@ -55,6 +56,7 @@ public class HttpManagementActorTest extends BaseActorTestCase
             return "";
         }
     };
+
     private static final String IP = "127.0.0.1";
     private static final int PORT = 1;
     private static final String TEST_USER = "guest";
@@ -65,69 +67,60 @@ public class HttpManagementActorTest extends BaseActorTestCase
 
     private ManagementConnectionPrincipal _connectionPrincipal;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         super.setUp();
         _connectionPrincipal = new ManagementConnectionPrincipal()
-                                    {
-                                        @Override
-                                        public String getType()
-                                        {
-                                            return "HTTP";
-                                        }
+        {
+            @Override
+            public String getType()
+            {
+                return "HTTP";
+            }
 
-                                        @Override
-                                        public String getSessionId()
-                                        {
-                                            return SESSION_ID;
-                                        }
+            @Override
+            public String getSessionId()
+            {
+                return SESSION_ID;
+            }
 
-                                        @Override
-                                        public SocketAddress getRemoteAddress()
-                                        {
-                                            return new InetSocketAddress(IP, PORT);
-                                        }
+            @Override
+            public SocketAddress getRemoteAddress()
+            {
+                return new InetSocketAddress(IP, PORT);
+            }
 
-                                        @Override
-                                        public SocketConnectionMetaData getConnectionMetaData()
-                                        {
-                                            return null;
-                                        }
+            @Override
+            public SocketConnectionMetaData getConnectionMetaData()
+            {
+                return null;
+            }
 
-                                        @Override
-                                        public String getName()
-                                        {
-                                            return getRemoteAddress().toString();
-                                        }
-                                    };
+            @Override
+            public String getName()
+            {
+                return getRemoteAddress().toString();
+            }
+        };
     }
 
     @Test
     public void testSubjectPrincipalNameAppearance()
     {
-        Subject subject = TestPrincipalUtils.createTestSubject(TEST_USER);
-
+        final Subject subject = TestPrincipalUtils.createTestSubject(TEST_USER);
         subject.getPrincipals().add(_connectionPrincipal);
+        final String message = Subject.doAs(subject, (PrivilegedAction<String>) this::sendTestLogMessage);
 
-        final String message = Subject.doAs(subject, new PrivilegedAction<String>()
-        {
-            @Override
-            public String run()
-            {
-                return sendTestLogMessage();
-            }
-        });
+        assertNotNull(message, "Test log message is not created!");
 
-        assertNotNull("Test log message is not created!", message);
+        final List<Object> logs = getRawLogger().getLogMessages();
+        assertEquals(1, (long) logs.size(), "Message log size not as expected.");
 
-        List<Object> logs = getRawLogger().getLogMessages();
-        assertEquals("Message log size not as expected.", (long) 1, (long) logs.size());
-
-        String logMessage = logs.get(0).toString();
-        assertTrue("Message was not found in log message", logMessage.contains(message));
-        assertTrue("Message does not contain expected value: " + logMessage,
-                          logMessage.startsWith(String.format(FORMAT, SESSION_ID, TEST_USER)));
+        final String logMessage = logs.get(0).toString();
+        assertTrue(logMessage.contains(message), "Message was not found in log message");
+        assertTrue(logMessage.startsWith(String.format(FORMAT, SESSION_ID, TEST_USER)),
+                "Message does not contain expected value: " + logMessage);
     }
 
     /** It's necessary to test successive calls because HttpManagementActor caches
@@ -144,49 +137,33 @@ public class HttpManagementActorTest extends BaseActorTestCase
     private void assertLogMessageWithoutPrincipal()
     {
         getRawLogger().getLogMessages().clear();
-        Subject subject = new Subject(false,
-                                      Collections.singleton(_connectionPrincipal),
-                                      Collections.emptySet(),
-                                      Collections.emptySet());
-        Subject.doAs(subject, new PrivilegedAction<Object>()
+        final Subject subject = new Subject(false, Set.of(_connectionPrincipal), Set.of(), Set.of());
+        Subject.doAs(subject, (PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                getEventLogger().message(EMPTY_MESSAGE);
-                List<Object> logs = getRawLogger().getLogMessages();
-                assertEquals("Message log size not as expected.", (long) 1, (long) logs.size());
+            getEventLogger().message(EMPTY_MESSAGE);
+            final List<Object> logs = getRawLogger().getLogMessages();
+            assertEquals(1, (long) logs.size(), "Message log size not as expected.");
 
-                String logMessage = logs.get(0).toString();
-                assertEquals("Unexpected log message", String.format(FORMAT, SESSION_ID, NA), logMessage);
-
-                return null;
-            }
+            final String logMessage = logs.get(0).toString();
+            assertEquals(String.format(FORMAT, SESSION_ID, NA), logMessage, "Unexpected log message");
+            return null;
         });
     }
 
-    private void assertLogMessageWithPrincipal(String principalName)
+    private void assertLogMessageWithPrincipal(final String principalName)
     {
         getRawLogger().getLogMessages().clear();
 
-        Subject subject = TestPrincipalUtils.createTestSubject(principalName);
+        final Subject subject = TestPrincipalUtils.createTestSubject(principalName);
         subject.getPrincipals().add(_connectionPrincipal);
-        final String message = Subject.doAs(subject, new PrivilegedAction<String>()
+        final String message = Subject.doAs(subject, (PrivilegedAction<String>) () ->
         {
-            @Override
-            public String run()
-            {
-                getEventLogger().message(EMPTY_MESSAGE);
-                List<Object> logs = getRawLogger().getLogMessages();
-                assertEquals("Message log size not as expected.", (long) 1, (long) logs.size());
-
-                String logMessage = logs.get(0).toString();
-
-                return logMessage;
-            }
+            getEventLogger().message(EMPTY_MESSAGE);
+            final List<Object> logs = getRawLogger().getLogMessages();
+            assertEquals(1, (long) logs.size(), "Message log size not as expected.");
+            return logs.get(0).toString();
         });
 
-        assertTrue("Unexpected log message",
-                          message.startsWith(String.format(FORMAT, SESSION_ID, principalName)));
+        assertTrue(message.startsWith(String.format(FORMAT, SESSION_ID, principalName)), "Unexpected log message");
     }
 }

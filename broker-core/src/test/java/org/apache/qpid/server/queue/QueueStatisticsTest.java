@@ -21,13 +21,13 @@
 package org.apache.qpid.server.queue;
 
 import static org.apache.qpid.server.filter.AMQPFilterTypes.JMS_SELECTOR;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.message.ServerMessage;
@@ -42,12 +42,11 @@ public class QueueStatisticsTest extends UnitTestBase
     private QueueManagingVirtualHost<?> _vhost;
     private Queue<?> _queue;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _vhost = BrokerTestHelper.createVirtualHost(getClass().getName(), this);
-        final Map<String,Object> attributes = Map.of(
-                Queue.NAME, "queue",
+        final Map<String,Object> attributes = Map.of(Queue.NAME, "queue",
                 Queue.OWNER, "owner");
         _queue = _vhost.createChild(Queue.class, attributes);
     }
@@ -121,8 +120,7 @@ public class QueueStatisticsTest extends UnitTestBase
     {
         assertEquals(0, _queue.getStatistics().get("bindingCount"));
 
-        final Exchange<?> exchange = _vhost.createChild(Exchange.class, Map.of(
-                Exchange.NAME, "exchange",
+        final Exchange<?> exchange = _vhost.createChild(Exchange.class, Map.of(Exchange.NAME, "exchange",
                 Exchange.TYPE, ExchangeDefaults.TOPIC_EXCHANGE_CLASS));
         exchange.bind(_queue.getName(), "test", Map.of(JMS_SELECTOR.toString(), "prop = True"), false);
         assertEquals(1, _queue.getStatistics().get("bindingCount"));

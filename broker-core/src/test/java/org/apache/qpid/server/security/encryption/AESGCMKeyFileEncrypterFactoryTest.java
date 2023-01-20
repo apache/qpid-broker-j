@@ -28,8 +28,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import javax.crypto.spec.SecretKeySpec;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -37,7 +37,7 @@ public class AESGCMKeyFileEncrypterFactoryTest extends UnitTestBase
 {
     private AESGCMKeyFileEncrypterFactory _factory;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _factory = new AESGCMKeyFileEncrypterFactory();

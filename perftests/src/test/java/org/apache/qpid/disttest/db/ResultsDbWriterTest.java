@@ -24,6 +24,7 @@ import static org.apache.qpid.disttest.message.ParticipantAttribute.PARTICIPANT_
 import static org.apache.qpid.disttest.message.ParticipantAttribute.TEST_NAME;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.THROUGHPUT;
 import static org.apache.qpid.test.utils.TestFileUtils.createTestDirectory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -46,51 +47,32 @@ import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.results.ResultsTestFixture;
 import org.apache.qpid.test.utils.TestFileUtils;
 
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.fail;
-import static org.junit.Assert.assertNotNull;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class ResultsDbWriterTest extends UnitTestBase
 {
-    private static final long DUMMY_TIMESTAMP = 1234;
+    private static final long _dummyTimestamp = 1234;
 
+    private File _tempDbDirectory;
     private final Clock _clock = mock(Clock.class);
     private final ResultsTestFixture _resultsTestFixture = new ResultsTestFixture();
 
-    private File _tempDbDirectory;
-
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _tempDbDirectory = createTestDirectory();
-        when(_clock.currentTimeMillis()).thenReturn(DUMMY_TIMESTAMP);
+        when(_clock.currentTimeMillis()).thenReturn(_dummyTimestamp);
     }
 
-
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    public void tearDown()
     {
-        try
-        {
-            TestFileUtils.delete(_tempDbDirectory, true);
-        }
-        finally
-        {
-        }
+        TestFileUtils.delete(_tempDbDirectory, true);
     }
-
 
     @Test
     public void testWriteResults() throws Exception
@@ -118,10 +100,8 @@ public class ResultsDbWriterTest extends UnitTestBase
             TimeZone.setDefault(TimeZone.getTimeZone("GMT-05:00"));
             ResultsDbWriter resultsDbWriter = new ResultsDbWriter(getContext(), null, _clock);
             String runId = resultsDbWriter.getRunId();
-            assertEquals("Default run id '" + runId + "' should correspond to dummy timestamp " + _clock.currentTimeMillis(),
-
-                                "run 1970-01-01 00:00:01.234",
-                                runId);
+            assertEquals("run 1970-01-01 00:00:01.234", runId,
+                    "Default run id '" + runId + "' should correspond to dummy timestamp " + _clock.currentTimeMillis());
 
         }
         finally
@@ -161,13 +141,12 @@ public class ResultsDbWriterTest extends UnitTestBase
         {
             rs.next();
             assertEquals(participantResult.getTestName(), rs.getString(TEST_NAME.getDisplayName()));
-            assertEquals((long) participantResult.getIterationNumber(),
-                                (long) rs.getInt(ITERATION_NUMBER.getDisplayName()));
+            assertEquals(participantResult.getIterationNumber(), (long) rs.getInt(ITERATION_NUMBER.getDisplayName()));
 
             assertEquals(participantResult.getParticipantName(), rs.getString(PARTICIPANT_NAME.getDisplayName()));
             assertEquals(participantResult.getThroughput(), (Object) rs.getDouble(THROUGHPUT.getDisplayName()));
             assertEquals(expectedRunId, rs.getString(ResultsDbWriter.RUN_ID));
-            assertEquals(new Timestamp(DUMMY_TIMESTAMP), rs.getTimestamp(ResultsDbWriter.INSERTED_TIMESTAMP));
+            assertEquals(new Timestamp(_dummyTimestamp), rs.getTimestamp(ResultsDbWriter.INSERTED_TIMESTAMP));
         }
         finally
         {

@@ -20,10 +20,10 @@
  */
 package org.apache.qpid.server.security.access.plugins;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -33,8 +33,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -52,7 +52,7 @@ public class AclFileAccessControlProviderFactoryTest extends UnitTestBase
     private Broker _broker;
     private ConfiguredObjectFactoryImpl _objectFactory;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         _broker = mock(Broker.class);
@@ -100,15 +100,14 @@ public class AclFileAccessControlProviderFactoryTest extends UnitTestBase
         attributes.put(AclFileAccessControlProvider.PATH, aclFile.getAbsolutePath());
         AccessControlProvider acl = _objectFactory.create(AccessControlProvider.class, attributes, _broker);
 
-        assertNotNull("ACL was not created from acl file: " + aclFile.getAbsolutePath(), acl);
+        assertNotNull(acl, "ACL was not created from acl file: " + aclFile.getAbsolutePath());
     }
 
     @Test
     public void testCreateInstanceWhenAclFileIsSpecifiedButDoesNotExist()
     {
         File aclFile = new File(TMP_FOLDER, "my-non-existing-acl-" + System.currentTimeMillis());
-        assertFalse("ACL file " + aclFile.getAbsolutePath() + " actually exists but should not",
-                           aclFile.exists());
+        assertFalse(aclFile.exists(), "ACL file " + aclFile.getAbsolutePath() + " actually exists but should not");
 
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(AccessControlProvider.ID, UUID.randomUUID());
@@ -122,8 +121,8 @@ public class AclFileAccessControlProviderFactoryTest extends UnitTestBase
         }
         catch (IllegalConfigurationException e)
         {
-            assertTrue("Unexpected exception message: " + e.getMessage(),
-                              Pattern.matches("Cannot convert .* to a readable resource", e.getMessage()));
+            assertTrue(Pattern.matches("Cannot convert .* to a readable resource", e.getMessage()),
+                    "Unexpected exception message: " + e.getMessage());
 
         }
     }

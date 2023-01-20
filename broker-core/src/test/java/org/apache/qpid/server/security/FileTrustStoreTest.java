@@ -19,17 +19,13 @@
 
 package org.apache.qpid.server.security;
 
-
 import static org.apache.qpid.server.transport.network.security.ssl.SSLUtil.getInitializedKeyStore;
 import static org.apache.qpid.test.utils.JvmVendor.IBM;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -43,16 +39,16 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
@@ -73,10 +69,10 @@ import org.apache.qpid.test.utils.tls.TlsResourceHelper;
 
 public class FileTrustStoreTest extends UnitTestBase
 {
-    @ClassRule
+    @RegisterExtension
     public static final TlsResource TLS_RESOURCE = new TlsResource();
 
-    private static final Broker BROKER = BrokerTestHelper.createBrokerMock();
+    private static final Broker<?> BROKER = BrokerTestHelper.createBrokerMock();
     private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
     private static final String DN_FOO = "CN=foo";
     private static final String DN_BAR = "CN=bar";
@@ -92,75 +88,61 @@ public class FileTrustStoreTest extends UnitTestBase
     public void testCreateFileTrustStoreWithoutCRL() throws Exception
     {
         final Path keyStoreFile = TLS_RESOURCE.createSelfSignedTrustStore(DN_FOO);
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, NAME);
-        attributes.put(FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath());
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        attributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, false);
-
+        final Map<String, Object> attributes = Map.of(
+                FileTrustStore.NAME, NAME,
+                FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, false);
         final FileTrustStore<?> fileTrustStore = createFileTrustStore(attributes);
+        final TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
 
-        TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
-        assertNotNull("Trust manager unexpected null", trustManagers[0]);
+        assertEquals(1, trustManagers.length, "Unexpected number of trust managers");
+        assertNotNull(trustManagers[0], "Trust manager unexpected null");
     }
 
     @Test
     public void testCreateFileTrustStoreFromWithExplicitlySetCRL() throws Exception
     {
         final StoreAndCrl<Path> data = generateTrustStoreAndCrl();
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, NAME);
-        attributes.put(FileTrustStore.STORE_URL, data.getStore().toFile().getAbsolutePath());
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        attributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
-        attributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, data.getCrl().toFile().getPath());
-
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
+                FileTrustStore.STORE_URL, data.getStore().toFile().getAbsolutePath(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true,
+                FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, data.getCrl().toFile().getPath());
         final FileTrustStore<?> fileTrustStore = createFileTrustStore(attributes);
+        final TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
 
-        TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
-        assertNotNull("Trust manager unexpected null", trustManagers[0]);
+        assertEquals(1, trustManagers.length, "Unexpected number of trust managers");
+        assertNotNull(trustManagers[0], "Trust manager unexpected null");
     }
 
     @Test
     public void testCreateTrustStoreFromFile_WrongPassword() throws Exception
     {
         final Path keyStoreFile = TLS_RESOURCE.createSelfSignedTrustStore(DN_FOO);
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, NAME);
-        attributes.put(FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath());
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret() + "_");
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
+                FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret() + "_",
+                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
-                                                                      "Check trust store password");
+                "Check trust store password");
     }
 
     @Test
     public void testCreateTrustStoreFromFile_MissingCrlFile() throws Exception
     {
         final Path keyStoreFile = TLS_RESOURCE.createSelfSignedTrustStore(DN_FOO);
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
+                FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType(),
+                FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, NOT_A_CRL);
 
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, NAME);
-        attributes.put(FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath());
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
-        attributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, NOT_A_CRL);
-
-        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY,
-                                                                      BROKER,
-                                                                      TrustStore.class,
-                                                                      attributes,
-                                                                      String.format(
-                                                                              "Unable to load certificate revocation list '%s' for truststore 'myFileTrustStore'",
-                                                                              NOT_A_CRL));
+        KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
+                String.format("Unable to load certificate revocation list '%s' for truststore 'myFileTrustStore'", NOT_A_CRL));
     }
 
     @Test
@@ -168,55 +150,46 @@ public class FileTrustStoreTest extends UnitTestBase
     {
         final KeyCertificatePair keyPairAndRootCA = TlsResourceBuilder.createKeyPairAndRootCA(DN_CA);
         final Path keyStoreFile = TLS_RESOURCE.createTrustStore(DN_FOO, keyPairAndRootCA);
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, NAME);
-        attributes.put(FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath());
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        attributes.put(FileTrustStore.PEERS_ONLY, true);
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
-
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
+                FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.PEERS_ONLY, true,
+                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
         final FileTrustStore<?> fileTrustStore = createFileTrustStore(attributes);
+        final TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
 
-        TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
-        assertNotNull("Trust manager unexpected null", trustManagers[0]);
+        assertEquals(1, trustManagers.length, "Unexpected number of trust managers");
+        assertNotNull(trustManagers[0], "Trust manager unexpected null");
         final boolean condition = trustManagers[0] instanceof QpidPeersOnlyTrustManager;
-        assertTrue("Trust manager unexpected null", condition);
+        assertTrue(condition, "Trust manager unexpected null");
     }
 
     @Test
     public void testUseOfExpiredTrustAnchorAllowed() throws Exception
     {
         // https://www.ibm.com/support/knowledgecenter/en/SSYKE2_8.0.0/com.ibm.java.security.component.80.doc/security-
-        assumeThat("IBMJSSE2 trust factory (IbmX509) validates the entire chain, including trusted certificates.",
-                   getJvmVendor(),
-                   is(not(equalTo(IBM))));
+        assumeFalse(Objects.equals(getJvmVendor(), IBM), "IBMJSSE2 trust factory (IbmX509) validates the entire chain, including trusted certificates");
 
         final Path keyStoreFile = createTrustStoreWithExpiredCertificate();
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
+                FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+        final FileTrustStore<?> trustStore = createFileTrustStore(attributes);
+        final TrustManager[] trustManagers = trustStore.getTrustManagers();
 
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, NAME);
-        attributes.put(FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath());
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
-
-        FileTrustStore<?> trustStore = createFileTrustStore(attributes);
-
-        TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
+        assertEquals(1, trustManagers.length, "Unexpected number of trust managers");
         final boolean condition = trustManagers[0] instanceof X509TrustManager;
-        assertTrue("Unexpected trust manager type", condition);
-        X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
+        assertTrue(condition, "Unexpected trust manager type");
 
-        KeyStore clientStore = getInitializedKeyStore(keyStoreFile.toFile().getAbsolutePath(),
+        final X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
+        final KeyStore clientStore = getInitializedKeyStore(keyStoreFile.toFile().getAbsolutePath(),
                                                       TLS_RESOURCE.getSecret(),
                                                       TLS_RESOURCE.getKeyStoreType());
-
-        String alias = clientStore.aliases().nextElement();
-        X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
+        final String alias = clientStore.aliases().nextElement();
+        final X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
 
         trustManager.checkClientTrusted(new X509Certificate[]{certificate}, "NULL");
     }
@@ -225,203 +198,152 @@ public class FileTrustStoreTest extends UnitTestBase
     public void testUseOfExpiredTrustAnchorDenied() throws Exception
     {
         final Path keyStoreFile = createTrustStoreWithExpiredCertificate();
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, NAME);
-        attributes.put(FileTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true);
-        attributes.put(FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath());
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
-
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
+                FileTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true,
+                FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
         final TrustStore<?> trustStore = createFileTrustStore(attributes);
+        final TrustManager[] trustManagers = trustStore.getTrustManagers();
 
-        TrustManager[] trustManagers = trustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
+        assertEquals(1, trustManagers.length, "Unexpected number of trust managers");
         final boolean condition = trustManagers[0] instanceof X509TrustManager;
-        assertTrue("Unexpected trust manager type", condition);
-        X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
+        assertTrue(condition, "Unexpected trust manager type");
 
-        KeyStore clientStore = getInitializedKeyStore(keyStoreFile.toFile().getAbsolutePath(),
+        final X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
+        final KeyStore clientStore = getInitializedKeyStore(keyStoreFile.toFile().getAbsolutePath(),
                                                       TLS_RESOURCE.getSecret(),
                                                       TLS_RESOURCE.getKeyStoreType());
-        String alias = clientStore.aliases().nextElement();
-        X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
-
-        try
-        {
-            trustManager.checkClientTrusted(new X509Certificate[]{certificate}, "NULL");
-            fail("Exception not thrown");
-        }
-        catch (CertificateException e)
-        {
-            if (e instanceof CertificateExpiredException || "Certificate expired".equals(e.getMessage()))
-            {
-                // IBMJSSE2 does not throw CertificateExpiredException, it throws a CertificateException
-                // ignore
-            }
-            else
-            {
-                throw e;
-            }
-        }
+        final String alias = clientStore.aliases().nextElement();
+        final X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
+        final CertificateException thrown = assertThrows(
+                CertificateException.class,
+                () -> trustManager.checkClientTrusted(new X509Certificate[]{certificate}, "NULL"),
+                "Exception not thrown");
+        assertTrue(thrown instanceof CertificateExpiredException ||
+                "Certificate expired".equals(thrown.getMessage()));
     }
 
     @Test
     public void testCreateTrustStoreFromDataUrl_Success() throws Exception
     {
         final StoreAndCrl<String> data = generateTrustStoreAndCrlAsDataUrl();
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
+                FileTrustStore.STORE_URL, data.getStore(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType(),
+                FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true,
+                FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, data.getCrl());
+        final FileTrustStore<?> fileTrustStore = createFileTrustStore(attributes);
+        final TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
 
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, NAME);
-        attributes.put(FileTrustStore.STORE_URL, data.getStore());
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
-        attributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
-        attributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, data.getCrl());
-
-        FileTrustStore<?> fileTrustStore = createFileTrustStore(attributes);
-
-        TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
         assertNotNull(trustManagers);
-        assertEquals("Unexpected number of trust managers", 1, trustManagers.length);
-        assertNotNull("Trust manager unexpected null", trustManagers[0]);
+        assertEquals(1, trustManagers.length, "Unexpected number of trust managers");
+        assertNotNull(trustManagers[0], "Trust manager unexpected null");
     }
 
     @Test
     public void testCreateTrustStoreFromDataUrl_WrongPassword() throws Exception
     {
-        String trustStoreAsDataUrl = TLS_RESOURCE.createSelfSignedTrustStoreAsDataUrl(DN_FOO);
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, NAME);
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret() + "_");
-        attributes.put(FileTrustStore.STORE_URL, trustStoreAsDataUrl);
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+        final String trustStoreAsDataUrl = TLS_RESOURCE.createSelfSignedTrustStoreAsDataUrl(DN_FOO);
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret() + "_",
+                FileTrustStore.STORE_URL, trustStoreAsDataUrl,
+                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
-                                                                      "Check trust store password");
+            "Check trust store password");
     }
 
     @Test
     public void testCreateTrustStoreFromDataUrl_BadTruststoreBytes()
     {
-        String trustStoreAsDataUrl = DataUrlUtils.getDataUrlForBytes("notatruststore".getBytes());
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, NAME);
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        attributes.put(FileTrustStore.STORE_URL, trustStoreAsDataUrl);
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+        final String trustStoreAsDataUrl = DataUrlUtils.getDataUrlForBytes("notatruststore".getBytes());
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.STORE_URL, trustStoreAsDataUrl,
+                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
-                                                                      "Cannot instantiate trust store");
+                "Cannot instantiate trust store");
     }
 
     @Test
     public void testUpdateTrustStore_Success() throws Exception
     {
         final StoreAndCrl<Path> data = generateTrustStoreAndCrl();
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, NAME);
-        attributes.put(FileTrustStore.STORE_URL, data.getStore().toFile().getAbsolutePath());
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
-        attributes.put(FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
-        attributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, data.getCrl().toFile().getAbsolutePath());
-
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
+                FileTrustStore.STORE_URL, data.getStore().toFile().getAbsolutePath(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType(),
+                FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true,
+                FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, data.getCrl().toFile().getAbsolutePath());
         final FileTrustStore<?> fileTrustStore = createFileTrustStore(attributes);
 
-        assertEquals("Unexpected path value before change",
-                     data.getStore().toFile().getAbsolutePath(),
-                     fileTrustStore.getStoreUrl());
+        assertEquals(data.getStore().toFile().getAbsolutePath(), fileTrustStore.getStoreUrl(),
+                "Unexpected path value before change");
 
-        try
-        {
-            fileTrustStore.setAttributes(Collections.singletonMap(FileTrustStore.STORE_URL, NOT_A_TRUSTSTORE));
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            String message = e.getMessage();
-            assertTrue("Exception text not as unexpected:" + message,
-                       message.contains("Cannot instantiate trust store"));
-        }
+        IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> fileTrustStore.setAttributes(Map.of(FileTrustStore.STORE_URL, NOT_A_TRUSTSTORE)),
+                "Exception not thrown");
+        assertTrue(thrown.getMessage().contains("Cannot instantiate trust store"),
+                "Exception text not as unexpected:" + thrown.getMessage());
+        assertEquals(data.getStore().toFile().getAbsolutePath(), fileTrustStore.getStoreUrl(),
+                "Unexpected keystore path value after failed change");
 
-        assertEquals("Unexpected keystore path value after failed change",
-                     data.getStore().toFile().getAbsolutePath(),
-                     fileTrustStore.getStoreUrl());
+        thrown = assertThrows(IllegalConfigurationException.class,
+                () -> fileTrustStore.setAttributes(Map.of(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, NOT_A_CRL)),
+                "Exception not thrown");
+        assertTrue(thrown.getMessage().contains(
+                String.format("Unable to load certificate revocation list '%s' for truststore '%s'", NOT_A_CRL, NAME)),
+                "Exception text not as unexpected:" + thrown.getMessage());
 
-        try
-        {
+        assertEquals(data.getCrl().toFile().getAbsolutePath(), fileTrustStore.getCertificateRevocationListUrl(),
+                "Unexpected CRL path value after failed change");
 
-            fileTrustStore.setAttributes(Collections.singletonMap(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, NOT_A_CRL));
-            fail("Exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            String message = e.getMessage();
-            assertTrue("Exception text not as unexpected:" + message,
-                       message.contains(String.format(
-                               "Unable to load certificate revocation list '%s' for truststore '%s'", NOT_A_CRL, NAME)));
-        }
-
-        assertEquals("Unexpected CRL path value after failed change",
-                     data.getCrl().toFile().getAbsolutePath(),
-                     fileTrustStore.getCertificateRevocationListUrl());
-
-        assertEquals("Unexpected path value after failed change",
-                     data.getStore().toFile().getAbsolutePath(),
-                     fileTrustStore.getStoreUrl());
+        assertEquals(data.getStore().toFile().getAbsolutePath(), fileTrustStore.getStoreUrl(),
+                "Unexpected path value after failed change");
 
         final Path keyStoreFile2 = TLS_RESOURCE.createTrustStore(DN_FOO, data.getCa());
         final Path emptyCrl = TLS_RESOURCE.createCrl(data.getCa());
 
-        Map<String, Object> changedAttributes = new HashMap<>();
-        changedAttributes.put(FileTrustStore.STORE_URL, keyStoreFile2.toFile().getAbsolutePath());
-        changedAttributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        changedAttributes.put(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, emptyCrl.toFile().getAbsolutePath());
+        final Map<String, Object> changedAttributes = Map.of(FileTrustStore.STORE_URL, keyStoreFile2.toFile().getAbsolutePath(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, emptyCrl.toFile().getAbsolutePath());
 
         fileTrustStore.setAttributes(changedAttributes);
 
-        assertEquals("Unexpected keystore path value after change that is expected to be successful",
-                     keyStoreFile2.toFile().getAbsolutePath(),
-                     fileTrustStore.getStoreUrl());
-        assertEquals("Unexpected CRL path value after change that is expected to be successful",
-                     emptyCrl.toFile().getAbsolutePath(),
-                     fileTrustStore.getCertificateRevocationListUrl());
+        assertEquals(keyStoreFile2.toFile().getAbsolutePath(), fileTrustStore.getStoreUrl(),
+                "Unexpected keystore path value after change that is expected to be successful");
+        assertEquals(emptyCrl.toFile().getAbsolutePath(), fileTrustStore.getCertificateRevocationListUrl(),
+                "Unexpected CRL path value after change that is expected to be successful");
     }
 
     @Test
     public void testEmptyTrustStoreRejected() throws Exception
     {
-
         final Path path = TLS_RESOURCE.createKeyStore();
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileKeyStore.NAME, NAME);
-        attributes.put(FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret());
-        attributes.put(FileKeyStore.STORE_URL, path.toFile().getAbsolutePath());
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+        final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
+                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileKeyStore.STORE_URL, path.toFile().getAbsolutePath(),
+                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
-                                                                      "must contain at least one certificate");
+                "must contain at least one certificate");
     }
 
     @Test
     public void testTrustStoreWithNoCertificateRejected() throws Exception
     {
         final Path path = TLS_RESOURCE.createSelfSignedKeyStore(DN_FOO);
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, getTestName());
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        attributes.put(FileTrustStore.STORE_URL, path.toFile().getAbsolutePath());
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, getTestName(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.STORE_URL, path.toFile().getAbsolutePath(),
+                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
-                                                                      "must contain at least one certificate");
+                "must contain at least one certificate");
     }
 
     @Test
@@ -429,37 +351,30 @@ public class FileTrustStoreTest extends UnitTestBase
     {
         final String keyStoreType = "jceks";
         final Path keyStoreFile = createSelfSignedKeyStoreWithSecretKeyAndCertificate(keyStoreType, DN_FOO);
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, getTestName());
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        attributes.put(FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath());
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, keyStoreType);
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, getTestName(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
+                FileTrustStore.TRUST_STORE_TYPE, keyStoreType);
+        final FileTrustStore<?> trustStore = createFileTrustStore(attributes);
+        final Certificate[] certificates = trustStore.getCertificates();
 
-        FileTrustStore<?> trustStore = createFileTrustStore(attributes);
-
-        Certificate[] certificates = trustStore.getCertificates();
-        assertEquals("Unexpected number of certificates",
-                     (long) getNumberOfCertificates(keyStoreFile, keyStoreType),
-                     (long) certificates.length);
+        assertEquals(getNumberOfCertificates(keyStoreFile, keyStoreType), (long) certificates.length,
+                     "Unexpected number of certificates");
     }
 
     @Test
     public void testPrivateKeyEntryIgnored() throws Exception
     {
         final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStoreWithCertificate(DN_FOO);
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, getTestName(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
+                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+        final FileTrustStore<?> trustStore = createFileTrustStore(attributes);
+        final Certificate[] certificates = trustStore.getCertificates();
 
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, getTestName());
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        attributes.put(FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath());
-        attributes.put(FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
-
-        FileTrustStore<?> trustStore = createFileTrustStore(attributes);
-
-        Certificate[] certificates = trustStore.getCertificates();
-        assertEquals("Unexpected number of certificates",
-                     (long) getNumberOfCertificates(keyStoreFile, TLS_RESOURCE.getKeyStoreType()),
-                     (long) certificates.length);
+        assertEquals(getNumberOfCertificates(keyStoreFile, TLS_RESOURCE.getKeyStoreType()), (long) certificates.length,
+                     "Unexpected number of certificates");
     }
 
     @Test
@@ -467,19 +382,14 @@ public class FileTrustStoreTest extends UnitTestBase
     {
         final Path keyStorePath = TLS_RESOURCE.createSelfSignedKeyStoreWithCertificate(DN_FOO);
         final Path keyStorePath2 = TLS_RESOURCE.createSelfSignedKeyStoreWithCertificate(DN_BAR);
-
-        final Map<String, Object> attributes = new HashMap<>();
-        attributes.put(FileTrustStore.NAME, getTestName());
-        attributes.put(FileTrustStore.STORE_URL, keyStorePath.toFile().getAbsolutePath());
-        attributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-
+        final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, getTestName(),
+                FileTrustStore.STORE_URL, keyStorePath.toFile().getAbsolutePath(),
+                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
         final FileTrustStore<?> trustStoreObject = createFileTrustStore(attributes);
-
         final X509Certificate certificate = getCertificate(trustStoreObject);
         assertEquals(DN_FOO, certificate.getIssuerX500Principal().getName());
 
         Files.copy(keyStorePath2, keyStorePath, StandardCopyOption.REPLACE_EXISTING);
-
         trustStoreObject.reload();
 
         final X509Certificate certificate2 = getCertificate(trustStoreObject);
@@ -492,32 +402,32 @@ public class FileTrustStoreTest extends UnitTestBase
         return (FileTrustStore<?>) FACTORY.create(TrustStore.class, attributes, BROKER);
     }
 
-    private X509Certificate getCertificate(final FileTrustStore trustStore)
+    private X509Certificate getCertificate(final FileTrustStore<?> trustStore)
             throws java.security.GeneralSecurityException
     {
-        Certificate[] certificates = trustStore.getCertificates();
+        final Certificate[] certificates = trustStore.getCertificates();
 
         assertNotNull(certificates);
         assertEquals(1, certificates.length);
 
-        Certificate certificate = certificates[0];
+        final Certificate certificate = certificates[0];
         assertTrue(certificate instanceof X509Certificate);
         return (X509Certificate) certificate;
     }
 
     private int getNumberOfCertificates(Path keystore, String type) throws Exception
     {
-        KeyStore ks = KeyStore.getInstance(type);
-        try (InputStream is = new FileInputStream(keystore.toFile()))
+        final KeyStore ks = KeyStore.getInstance(type);
+        try (final InputStream is = new FileInputStream(keystore.toFile()))
         {
             ks.load(is, TLS_RESOURCE.getSecret().toCharArray());
         }
 
         int result = 0;
-        Enumeration<String> aliases = ks.aliases();
+        final Enumeration<String> aliases = ks.aliases();
         while (aliases.hasMoreElements())
         {
-            String alias = aliases.nextElement();
+            final String alias = aliases.nextElement();
             if (ks.isCertificateEntry(alias))
             {
                 result++;
@@ -537,7 +447,6 @@ public class FileTrustStoreTest extends UnitTestBase
             throws Exception
     {
         final KeyCertificatePair keyCertPair = TlsResourceBuilder.createSelfSigned(dn);
-
         return TLS_RESOURCE.createKeyStore(keyStoreType, new PrivateKeyEntry(TLS_RESOURCE.getPrivateKeyAlias(),
                                                                 keyCertPair.getPrivateKey(),
                                                                 keyCertPair.getCertificate()),
@@ -551,11 +460,9 @@ public class FileTrustStoreTest extends UnitTestBase
         final KeyCertificatePair caPair = TlsResourceBuilder.createKeyPairAndRootCA(DN_CA);
         final KeyCertificatePair keyCertPair1 = TlsResourceBuilder.createKeyPairAndCertificate(DN_FOO, caPair);
         final KeyCertificatePair keyCertPair2 = TlsResourceBuilder.createKeyPairAndCertificate(DN_BAR, caPair);
-        final Path keyStoreFile = TLS_RESOURCE.createKeyStore(new CertificateEntry(
-                                                                           CERTIFICATE_ALIAS_A,
+        final Path keyStoreFile = TLS_RESOURCE.createKeyStore(new CertificateEntry(CERTIFICATE_ALIAS_A,
                                                                            keyCertPair1.getCertificate()),
-                                                                   new CertificateEntry(
-                                                                           CERTIFICATE_ALIAS_B,
+                                                                   new CertificateEntry(CERTIFICATE_ALIAS_B,
                                                                            keyCertPair2.getCertificate()));
 
         final Path clrFile = TLS_RESOURCE.createCrl(caPair, keyCertPair2.getCertificate());
@@ -568,12 +475,8 @@ public class FileTrustStoreTest extends UnitTestBase
         final KeyCertificatePair keyCertPair1 = TlsResourceBuilder.createKeyPairAndCertificate(DN_FOO, caPair);
         final KeyCertificatePair keyCertPair2 = TlsResourceBuilder.createKeyPairAndCertificate(DN_BAR, caPair);
         final String trustStoreAsDataUrl =
-                TLS_RESOURCE.createKeyStoreAsDataUrl(new CertificateEntry(
-                                                                  CERTIFICATE_ALIAS_A,
-                                                                  keyCertPair1.getCertificate()),
-                                                          new CertificateEntry(
-                                                                  CERTIFICATE_ALIAS_B,
-                                                                  keyCertPair2.getCertificate()));
+                TLS_RESOURCE.createKeyStoreAsDataUrl(new CertificateEntry(CERTIFICATE_ALIAS_A, keyCertPair1.getCertificate()),
+                        new CertificateEntry(CERTIFICATE_ALIAS_B, keyCertPair2.getCertificate()));
 
         final String crlAsDataUrl = TLS_RESOURCE.createCrlAsDataUrl(caPair, keyCertPair2.getCertificate());
         return new StoreAndCrl<>(trustStoreAsDataUrl, crlAsDataUrl, caPair);
@@ -585,7 +488,7 @@ public class FileTrustStoreTest extends UnitTestBase
         private final T _crl;
         private final KeyCertificatePair _ca;
 
-        private StoreAndCrl(final T store, final T crl, KeyCertificatePair ca)
+        private StoreAndCrl(final T store, final T crl, final KeyCertificatePair ca)
         {
             _store = store;
             _crl = crl;
