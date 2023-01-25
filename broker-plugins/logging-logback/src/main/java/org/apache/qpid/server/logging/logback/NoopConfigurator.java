@@ -27,8 +27,9 @@ import ch.qos.logback.core.spi.ContextAwareBase;
 public class NoopConfigurator extends ContextAwareBase implements Configurator
 {
     @Override
-    public void configure(LoggerContext loggerContext)
+    public ExecutionStatus configure(LoggerContext loggerContext)
     {
         // no-op
+        return ExecutionStatus.NEUTRAL;
     }
 }
