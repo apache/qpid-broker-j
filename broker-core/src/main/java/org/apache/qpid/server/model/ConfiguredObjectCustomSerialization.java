@@ -189,7 +189,7 @@ public class ConfiguredObjectCustomSerialization
                         String propertyName =
                                 methodName.startsWith("is") ? methodName.substring(2) : methodName.substring(3);
                         propertyName = Character.toLowerCase(propertyName.charAt(0)) + propertyName.substring(1);
-                        final boolean originalAccessible = method.isAccessible();
+                        final boolean originalAccessible = method.canAccess(value);
                         try
                         {
                             if (!originalAccessible)

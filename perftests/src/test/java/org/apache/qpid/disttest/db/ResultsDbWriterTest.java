@@ -128,7 +128,7 @@ public class ResultsDbWriterTest extends UnitTestBase
     {
         String driverName = (String) context.getEnvironment().get(ResultsDbWriter.DRIVER_NAME);
         Class<? extends Driver> driverClass = (Class<? extends Driver>) Class.forName(driverName);
-        driverClass.newInstance();
+        driverClass.getDeclaredConstructor().newInstance();
         String url = (String) context.getEnvironment().get(ResultsDbWriter.URL);
 
         Connection connection = DriverManager.getConnection(url);

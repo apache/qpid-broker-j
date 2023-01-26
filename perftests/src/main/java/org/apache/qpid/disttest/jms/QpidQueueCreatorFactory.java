@@ -20,6 +20,8 @@
 
 package org.apache.qpid.disttest.jms;
 
+import java.lang.reflect.InvocationTargetException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,17 +52,10 @@ public class QpidQueueCreatorFactory
         try
         {
             Class<? extends QueueCreator> queueCreatorClass = (Class<? extends QueueCreator>) Class.forName(queueCreatorClassName);
-            return queueCreatorClass.newInstance();
+            return queueCreatorClass.getDeclaredConstructor().newInstance();
         }
-        catch (ClassNotFoundException e)
-        {
-            throw new DistributedTestException("Unable to instantiate queue creator using class name " + queueCreatorClassName, e);
-        }
-        catch (InstantiationException e)
-        {
-            throw new DistributedTestException("Unable to instantiate queue creator using class name " + queueCreatorClassName, e);
-        }
-        catch (IllegalAccessException e)
+        catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException |
+               InstantiationException e)
         {
             throw new DistributedTestException("Unable to instantiate queue creator using class name " + queueCreatorClassName, e);
         }
