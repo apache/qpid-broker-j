@@ -45,12 +45,12 @@ From: 'Apache Software Foundation' (http://db.apache.org/)
     License: Apache 2  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'FasterXML' (http://fasterxml.com/)
-  - Jackson-annotations (http://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:bundle:2.13.4
-    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Jackson-core (https://github.com/FasterXML/jackson-core) com.fasterxml.jackson.core:jackson-core:bundle:2.13.4
-    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - jackson-databind (http://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-databind:bundle:2.13.4.2
-    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Jackson-annotations (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:bundle:2.14.1
+    License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Jackson-core (https://github.com/FasterXML/jackson-core) com.fasterxml.jackson.core:jackson-core:bundle:2.14.1
+    License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+  - jackson-databind (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-databind:bundle:2.14.1
+    License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'GlassFish Community' (https://glassfish.dev.java.net)
   - Java Servlet API (http://servlet-spec.java.net) javax.servlet:javax.servlet-api:jar:3.1.0
@@ -137,7 +137,7 @@ From: 'The Apache Software Foundation' (https://www.apache.org/)
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'The CometD Project' (https://cometd.org)
-  - Dojo Toolkit :: Bundles (http://dojotoolkit.org/dojo) org.dojotoolkit:dojo:pom:1.17.2
+  - Dojo Toolkit :: Bundles (http://dojotoolkit.org/dojo) org.dojotoolkit:dojo:pom:1.17.3
     License: Academic Free License v2.1  (https://github.com/dojo/dojo/blob/master/LICENSE)    License: BSD License  (https://github.com/dojo/dojo/blob/master/LICENSE)
 
 From: 'Webtide' (https://webtide.com)
