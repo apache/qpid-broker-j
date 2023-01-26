@@ -308,7 +308,7 @@ public class ConfigStoreMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage STORE_LOCATION(String param1)
+    public static LogMessage STORE_LOCATION(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("STORE_LOCATION");
 

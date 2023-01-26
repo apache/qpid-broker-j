@@ -36,6 +36,8 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.User;
+import org.apache.qpid.server.util.ClearableCharSequence;
+import org.apache.qpid.server.util.Strings;
 
 @ManagedObject( category = false, type = ManagedUser.MANAGED_USER_TYPE)
 class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<ManagedUser>
@@ -119,8 +121,11 @@ class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<
     @Override
     protected void logCreated(final Map<String, Object> attributes, final Outcome outcome)
     {
-        ((Container<?>) _authenticationManager.getParent()).getEventLogger()
-            .message(UserMessages.CREATE(getName(), outcome.name(), String.valueOf(getActualAttributes())));
+        try (ClearableCharSequence charSequence = Strings.toCharSequence(String.valueOf(getActualAttributes())))
+        {
+            ((Container<?>) _authenticationManager.getParent()).getEventLogger()
+                    .message(UserMessages.CREATE(getName(), outcome.name(), charSequence));
+        }
     }
 
     @Override
@@ -133,7 +138,10 @@ class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<
     @Override
     protected void logUpdated(final Map<String, Object> attributes, final Outcome outcome)
     {
-        ((Container<?>) _authenticationManager.getParent()).getEventLogger()
-            .message(UserMessages.UPDATE(getName(), outcome.name(), String.valueOf(getActualAttributes())));
+        try (ClearableCharSequence charSequence = Strings.toCharSequence(String.valueOf(getActualAttributes())))
+        {
+            ((Container<?>) _authenticationManager.getParent()).getEventLogger()
+                    .message(UserMessages.UPDATE(getName(), outcome.name(), charSequence));
+        }
     }
 }

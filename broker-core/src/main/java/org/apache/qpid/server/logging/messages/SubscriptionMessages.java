@@ -141,7 +141,7 @@ public class SubscriptionMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATE(String param1, boolean opt1, boolean opt2)
+    public static LogMessage CREATE(CharSequence param1, boolean opt1, boolean opt2)
     {
         String rawMessage = MESSAGES.getString("CREATE");
         StringBuffer msg = new StringBuffer();
@@ -234,7 +234,7 @@ public class SubscriptionMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPERATION(String param1)
+    public static LogMessage OPERATION(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("OPERATION");
 

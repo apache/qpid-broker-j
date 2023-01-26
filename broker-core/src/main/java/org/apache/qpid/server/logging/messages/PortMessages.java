@@ -100,7 +100,7 @@ public class PortMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage BIND_FAILED(String param1, Number param2)
+    public static LogMessage BIND_FAILED(CharSequence param1, Number param2)
     {
         String rawMessage = MESSAGES.getString("BIND_FAILED");
 
@@ -160,7 +160,7 @@ public class PortMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE(String param1)
+    public static LogMessage CLOSE(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("CLOSE");
 
@@ -280,7 +280,7 @@ public class PortMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CONNECTION_REJECTED_CLOSED(String param1)
+    public static LogMessage CONNECTION_REJECTED_CLOSED(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("CONNECTION_REJECTED_CLOSED");
 
@@ -340,7 +340,7 @@ public class PortMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CONNECTION_REJECTED_TOO_MANY(String param1, Number param2)
+    public static LogMessage CONNECTION_REJECTED_TOO_MANY(CharSequence param1, Number param2)
     {
         String rawMessage = MESSAGES.getString("CONNECTION_REJECTED_TOO_MANY");
 
@@ -400,7 +400,7 @@ public class PortMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATE(String param1, String param2, String param3)
+    public static LogMessage CREATE(CharSequence param1, CharSequence param2, CharSequence param3)
     {
         String rawMessage = MESSAGES.getString("CREATE");
 
@@ -460,7 +460,7 @@ public class PortMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETE(String param1, String param2)
+    public static LogMessage DELETE(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("DELETE");
 
@@ -520,7 +520,7 @@ public class PortMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPEN(String param1, String param2)
+    public static LogMessage OPEN(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("OPEN");
 
@@ -580,7 +580,7 @@ public class PortMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPERATION(String param1)
+    public static LogMessage OPERATION(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("OPERATION");
 
@@ -640,7 +640,7 @@ public class PortMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage UNSUPPORTED_PROTOCOL_HEADER(String param1, String param2)
+    public static LogMessage UNSUPPORTED_PROTOCOL_HEADER(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("UNSUPPORTED_PROTOCOL_HEADER");
 
@@ -700,7 +700,7 @@ public class PortMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage UPDATE(String param1, String param2, String param3)
+    public static LogMessage UPDATE(CharSequence param1, CharSequence param2, CharSequence param3)
     {
         String rawMessage = MESSAGES.getString("UPDATE");
 

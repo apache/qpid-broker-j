@@ -82,7 +82,7 @@ public class SenderMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE(String param1, String param2)
+    public static LogMessage CLOSE(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("CLOSE");
 
@@ -142,7 +142,7 @@ public class SenderMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATE(String param1, String param2)
+    public static LogMessage CREATE(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("CREATE");
 

@@ -472,14 +472,14 @@ public class GenerateLogMessages
                 // The parameter type
                 String type;
 
-                //Be default all types are Strings
+                // By default all types are CharSequence
                 if (typeIndex == -1 || typeIndexEnd == -1)
                 {
-                    type = "String";
+                    type = "CharSequence";
                 }
                 else
                 {
-                    //Check string ',....}' for existence of number
+                    // Check string ',....}' for existence of number
                     // to identify this parameter as an integer
                     // This allows for a style value to be present
                     // Only check the text inside the braces '{}'

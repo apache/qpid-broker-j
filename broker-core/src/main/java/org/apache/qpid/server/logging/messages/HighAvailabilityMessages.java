@@ -108,7 +108,7 @@ public class HighAvailabilityMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage ADDED(String param1, String param2)
+    public static LogMessage ADDED(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("ADDED");
 
@@ -168,7 +168,7 @@ public class HighAvailabilityMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATE(String param1, String param2, String param3)
+    public static LogMessage CREATE(CharSequence param1, CharSequence param2, CharSequence param3)
     {
         String rawMessage = MESSAGES.getString("CREATE");
 
@@ -228,7 +228,7 @@ public class HighAvailabilityMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETE(String param1, String param2)
+    public static LogMessage DELETE(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("DELETE");
 
@@ -288,7 +288,7 @@ public class HighAvailabilityMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage DESIGNATED_PRIMARY_CHANGED(String param1)
+    public static LogMessage DESIGNATED_PRIMARY_CHANGED(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("DESIGNATED_PRIMARY_CHANGED");
 
@@ -348,7 +348,7 @@ public class HighAvailabilityMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage INTRUDER_DETECTED(String param1, String param2)
+    public static LogMessage INTRUDER_DETECTED(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("INTRUDER_DETECTED");
 
@@ -408,7 +408,7 @@ public class HighAvailabilityMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage JOINED(String param1, String param2)
+    public static LogMessage JOINED(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("JOINED");
 
@@ -468,7 +468,7 @@ public class HighAvailabilityMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage LEFT(String param1, String param2)
+    public static LogMessage LEFT(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("LEFT");
 
@@ -583,7 +583,7 @@ public class HighAvailabilityMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage PRIORITY_CHANGED(String param1)
+    public static LogMessage PRIORITY_CHANGED(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("PRIORITY_CHANGED");
 
@@ -698,7 +698,7 @@ public class HighAvailabilityMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage QUORUM_OVERRIDE_CHANGED(String param1)
+    public static LogMessage QUORUM_OVERRIDE_CHANGED(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("QUORUM_OVERRIDE_CHANGED");
 
@@ -758,7 +758,7 @@ public class HighAvailabilityMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage REMOVED(String param1, String param2)
+    public static LogMessage REMOVED(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("REMOVED");
 
@@ -818,7 +818,7 @@ public class HighAvailabilityMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage ROLE_CHANGED(String param1, String param2, String param3, String param4)
+    public static LogMessage ROLE_CHANGED(CharSequence param1, CharSequence param2, CharSequence param3, CharSequence param4)
     {
         String rawMessage = MESSAGES.getString("ROLE_CHANGED");
 
@@ -878,7 +878,7 @@ public class HighAvailabilityMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage TRANSFER_MASTER(String param1, String param2)
+    public static LogMessage TRANSFER_MASTER(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("TRANSFER_MASTER");
 
@@ -938,7 +938,7 @@ public class HighAvailabilityMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage UPDATE(String param1, String param2, String param3)
+    public static LogMessage UPDATE(CharSequence param1, CharSequence param2, CharSequence param3)
     {
         String rawMessage = MESSAGES.getString("UPDATE");
 
