@@ -118,7 +118,7 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
         }
         catch (Exception e)
         {
-            sendJsonErrorResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            sendJsonErrorResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, GENERIC_ERROR_MESSAGE);
             LOGGER.error("Error when executing query", e);
         }
     }
@@ -126,7 +126,7 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
     private void performQuery(final HttpServletRequest request,
                               final HttpServletResponse response,
                               final ConfiguredObject<?> managedObject)
-            throws IOException, ServletException
+            throws IOException
     {
         String categoryName;
         X parent = getParent(request, managedObject);
@@ -172,25 +172,18 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
                 }
                 catch (SelectorParsingException e)
                 {
-                    sendJsonErrorResponse(request,
-                                          response,
-                                          HttpServletResponse.SC_BAD_REQUEST,
-                                          e.getMessage());
+                    sendJsonErrorResponse(request, response, HttpServletResponse.SC_BAD_REQUEST, GENERIC_ERROR_MESSAGE);
+                    LOGGER.error("Error when executing request" , e);
                 }
                 catch (EvaluationException e)
                 {
-                    sendJsonErrorResponse(request,
-                                          response,
-                                          SC_UNPROCESSABLE_ENTITY,
-                                          e.getMessage());
+                    sendJsonErrorResponse(request, response, SC_UNPROCESSABLE_ENTITY, GENERIC_ERROR_MESSAGE);
+                    LOGGER.error("Error when executing request" , e);
                 }
             }
             else
             {
-                sendJsonErrorResponse(request,
-                                      response,
-                                      HttpServletResponse.SC_NOT_FOUND,
-                                      "Unknown object type " + categoryName);
+                sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Unknown object type " + categoryName);
             }
 
         }

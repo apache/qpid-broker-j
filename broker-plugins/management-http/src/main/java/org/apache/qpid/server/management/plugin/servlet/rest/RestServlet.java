@@ -45,6 +45,8 @@ import javax.servlet.http.Part;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.base.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.ManagementController;
@@ -62,6 +64,7 @@ public class RestServlet extends AbstractServlet
 {
     private static final long serialVersionUID = 1L;
     private static final String APPLICATION_JSON = "application/json";
+    private static final Logger LOGGER = LoggerFactory.getLogger(RestServlet.class);
 
     private transient ManagementController _managementController;
 
@@ -120,6 +123,7 @@ public class RestServlet extends AbstractServlet
         }
         catch (ManagementException e)
         {
+            LOGGER.error("Error when executing GET request", e);
             sendResponse(e, httpServletRequest, httpServletResponse);
         }
     }
@@ -139,6 +143,7 @@ public class RestServlet extends AbstractServlet
         }
         catch (ManagementException e)
         {
+            LOGGER.error("Error when executing POST request", e);
             sendResponse(e, httpServletRequest, httpServletResponse);
         }
     }
@@ -158,6 +163,7 @@ public class RestServlet extends AbstractServlet
         }
         catch (ManagementException e)
         {
+            LOGGER.error("Error when executing PUT request", e);
             sendResponse(e, httpServletRequest, httpServletResponse);
         }
     }
@@ -177,6 +183,7 @@ public class RestServlet extends AbstractServlet
         }
         catch (ManagementException e)
         {
+            LOGGER.error("Error when executing DELETE request", e);
             sendResponse(e, httpServletRequest, httpServletResponse);
         }
     }
@@ -193,9 +200,7 @@ public class RestServlet extends AbstractServlet
         setHeaders(response);
         setExceptionHeaders(managementException, response);
         response.setStatus(managementException.getStatusCode());
-        writeJsonResponse(Collections.singletonMap("errorMessage", managementException.getMessage()),
-                          request,
-                          response);
+        writeJsonResponse(Map.of("errorMessage", GENERIC_ERROR_MESSAGE), request, response);
     }
 
     private void setExceptionHeaders(final ManagementException managementException, final HttpServletResponse response)
