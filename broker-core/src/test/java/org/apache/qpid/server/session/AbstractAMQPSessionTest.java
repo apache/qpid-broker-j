@@ -41,6 +41,8 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.Producer;
+import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
@@ -74,7 +76,6 @@ public class AbstractAMQPSessionTest extends UnitTestBase
         when(_connection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
         when(_connection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
         mockAMQPSession = new MockAMQPSession(_connection, 123);
-
     }
 
     @AfterEach
@@ -152,6 +153,36 @@ public class AbstractAMQPSessionTest extends UnitTestBase
         assertEquals(0L, statisticsAfterReset.get("messagesOut"));
         assertEquals(0L, statisticsAfterReset.get("transactedMessagesIn"));
         assertEquals(0L, statisticsAfterReset.get("transactedMessagesOut"));
+    }
+
+    @Test
+    public void producer() throws Exception
+    {
+        final PublishingLink link = mock(PublishingLink.class);
+        when(link.getName()).thenReturn("test-link");
+        when(link.getType()).thenReturn(PublishingLink.TYPE_LINK);
+
+        final Queue<?> queue = mock(Queue.class);
+
+        final Producer<?> producer = mockAMQPSession.addProducer(link, queue);
+
+        Map<String, Object> statistics = producer.getStatistics();
+
+        assertEquals(0, statistics.get("messagesOut"));
+        assertEquals(0L, statistics.get("bytesOut"));
+
+        producer.registerMessageDelivered(100L);
+
+        statistics = producer.getStatistics();
+
+        assertEquals(1, statistics.get("messagesOut"));
+        assertEquals(100L, statistics.get("bytesOut"));
+
+        producer.resetStatistics();
+        statistics = producer.getStatistics();
+
+        assertEquals(0, statistics.get("messagesOut"));
+        assertEquals(0L, statistics.get("bytesOut"));
     }
 
     private static class MockAMQPSession extends AbstractAMQPSession
