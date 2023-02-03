@@ -18,7 +18,7 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -28,8 +28,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
@@ -59,7 +60,7 @@ public class LinkImplTest
 
     private LinkRegistry<Source, Target> _linkRegistry;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         _linkRegistry = mock(LinkRegistry.class);
