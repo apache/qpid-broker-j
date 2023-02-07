@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.tests.http;
 
+import static jakarta.servlet.http.HttpServletResponse.SC_CREATED;
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -49,7 +52,8 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import javax.servlet.http.HttpServletResponse;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,27 +63,30 @@ import com.google.common.io.ByteStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.security.NonJavaKeyStore;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.util.DataUrlUtils;
+import org.apache.qpid.test.utils.tls.KeyCertificatePair;
+import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
+import org.apache.qpid.test.utils.tls.TlsResourceHelper;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 
 public class HttpTestHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpTestHelper.class);
 
-    private static final TypeReference<List<Map<String, Object>>> TYPE_LIST_OF_MAPS = new TypeReference<List<Map<String, Object>>>()
-    {
-    };
+    private static final TypeReference<List<Map<String, Object>>> TYPE_LIST_OF_MAPS = new TypeReference<>() { };
 
-    private static final TypeReference<Map<String, Object>> TYPE_MAP = new TypeReference<Map<String, Object>>()
-    {
-    };
+    private static final TypeReference<Map<String, Object>> TYPE_MAP = new TypeReference<>() { };
+
+    private static final TypeReference<Boolean> TYPE_BOOLEAN = new TypeReference<>() { };
 
     private static final String API_BASE = "/api/latest/";
-    private final BrokerAdmin _admin;
     private final int _httpPort;
     private String _username;
     private String _password;
-    private final String _requestHostName;
+    private String _requestHostName;
     private final int _connectTimeout = Integer.getInteger("qpid.resttest_connection_timeout", 30000);
 
     private String _acceptEncoding;
@@ -100,7 +107,6 @@ public class HttpTestHelper
 
     public HttpTestHelper(BrokerAdmin admin, final String requestHostName, final int httpPort)
     {
-        _admin = admin;
         _httpPort = httpPort;
         _username = admin.getValidUsername();
         _password = admin.getValidPassword();
@@ -193,8 +199,7 @@ public class HttpTestHelper
         byte[] data = readConnectionInputStream(connection);
 
         ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> providedObject = mapper.readValue(new ByteArrayInputStream(data), TYPE_MAP);
-        return providedObject;
+        return mapper.readValue(new ByteArrayInputStream(data), TYPE_MAP);
     }
 
     private byte[] readConnectionInputStream(HttpURLConnection connection) throws IOException
@@ -383,12 +388,61 @@ public class HttpTestHelper
         _username = username;
     }
 
+    /**
+     * System tests use "Host" header to supply virtualhost name (which is build from test class name and test method
+     * name). This leads to invalid SNI error on Jetty side when using HTTPS connection.
+     * This method provides workaround by generating new keystore containing certificate with the correct CN and replacing
+     * the default keystore with the generated one.
+     *
+     * @param cn CN Certificate CN (consists of test class name and test method name)
+     *
+     * @throws Exception
+     */
+    public void createKeyStoreAndSetItOnPort(final String cn) throws Exception
+    {
+        final KeyCertificatePair keyCertPair = TlsResourceBuilder.createSelfSigned("CN=" + cn);
+        final String privateKey = DataUrlUtils.getDataUrlForBytes(TlsResourceHelper.toPEM(keyCertPair.getPrivateKey())
+                .getBytes(UTF_8));
+        final String certificate = DataUrlUtils.getDataUrlForBytes(TlsResourceHelper.toPEM(keyCertPair.getCertificate())
+                .getBytes(UTF_8));
+        final Map<String, Object> attributes = Map.of(
+                NonJavaKeyStore.NAME, cn,
+                NonJavaKeyStore.PRIVATE_KEY_URL, privateKey,
+                NonJavaKeyStore.CERTIFICATE_URL, certificate,
+                NonJavaKeyStore.TYPE, "NonJavaKeyStore");
+
+        final String requestHostName = _requestHostName;
+        _requestHostName = "localhost";
+        setTls(false);
+        submitRequest("keystore/" + cn, "PUT", attributes, SC_CREATED);
+        submitRequest("port/HTTP", "POST", Map.of(Port.KEY_STORE, cn), SC_OK);
+        postJson("port/HTTP/updateTLS", Map.of(), TYPE_BOOLEAN, SC_OK);
+        setTls(true);
+        _requestHostName = requestHostName;
+    }
+
+    /**
+     * System tests use "Host" header to supply virtualhost name (which is build from test class name and test method
+     * name). This leads to invalid SNI error on Jetty side when using HTTPS connection.
+     * This method removes previously generated keystore and replaces it with the default one.
+     *
+     * @param cn CN Certificate CN (consists of test class name and test method name)
+     *
+     * @throws Exception
+     */
+    public void removeKeyStoreFromPort(final String cn) throws Exception
+    {
+        submitRequest("port/HTTP", "POST", Map.of(Port.KEY_STORE, "systestsKeyStore"), SC_OK);
+        submitRequest("keystore/" + cn, "DELETE", Map.of(), SC_OK);
+        postJson("port/HTTP/updateTLS", Map.of(), TYPE_BOOLEAN, SC_OK);
+        setTls(false);
+    }
+
     private static class TrustAllTrustManager implements X509TrustManager
     {
         public X509Certificate[] getAcceptedIssuers()
         {
-            X509Certificate[] issuers = new X509Certificate[0];
-            return issuers;
+            return new X509Certificate[0];
         }
 
         @Override

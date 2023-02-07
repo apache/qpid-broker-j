@@ -20,7 +20,7 @@
 
 package org.apache.qpid.tests.http.metrics;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.junit.jupiter.api.Test;
 

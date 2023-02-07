@@ -24,14 +24,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 
@@ -40,21 +38,14 @@ public class FileServlet extends HttpServlet
     private static final long serialVersionUID = 1L;
 
     private static final String RESOURCES_PREFIX = "/resources";
-    private static final Map<String, String> CONTENT_TYPES;
-
-    static
-    {
-        final Map<String, String> contentTypes = new HashMap<>();
-        contentTypes.put("js",   "application/javascript");
-        contentTypes.put("html", "text/html");
-        contentTypes.put("css",  "text/css");
-        contentTypes.put("json", "application/json");
-        contentTypes.put("jpg",  "image/jpg");
-        contentTypes.put("png",  "image/png");
-        contentTypes.put("gif",  "image/gif");
-        contentTypes.put("svg",  "image/svg+xml");
-        CONTENT_TYPES = Collections.unmodifiableMap(contentTypes);
-    }
+    private static final Map<String, String> CONTENT_TYPES = Map.of("js", "application/javascript",
+            "html", "text/html",
+            "css",  "text/css",
+            "json", "application/json",
+            "jpg",  "image/jpg",
+            "png",  "image/png",
+            "gif",  "image/gif",
+            "svg",  "image/svg+xml");
 
     private final String _resourcePathPrefix;
     private final boolean _usePathInfo;

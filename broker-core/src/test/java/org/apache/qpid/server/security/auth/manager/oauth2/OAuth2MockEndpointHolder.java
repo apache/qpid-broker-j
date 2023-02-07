@@ -29,12 +29,17 @@ import java.util.List;
 import java.util.Map;
 
 import javax.net.ssl.SSLEngine;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -75,16 +80,16 @@ class OAuth2MockEndpointHolder
                                         CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST_DEFAULT);
 
         _server = new Server();
-        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server()
-                                              {
-                                                  @Override
-                                                  public void customize(final SSLEngine sslEngine)
-                                                  {
-                                                      super.customize(sslEngine);
-                                                      SSLUtil.updateEnabledCipherSuites(sslEngine, cipherSuiteAllowList, cipherSuiteDenyList);
-                                                      SSLUtil.updateEnabledTlsProtocols(sslEngine, protocolAllowList, protocolDenyList);
-                                                  }
-                                              };
+        final SslContextFactory.Server sslContextFactory = new SslContextFactory.Server()
+        {
+            @Override
+            public void customize(final SSLEngine sslEngine)
+            {
+                super.customize(sslEngine);
+                SSLUtil.updateEnabledCipherSuites(sslEngine, cipherSuiteAllowList, cipherSuiteDenyList);
+                SSLUtil.updateEnabledTlsProtocols(sslEngine, protocolAllowList, protocolDenyList);
+            }
+        };
         sslContextFactory.setKeyStorePassword(keyStorePassword);
         sslContextFactory.setKeyStoreResource(Resource.newResource(keyStorePath));
         sslContextFactory.setKeyStoreType(keyStoreType);
@@ -97,7 +102,11 @@ class OAuth2MockEndpointHolder
                                                  "^.*_NULL_.*$",
                                                  "^.*_anon_.*$");
 
-        _connector = new ServerConnector(_server, sslContextFactory);
+        final SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer(false);
+        final HttpConfiguration httpsConfig = new HttpConfiguration();
+        httpsConfig.addCustomizer(secureRequestCustomizer);
+
+        _connector = new ServerConnector(_server, sslContextFactory, new HttpConnectionFactory(httpsConfig));
         _connector.setPort(0);
         _connector.setReuseAddress(true);
         _server.setHandler(new AbstractHandler()
@@ -155,9 +164,7 @@ class OAuth2MockEndpointHolder
         {
             try
             {
-                listOfStrings = new ObjectMapper().readValue(listAsString.getBytes(UTF_8), new TypeReference<List<String>>()
-                {
-                });
+                listOfStrings = new ObjectMapper().readValue(listAsString.getBytes(UTF_8), new TypeReference<>() { });
             }
             catch (IOException e)
             {

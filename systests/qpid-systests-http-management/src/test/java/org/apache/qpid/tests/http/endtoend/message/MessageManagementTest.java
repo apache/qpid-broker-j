@@ -21,8 +21,8 @@
 
 package org.apache.qpid.tests.http.endtoend.message;
 
-import static javax.servlet.http.HttpServletResponse.SC_CREATED;
-import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static jakarta.servlet.http.HttpServletResponse.SC_CREATED;
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.is;
@@ -42,10 +42,10 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -68,7 +68,7 @@ public class MessageManagementTest extends HttpTestBase
         getBrokerAdmin().createQueue(SOURCE_QUEUE_NAME);
         getBrokerAdmin().createQueue(DESTINATION_QUEUE_NAME);
 
-        getHelper().setTls(true);
+        getHelper().createKeyStoreAndSetItOnPort(getFullTestName());
 
         final Map<String, Object> odd = Collections.singletonMap(INDEX, 1);
         final Map<String, Object> even = Collections.singletonMap(INDEX, 0);
@@ -81,6 +81,12 @@ public class MessageManagementTest extends HttpTestBase
             publishMessage(SOURCE_QUEUE_NAME, uuid, i % 2 == 0 ? even : odd);
             i++;
         }
+    }
+
+    @AfterEach
+    public void afterEach() throws Exception
+    {
+        getHelper().removeKeyStoreFromPort(getFullTestName());
     }
 
     @Test

@@ -21,8 +21,8 @@
 
 package org.apache.qpid.tests.http.v6_1;
 
-import static javax.servlet.http.HttpServletResponse.SC_CREATED;
-import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static jakarta.servlet.http.HttpServletResponse.SC_CREATED;
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;

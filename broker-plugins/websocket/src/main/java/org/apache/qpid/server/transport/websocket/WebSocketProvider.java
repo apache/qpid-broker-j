@@ -21,12 +21,12 @@
 package org.apache.qpid.server.transport.websocket;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -39,9 +39,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+
+import jakarta.servlet.Servlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -49,18 +50,21 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.server.WebSocketHandler;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,8 +94,6 @@ class WebSocketProvider implements AcceptingTransport
     private final SslContextFactory.Server _sslContextFactory;
     private final AmqpPort<?> _port;
     private final Broker<?> _broker;
-    private final Set<Protocol> _supported;
-    private final Protocol _defaultSupportedProtocolReply;
     private final MultiVersionProtocolEngineFactory _factory;
 
     private Server _server;
@@ -111,17 +113,13 @@ class WebSocketProvider implements AcceptingTransport
         _sslContextFactory = transport == Transport.WSS ? createSslContextFactory(port) : null;
         _port = port;
         _broker = ((Broker<?>) port.getParent());
-        _supported = supported;
-        _defaultSupportedProtocolReply = defaultSupportedProtocolReply;
 
         _factory = new MultiVersionProtocolEngineFactory(
-                        _broker,
-                        _supported,
-                        _defaultSupportedProtocolReply,
-                        _port,
-                        _transport);
-
-
+                _broker,
+                supported,
+                defaultSupportedProtocolReply,
+                _port,
+                _transport);
     }
 
     @Override
@@ -181,47 +179,31 @@ class WebSocketProvider implements AcceptingTransport
         connector.setPort(_port.getPort());
         _server.addConnector(connector);
 
-        WebSocketHandler wshandler = new WebSocketHandler()
+        final Servlet websocketServlet = new JettyWebSocketServlet()
         {
             @Override
-            public void configure(final WebSocketServletFactory factory)
+            public void configure(final JettyWebSocketServletFactory factory)
             {
+                factory.setMaxBinaryMessageSize(0L);
                 factory.setCreator((req, resp) ->
                 {
                     resp.setAcceptedSubProtocol(AMQP_WEBSOCKET_SUBPROTOCOL);
                     return new AmqpWebSocket();
                 });
             }
-
-            @Override
-            public void configurePolicy(final WebSocketPolicy policy)
-            {
-                super.configurePolicy(policy);
-                // It seems Jetty internally makes provision for maxBinaryMessageSize to be unconstrained, but the
-                // policy does not allow it to be configured it that way.
-                // See https://github.com/eclipse/jetty.project/issues/488
-                try
-                {
-                    Field maxBinaryMessageSize = policy.getClass().getDeclaredField("maxBinaryMessageSize");
-                    maxBinaryMessageSize.setAccessible(true);
-                    maxBinaryMessageSize.set(policy, 0);
-                }
-                catch (IllegalAccessException | NoSuchFieldException e)
-                {
-                    LOGGER.warn("Could not override maxBinaryMessageSize", e);
-                }
-            }
         };
 
-        _server.setHandler(wshandler);
-        wshandler.setHandler(new AbstractHandler()
+        final ContextHandlerCollection handlers = new ContextHandlerCollection();
+        final ServletContextHandler servletContextHandler = new ServletContextHandler();
+        servletContextHandler.addServlet(new ServletHolder(websocketServlet), "");
+        JettyWebSocketServletContainerInitializer.configure(servletContextHandler, null);
+        handlers.addHandler(new AbstractHandler()
         {
             @Override
             public void handle(final String target,
                                final Request baseRequest,
                                final HttpServletRequest request,
                                final HttpServletResponse response)
-                    throws IOException, ServletException
             {
                 if (response.isCommitted() || baseRequest.isHandled())
                 {
@@ -229,10 +211,11 @@ class WebSocketProvider implements AcceptingTransport
                 }
                 baseRequest.setHandled(true);
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-
-
             }
         });
+        handlers.addHandler(servletContextHandler);
+        _server.setHandler(handlers);
+
         try
         {
             _server.start();
@@ -245,12 +228,11 @@ class WebSocketProvider implements AcceptingTransport
         {
             throw new ServerScopedRuntimeException(e);
         }
-
     }
 
     private SslContextFactory.Server createSslContextFactory(final AmqpPort<?> port)
     {
-        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server()
+        final SslContextFactory.Server sslContextFactory = new SslContextFactory.Server()
         {
             @Override
             public void customize(final SSLEngine sslEngine)
@@ -297,7 +279,7 @@ class WebSocketProvider implements AcceptingTransport
     @Override
     public int getAcceptingPort()
     {
-        Server server = _server;
+        final Server server = _server;
         return server == null || server.getConnectors().length == 0 || !(server.getConnectors()[0] instanceof ServerConnector) ?
                 _port.getPort() :
                 ((ServerConnector) server.getConnectors()[0]).getLocalPort();
@@ -355,17 +337,17 @@ class WebSocketProvider implements AcceptingTransport
         @OnWebSocketConnect @SuppressWarnings("unused")
         public void onWebSocketConnect(final Session session)
         {
-            SocketAddress localAddress = session.getLocalAddress();
-            SocketAddress remoteAddress = session.getRemoteAddress();
+            final SocketAddress localAddress = session.getLocalAddress();
+            final SocketAddress remoteAddress = session.getRemoteAddress();
             _protocolEngine = _factory.newProtocolEngine(remoteAddress);
 
             // Let AMQP do timeout handling
-            session.setIdleTimeout(0);
+            session.setIdleTimeout(Duration.ZERO);
 
             _connectionWrapper = new ConnectionWrapper(session, localAddress, remoteAddress, _protocolEngine, _server.getThreadPool());
-            if (session.getUpgradeRequest() instanceof ServletUpgradeRequest)
+            if (session.getUpgradeRequest() instanceof JettyServerUpgradeRequest)
             {
-                ServletUpgradeRequest upgradeRequest = (ServletUpgradeRequest) session.getUpgradeRequest();
+                JettyServerUpgradeRequest upgradeRequest = (JettyServerUpgradeRequest) session.getUpgradeRequest();
                 if (upgradeRequest.getCertificates() != null && upgradeRequest.getCertificates().length > 0)
                 {
                     _connectionWrapper.setPeerCertificate(upgradeRequest.getCertificates()[0]);
@@ -375,7 +357,6 @@ class WebSocketProvider implements AcceptingTransport
             _protocolEngine.setWorkListener(object -> _server.getThreadPool().execute(() -> _connectionWrapper.doWork()));
             _activeConnections.add(_connectionWrapper);
             _idleTimeoutChecker.wakeup();
-
         }
 
         @OnWebSocketMessage @SuppressWarnings("unused")
@@ -464,11 +445,11 @@ class WebSocketProvider implements AcceptingTransport
             if (!_unexpectedByteBufferSizeReported)
             {
                 LOGGER.info("At least one frame unexpectedly does not fit into default byte buffer size ({}B) on a connection {}.",
-                            _broker.getNetworkBufferSize(), this.toString());
+                            _broker.getNetworkBufferSize(), this);
                 _unexpectedByteBufferSizeReported = true;
             }
         }
-        
+
         /** AMQP frames MUST be sent as binary data payloads of WebSocket messages.*/
         @OnWebSocketMessage @SuppressWarnings("unused")
         public void onWebSocketText(Session sess, String text)
@@ -515,18 +496,14 @@ class WebSocketProvider implements AcceptingTransport
             _remoteAddress = remoteAddress;
             _protocolEngine = protocolEngine;
             _threadPool = threadPool;
-            _tickJob = new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                synchronized (ConnectionWrapper.this)
-                                {
-                                    protocolEngine.getAggregateTicker().tick(System.currentTimeMillis());
-                                    doWrite();
-                                }
-                            }
-                        };
+            _tickJob = () ->
+            {
+                synchronized (ConnectionWrapper.this)
+                {
+                    protocolEngine.getAggregateTicker().tick(System.currentTimeMillis());
+                    doWrite();
+                }
+            };
         }
 
         @Override

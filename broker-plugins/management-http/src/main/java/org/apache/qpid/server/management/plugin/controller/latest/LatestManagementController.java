@@ -366,7 +366,7 @@ public class LatestManagementController extends AbstractManagementController
             {
                 throw createNotAllowedManagementException(String.format(
                         "Operation '%s' modifies the object so you must use POST.",
-                        operationName), Collections.singletonMap("Allow", "POST"));
+                        operationName), Map.of("Allow", "POST"));
             }
 
             returnValue = operation.perform(target, arguments);

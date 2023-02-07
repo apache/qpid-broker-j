@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.tests.http.authentication;
 
-import static javax.servlet.http.HttpServletResponse.SC_CREATED;
-import static javax.servlet.http.HttpServletResponse.SC_OK;
-import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
+import static jakarta.servlet.http.HttpServletResponse.SC_CREATED;
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
+import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasKey;
@@ -42,7 +42,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.Assertions;
@@ -70,7 +70,7 @@ import org.apache.qpid.tests.http.HttpTestHelper;
 
 public class PreemptiveAuthenticationTest extends HttpTestBase
 {
-    private static final TypeReference<String> STRING_TYPE_REF = new TypeReference<String>() {};
+    private static final TypeReference<String> STRING_TYPE_REF = new TypeReference<>() { };
     private static final String STORE_PASSWORD = "password";
 
     private Deque<BaseAction<Void, Exception>> _tearDownActions;
@@ -103,16 +103,16 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
     @Test
     public void clientAuthSuccess() throws Exception
     {
-        HttpTestHelper helper = configForClientAuth("CN=foo");
+        HttpTestHelper helper = configForClientAuth("CN=localhost");
 
         String userId = helper.getJson("broker/getUser", STRING_TYPE_REF, SC_OK);
-        assertThat(userId, startsWith("foo@"));
+        assertThat(userId, startsWith("localhost@"));
     }
 
     @Test
     public void clientAuthenticationWebManagementConsole() throws Exception
     {
-        HttpTestHelper helper = configForClientAuth("CN=foo");
+        HttpTestHelper helper = configForClientAuth("CN=localhost");
 
         HttpURLConnection authenticateConnection = helper.openManagementConnection(HttpManagement.DEFAULT_LOGIN_URL, "GET");
         authenticateConnection.setInstanceFollowRedirects(false);

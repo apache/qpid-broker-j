@@ -21,7 +21,7 @@
 
 package org.apache.qpid.tests.http.query;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.junit.jupiter.api.Test;
 

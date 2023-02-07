@@ -28,7 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.ConfiguredObject;

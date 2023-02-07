@@ -46,14 +46,15 @@ import java.util.Set;
 import java.util.UUID;
 
 import javax.security.auth.Subject;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.MultiMap;
-
+import org.eclipse.jetty.util.UrlEncoded;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -288,8 +289,7 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
     private Map<String, String> getRedirectParameters(final String redirectLocation)
     {
         final MultiMap<String> parameterMap = new MultiMap<>();
-        HttpURI httpURI = new HttpURI(redirectLocation);
-        httpURI.decodeQueryTo(parameterMap);
+        UrlEncoded.decodeUtf8To(HttpURI.from(redirectLocation).getQuery(), parameterMap);
         Map<String,String> parameters = new HashMap<>(parameterMap.size());
         for (Map.Entry<String, List<String>> paramEntry : parameterMap.entrySet())
         {

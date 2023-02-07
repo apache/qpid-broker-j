@@ -21,7 +21,7 @@
 
 package org.apache.qpid.tests.http.endtoend.message;
 
-import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -55,7 +55,8 @@ import javax.jms.StreamMessage;
 import javax.jms.TextMessage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-
+import com.google.common.base.Strings;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -67,24 +68,21 @@ import org.apache.qpid.tests.http.HttpTestBase;
 public class MessageTest extends HttpTestBase
 {
     private static final String QUEUE_NAME = "myqueue";
-    private static final TypeReference<List<Map<String, Object>>> LIST_MAP_TYPE_REF =
-            new TypeReference<List<Map<String, Object>>>()
-            {
-            };
-    private static final TypeReference<Map<String, Object>> MAP_TYPE_REF =
-            new TypeReference<Map<String, Object>>()
-            {
-            };
-    private static final TypeReference<List<Object>> LIST_TYPE_REF =
-            new TypeReference<List<Object>>()
-            {
-            };
+    private static final TypeReference<List<Map<String, Object>>> LIST_MAP_TYPE_REF = new TypeReference<>() { };
+    private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() { };
+    private static final TypeReference<List<Object>> LIST_TYPE_REF = new TypeReference<>() { };
 
     @BeforeEach
-    public void setUp()
+    public void setUp() throws Exception
     {
         getBrokerAdmin().createQueue(QUEUE_NAME);
-        getHelper().setTls(true);
+        getHelper().createKeyStoreAndSetItOnPort(getFullTestName());
+    }
+
+    @AfterEach
+    public void afterEach() throws Exception
+    {
+        getHelper().removeKeyStoreFromPort(getFullTestName());
     }
 
     @Test

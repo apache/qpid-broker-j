@@ -29,7 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.management.plugin.ManagementController;
 import org.apache.qpid.server.management.plugin.ManagementException;
@@ -174,7 +174,7 @@ public abstract class AbstractManagementController implements ManagementControll
                         Object name = attributes.get("name");
                         requestURL.append("/").append(encode(String.valueOf(name)));
                     }
-                    headers = Collections.singletonMap("Location", requestURL.toString());
+                    headers = Map.of("Location", requestURL.toString());
                     responseType = ResponseType.MODEL_OBJECT;
                 }
                 return new ControllerManagementResponse(responseType, response, responseCode, headers);

@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.cert.X509Certificate;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,14 +40,12 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -93,19 +90,16 @@ public class OAuth2AuthenticationProviderImplTest extends UnitTestBase
     private OAuth2AuthenticationProvider<?> _authProvider;
     private OAuth2MockEndpointHolder _server;
 
-    @BeforeEach
+    @BeforeAll
     public void setUp() throws Exception
     {
-        final Path keyStore = TLS_RESOURCE.createSelfSignedKeyStore("CN=foo");
+        final Path keyStore = TLS_RESOURCE.createSelfSignedKeyStore("CN=localhost");
         _server = new OAuth2MockEndpointHolder(keyStore.toFile().getAbsolutePath(),
                                                TLS_RESOURCE.getSecret(),
                                                TLS_RESOURCE.getKeyStoreType());
         _server.start();
 
         final Broker<?> broker = BrokerTestHelper.createBrokerMock();
-        final TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-        when(broker.getTaskExecutor()).thenReturn(taskExecutor);
-        when(broker.getChildExecutor()).thenReturn(taskExecutor);
         final Map<String, Object> authProviderAttributes = new HashMap<>();
         authProviderAttributes.put(ConfiguredObject.NAME, "testOAuthProvider");
         authProviderAttributes.put("clientId", TEST_CLIENT_ID);
@@ -142,13 +136,13 @@ public class OAuth2AuthenticationProviderImplTest extends UnitTestBase
 
         final TrustManager[] trustingTrustManager = new TrustManager[] {new TrustingTrustManager() };
 
-        final SSLContext sc = SSLContext.getInstance("SSL");
+        final SSLContext sc = SSLContext.getInstance("TLSv1.3");
         sc.init(null, trustingTrustManager, new java.security.SecureRandom());
         HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
         HttpsURLConnection.setDefaultHostnameVerifier(new BlindHostnameVerifier());
     }
 
-    @AfterEach
+    @AfterAll
     public void tearDown() throws Exception
     {
         if (_server != null)
