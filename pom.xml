@@ -107,8 +107,8 @@
     <logback-version>1.4.5</logback-version>
     <logback-db-version>1.2.11.1</logback-db-version>
     <guava-version>31.1-jre</guava-version>
-    <fasterxml-jackson-version>2.14.2</fasterxml-jackson-version>
-    <fasterxml-jackson-databind-version>2.14.2</fasterxml-jackson-databind-version>
+    <fasterxml-jackson-version>2.14.1</fasterxml-jackson-version>
+    <fasterxml-jackson-databind-version>2.14.1</fasterxml-jackson-databind-version>
     <slf4j-version>2.0.6</slf4j-version>
     <jetty-version>9.4.49.v20220914</jetty-version>
 
