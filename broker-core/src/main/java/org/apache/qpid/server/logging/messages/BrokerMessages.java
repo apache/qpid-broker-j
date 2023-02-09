@@ -104,7 +104,7 @@ public class BrokerMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CONFIG(String param1)
+    public static LogMessage CONFIG(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("CONFIG");
 
@@ -164,7 +164,7 @@ public class BrokerMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage FAILED_CHILDREN(String param1)
+    public static LogMessage FAILED_CHILDREN(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("FAILED_CHILDREN");
 
@@ -224,7 +224,7 @@ public class BrokerMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage FATAL_ERROR(String param1)
+    public static LogMessage FATAL_ERROR(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("FATAL_ERROR");
 
@@ -284,7 +284,7 @@ public class BrokerMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage LISTENING(String param1, Number param2)
+    public static LogMessage LISTENING(CharSequence param1, Number param2)
     {
         String rawMessage = MESSAGES.getString("LISTENING");
 
@@ -344,7 +344,7 @@ public class BrokerMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage MANAGEMENT_MODE(String param1, String param2)
+    public static LogMessage MANAGEMENT_MODE(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("MANAGEMENT_MODE");
 
@@ -464,7 +464,7 @@ public class BrokerMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPERATION(String param1)
+    public static LogMessage OPERATION(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("OPERATION");
 
@@ -524,7 +524,7 @@ public class BrokerMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage PLATFORM(String param1, String param2, String param3, String param4, String param5, String param6)
+    public static LogMessage PLATFORM(CharSequence param1, CharSequence param2, CharSequence param3, CharSequence param4, CharSequence param5, CharSequence param6)
     {
         String rawMessage = MESSAGES.getString("PLATFORM");
 
@@ -584,7 +584,7 @@ public class BrokerMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage PROCESS(String param1)
+    public static LogMessage PROCESS(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("PROCESS");
 
@@ -699,7 +699,7 @@ public class BrokerMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage SHUTTING_DOWN(String param1, Number param2)
+    public static LogMessage SHUTTING_DOWN(CharSequence param1, Number param2)
     {
         String rawMessage = MESSAGES.getString("SHUTTING_DOWN");
 
@@ -759,7 +759,7 @@ public class BrokerMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage STARTUP(String param1, String param2)
+    public static LogMessage STARTUP(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("STARTUP");
 

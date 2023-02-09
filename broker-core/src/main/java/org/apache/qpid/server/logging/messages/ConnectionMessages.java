@@ -100,7 +100,7 @@ public class ConnectionMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLIENT_VERSION_LOG(String param1)
+    public static LogMessage CLIENT_VERSION_LOG(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("CLIENT_VERSION_LOG");
 
@@ -160,7 +160,7 @@ public class ConnectionMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLIENT_VERSION_REJECT(String param1)
+    public static LogMessage CLIENT_VERSION_REJECT(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("CLIENT_VERSION_REJECT");
 
@@ -220,7 +220,7 @@ public class ConnectionMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE(String param1, boolean opt1)
+    public static LogMessage CLOSE(CharSequence param1, boolean opt1)
     {
         String rawMessage = MESSAGES.getString("CLOSE");
         StringBuffer msg = new StringBuffer();
@@ -358,7 +358,7 @@ public class ConnectionMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage IDLE_CLOSE(String param1, boolean opt1)
+    public static LogMessage IDLE_CLOSE(CharSequence param1, boolean opt1)
     {
         String rawMessage = MESSAGES.getString("IDLE_CLOSE");
         StringBuffer msg = new StringBuffer();
@@ -616,7 +616,7 @@ public class ConnectionMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPEN(String param1, String param2, String param3, String param4, String param5, String param6, boolean opt1, boolean opt2, boolean opt3, boolean opt4)
+    public static LogMessage OPEN(CharSequence param1, CharSequence param2, CharSequence param3, CharSequence param4, CharSequence param5, CharSequence param6, boolean opt1, boolean opt2, boolean opt3, boolean opt4)
     {
         String rawMessage = MESSAGES.getString("OPEN");
         StringBuffer msg = new StringBuffer();
@@ -789,7 +789,7 @@ public class ConnectionMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPERATION(String param1)
+    public static LogMessage OPERATION(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("OPERATION");
 

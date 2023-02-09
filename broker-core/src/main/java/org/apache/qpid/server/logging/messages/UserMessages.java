@@ -84,7 +84,7 @@ public class UserMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATE(String param1, String param2, String param3)
+    public static LogMessage CREATE(CharSequence param1, CharSequence param2, CharSequence param3)
     {
         String rawMessage = MESSAGES.getString("CREATE");
 
@@ -144,7 +144,7 @@ public class UserMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETE(String param1, String param2)
+    public static LogMessage DELETE(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("DELETE");
 
@@ -204,7 +204,7 @@ public class UserMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage UPDATE(String param1, String param2, String param3)
+    public static LogMessage UPDATE(CharSequence param1, CharSequence param2, CharSequence param3)
     {
         String rawMessage = MESSAGES.getString("UPDATE");
 

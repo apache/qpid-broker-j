@@ -92,7 +92,7 @@ public class ManagementConsoleMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE(String param1)
+    public static LogMessage CLOSE(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("CLOSE");
 
@@ -152,7 +152,7 @@ public class ManagementConsoleMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage LISTENING(String param1, String param2, Number param3)
+    public static LogMessage LISTENING(CharSequence param1, CharSequence param2, Number param3)
     {
         String rawMessage = MESSAGES.getString("LISTENING");
 
@@ -212,7 +212,7 @@ public class ManagementConsoleMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPEN(String param1)
+    public static LogMessage OPEN(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("OPEN");
 
@@ -272,7 +272,7 @@ public class ManagementConsoleMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage READY(String param1)
+    public static LogMessage READY(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("READY");
 
@@ -332,7 +332,7 @@ public class ManagementConsoleMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage SHUTTING_DOWN(String param1, Number param2)
+    public static LogMessage SHUTTING_DOWN(CharSequence param1, Number param2)
     {
         String rawMessage = MESSAGES.getString("SHUTTING_DOWN");
 
@@ -392,7 +392,7 @@ public class ManagementConsoleMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage STARTUP(String param1)
+    public static LogMessage STARTUP(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("STARTUP");
 
@@ -452,7 +452,7 @@ public class ManagementConsoleMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage STOPPED(String param1)
+    public static LogMessage STOPPED(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("STOPPED");
 

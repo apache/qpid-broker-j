@@ -96,7 +96,7 @@ public class AccessControlMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage ALLOWED(String param1, String param2, String param3)
+    public static LogMessage ALLOWED(CharSequence param1, CharSequence param2, CharSequence param3)
     {
         String rawMessage = MESSAGES.getString("ALLOWED");
 
@@ -156,7 +156,7 @@ public class AccessControlMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE(String param1)
+    public static LogMessage CLOSE(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("CLOSE");
 
@@ -216,7 +216,7 @@ public class AccessControlMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATE(String param1, String param2, String param3)
+    public static LogMessage CREATE(CharSequence param1, CharSequence param2, CharSequence param3)
     {
         String rawMessage = MESSAGES.getString("CREATE");
 
@@ -276,7 +276,7 @@ public class AccessControlMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETE(String param1, String param2)
+    public static LogMessage DELETE(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("DELETE");
 
@@ -336,7 +336,7 @@ public class AccessControlMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage DENIED(String param1, String param2, String param3)
+    public static LogMessage DENIED(CharSequence param1, CharSequence param2, CharSequence param3)
     {
         String rawMessage = MESSAGES.getString("DENIED");
 
@@ -396,7 +396,7 @@ public class AccessControlMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage LOADED(String param1)
+    public static LogMessage LOADED(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("LOADED");
 
@@ -456,7 +456,7 @@ public class AccessControlMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPEN(String param1, String param2)
+    public static LogMessage OPEN(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("OPEN");
 
@@ -516,7 +516,7 @@ public class AccessControlMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPERATION(String param1)
+    public static LogMessage OPERATION(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("OPERATION");
 
@@ -576,7 +576,7 @@ public class AccessControlMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage UPDATE(String param1, String param2, String param3)
+    public static LogMessage UPDATE(CharSequence param1, CharSequence param2, CharSequence param3)
     {
         String rawMessage = MESSAGES.getString("UPDATE");
 

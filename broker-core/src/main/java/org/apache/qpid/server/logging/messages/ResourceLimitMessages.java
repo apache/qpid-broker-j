@@ -84,7 +84,7 @@ public class ResourceLimitMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage ACCEPTED(String param1, String param2, String param3, String param4)
+    public static LogMessage ACCEPTED(CharSequence param1, CharSequence param2, CharSequence param3, CharSequence param4)
     {
         String rawMessage = MESSAGES.getString("ACCEPTED");
 
@@ -144,7 +144,7 @@ public class ResourceLimitMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage INFO(String param1, String param2)
+    public static LogMessage INFO(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("INFO");
 
@@ -204,7 +204,7 @@ public class ResourceLimitMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage REJECTED(String param1, String param2, String param3, String param4)
+    public static LogMessage REJECTED(CharSequence param1, CharSequence param2, CharSequence param3, CharSequence param4)
     {
         String rawMessage = MESSAGES.getString("REJECTED");
 

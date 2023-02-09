@@ -84,7 +84,7 @@ public class BindingMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATED(String param1)
+    public static LogMessage CREATED(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("CREATED");
 
@@ -144,7 +144,7 @@ public class BindingMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETED(String param1)
+    public static LogMessage DELETED(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("DELETED");
 
@@ -204,7 +204,7 @@ public class BindingMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPERATION(String param1)
+    public static LogMessage OPERATION(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("OPERATION");
 

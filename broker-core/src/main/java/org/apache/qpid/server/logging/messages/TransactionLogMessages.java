@@ -204,7 +204,7 @@ public class TransactionLogMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage RECOVERED(Number param1, String param2)
+    public static LogMessage RECOVERED(Number param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("RECOVERED");
 
@@ -264,7 +264,7 @@ public class TransactionLogMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage RECOVERY_COMPLETE(String param1, boolean opt1)
+    public static LogMessage RECOVERY_COMPLETE(CharSequence param1, boolean opt1)
     {
         String rawMessage = MESSAGES.getString("RECOVERY_COMPLETE");
         StringBuffer msg = new StringBuffer();
@@ -347,7 +347,7 @@ public class TransactionLogMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage RECOVERY_START(String param1, boolean opt1)
+    public static LogMessage RECOVERY_START(CharSequence param1, boolean opt1)
     {
         String rawMessage = MESSAGES.getString("RECOVERY_START");
         StringBuffer msg = new StringBuffer();
@@ -430,7 +430,7 @@ public class TransactionLogMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage STORE_LOCATION(String param1)
+    public static LogMessage STORE_LOCATION(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("STORE_LOCATION");
 
@@ -490,7 +490,7 @@ public class TransactionLogMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage XA_INCOMPLETE_MESSAGE(String param1, String param2)
+    public static LogMessage XA_INCOMPLETE_MESSAGE(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("XA_INCOMPLETE_MESSAGE");
 
@@ -550,7 +550,7 @@ public class TransactionLogMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage XA_INCOMPLETE_QUEUE(String param1, String param2)
+    public static LogMessage XA_INCOMPLETE_QUEUE(CharSequence param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("XA_INCOMPLETE_QUEUE");
 

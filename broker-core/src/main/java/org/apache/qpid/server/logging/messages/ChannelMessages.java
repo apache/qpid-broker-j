@@ -157,7 +157,7 @@ public class ChannelMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE_FORCED(Number param1, String param2)
+    public static LogMessage CLOSE_FORCED(Number param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("CLOSE_FORCED");
 
@@ -272,7 +272,7 @@ public class ChannelMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage DEADLETTERMSG(Number param1, String param2)
+    public static LogMessage DEADLETTERMSG(Number param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("DEADLETTERMSG");
 
@@ -332,7 +332,7 @@ public class ChannelMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage DISCARDMSG_NOALTEXCH(Number param1, String param2, String param3)
+    public static LogMessage DISCARDMSG_NOALTEXCH(Number param1, CharSequence param2, CharSequence param3)
     {
         String rawMessage = MESSAGES.getString("DISCARDMSG_NOALTEXCH");
 
@@ -392,7 +392,7 @@ public class ChannelMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage DISCARDMSG_NOROUTE(Number param1, String param2)
+    public static LogMessage DISCARDMSG_NOROUTE(Number param1, CharSequence param2)
     {
         String rawMessage = MESSAGES.getString("DISCARDMSG_NOROUTE");
 
@@ -452,7 +452,7 @@ public class ChannelMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage FLOW(String param1)
+    public static LogMessage FLOW(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("FLOW");
 
@@ -567,7 +567,7 @@ public class ChannelMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage FLOW_ENFORCED(String param1)
+    public static LogMessage FLOW_ENFORCED(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("FLOW_ENFORCED");
 
@@ -682,7 +682,7 @@ public class ChannelMessages
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPERATION(String param1)
+    public static LogMessage OPERATION(CharSequence param1)
     {
         String rawMessage = MESSAGES.getString("OPERATION");
 
