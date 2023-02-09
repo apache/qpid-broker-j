@@ -21,6 +21,7 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -34,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
@@ -47,6 +49,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.util.Action;
 
 public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Link_1_0<S, T>
@@ -94,7 +97,18 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
 
             if (_linkEndpoint != null && !session.equals(_linkEndpoint.getSession()))
             {
-                SettableFuture<LinkEndpoint<S, T>> future = SettableFuture.create();
+                if (!Objects.equals(_linkEndpoint.getSession().getConnection().getPrincipal(),
+                        session.getConnection().getPrincipal()))
+                {
+                    final Operation operation = attach.getRole() == Role.SENDER
+                            ? Operation.PERFORM_ACTION("publish")
+                            : Operation.PERFORM_ACTION("consume");
+                    final ConfiguredObject<?> targetObject = _linkEndpoint instanceof SendingLinkEndpoint
+                            ? (ConfiguredObject<?>) ((SendingLinkEndpoint) _linkEndpoint).getDestination().getMessageSource()
+                            : (ConfiguredObject<?>) session.getReceivingDestination(this, (Target) getTarget()).getMessageDestination();
+                    targetObject.authorise(operation);
+                }
+                final SettableFuture<LinkEndpoint<S, T>> future = SettableFuture.create();
                 _thiefQueue.add(new ThiefInformation(session, attach, future));
                 startLinkStealingIfNecessary();
                 return future;
