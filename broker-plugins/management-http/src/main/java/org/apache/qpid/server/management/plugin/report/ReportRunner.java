@@ -173,9 +173,10 @@ public class ReportRunner<T>
             {
                 try
                 {
-                    return report.getClass().newInstance();
+                    return report.getClass().getDeclaredConstructor().newInstance();
                 }
-                catch (InstantiationException | IllegalAccessException e)
+                catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                        NoSuchMethodException e)
                 {
                     // can't happen as by definition must have public noargs constructor
                 }

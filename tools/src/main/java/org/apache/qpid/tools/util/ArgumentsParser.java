@@ -36,7 +36,7 @@ public class ArgumentsParser
         T object;
         try
         {
-            object = pojoClass.newInstance();
+            object = pojoClass.getDeclaredConstructor().newInstance();
         }
         catch (Exception e)
         {
@@ -138,7 +138,7 @@ public class ArgumentsParser
         Object object = null;
         try
         {
-            object = objectClass.newInstance();
+            object = objectClass.getDeclaredConstructor().newInstance();
         }
         catch(Exception e)
         {

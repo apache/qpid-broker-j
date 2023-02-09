@@ -29,9 +29,9 @@ public class PropertyValueFactory
     {
         try
         {
-            return getPropertyValueClass(type).newInstance();
+            return getPropertyValueClass(type).getDeclaredConstructor().newInstance();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             throw new DistributedTestException("Unable to create a generator for a type:" + type, e);
         }

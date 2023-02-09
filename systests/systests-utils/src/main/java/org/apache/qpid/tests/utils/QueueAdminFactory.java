@@ -21,6 +21,8 @@
 
 package org.apache.qpid.tests.utils;
 
+import java.lang.reflect.InvocationTargetException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,9 +41,10 @@ class QueueAdminFactory
         {
             final Class<? extends QueueAdmin> queueCreatorClass =
                     (Class<? extends QueueAdmin>) Class.forName(queueAdminClassName);
-            return queueCreatorClass.newInstance();
+            return queueCreatorClass.getDeclaredConstructor().newInstance();
         }
-        catch (ClassNotFoundException | InstantiationException | IllegalAccessException e)
+        catch (ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException |
+               NoSuchMethodException e)
         {
             throw new BrokerAdminException(String.format("Unable to instantiate queue admin of type '%s'",
                                                          queueAdminClassName), e);

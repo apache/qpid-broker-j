@@ -23,6 +23,7 @@ package org.apache.qpid.server;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
@@ -448,11 +449,13 @@ public class Main
         {
             try
             {
-                handler = (Thread.UncaughtExceptionHandler) Class.forName(handlerClass).newInstance();
+                handler = (Thread.UncaughtExceptionHandler) Class.forName(handlerClass)
+                        .getDeclaredConstructor().newInstance();
             }
-            catch (ClassNotFoundException | InstantiationException | IllegalAccessException | ClassCastException e)
+            catch (ClassNotFoundException | InstantiationException | IllegalAccessException | ClassCastException |
+                    NoSuchMethodException | InvocationTargetException e)
             {
-                
+                // ignore
             }
         }
         
