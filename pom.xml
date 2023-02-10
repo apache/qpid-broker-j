@@ -107,8 +107,8 @@
     <logback-version>1.4.5</logback-version>
     <logback-db-version>1.2.11.1</logback-db-version>
     <guava-version>31.1-jre</guava-version>
-    <fasterxml-jackson-version>2.14.1</fasterxml-jackson-version>
-    <fasterxml-jackson-databind-version>2.14.1</fasterxml-jackson-databind-version>
+    <fasterxml-jackson-version>2.14.2</fasterxml-jackson-version>
+    <fasterxml-jackson-databind-version>2.14.2</fasterxml-jackson-databind-version>
     <slf4j-version>2.0.6</slf4j-version>
     <jetty-version>11.0.13</jetty-version>
 
@@ -130,8 +130,8 @@
 
     <!-- test dependency version numbers -->
     <junit-version>5.9.2</junit-version>
-    <mockito-version>5.0.0</mockito-version>
-    <netty-version>4.1.87.Final</netty-version>
+    <mockito-version>5.1.1</mockito-version>
+    <netty-version>4.1.89.Final</netty-version>
     <hamcrest-version>2.2</hamcrest-version>
     <maven-resolver-provider-version>3.8.6</maven-resolver-provider-version>
     <maven-resolver-version>1.8.2</maven-resolver-version>
@@ -141,30 +141,30 @@
     <jaxb-api-version>2.3.1</jaxb-api-version>
     <nashorn-version>15.4</nashorn-version>
 
-    <exec-maven-plugin-version>3.0.0</exec-maven-plugin-version>
+    <exec-maven-plugin-version>3.1.0</exec-maven-plugin-version>
     <javacc-maven-plugin-version>2.6</javacc-maven-plugin-version>
     <ph-javacc-maven-plugin-version>4.1.5</ph-javacc-maven-plugin-version>
-    <maven-enforcer-plugin-version>3.0.0-M2</maven-enforcer-plugin-version>
+    <maven-enforcer-plugin-version>3.2.1</maven-enforcer-plugin-version>
     <maven-rar-plugin-version>2.4</maven-rar-plugin-version>
-    <license-maven-plugin-version>1.8</license-maven-plugin-version>
+    <license-maven-plugin-version>2.0.0</license-maven-plugin-version>
     <maven-jxr-plugin-version>3.0.0</maven-jxr-plugin-version>
     <findbugs-maven-plugin-version>3.0.5</findbugs-maven-plugin-version>
     <jacoco-plugin-version>0.8.8</jacoco-plugin-version>
-    <apache-rat-plugin-version>0.12</apache-rat-plugin-version>
+    <apache-rat-plugin-version>0.15</apache-rat-plugin-version>
     <maven-docbx-plugin-version>2.0.15</maven-docbx-plugin-version>
     <maven-docbook-xml-plugin-version>5.0-all</maven-docbook-xml-plugin-version>
     <buildnumber-maven-plugin-version>1.4</buildnumber-maven-plugin-version>
     <maven-compiler-plugin-version>3.10.1</maven-compiler-plugin-version>
-    <maven-jar-plugin-version>3.2.2</maven-jar-plugin-version>
-    <maven-surefire-plugin-version>3.0.0-M7</maven-surefire-plugin-version>
-    <maven-surefire-report-plugin-version>3.0.0-M7</maven-surefire-report-plugin-version>
-    <h2.version>1.4.200</h2.version>
+    <maven-jar-plugin-version>3.3.0</maven-jar-plugin-version>
+    <maven-surefire-plugin-version>3.0.0-M9</maven-surefire-plugin-version>
+    <maven-surefire-report-plugin-version>3.0.0-M9</maven-surefire-report-plugin-version>
+    <h2.version>2.1.214</h2.version>
     <apache-directory-version>2.0.0.AM25</apache-directory-version>
-    <kerby-version>2.0.2</kerby-version>
+    <kerby-version>2.0.3</kerby-version>
     <bcprov-version>1.72</bcprov-version>
     <bcpkix-version>1.72</bcpkix-version>
     <logback-gelf-version>3.0.0</logback-gelf-version>
-    <prometheus-client-version>0.9.0</prometheus-client-version>
+    <prometheus-client-version>0.16.0</prometheus-client-version>
 
     <bdb-repo-enabled>false</bdb-repo-enabled>
   </properties>
@@ -1124,6 +1124,12 @@
             <qpid.tests.mms.messagestore.persistence>${profile.qpid.tests.mms.messagestore.persistence}</qpid.tests.mms.messagestore.persistence>
             <java.io.tmpdir>${java.io.tmpdir}</java.io.tmpdir>
           </systemPropertyVariables>
+          <systemProperties>
+            <property>
+              <name>derby.stream.error.file</name>
+              <value>target/derby.log</value>
+            </property>
+          </systemProperties>
         </configuration>
       </plugin>
 
@@ -1666,7 +1672,7 @@
                 <includedLicense>Bouncy Castle Licence</includedLicense>
               </includedLicenses>
               <licenseMerges>
-                <licenseMerge>Apache Software License, Version 2.0|The Apache Software License, Version 2.0|Apache Software License - Version 2.0|Apache v2|Apache 2|Apache License, Version 2.0|Apache 2.0|Apache Public License 2.0|Apache License, version 2.0|Apache License 2.0|The Apache License, Version 2.0|Apache 2.0 License</licenseMerge>
+                <licenseMerge>Apache Software License, Version 2.0|The Apache Software License, Version 2.0|Apache Software License - Version 2.0|Apache v2|Apache 2|Apache License, Version 2.0|Apache 2.0|Apache Public License 2.0|Apache License, version 2.0|Apache License 2.0|The Apache License, Version 2.0|Apache 2.0 License|Apache-2.0</licenseMerge>
                 <licenseMerge>The MIT License|MIT License|MIT license</licenseMerge>
                 <licenseMerge>BSD License|New BSD|New BSD License|BSD 3-Clause|BSD-3-Clause|BSD Licence 3|BSD License 3|The BSD License</licenseMerge>
                 <licenseMerge>Eclipse Public License - Version 1.0|Eclipse Public License - v 1.0|Eclipse Public License, Version 1.0|Eclipse Public License 1.0|MPL 2.0 or EPL 1.0</licenseMerge>
