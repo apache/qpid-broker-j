@@ -76,6 +76,8 @@ public abstract class AbstractServlet extends HttpServlet
     public static final String CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM = "contentDispositionAttachmentFilename";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractServlet.class);
     public static final String CONTENT_DISPOSITION = "Content-Disposition";
+    protected static final String GENERIC_ERROR_MESSAGE = "There was an error when performing request, " +
+            "see log file for details";
 
     /**
      * Allowed response headers
@@ -255,12 +257,12 @@ public abstract class AbstractServlet extends HttpServlet
         writeObjectToResponse(object, request, response);
     }
 
-    protected final void sendJsonErrorResponse(HttpServletRequest request,
-                                               HttpServletResponse response,
-                                               int responseCode,
-                                               String message) throws IOException
+    protected final void sendJsonErrorResponse(final HttpServletRequest request,
+                                               final HttpServletResponse response,
+                                               final int responseCode,
+                                               final String message) throws IOException
     {
-        sendJsonResponse(Collections.singletonMap("errorMessage", message), request, response, responseCode, false);
+        sendJsonResponse(Map.of("errorMessage", GENERIC_ERROR_MESSAGE), request, response, responseCode, false);
     }
 
     protected void sendError(final HttpServletResponse resp, int responseCode)
@@ -300,7 +302,7 @@ public abstract class AbstractServlet extends HttpServlet
         catch (IOException e)
         {
             LOGGER.warn("Unexpected exception processing request", e);
-            sendJsonErrorResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            sendJsonErrorResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, GENERIC_ERROR_MESSAGE);
         }
     }
 
