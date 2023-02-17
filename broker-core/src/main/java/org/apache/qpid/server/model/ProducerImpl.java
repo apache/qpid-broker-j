@@ -149,4 +149,11 @@ public class ProducerImpl<X extends Producer<X>>
     {
         return _bytesOut.get();
     }
+
+    @Override
+    public void resetStatistics()
+    {
+        _bytesOut.set(0);
+        _messagesOut.set(0);
+    }
 }

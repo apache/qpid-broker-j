@@ -47,11 +47,14 @@ public interface Producer<X extends Producer<X>> extends ConfiguredObject<X>
     @DerivedAttribute(description = "Destination type (exchange or queue)")
     DestinationType getDestinationType();
 
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES)
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, resettable = true)
     int getMessagesOut();
 
-    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES)
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, resettable = true)
     long getBytesOut();
+
+    @ManagedOperation(description = "Resets producer statistics", changesConfiguredObjectState = true)
+    void resetStatistics();
 
     ListenableFuture<Void> deleteNoChecks();
 }
