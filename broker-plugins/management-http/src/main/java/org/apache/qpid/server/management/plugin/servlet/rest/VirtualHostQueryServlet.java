@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.Broker;
@@ -117,11 +117,11 @@ public class VirtualHostQueryServlet extends QueryServlet<VirtualHost<?>>
                                                       final HttpServletRequest request)
     {
         final Model model = virtualHost.getModel();
-        if(category == VirtualHost.class)
+        if (category == VirtualHost.class)
         {
-            return Collections.<ConfiguredObject<?>>singletonList(virtualHost);
+            return List.of(virtualHost);
         }
-        else if(model.getAncestorCategories(category).contains(VirtualHost.class))
+        else if (model.getAncestorCategories(category).contains(VirtualHost.class))
         {
 
             List<Class<? extends ConfiguredObject>> hierarchy = new ArrayList<>();
@@ -142,7 +142,7 @@ public class VirtualHostQueryServlet extends QueryServlet<VirtualHost<?>>
                 }
             }
             Collections.reverse(hierarchy);
-            Collection<ConfiguredObject<?>> parents = Collections.<ConfiguredObject<?>>singletonList(virtualHost);
+            Collection<ConfiguredObject<?>> parents = List.of(virtualHost);
             return getObjects(hierarchy, parents);
         }
         else

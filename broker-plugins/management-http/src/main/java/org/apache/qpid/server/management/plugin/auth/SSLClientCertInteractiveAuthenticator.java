@@ -18,8 +18,10 @@
  */
 
 package org.apache.qpid.server.management.plugin.auth;
+
 import javax.security.auth.Subject;
-import javax.servlet.http.HttpServletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;

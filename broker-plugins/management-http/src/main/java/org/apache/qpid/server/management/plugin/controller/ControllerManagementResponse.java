@@ -23,7 +23,7 @@ package org.apache.qpid.server.management.plugin.controller;
 import java.util.Collections;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.management.plugin.ManagementResponse;
 import org.apache.qpid.server.management.plugin.ResponseType;

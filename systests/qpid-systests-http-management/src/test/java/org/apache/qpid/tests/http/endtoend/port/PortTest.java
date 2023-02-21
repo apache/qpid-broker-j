@@ -21,8 +21,8 @@
 package org.apache.qpid.tests.http.endtoend.port;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static javax.servlet.http.HttpServletResponse.SC_CREATED;
-import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static jakarta.servlet.http.HttpServletResponse.SC_CREATED;
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
@@ -39,6 +39,7 @@ import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -77,9 +78,7 @@ public class PortTest extends HttpTestBase
     public static final TlsResource TLS_RESOURCE = new TlsResource();
 
     private static final String QUEUE_NAME = "testQueue";
-    private static final TypeReference<Boolean> BOOLEAN = new TypeReference<>()
-    {
-    };
+    private static final TypeReference<Boolean> BOOLEAN = new TypeReference<>() { };
     private static final String CERTIFICATE_ALIAS = "certificate";
     private String _portName;
     private String _authenticationProvider;
@@ -90,7 +89,6 @@ public class PortTest extends HttpTestBase
     @BeforeEach
     public void setUp() throws Exception
     {
-
         _portName = getTestName();
         _authenticationProvider = _portName + "AuthenticationProvider";
         _keyStoreName = _portName + "KeyStore";
@@ -291,7 +289,7 @@ public class PortTest extends HttpTestBase
         port.put(Port.TYPE, type);
         port.put(Port.PORT, 0);
         port.put(Port.KEY_STORE, _keyStoreName);
-        port.put(Port.TRANSPORTS, Collections.singleton(transport));
+        port.put(Port.TRANSPORTS, Set.of(transport));
 
         getHelper().submitRequest("port/" + _portName, "PUT", port, SC_CREATED);
 
@@ -309,7 +307,7 @@ public class PortTest extends HttpTestBase
 
     private KeyCertificatePair generateSelfSignedCertificate() throws Exception
     {
-        return TlsResourceBuilder.createSelfSigned("CN=foo");
+        return TlsResourceBuilder.createSelfSigned("CN=localhost");
     }
 
     private void assertMessage(final Message messageA, final String a) throws JMSException
@@ -324,8 +322,7 @@ public class PortTest extends HttpTestBase
         String newKeyStoreName = _keyStoreName + "_2";
         final KeyCertificatePair keyCertPair = generateSelfSignedCertificate();
         submitKeyStoreAttributes(newKeyStoreName, SC_CREATED, keyCertPair);
-        getHelper().submitRequest("port/" + _portName, "POST",
-                                  Collections.<String, Object>singletonMap(Port.KEY_STORE, newKeyStoreName), SC_OK);
+        getHelper().submitRequest("port/" + _portName,"POST", Map.of(Port.KEY_STORE, newKeyStoreName), SC_OK);
         updatePortTls();
         return createTrustStore(keyCertPair);
     }
@@ -340,20 +337,14 @@ public class PortTest extends HttpTestBase
 
     private File createTrustStore(final KeyCertificatePair keyCertPair) throws Exception
     {
-        CertificateEntry entry = new CertificateEntry(
-                CERTIFICATE_ALIAS,
-                keyCertPair.getCertificate());
-        Path keyStore = TLS_RESOURCE.createKeyStore(entry);
+        final CertificateEntry entry = new CertificateEntry(CERTIFICATE_ALIAS, keyCertPair.getCertificate());
+        final Path keyStore = TLS_RESOURCE.createKeyStore(entry);
         return keyStore.toFile();
     }
 
     private void updatePortTls() throws Exception
     {
-        final boolean response = getHelper().postJson("port/" + _portName + "/updateTLS",
-                                                      Collections.emptyMap(),
-                                                      BOOLEAN,
-                                                      SC_OK);
+        final boolean response = getHelper().postJson("port/" + _portName + "/updateTLS", Map.of(), BOOLEAN, SC_OK);
         assertTrue(response);
-
     }
 }

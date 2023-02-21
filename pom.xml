@@ -110,7 +110,7 @@
     <fasterxml-jackson-version>2.14.1</fasterxml-jackson-version>
     <fasterxml-jackson-databind-version>2.14.1</fasterxml-jackson-databind-version>
     <slf4j-version>2.0.6</slf4j-version>
-    <jetty-version>9.4.49.v20220914</jetty-version>
+    <jetty-version>11.0.13</jetty-version>
 
     <!-- dependency version numbers -->
     <bonecp-version>0.8.0.RELEASE</bonecp-version>
@@ -648,8 +648,13 @@
         <version>${jetty-version}</version>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-rewrite</artifactId>
+        <version>${jetty-version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-server</artifactId>
+        <artifactId>websocket-jetty-server</artifactId>
         <version>${jetty-version}</version>
         <exclusions>
           <exclusion>
@@ -1665,9 +1670,9 @@
                 <licenseMerge>The MIT License|MIT License|MIT license</licenseMerge>
                 <licenseMerge>BSD License|New BSD|New BSD License|BSD 3-Clause|BSD-3-Clause|BSD Licence 3|BSD License 3|The BSD License</licenseMerge>
                 <licenseMerge>Eclipse Public License - Version 1.0|Eclipse Public License - v 1.0|Eclipse Public License, Version 1.0|Eclipse Public License 1.0|MPL 2.0 or EPL 1.0</licenseMerge>
-                <licenseMerge>Eclipse Public License - Version 2.0|Eclipse Public License - v 2.0|Eclipse Public License, Version 2.0|Eclipse Public License 2.0|Eclipse Public License v2.0|MPL 2.0 or EPL 2.0</licenseMerge>
+                <licenseMerge>Eclipse Public License - Version 2.0|Eclipse Public License - v 2.0|Eclipse Public License, Version 2.0|Eclipse Public License 2.0|Eclipse Public License v2.0|MPL 2.0 or EPL 2.0|EPL 2.0</licenseMerge>
                 <licenseMerge>Academic Free License v2.1|AFL-2.1</licenseMerge>
-                <licenseMerge>COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0|CDDL + GPLv2 with classpath exception</licenseMerge>
+                <licenseMerge>COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0|CDDL + GPLv2 with classpath exception|GPL2 w/ CPE</licenseMerge>
               </licenseMerges>
             </configuration>
             <executions>

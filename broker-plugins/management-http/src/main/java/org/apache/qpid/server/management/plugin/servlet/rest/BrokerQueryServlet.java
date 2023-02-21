@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.Broker;
@@ -50,9 +50,9 @@ public class BrokerQueryServlet extends QueryServlet<Broker<?>>
     {
 
         Class<? extends ConfiguredObject> category = null;
-        for(Class<? extends ConfiguredObject> supportedCategory : brokerModel.getSupportedCategories())
+        for (Class<? extends ConfiguredObject> supportedCategory : brokerModel.getSupportedCategories())
         {
-            if(categoryName.equalsIgnoreCase(supportedCategory.getSimpleName()))
+            if (categoryName.equalsIgnoreCase(supportedCategory.getSimpleName()))
             {
                 category = supportedCategory;
                 break;
@@ -78,9 +78,9 @@ public class BrokerQueryServlet extends QueryServlet<Broker<?>>
                                                       final Class<? extends ConfiguredObject> category,
                                                       final HttpServletRequest request)
     {
-        if(category == Broker.class)
+        if (category == Broker.class)
         {
-            return Collections.<ConfiguredObject<?>>singletonList(broker);
+            return List.of(broker);
         }
         else
         {
@@ -104,12 +104,12 @@ public class BrokerQueryServlet extends QueryServlet<Broker<?>>
                 }
             }
             Collections.reverse(hierarchy);
-            Collection<ConfiguredObject<?>> parents = Collections.<ConfiguredObject<?>>singletonList(broker);
-            Collection<ConfiguredObject<?>> children = Collections.emptyList();
-            for(Class<? extends ConfiguredObject> childClass : hierarchy)
+            Collection<ConfiguredObject<?>> parents = List.of(broker);
+            Collection<ConfiguredObject<?>> children = List.of();
+            for (Class<? extends ConfiguredObject> childClass : hierarchy)
             {
                 children = new HashSet<>();
-                for(ConfiguredObject<?> parent : parents)
+                for (ConfiguredObject<?> parent : parents)
                 {
                     children.addAll((Collection<? extends ConfiguredObject<?>>) parent.getChildren(childClass)) ;
                 }

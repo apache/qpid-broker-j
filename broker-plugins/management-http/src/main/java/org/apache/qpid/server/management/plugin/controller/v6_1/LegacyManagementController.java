@@ -82,11 +82,10 @@ public class LegacyManagementController extends AbstractLegacyConfiguredObjectCo
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         Map<String, List<String>> parameters = new HashMap<>(params);
         boolean excludeInheritedContext = isInheritedContextExcluded(params);
-        parameters.put(EXCLUDE_INHERITED_CONTEXT_PARAM,
-                       Collections.singletonList(String.valueOf(excludeInheritedContext)));
+        parameters.put(EXCLUDE_INHERITED_CONTEXT_PARAM, List.of(String.valueOf(excludeInheritedContext)));
         if (!parameters.containsKey(DEPTH_PARAM))
         {
-            parameters.put(DEPTH_PARAM, Collections.singletonList("1"));
+            parameters.put(DEPTH_PARAM, List.of("1"));
         }
         return parameters;
     }

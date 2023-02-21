@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.tests.http.authentication;
 
-import static javax.servlet.http.HttpServletResponse.SC_EXPECTATION_FAILED;
-import static javax.servlet.http.HttpServletResponse.SC_OK;
-import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
+import static jakarta.servlet.http.HttpServletResponse.SC_EXPECTATION_FAILED;
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
+import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static org.apache.qpid.server.security.auth.sasl.SaslUtil.generateCramMD5ClientResponse;
 import static org.apache.qpid.server.security.auth.sasl.SaslUtil.generatePlainClientResponse;
 import static org.junit.jupiter.api.Assertions.assertEquals;

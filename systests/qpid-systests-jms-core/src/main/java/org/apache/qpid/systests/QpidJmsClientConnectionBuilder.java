@@ -56,8 +56,8 @@ public class QpidJmsClientConnectionBuilder implements ConnectionBuilder
         _options.put("jms.clientID", getNextClientId());
         _options.put("jms.username", USERNAME);
         _options.put("jms.password", PASSWORD);
-        _options.put("transport.enabledProtocols", "TLSv1.2");
-        _options.put("transport.disabledProtocols", "SSLv2Hello,SSLv3,TLSv1,TLSv1.1");
+        _options.put("transport.enabledProtocols", "TLSv1.3");
+        _options.put("transport.disabledProtocols", "SSLv2Hello,SSLv3,TLSv1,TLSv1.1,TLSv1.2");
         _host = "localhost";
     }
 

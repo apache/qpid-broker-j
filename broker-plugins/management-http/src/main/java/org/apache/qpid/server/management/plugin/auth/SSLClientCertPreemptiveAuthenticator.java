@@ -26,7 +26,8 @@ import java.util.Collections;
 
 import javax.security.auth.Subject;
 import javax.security.auth.x500.X500Principal;
-import javax.servlet.http.HttpServletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpRequestPreemptiveAuthenticator;
@@ -44,7 +45,7 @@ public class SSLClientCertPreemptiveAuthenticator implements HttpRequestPreempti
 {
 
     private static final String SSL_CLIENT_AUTH = "SSLClientAuth";
-    private static final String CERTIFICATE_ATTRIBUTE_NAME = "javax.servlet.request.X509Certificate";
+    private static final String CERTIFICATE_ATTRIBUTE_NAME = "jakarta.servlet.request.X509Certificate";
 
     @Override
     public Subject attemptAuthentication(final HttpServletRequest request,
