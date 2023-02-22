@@ -118,6 +118,8 @@ public class AppenderUtils
         private final FileSize _maxFileSize;
         private volatile boolean _isFirst = true;
 
+        private long _nextCheck;
+
         public DailyTriggeringPolicy(boolean isRollOnRestart, String maxFileSize)
         {
             _rollOnRestart = isRollOnRestart;
@@ -131,7 +133,7 @@ public class AppenderUtils
             super.start();
             if (_rollOnRestart)
             {
-                nextCheck = 0L;
+                _nextCheck = 0L;
             }
         }
 
@@ -143,7 +145,7 @@ public class AppenderUtils
                 _isFirst = false;
                 if (activeFile != null && activeFile.exists() && activeFile.length() == 0)
                 {
-                    computeNextCheck();
+                    _nextCheck = computeNextCheck(_nextCheck);
                     return false;
                 }
             }

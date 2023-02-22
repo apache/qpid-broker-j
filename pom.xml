@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
-    <version>21</version>
+    <version>29</version>
   </parent>
 
   <groupId>org.apache.qpid</groupId>
@@ -104,13 +104,13 @@
 
     <bdb-version>7.4.5</bdb-version>
     <derby-version>10.14.2.0</derby-version>
-    <logback-version>1.4.5</logback-version>
+    <logback-version>1.4.6</logback-version>
     <logback-db-version>1.2.11.1</logback-db-version>
     <guava-version>31.1-jre</guava-version>
     <fasterxml-jackson-version>2.14.2</fasterxml-jackson-version>
     <fasterxml-jackson-databind-version>2.14.2</fasterxml-jackson-databind-version>
-    <slf4j-version>2.0.6</slf4j-version>
-    <jetty-version>11.0.13</jetty-version>
+    <slf4j-version>2.0.7</slf4j-version>
+    <jetty-version>11.0.14</jetty-version>
 
     <!-- dependency version numbers -->
     <bonecp-version>0.8.0.RELEASE</bonecp-version>
@@ -130,8 +130,8 @@
 
     <!-- test dependency version numbers -->
     <junit-version>5.9.2</junit-version>
-    <mockito-version>5.1.1</mockito-version>
-    <netty-version>4.1.89.Final</netty-version>
+    <mockito-version>5.2.0</mockito-version>
+    <netty-version>4.1.90.Final</netty-version>
     <hamcrest-version>2.2</hamcrest-version>
     <maven-resolver-provider-version>3.8.6</maven-resolver-provider-version>
     <maven-resolver-version>1.8.2</maven-resolver-version>
@@ -156,8 +156,8 @@
     <buildnumber-maven-plugin-version>1.4</buildnumber-maven-plugin-version>
     <maven-compiler-plugin-version>3.10.1</maven-compiler-plugin-version>
     <maven-jar-plugin-version>3.3.0</maven-jar-plugin-version>
-    <maven-surefire-plugin-version>3.0.0-M9</maven-surefire-plugin-version>
-    <maven-surefire-report-plugin-version>3.0.0-M9</maven-surefire-report-plugin-version>
+    <maven-surefire-plugin-version>3.0.0</maven-surefire-plugin-version>
+    <maven-surefire-report-plugin-version>3.0.0</maven-surefire-report-plugin-version>
     <h2.version>2.1.214</h2.version>
     <apache-directory-version>2.0.0.AM25</apache-directory-version>
     <kerby-version>2.0.3</kerby-version>
@@ -636,6 +636,12 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
         <version>${jetty-version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-annotations</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -660,6 +666,10 @@
           <exclusion>
             <groupId>org.eclipse.jetty.websocket</groupId>
             <artifactId>websocket-client</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-annotations</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
