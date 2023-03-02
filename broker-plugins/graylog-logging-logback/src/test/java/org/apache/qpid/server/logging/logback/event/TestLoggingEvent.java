@@ -28,9 +28,12 @@ import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.classic.spi.LoggerContextVO;
 import ch.qos.logback.classic.spi.StackTraceElementProxy;
 import org.slf4j.Marker;
+import org.slf4j.event.KeyValuePair;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class TestLoggingEvent implements ILoggingEvent
@@ -40,6 +43,8 @@ public class TestLoggingEvent implements ILoggingEvent
     private final Object[] _argumentArray = {"A", "B"};
 
     private final LoggerContextVO _loggerContext = new LoggerContextVO(new LoggerContext());
+
+    private final Instant _instant = Instant.now();
 
     private final long _timeStamp = System.currentTimeMillis();
 
@@ -93,7 +98,9 @@ public class TestLoggingEvent implements ILoggingEvent
         }
     };
 
-    private final Map<String, String> _mdcMap = Collections.singletonMap("A", "B");
+    private final Map<String, String> _mdcMap = Map.of("A", "B");
+
+    private final List<KeyValuePair> keyValuePairs = List.of(new KeyValuePair("C", "D"));
 
     private boolean preparedForDeferredProcessing = false;
 
@@ -133,6 +140,12 @@ public class TestLoggingEvent implements ILoggingEvent
         public IThrowableProxy[] getSuppressed()
         {
             return new IThrowableProxy[0];
+        }
+
+        @Override
+        public boolean isCyclic()
+        {
+            return false;
         }
     };
 
@@ -199,9 +212,9 @@ public class TestLoggingEvent implements ILoggingEvent
     }
 
     @Override
-    public Marker getMarker()
+    public List<Marker> getMarkerList()
     {
-        return _marker;
+        return List.of(_marker);
     }
 
     @Override
@@ -224,6 +237,30 @@ public class TestLoggingEvent implements ILoggingEvent
     public long getTimeStamp()
     {
         return _timeStamp;
+    }
+
+    @Override
+    public int getNanoseconds()
+    {
+        return _instant.getNano();
+    }
+
+    @Override
+    public Instant getInstant()
+    {
+        return _instant;
+    }
+
+    @Override
+    public long getSequenceNumber()
+    {
+        return 1234;
+    }
+
+    @Override
+    public List<KeyValuePair> getKeyValuePairs()
+    {
+        return keyValuePairs;
     }
 
     @Override

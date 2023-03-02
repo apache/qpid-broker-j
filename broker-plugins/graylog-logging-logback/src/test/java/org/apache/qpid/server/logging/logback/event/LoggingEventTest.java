@@ -266,6 +266,15 @@ public class LoggingEventTest extends UnitTestBase
     }
 
     @Test
+    public void testGetMarkerList()
+    {
+        TestLoggingEvent event = new TestLoggingEvent();
+        ILoggingEvent wrapper = LoggingEvent.wrap(event);
+        assertNotNull(wrapper);
+        assertEquals(event.getMarkerList(), wrapper.getMarkerList());
+    }
+
+    @Test
     public void tesGetMDCPropertyMap()
     {
         TestLoggingEvent event = new TestLoggingEvent();
@@ -306,6 +315,42 @@ public class LoggingEventTest extends UnitTestBase
         ILoggingEvent wrapper = LoggingEvent.wrap(event);
         assertNotNull(wrapper);
         assertEquals(event.getTimeStamp(), wrapper.getTimeStamp());
+    }
+
+    @Test
+    public void testGetInstant()
+    {
+        TestLoggingEvent event = new TestLoggingEvent();
+        ILoggingEvent wrapper = LoggingEvent.wrap(event);
+        assertNotNull(wrapper);
+        assertEquals(event.getInstant(), wrapper.getInstant());
+    }
+
+    @Test
+    public void testGetNanoseconds()
+    {
+        TestLoggingEvent event = new TestLoggingEvent();
+        ILoggingEvent wrapper = LoggingEvent.wrap(event);
+        assertNotNull(wrapper);
+        assertEquals(event.getNanoseconds(), wrapper.getNanoseconds());
+    }
+
+    @Test
+    public void testGetSequenceNumber()
+    {
+        TestLoggingEvent event = new TestLoggingEvent();
+        ILoggingEvent wrapper = LoggingEvent.wrap(event);
+        assertNotNull(wrapper);
+        assertEquals(event.getSequenceNumber(), wrapper.getSequenceNumber());
+    }
+
+    @Test
+    public void testGetKeyValuePairs()
+    {
+        TestLoggingEvent event = new TestLoggingEvent();
+        ILoggingEvent wrapper = LoggingEvent.wrap(event);
+        assertNotNull(wrapper);
+        assertEquals(event.getKeyValuePairs(), wrapper.getKeyValuePairs());
     }
 
     @Test

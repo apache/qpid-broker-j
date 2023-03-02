@@ -27,7 +27,10 @@ import ch.qos.logback.classic.spi.LoggerContextVO;
 import org.apache.qpid.server.logging.CallerDataFilter;
 import org.apache.qpid.server.util.ArrayUtils;
 import org.slf4j.Marker;
+import org.slf4j.event.KeyValuePair;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -114,9 +117,9 @@ public final class LoggingEvent implements ILoggingEvent
     }
 
     @Override
-    public Marker getMarker()
+    public List<Marker> getMarkerList()
     {
-        return _event.getMarker();
+        return _event.getMarkerList();
     }
 
     @Override
@@ -139,6 +142,30 @@ public final class LoggingEvent implements ILoggingEvent
     public long getTimeStamp()
     {
         return _event.getTimeStamp();
+    }
+
+    @Override
+    public Instant getInstant()
+    {
+        return _event.getInstant();
+    }
+
+    @Override
+    public int getNanoseconds()
+    {
+        return _event.getNanoseconds();
+    }
+
+    @Override
+    public long getSequenceNumber()
+    {
+        return _event.getSequenceNumber();
+    }
+
+    @Override
+    public List<KeyValuePair> getKeyValuePairs()
+    {
+        return _event.getKeyValuePairs();
     }
 
     @Override
