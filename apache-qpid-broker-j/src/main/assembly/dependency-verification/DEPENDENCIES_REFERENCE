@@ -31,9 +31,15 @@ From: 'an unknown organization'
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - J2ObjC Annotations (https://github.com/google/j2objc/) com.google.j2objc:j2objc-annotations:jar:1.3
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Prometheus Java Simpleclient (http://github.com/prometheus/client_java/simpleclient) io.prometheus:simpleclient:bundle:0.9.0
+  - Prometheus Java Simpleclient (http://github.com/prometheus/client_java/simpleclient) io.prometheus:simpleclient:bundle:0.16.0
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Prometheus Java Simpleclient Common (http://github.com/prometheus/client_java/simpleclient_common) io.prometheus:simpleclient_common:bundle:0.9.0
+  - Prometheus Java Simpleclient Common (http://github.com/prometheus/client_java/simpleclient_common) io.prometheus:simpleclient_common:bundle:0.16.0
+    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Prometheus Java Span Context Supplier - Common (http://github.com/prometheus/client_java/simpleclient_tracer/simpleclient_tracer_common) io.prometheus:simpleclient_tracer_common:bundle:0.16.0
+    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Prometheus Java Span Context Supplier - OpenTelemetry (http://github.com/prometheus/client_java/simpleclient_tracer/simpleclient_tracer_otel) io.prometheus:simpleclient_tracer_otel:bundle:0.16.0
+    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Prometheus Java Span Context Supplier - OpenTelemetry Agent (http://github.com/prometheus/client_java/simpleclient_tracer/simpleclient_tracer_otel_agent) io.prometheus:simpleclient_tracer_otel_agent:bundle:0.16.0
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - dgrid (https://www.webjars.org) org.webjars.bower:dgrid:jar:1.3.3
     License: BSD 3-Clause  (https://spdx.org/licenses/BSD 3-Clause#licenseText)
@@ -44,20 +50,12 @@ From: 'Apache Software Foundation' (http://db.apache.org/)
   - Apache Derby Database Engine and Embedded JDBC Driver (http://db.apache.org/derby/) org.apache.derby:derby:jar:10.14.2.0
     License: Apache 2  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-From: 'Eclipse Foundation' (https://www.eclipse.org)
-  - Jakarta Annotations API (https://projects.eclipse.org/projects/ee4j.ca) jakarta.annotation:jakarta.annotation-api:jar:2.1.1
-    License: EPL 2.0  (http://www.eclipse.org/legal/epl-2.0)    License: GPL2 w/ CPE  (https://www.gnu.org/software/classpath/license.html)
-
-From: 'EE4J Community' (https://github.com/eclipse-ee4j)
-  - jakarta.transaction API (https://projects.eclipse.org/projects/ee4j.jta) jakarta.transaction:jakarta.transaction-api:jar:2.0.0
-    License: EPL 2.0  (http://www.eclipse.org/legal/epl-2.0)    License: GPL2 w/ CPE  (https://www.gnu.org/software/classpath/license.html)
-
 From: 'FasterXML' (http://fasterxml.com/)
-  - Jackson-annotations (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:bundle:2.14.1
+  - Jackson-annotations (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:bundle:2.14.2
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Jackson-core (https://github.com/FasterXML/jackson-core) com.fasterxml.jackson.core:jackson-core:bundle:2.14.1
+  - Jackson-core (https://github.com/FasterXML/jackson-core) com.fasterxml.jackson.core:jackson-core:bundle:2.14.2
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
-  - jackson-databind (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-databind:bundle:2.14.1
+  - jackson-databind (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-databind:bundle:2.14.2
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'JolBox' (http://jolbox.com)
@@ -75,119 +73,107 @@ From: 'Oracle Corporation' (http://www.oracle.com/)
 From: 'OW2' (http://www.ow2.org/)
   - asm (http://asm.ow2.io/) org.ow2.asm:asm:jar:9.4
     License: BSD-3-Clause  (https://asm.ow2.io/license.html)
-  - asm-commons (http://asm.ow2.io/) org.ow2.asm:asm-commons:jar:9.4
-    License: BSD-3-Clause  (https://asm.ow2.io/license.html)
   - asm-tree (http://asm.ow2.io/) org.ow2.asm:asm-tree:jar:9.4
     License: BSD-3-Clause  (https://asm.ow2.io/license.html)
 
 From: 'QOS.ch' (http://www.qos.ch)
-  - Logback Classic Module (http://logback.qos.ch/logback-classic) ch.qos.logback:logback-classic:jar:1.4.5
+  - Logback Classic Module (http://logback.qos.ch/logback-classic) ch.qos.logback:logback-classic:jar:1.4.6
     License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)    License: GNU Lesser General Public License  (http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
-  - Logback Core Module (http://logback.qos.ch/logback-core) ch.qos.logback:logback-core:jar:1.4.5
+  - Logback Core Module (http://logback.qos.ch/logback-core) ch.qos.logback:logback-core:jar:1.4.6
     License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)    License: GNU Lesser General Public License  (http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
   - Logback DBAppender Classic Module (http://logback.qos.ch/logback-classic-db) ch.qos.logback.db:logback-classic-db:jar:1.2.11.1
     License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)    License: GNU Lesser General Public License  (http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
   - Logback DBAppender Core Module (http://logback.qos.ch/logback-core-db) ch.qos.logback.db:logback-core-db:jar:1.2.11.1
     License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)    License: GNU Lesser General Public License  (http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
-  - SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:2.0.6
+  - SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:2.0.7
     License: MIT License  (http://www.opensource.org/licenses/mit-license.php)
 
 From: 'The Apache Software Foundation' (https://www.apache.org/)
   - Apache Commons CLI (https://commons.apache.org/proper/commons-cli/) commons-cli:commons-cli:jar:1.5.0
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J BDB Message Store Plug-in (http://qpid.apache.org/components/qpid-bdbstore) org.apache.qpid:qpid-bdbstore:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J (http://qpid.apache.org/components/qpid-broker) org.apache.qpid:qpid-broker:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J Core (http://qpid.apache.org/components/qpid-broker-core) org.apache.qpid:qpid-broker-core:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J Instrumentation (http://qpid.apache.org/components/qpid-broker-instrumentation) org.apache.qpid:qpid-broker-instrumentation:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J Access Control Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-access-control) org.apache.qpid:qpid-broker-plugins-access-control:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J AMQP 0-10 Protocol Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-0-10-protocol) org.apache.qpid:qpid-broker-plugins-amqp-0-10-protocol:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J AMQP 0-8 Protocol Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-0-8-protocol) org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J AMQP 1-0 Protocol Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-1-0-protocol) org.apache.qpid:qpid-broker-plugins-amqp-1-0-protocol:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid AMQP 1.0 BDB Link Store Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-1-0-protocol-bdb-link-store) org.apache.qpid:qpid-broker-plugins-amqp-1-0-protocol-bdb-link-store:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid AMQP 1.0 JDBC Link Store Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-1-0-protocol-jdbc-link-store) org.apache.qpid:qpid-broker-plugins-amqp-1-0-protocol-jdbc-link-store:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J AMQP 0-10 to 1-0 Message Conversion Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-msg-conv-0-10-to-1-0) org.apache.qpid:qpid-broker-plugins-amqp-msg-conv-0-10-to-1-0:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J AMQP 0-8 to 0-10 Message Conversion Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-msg-conv-0-8-to-0-10) org.apache.qpid:qpid-broker-plugins-amqp-msg-conv-0-8-to-0-10:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J AMQP 0-8 to 1-0 Message Conversion Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-msg-conv-0-8-to-1-0) org.apache.qpid:qpid-broker-plugins-amqp-msg-conv-0-8-to-1-0:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J Connection Limit Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-connection-limits) org.apache.qpid:qpid-broker-plugins-connection-limits:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J Derby Message Store Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-derby-store) org.apache.qpid:qpid-broker-plugins-derby-store:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J LogBack JDBC Logging Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-logging-logback) org.apache.qpid:qpid-broker-plugins-jdbc-logging-logback:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J JDBC Message Store Connection Pooling Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-provider-bone) org.apache.qpid:qpid-broker-plugins-jdbc-provider-bone:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J JDBC Message Store Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-store) org.apache.qpid:qpid-broker-plugins-jdbc-store:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J LogBack Logging Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-logging-logback) org.apache.qpid:qpid-broker-plugins-logging-logback:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J AMQP Management Protocol Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-management-amqp) org.apache.qpid:qpid-broker-plugins-management-amqp:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J HTTP Management Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-management-http) org.apache.qpid:qpid-broker-plugins-management-http:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J Memory Message Store Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-memory-store) org.apache.qpid:qpid-broker-plugins-memory-store:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - qpid-broker-plugins-prometheus-exporter (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-prometheus-exporter) org.apache.qpid:qpid-broker-plugins-prometheus-exporter:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J Query Engine Plug-In (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-query-engine) org.apache.qpid:qpid-broker-plugins-query-engine:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker-J WebSocket Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-websocket) org.apache.qpid:qpid-broker-plugins-websocket:jar
-    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'The CometD Project' (https://cometd.org)
   - Dojo Toolkit :: Bundles (http://dojotoolkit.org/dojo) org.dojotoolkit:dojo:pom:1.17.3
     License: Academic Free License v2.1  (https://github.com/dojo/dojo/blob/master/LICENSE)    License: BSD License  (https://github.com/dojo/dojo/blob/master/LICENSE)
 
 From: 'Webtide' (https://webtide.com)
-  - Jetty :: Servlet Annotations (https://eclipse.org/jetty/jetty-annotations) org.eclipse.jetty:jetty-annotations:jar:11.0.13
+  - Jetty :: Http Utility (https://eclipse.org/jetty/jetty-http) org.eclipse.jetty:jetty-http:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Http Utility (https://eclipse.org/jetty/jetty-http) org.eclipse.jetty:jetty-http:jar:11.0.13
+  - Jetty :: IO Utility (https://eclipse.org/jetty/jetty-io) org.eclipse.jetty:jetty-io:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: IO Utility (https://eclipse.org/jetty/jetty-io) org.eclipse.jetty:jetty-io:jar:11.0.13
+  - Jetty :: Rewrite Handler (https://eclipse.org/jetty/jetty-rewrite) org.eclipse.jetty:jetty-rewrite:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: JNDI Naming (https://eclipse.org/jetty/jetty-jndi) org.eclipse.jetty:jetty-jndi:jar:11.0.13
+  - Jetty :: Security (https://eclipse.org/jetty/jetty-security) org.eclipse.jetty:jetty-security:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Plus (https://eclipse.org/jetty/jetty-plus) org.eclipse.jetty:jetty-plus:jar:11.0.13
+  - Jetty :: Server Core (https://eclipse.org/jetty/jetty-server) org.eclipse.jetty:jetty-server:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Rewrite Handler (https://eclipse.org/jetty/jetty-rewrite) org.eclipse.jetty:jetty-rewrite:jar:11.0.13
+  - Jetty :: Servlet Handling (https://eclipse.org/jetty/jetty-servlet) org.eclipse.jetty:jetty-servlet:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Security (https://eclipse.org/jetty/jetty-security) org.eclipse.jetty:jetty-security:jar:11.0.13
+  - Jetty :: Utility Servlets and Filters (https://eclipse.org/jetty/jetty-servlets) org.eclipse.jetty:jetty-servlets:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Server Core (https://eclipse.org/jetty/jetty-server) org.eclipse.jetty:jetty-server:jar:11.0.13
+  - Jetty :: Utilities (https://eclipse.org/jetty/jetty-util) org.eclipse.jetty:jetty-util:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Servlet Handling (https://eclipse.org/jetty/jetty-servlet) org.eclipse.jetty:jetty-servlet:jar:11.0.13
+  - Jetty :: Websocket :: Core :: Common (https://eclipse.org/jetty/websocket-parent/websocket-core-common) org.eclipse.jetty.websocket:websocket-core-common:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Utility Servlets and Filters (https://eclipse.org/jetty/jetty-servlets) org.eclipse.jetty:jetty-servlets:jar:11.0.13
+  - Jetty :: Websocket :: Core :: Server (https://eclipse.org/jetty/websocket-parent/websocket-core-server) org.eclipse.jetty.websocket:websocket-core-server:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Utilities (https://eclipse.org/jetty/jetty-util) org.eclipse.jetty:jetty-util:jar:11.0.13
+  - Jetty :: Websocket :: org.eclipse.jetty.websocket :: API (https://eclipse.org/jetty/websocket-parent/websocket-jetty-api) org.eclipse.jetty.websocket:websocket-jetty-api:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Webapp Application Support (https://eclipse.org/jetty/jetty-webapp) org.eclipse.jetty:jetty-webapp:jar:11.0.13
+  - Jetty :: Websocket :: org.eclipse.jetty.websocket :: Common (https://eclipse.org/jetty/websocket-parent/websocket-jetty-common) org.eclipse.jetty.websocket:websocket-jetty-common:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: XML utilities (https://eclipse.org/jetty/jetty-xml) org.eclipse.jetty:jetty-xml:jar:11.0.13
+  - Jetty :: Websocket :: org.eclipse.jetty.websocket :: Server (https://eclipse.org/jetty/websocket-parent/websocket-jetty-server) org.eclipse.jetty.websocket:websocket-jetty-server:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Websocket :: Core :: Common (https://eclipse.org/jetty/websocket-parent/websocket-core-common) org.eclipse.jetty.websocket:websocket-core-common:jar:11.0.13
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Websocket :: Core :: Server (https://eclipse.org/jetty/websocket-parent/websocket-core-server) org.eclipse.jetty.websocket:websocket-core-server:jar:11.0.13
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Websocket :: org.eclipse.jetty.websocket :: API (https://eclipse.org/jetty/websocket-parent/websocket-jetty-api) org.eclipse.jetty.websocket:websocket-jetty-api:jar:11.0.13
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Websocket :: org.eclipse.jetty.websocket :: Common (https://eclipse.org/jetty/websocket-parent/websocket-jetty-common) org.eclipse.jetty.websocket:websocket-jetty-common:jar:11.0.13
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Websocket :: org.eclipse.jetty.websocket :: Server (https://eclipse.org/jetty/websocket-parent/websocket-jetty-server) org.eclipse.jetty.websocket:websocket-jetty-server:jar:11.0.13
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
-  - Jetty :: Websocket :: Servlet (https://eclipse.org/jetty/websocket-parent/websocket-servlet) org.eclipse.jetty.websocket:websocket-servlet:jar:11.0.13
+  - Jetty :: Websocket :: Servlet (https://eclipse.org/jetty/websocket-parent/websocket-servlet) org.eclipse.jetty.websocket:websocket-servlet:jar:11.0.14
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0)    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
 
