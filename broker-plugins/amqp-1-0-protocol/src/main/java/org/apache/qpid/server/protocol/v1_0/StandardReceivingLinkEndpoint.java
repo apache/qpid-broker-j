@@ -518,8 +518,9 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
     public void destroy()
     {
         super.destroy();
-        if(_receivingDestination != null && _receivingDestination.getMessageDestination() != null)
+        if (_receivingDestination != null && _receivingDestination.getMessageDestination() != null)
         {
+            getSession().removeProducer(_publishingLink);
             _receivingDestination.getMessageDestination().linkRemoved(_messageSender, _publishingLink);
             _receivingDestination = null;
         }
