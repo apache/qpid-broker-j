@@ -26,9 +26,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collection;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Collections2;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -37,24 +36,26 @@ import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class UnacknowledgedMessageMapTest extends UnitTestBase
+@SuppressWarnings({"rawtypes", "unchecked"})
+class UnacknowledgedMessageMapTest extends UnitTestBase
 {
     public static final Function<MessageConsumerAssociation, MessageInstance>
-            MESSAGE_INSTANCE_FUNCTION = input -> input.getMessageInstance();
+            MESSAGE_INSTANCE_FUNCTION = MessageConsumerAssociation::getMessageInstance;
     private final MessageInstanceConsumer _consumer = mock(MessageInstanceConsumer.class);
 
     @Test
-    public void testDeletedMessagesCantBeAcknowledged()
+    void deletedMessagesCantBeAcknowledged()
     {
         UnacknowledgedMessageMap map = new UnacknowledgedMessageMapImpl(100, mock(CreditRestorer.class));
         final int expectedSize = 5;
         MessageInstance[] msgs = populateMap(map,expectedSize);
         assertEquals(expectedSize, (long) map.size());
         Collection<MessageConsumerAssociation> acknowledged = map.acknowledge(100, true);
-        Collection<MessageInstance> acknowledgedMessages = Collections2.transform(acknowledged, MESSAGE_INSTANCE_FUNCTION);
+        Collection<MessageInstance> acknowledgedMessages = acknowledged.stream().map(MESSAGE_INSTANCE_FUNCTION)
+                .collect(Collectors.toList());
         assertEquals(expectedSize, (long) acknowledged.size());
         assertEquals(0, (long) map.size());
-        for(int i = 0; i < expectedSize; i++)
+        for (int i = 0; i < expectedSize; i++)
         {
             assertTrue(acknowledgedMessages.contains(msgs[i]), "Message " + i + " is missing");
         }
@@ -68,32 +69,33 @@ public class UnacknowledgedMessageMapTest extends UnitTestBase
         assertEquals(expectedSize, (long) map.size());
 
         acknowledged = map.acknowledge(100, true);
-        acknowledgedMessages = Collections2.transform(acknowledged, MESSAGE_INSTANCE_FUNCTION);
+        acknowledgedMessages = acknowledged.stream().map(MESSAGE_INSTANCE_FUNCTION)
+                .collect(Collectors.toList());
         assertEquals(expectedSize - 2, (long) acknowledged.size());
         assertEquals(0, (long) map.size());
-        for(int i = 0; i < expectedSize; i++)
+        for (int i = 0; i < expectedSize; i++)
         {
             assertEquals(i != 2 && i != 4, acknowledgedMessages.contains(msgs[i]));
         }
     }
 
-    public MessageInstance[] populateMap(final UnacknowledgedMessageMap map, int size)
+    MessageInstance[] populateMap(final UnacknowledgedMessageMap map, final int size)
     {
-        MessageInstance[] msgs = new MessageInstance[size];
-        for(int i = 0; i < size; i++)
+        final MessageInstance[] msgs = new MessageInstance[size];
+        for (int i = 0; i < size; i++)
         {
-            msgs[i] = createMessageInstance(i);
-            map.add((long)i, msgs[i], _consumer, true);
+            msgs[i] = createMessageInstance();
+            map.add(i, msgs[i], _consumer, true);
         }
         return msgs;
     }
 
-    private MessageInstance createMessageInstance(final int id)
+    private MessageInstance createMessageInstance()
     {
-        MessageInstance instance = mock(MessageInstance.class);
+        final MessageInstance instance = mock(MessageInstance.class);
         when(instance.makeAcquisitionUnstealable(_consumer)).thenReturn(Boolean.TRUE);
         when(instance.getAcquiringConsumer()).thenReturn(_consumer);
-        ServerMessage message = mock(ServerMessage.class);
+        final ServerMessage<?> message = mock(ServerMessage.class);
         when(message.getSize()).thenReturn(0L);
         when(instance.getMessage()).thenReturn(message);
         return instance;

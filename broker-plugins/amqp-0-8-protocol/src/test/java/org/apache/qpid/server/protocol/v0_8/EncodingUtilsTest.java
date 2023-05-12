@@ -21,7 +21,7 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class EncodingUtilsTest extends UnitTestBase
+class EncodingUtilsTest extends UnitTestBase
 {
     private static final int BUFFER_SIZE = 10;
     private static final int POOL_SIZE = 20;
@@ -39,7 +39,7 @@ public class EncodingUtilsTest extends UnitTestBase
     private QpidByteBuffer _buffer;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         QpidByteBuffer.deinitialisePool();
         QpidByteBuffer.initialisePool(BUFFER_SIZE, POOL_SIZE, SPARSITY_FRACTION);
@@ -47,14 +47,14 @@ public class EncodingUtilsTest extends UnitTestBase
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    void tearDown()
     {
         _buffer.dispose();
         QpidByteBuffer.deinitialisePool();
     }
 
     @Test
-    public void testReadLongAsShortStringWhenDigitsAreSpecified() throws Exception
+    void readLongAsShortStringWhenDigitsAreSpecified() throws Exception
     {
         _buffer.putUnsignedByte((short)3);
         _buffer.put((byte)'9');
@@ -65,20 +65,14 @@ public class EncodingUtilsTest extends UnitTestBase
     }
 
     @Test
-    public void testReadLongAsShortStringWhenNonDigitCharacterIsSpecified()
+    void readLongAsShortStringWhenNonDigitCharacterIsSpecified()
     {
         _buffer.putUnsignedByte((short)2);
         _buffer.put((byte)'1');
         _buffer.put((byte)'a');
         _buffer.flip();
-        try
-        {
-            EncodingUtils.readLongAsShortString(_buffer);
-            fail("Exception is expected");
-        }
-        catch(AMQFrameDecodingException e)
-        {
-            // pass
-        }
+        assertThrows(AMQFrameDecodingException.class,
+                () -> EncodingUtils.readLongAsShortString(_buffer),
+                "Exception is expected");
     }
 }

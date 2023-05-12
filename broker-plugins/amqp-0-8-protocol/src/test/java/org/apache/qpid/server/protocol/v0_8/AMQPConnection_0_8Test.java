@@ -31,7 +31,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import javax.security.auth.Subject;
@@ -73,7 +73,8 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AMQPConnection_0_8Test extends UnitTestBase
+@SuppressWarnings({"rawtypes"})
+class AMQPConnection_0_8Test extends UnitTestBase
 {
     private static final String VIRTUAL_HOST_NAME = "vhost";
     private static final byte[] SASL_RESPONSE = "response".getBytes();
@@ -82,7 +83,6 @@ public class AMQPConnection_0_8Test extends UnitTestBase
 
     private TaskExecutorImpl _taskExecutor;
     private Broker _broker;
-    private VirtualHostNode _virtualHostNode;
     private QueueManagingVirtualHost _virtualHost;
     private AmqpPort _port;
     private ServerNetworkConnection _network;
@@ -91,18 +91,17 @@ public class AMQPConnection_0_8Test extends UnitTestBase
     private AggregateTicker _ticker;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
+        final EventLogger value = new EventLogger();
 
-        EventLogger value = new EventLogger();
-
-        SystemConfig systemConfig = mock(SystemConfig.class);
+        final SystemConfig systemConfig = mock(SystemConfig.class);
         when(systemConfig.getEventLogger()).thenReturn(mock(EventLogger.class));
 
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
 
-        Model model = BrokerModel.getInstance();
+        final Model model = BrokerModel.getInstance();
 
         _broker = mock(Broker.class);
         when(_broker.getParent()).thenReturn(systemConfig);
@@ -111,18 +110,18 @@ public class AMQPConnection_0_8Test extends UnitTestBase
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getEventLogger()).thenReturn(value);
-        when(_broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0L);
+        when(_broker.getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT)).thenReturn(0L);
 
-        _virtualHostNode = mock(VirtualHostNode.class);
-        when(_virtualHostNode.getParent()).thenReturn(_broker);
-        when(_virtualHostNode.getModel()).thenReturn(model);
-        when(_virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
-        when(_virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
-        when(_virtualHostNode.getChildExecutor()).thenReturn(_taskExecutor);
+        final VirtualHostNode virtualHostNode = mock(VirtualHostNode.class);
+        when(virtualHostNode.getParent()).thenReturn(_broker);
+        when(virtualHostNode.getModel()).thenReturn(model);
+        when(virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
+        when(virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
+        when(virtualHostNode.getChildExecutor()).thenReturn(_taskExecutor);
 
         _virtualHost = mock(QueueManagingVirtualHost.class);
-        VirtualHostPrincipal virtualHostPrincipal = new VirtualHostPrincipal(_virtualHost);
-        when(_virtualHost.getParent()).thenReturn(_virtualHostNode);
+        final VirtualHostPrincipal virtualHostPrincipal = new VirtualHostPrincipal(_virtualHost);
+        when(_virtualHost.getParent()).thenReturn(virtualHostNode);
         when(_virtualHost.getModel()).thenReturn(model);
         when(_virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
         when(_virtualHost.getState()).thenReturn(State.ACTIVE);
@@ -136,16 +135,15 @@ public class AMQPConnection_0_8Test extends UnitTestBase
         when(_virtualHost.authoriseCreateConnection(any(AMQPConnection.class))).thenReturn(true);
         when(_virtualHost.getEventLogger()).thenReturn(value);
 
-        SubjectCreator subjectCreator = mock(SubjectCreator.class);
+        final SubjectCreator subjectCreator = mock(SubjectCreator.class);
 
-
-        SaslNegotiator saslNegotiator = mock(SaslNegotiator.class);
+        final SaslNegotiator saslNegotiator = mock(SaslNegotiator.class);
         when(subjectCreator.createSaslNegotiator(eq(SASL_MECH.toString()), any(SaslSettings.class))).thenReturn(saslNegotiator);
         when(subjectCreator.authenticate(saslNegotiator, SASL_RESPONSE)).thenReturn(new SubjectAuthenticationResult(
                 new AuthenticationResult(new AuthenticatedPrincipal(new UsernamePrincipal("username", null))), new Subject()));
 
-        AuthenticationProvider authenticationProvider = mock(AuthenticationProvider.class);
-        when(authenticationProvider.getAvailableMechanisms(anyBoolean())).thenReturn(Collections.singletonList(SASL_MECH.toString()));
+        final AuthenticationProvider authenticationProvider = mock(AuthenticationProvider.class);
+        when(authenticationProvider.getAvailableMechanisms(anyBoolean())).thenReturn(List.of(SASL_MECH.toString()));
 
         _port = mock(AmqpPort.class);
         when(_port.getParent()).thenReturn(_broker);
@@ -158,7 +156,7 @@ public class AMQPConnection_0_8Test extends UnitTestBase
         when(_port.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(Connection.DEFAULT_MAX_MESSAGE_SIZE);
         when(_port.getSubjectCreator(eq(false), anyString())).thenReturn(subjectCreator);
 
-        ByteBufferSender sender = mock(ByteBufferSender.class);
+        final ByteBufferSender sender = mock(ByteBufferSender.class);
 
         _network = mock(ServerNetworkConnection.class);
         when(_network.getSender()).thenReturn(sender);
@@ -171,57 +169,55 @@ public class AMQPConnection_0_8Test extends UnitTestBase
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    void tearDown()
     {
         _taskExecutor.stopImmediately();
     }
 
     @Test
-    public void testCloseOnNoRoute()
+    void closeOnNoRoute()
     {
         {
-            AMQPConnection_0_8Impl
+            final AMQPConnection_0_8Impl
                     conn = new AMQPConnection_0_8Impl(_broker, _network, _port, _transport, _protocol, 0, _ticker);
             conn.create();
             conn.receiveProtocolHeader(new ProtocolInitiation(ProtocolVersion.v0_8));
 
-            FieldTable startFieldTable = FieldTable.convertToFieldTable(Collections.singletonMap(
-                    ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE,
-                    Boolean.TRUE));
+            final FieldTable startFieldTable = FieldTable
+                    .convertToFieldTable(Map.of(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE, Boolean.TRUE));
             conn.receiveConnectionStartOk(startFieldTable, SASL_MECH, SASL_RESPONSE, LOCALE);
 
             assertTrue(conn.isCloseWhenNoRoute(), "Unexpected closeWhenNoRoute value");
         }
 
         {
-            AMQPConnection_0_8Impl
+            final AMQPConnection_0_8Impl
                     conn = new AMQPConnection_0_8Impl(_broker, _network, _port, _transport, _protocol, 0, _ticker);
             conn.create();
             conn.receiveProtocolHeader(new ProtocolInitiation(ProtocolVersion.v0_8));
 
-            FieldTable startFieldTable = FieldTable.convertToFieldTable(Collections.singletonMap(
-                    ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE,
-                    Boolean.FALSE));
+            final FieldTable startFieldTable = FieldTable
+                    .convertToFieldTable(Map.of(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE, Boolean.FALSE));
             conn.receiveConnectionStartOk(startFieldTable, SASL_MECH, SASL_RESPONSE, LOCALE);
             assertFalse(conn.isCloseWhenNoRoute(), "Unexpected closeWhenNoRoute value");
         }
     }
 
     @Test
-    public void testConnectionEnforcesMaxSessions()
+    void connectionEnforcesMaxSessions()
     {
-        AMQPConnection_0_8Impl
+        final AMQPConnection_0_8Impl
                 conn = new AMQPConnection_0_8Impl(_broker, _network, _port, _transport, _protocol, 0, _ticker);
         conn.create();
 
         conn.receiveProtocolHeader(new ProtocolInitiation(ProtocolVersion.v0_8));
-        conn.receiveConnectionStartOk(FieldTableFactory.createFieldTable(Collections.emptyMap()), SASL_MECH, SASL_RESPONSE, LOCALE);
-        int maxChannels = 10;
+        conn.receiveConnectionStartOk(FieldTableFactory.createFieldTable(Map.of()), SASL_MECH, SASL_RESPONSE, LOCALE);
+        final int maxChannels = 10;
         conn.receiveConnectionTuneOk(maxChannels, 65535, 0);
         conn.receiveConnectionOpen(AMQShortString.createAMQShortString(VIRTUAL_HOST_NAME), AMQShortString.EMPTY_STRING, false);
 
         // check the channel count is correct
-        int channelCount = conn.getSessionModels().size();
+        final int channelCount = conn.getSessionModels().size();
         assertEquals(0, (long) channelCount, "Initial channel count wrong");
 
         assertEquals(maxChannels, (long) conn.getSessionCountLimit(), "Number of channels not correctly set.");
@@ -240,7 +236,7 @@ public class AMQPConnection_0_8Test extends UnitTestBase
     }
 
     @Test
-    public void resetStatistics()
+    void resetStatistics()
     {
         final AMQPConnection_0_8Impl connection =
                 new AMQPConnection_0_8Impl(_broker, _network, _port, _transport, _protocol, 0, _ticker);

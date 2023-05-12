@@ -27,19 +27,20 @@ import org.junit.jupiter.api.Test;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AMQTypeTest extends UnitTestBase
+@SuppressWarnings("unchecked")
+class AMQTypeTest extends UnitTestBase
 {
     private static final int SIZE = 1024;
 
     @Test
-    public void testUnsignedShort()
+    void unsignedShort()
     {
         doTest(AMQType.UNSIGNED_SHORT, 0);
         doTest(AMQType.UNSIGNED_SHORT, 65535);
     }
 
     @Test
-    public void testUnsignedByte()
+    void unsignedByte()
     {
         doTest(AMQType.UNSIGNED_BYTE, (short)0);
         doTest(AMQType.UNSIGNED_BYTE, (short)255);
@@ -51,7 +52,7 @@ public class AMQTypeTest extends UnitTestBase
         AMQTypedValue.createAMQTypedValue(type, value).writeToBuffer(buf);
         buf.flip();
 
-        T read = (T) AMQTypedValue.readFromBuffer(buf).getValue();
+        final T read = (T) AMQTypedValue.readFromBuffer(buf).getValue();
         assertEquals(value, read, "Unexpected round trip value");
         buf.dispose();
     }

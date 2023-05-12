@@ -33,18 +33,18 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
     /**
      * Creates a new AMQP decoder.
      *
-     * @param methodProcessor          method processor
+     * @param methodProcessor method processor
      */
     public ClientDecoder(final ClientMethodProcessor<? extends ClientChannelMethodProcessor> methodProcessor)
     {
         super(false, methodProcessor);
     }
 
-    public void decodeBuffer(ByteBuffer incomingBuffer) throws AMQFrameDecodingException, AMQProtocolVersionException
+    public void decodeBuffer(final ByteBuffer incomingBuffer) throws AMQFrameDecodingException, AMQProtocolVersionException
     {
         if (_incompleteBuffer == null)
         {
-            QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(incomingBuffer);
+            final QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(incomingBuffer);
             final int required = decode(qpidByteBuffer);
             if (required != 0)
             {
@@ -86,15 +86,13 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
     }
 
     @Override
-    protected void processMethod(int channelId,
-                       QpidByteBuffer in)
-            throws AMQFrameDecodingException
+    protected void processMethod(final int channelId, final QpidByteBuffer in) throws AMQFrameDecodingException
     {
-        ClientMethodProcessor<? extends ClientChannelMethodProcessor> methodProcessor = getMethodProcessor();
-        ClientChannelMethodProcessor channelMethodProcessor = methodProcessor.getChannelMethodProcessor(channelId);
+        final ClientMethodProcessor<? extends ClientChannelMethodProcessor> methodProcessor = getMethodProcessor();
+        final ClientChannelMethodProcessor channelMethodProcessor = methodProcessor.getChannelMethodProcessor(channelId);
         final int classAndMethod = in.getInt();
-        int classId = classAndMethod >> 16;
-        int methodId = classAndMethod & 0xFFFF;
+        final int classId = classAndMethod >> 16;
+        final int methodId = classAndMethod & 0xFFFF;
         methodProcessor.setCurrentMethod(classId, methodId);
         try
         {
@@ -129,8 +127,7 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
                 case 0x000a0033:
                     if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v0_8))
                     {
-                        throw newUnknownMethodException(classId, methodId,
-                                                        methodProcessor.getProtocolVersion());
+                        throw newUnknownMethodException(classId, methodId, methodProcessor.getProtocolVersion());
                     }
                     else
                     {
@@ -144,8 +141,7 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
                     }
                     else
                     {
-                        throw newUnknownMethodException(classId, methodId,
-                                                        methodProcessor.getProtocolVersion());
+                        throw newUnknownMethodException(classId, methodId, methodProcessor.getProtocolVersion());
                     }
                     break;
                 case 0x000a003d:
@@ -155,8 +151,7 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
                     }
                     else
                     {
-                        throw newUnknownMethodException(classId, methodId,
-                                                        methodProcessor.getProtocolVersion());
+                        throw newUnknownMethodException(classId, methodId, methodProcessor.getProtocolVersion());
                     }
                     break;
 
@@ -205,7 +200,6 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
                     ExchangeBoundOkBody.process(in, channelMethodProcessor);
                     break;
 
-
                 // QUEUE_CLASS:
 
                 case 0x0032000b:
@@ -229,7 +223,6 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
                         channelMethodProcessor.receiveQueueUnbindOk();
                     }
                     break;
-
 
                 // BASIC_CLASS:
 
@@ -307,8 +300,7 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
                     break;
 
                 default:
-                    throw newUnknownMethodException(classId, methodId,
-                                                    methodProcessor.getProtocolVersion());
+                    throw newUnknownMethodException(classId, methodId, methodProcessor.getProtocolVersion());
 
             }
         }
@@ -317,5 +309,4 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
             methodProcessor.setCurrentMethod(0, 0);
         }
     }
-
 }
