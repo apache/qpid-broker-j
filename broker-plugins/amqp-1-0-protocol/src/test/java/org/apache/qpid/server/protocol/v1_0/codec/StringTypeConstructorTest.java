@@ -32,19 +32,19 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
-public class StringTypeConstructorTest
+class StringTypeConstructorTest
 {
     @Test
-    public void construct() throws Exception
+    void construct() throws Exception
     {
-        StringTypeConstructor constructor = StringTypeConstructor.getInstance(1);
-        Cache<ByteBuffer, String> original = StringTypeConstructor.getCache();
-        Cache<ByteBuffer, String> cache = CacheBuilder.newBuilder().maximumSize(2).build();
+        final StringTypeConstructor constructor = StringTypeConstructor.getInstance(1);
+        final Cache<ByteBuffer, String> original = StringTypeConstructor.getCache();
+        final Cache<ByteBuffer, String> cache = CacheBuilder.newBuilder().maximumSize(2).build();
         StringTypeConstructor.setCache(cache);
         try
         {
-            String string1 = constructor.construct(QpidByteBuffer.wrap(new byte[]{4, 't', 'e', 's', 't'}), null);
-            String string2 = constructor.construct(QpidByteBuffer.wrap(new byte[]{4, 't', 'e', 's', 't'}), null);
+            final String string1 = constructor.construct(QpidByteBuffer.wrap(new byte[]{4, 't', 'e', 's', 't'}), null);
+            final String string2 = constructor.construct(QpidByteBuffer.wrap(new byte[]{4, 't', 'e', 's', 't'}), null);
             assertEquals(string1, string2);
             assertSame(string1, string2);
         }

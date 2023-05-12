@@ -20,44 +20,38 @@ package org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 import org.junit.jupiter.api.Test;
 
-
-public class SoleConnectionEnforcementPolicyTest extends UnitTestBase
+class SoleConnectionEnforcementPolicyTest extends UnitTestBase
 {
     @Test
-    public void testValue()
+    void value()
     {
         assertEquals(new UnsignedInteger(0), SoleConnectionEnforcementPolicy.REFUSE_CONNECTION.getValue());
         assertEquals(new UnsignedInteger(1), SoleConnectionEnforcementPolicy.CLOSE_EXISTING.getValue());
     }
 
     @Test
-    public void testValueOf()
+    void valueOf()
     {
         assertEquals(SoleConnectionEnforcementPolicy.REFUSE_CONNECTION,
                 SoleConnectionEnforcementPolicy.valueOf(new UnsignedInteger(0)));
         assertEquals(SoleConnectionEnforcementPolicy.CLOSE_EXISTING,
                 SoleConnectionEnforcementPolicy.valueOf(new UnsignedInteger(1)));
 
-        try
-        {
-            SoleConnectionEnforcementPolicy.valueOf(new UnsignedInteger(2));
-            fail("An exception is expected");
-        }
-        catch (RuntimeException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        final RuntimeException thrown = assertThrows(RuntimeException.class,
+                () -> SoleConnectionEnforcementPolicy.valueOf(new UnsignedInteger(2)),
+                "An exception is expected");
+        assertNotNull(thrown.getMessage());
     }
 
     @Test
-    public void testToString()
+    void toStrings()
     {
         assertEquals("refuse-connection", SoleConnectionEnforcementPolicy.REFUSE_CONNECTION.toString());
         assertEquals("close-existing", SoleConnectionEnforcementPolicy.CLOSE_EXISTING.toString());

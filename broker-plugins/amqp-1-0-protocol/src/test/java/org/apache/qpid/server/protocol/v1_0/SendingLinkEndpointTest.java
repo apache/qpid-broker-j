@@ -45,20 +45,21 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class SendingLinkEndpointTest extends UnitTestBase
+@SuppressWarnings({"rawtypes", "unchecked"})
+class SendingLinkEndpointTest extends UnitTestBase
 {
     private static final String ADDRESS = "test";
 
     private SendingLinkEndpoint _sendingLinkEndpoint;
 
     @BeforeAll
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
-        NamedAddressSpace addressSpace = mock(NamedAddressSpace.class);
+        final NamedAddressSpace addressSpace = mock(NamedAddressSpace.class);
 
         final LinkImpl<Source, Target> link = mock(LinkImpl.class);
         when(link.getSource()).thenReturn(new Source());
-        Target target = new Target();
+        final Target target = new Target();
         target.setAddress(ADDRESS);
         when(link.getTarget()).thenReturn(target);
 
@@ -75,31 +76,31 @@ public class SendingLinkEndpointTest extends UnitTestBase
     }
 
     @Test
-    public void receiveFlow() throws Exception
+    void receiveFlow() throws Exception
     {
         receiveAttach(_sendingLinkEndpoint);
 
         _sendingLinkEndpoint.setDeliveryCount(new SequenceNumber(-1));
 
-        Flow flow = new Flow();
+        final Flow flow = new Flow();
         flow.setDeliveryCount(new SequenceNumber(-1).unsignedIntegerValue());
         flow.setLinkCredit(UnsignedInteger.ONE);
 
         _sendingLinkEndpoint.receiveFlow(flow);
 
-        UnsignedInteger linkCredit = _sendingLinkEndpoint.getLinkCredit();
+        final UnsignedInteger linkCredit = _sendingLinkEndpoint.getLinkCredit();
         assertThat(linkCredit, is(equalTo(UnsignedInteger.ONE)));
     }
 
     private void receiveAttach(final SendingLinkEndpoint sendingLinkEndpoint) throws Exception
     {
-        Attach attach = new Attach();
-        Source source = new Source();
+        final Attach attach = new Attach();
+        final Source source = new Source();
         source.setDurable(TerminusDurability.NONE);
         source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
 
         attach.setSource(source);
-        Target target = new Target();
+        final Target target = new Target();
         attach.setTarget(target);
         attach.setHandle(new UnsignedInteger(0));
         attach.setIncompleteUnsettled(false);

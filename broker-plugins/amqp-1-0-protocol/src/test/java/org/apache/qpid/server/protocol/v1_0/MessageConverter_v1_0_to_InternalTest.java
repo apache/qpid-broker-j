@@ -31,7 +31,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -62,34 +61,34 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
+class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 {
     private static final MessageAnnotations MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 0));
+            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 0));
     private static final MessageAnnotations OBJECT_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 1));
+            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 1));
     private static final MessageAnnotations MAP_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 2));
+            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 2));
     private static final MessageAnnotations BYTE_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 3));
+            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 3));
     private static final MessageAnnotations STREAM_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 4));
+            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 4));
     private static final MessageAnnotations TEXT_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 5));
+            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 5));
     private MessageConverter_v1_0_to_Internal _converter;
 
     @BeforeAll
-    public void setUp() throws Exception
+    void setUp()
     {
         _converter = new MessageConverter_v1_0_to_Internal();
     }
 
     @Test
-    public void testAmqpValueWithNullWithTextMessageAnnotation()
+    void amqpValueWithNullWithTextMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage =
+        final Message_1_0 sourceMessage =
                 createTestMessage(TEXT_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
@@ -99,11 +98,11 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithNullWithMessageAnnotation()
+    void amqpValueWithNullWithMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage =
+        final Message_1_0 sourceMessage =
                 createTestMessage(MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
@@ -113,11 +112,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithNullWithObjectMessageAnnotation()
+    void amqpValueWithNullWithObjectMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(OBJECT_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage =
+                createTestMessage(OBJECT_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -127,11 +127,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithNullWithMapMessageAnnotation()
+    void amqpValueWithNullWithMapMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(MAP_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage =
+                createTestMessage(MAP_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -140,11 +141,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithNullWithBytesMessageAnnotation()
+    void amqpValueWithNullWithBytesMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(BYTE_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage =
+                createTestMessage(BYTE_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -154,11 +156,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithNullWithStreamMessageAnnotation()
+    void amqpValueWithNullWithStreamMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(STREAM_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage =
+                createTestMessage(STREAM_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -167,14 +170,13 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithNullWithUnknownMessageAnnotation()
+    void amqpValueWithNullWithUnknownMessageAnnotation()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage =
-                createTestMessage(new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"),
-                                                                                  (byte) 11)),
-                                  amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage =
+                createTestMessage(new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 11)),
+                        amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -183,14 +185,14 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithNullWithContentType()
+    void amqpValueWithNullWithContentType()
     {
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         final String mimeType = "foo/bar";
         properties.setContentType(Symbol.valueOf(mimeType));
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -199,11 +201,11 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithNull()
+    void amqpValueWithNull()
     {
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -212,11 +214,11 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithString()
+    void amqpValueWithString()
     {
         final String expected = "testContent";
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -226,14 +228,14 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithStringWithKnownTextualContentType()
+    void amqpValueWithStringWithKnownTextualContentType()
     {
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         final String mimeType = "text/foo";
         properties.setContentType(Symbol.valueOf(mimeType));
         final Object expected = "content";
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -242,14 +244,14 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithStringWithUnknownTextualContentType()
+    void amqpValueWithStringWithUnknownTextualContentType()
     {
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         final String mimeType = "foo/bar";
         properties.setContentType(Symbol.valueOf(mimeType));
         final Object expected = "content";
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -259,7 +261,7 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
 
     @Test
-    public void testAmqpValueWithMap()
+    void amqpValueWithMap()
     {
         final Map<Object, Object> originalMap = new LinkedHashMap<>();
         originalMap.put("binaryEntry", new Binary(new byte[]{0x00, (byte) 0xFF}));
@@ -267,15 +269,15 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
         originalMap.put("uuidEntry", UUID.randomUUID());
         originalMap.put("nullEntry", null);
         originalMap.put(43, "nonstringkey");
-        originalMap.put("mapEntry", Collections.singletonMap("foo", "bar"));
+        originalMap.put("mapEntry", Map.of("foo", "bar"));
         final AmqpValue amqpValue = new AmqpValue(originalMap);
-        Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
 
-        Map<Object, Object> convertedMap = (Map<Object, Object>) convertedMessage.getMessageBody();
+        final Map<Object, Object> convertedMap = (Map<Object, Object>) convertedMessage.getMessageBody();
 
         assertEquals(originalMap.size(), (long) convertedMap.size(), "Unexpected size");
         assertArrayEquals(((Binary) originalMap.get("binaryEntry")).getArray(), (byte[]) convertedMap.get("binaryEntry"),
@@ -289,21 +291,21 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithList()
+    void amqpValueWithList()
     {
         final List<Object> originalList = new ArrayList<>();
         originalList.add(new Binary(new byte[]{0x00, (byte) 0xFF}));
         originalList.add(42);
         originalList.add(null);
-        originalList.add(Collections.singletonMap("foo", "bar"));
+        originalList.add(Map.of("foo", "bar"));
         final AmqpValue amqpValue = new AmqpValue(originalList);
-        Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
 
-        List<Object> convertedList = ((List<Object>) convertedMessage.getMessageBody());
+        final List<Object> convertedList = ((List<Object>) convertedMessage.getMessageBody());
         assertEquals(originalList.size(), (long) convertedList.size(), "Unexpected size");
         assertArrayEquals(((Binary) originalList.get(0)).getArray(), (byte[]) convertedList.get(0),
                 "Unexpected binary item");
@@ -313,16 +315,15 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
                 "Unexpected map item");
     }
 
-
     @Test
-    public void testAmqpValueWithAmqpType()
+    void amqpValueWithAmqpType()
     {
         final Date originalValue = new Date();
         final AmqpValue amqpValue = new AmqpValue(originalValue);
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         final String mimeType = "foo/bar";
         properties.setContentType(Symbol.valueOf(mimeType));
-        Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -331,33 +332,32 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testAmqpSequenceWithSimpleTypes()
+    void amqpSequenceWithSimpleTypes()
     {
         final List<Object> originalList = new ArrayList<>();
         originalList.add(37);
         originalList.add(42F);
         final AmqpSequence amqpSequence = new AmqpSequence(originalList);
-        Message_1_0 sourceMessage = createTestMessage(amqpSequence.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage = createTestMessage(amqpSequence.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        List<Object> convertedList = ((List<Object>) convertedMessage.getMessageBody());
+        final List<Object> convertedList = ((List<Object>) convertedMessage.getMessageBody());
         assertEquals(originalList.size(), (long) convertedList.size(), "Unexpected size");
         assertEquals(originalList.get(0), convertedList.get(0), "Unexpected first item");
         assertEquals(originalList.get(1), convertedList.get(1), "Unexpected second item");
     }
 
     @Test
-    public void testDataWithMessageAnnotation()
+    void dataWithMessageAnnotation()
     {
         final byte[] data = "helloworld".getBytes(UTF_8);
         doTestDataWithAnnotation(data, MESSAGE_MESSAGE_ANNOTATION, null, "application/octet-stream");
-
     }
 
     @Test
-    public void testDataWithMessageAnnotationWithContentType()
+    void dataWithMessageAnnotationWithContentType()
     {
         final byte[] data = "helloworld".getBytes(UTF_8);
         final String mimeType = "foo/bar";
@@ -365,106 +365,94 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testDataWithObjectMessageAnnotation() throws Exception
+    void dataWithObjectMessageAnnotation() throws Exception
     {
-        byte[] bytes = "helloworld".getBytes(UTF_8);
+        final byte[] bytes = "helloworld".getBytes(UTF_8);
         final byte[] expected = getObjectBytes(bytes);
-        doTestDataWithAnnotation(expected, OBJECT_MESSAGE_MESSAGE_ANNOTATION,
-                                 null,
-                                 "application/x-java-serialized-object");
+        doTestDataWithAnnotation(expected, OBJECT_MESSAGE_MESSAGE_ANNOTATION, null, "application/x-java-serialized-object");
     }
 
     @Test
-    public void testDataWithObjectMessageAnnotationWithContentType() throws Exception
+    void dataWithObjectMessageAnnotationWithContentType() throws Exception
     {
-        byte[] bytes = "helloworld".getBytes(UTF_8);
+        final byte[] bytes = "helloworld".getBytes(UTF_8);
         final byte[] expected = getObjectBytes(bytes);
         final String mimeType = "foo/bar";
         doTestDataWithAnnotation(expected, OBJECT_MESSAGE_MESSAGE_ANNOTATION, mimeType, mimeType);
     }
 
     @Test
-    public void testDataWithMapMessageAnnotation()
+    void dataWithMapMessageAnnotation()
     {
-        doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
-                                 MAP_MESSAGE_MESSAGE_ANNOTATION,
-                                 null, "application/octet-stream");
+        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), MAP_MESSAGE_MESSAGE_ANNOTATION, null,
+                "application/octet-stream");
     }
 
     @Test
-    public void testDataWithMapMessageAnnotationWithContentType()
+    void dataWithMapMessageAnnotationWithContentType()
     {
         final String mimeType = "foor/bar";
-        doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
-                                 MAP_MESSAGE_MESSAGE_ANNOTATION,
-                                 mimeType, mimeType);
+        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), MAP_MESSAGE_MESSAGE_ANNOTATION, mimeType, mimeType);
     }
 
     @Test
-    public void testDataWithBytesMessageAnnotation()
+    void dataWithBytesMessageAnnotation()
     {
-        doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
-                                 BYTE_MESSAGE_MESSAGE_ANNOTATION,
-                                 null, "application/octet-stream");
+        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), BYTE_MESSAGE_MESSAGE_ANNOTATION, null,
+                "application/octet-stream");
     }
 
     @Test
-    public void testDataWithBytesMessageAnnotationWithContentType()
+    void dataWithBytesMessageAnnotationWithContentType()
     {
         final String mimeType = "foo/bar";
-        doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
-                                 BYTE_MESSAGE_MESSAGE_ANNOTATION,
-                                 mimeType, mimeType);
+        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), BYTE_MESSAGE_MESSAGE_ANNOTATION, mimeType, mimeType);
     }
 
     @Test
-    public void testDataWithStreamMessageAnnotation()
+    void dataWithStreamMessageAnnotation()
     {
-        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), STREAM_MESSAGE_MESSAGE_ANNOTATION,
-                                 null, "application/octet-stream");
+        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), STREAM_MESSAGE_MESSAGE_ANNOTATION, null,
+                "application/octet-stream");
     }
 
     @Test
-    public void testDataWithStreamMessageAnnotationWithContentType()
+    void dataWithStreamMessageAnnotationWithContentType()
     {
         final String mimeType = "foo/bar";
-        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), STREAM_MESSAGE_MESSAGE_ANNOTATION,
-                                 mimeType, mimeType);
+        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), STREAM_MESSAGE_MESSAGE_ANNOTATION, mimeType, mimeType);
     }
 
     @Test
-    public void testDataWithTextMessageAnnotation()
+    void dataWithTextMessageAnnotation()
     {
-        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), TEXT_MESSAGE_MESSAGE_ANNOTATION, null, "application/octet-stream");
+        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), TEXT_MESSAGE_MESSAGE_ANNOTATION, null,
+                "application/octet-stream");
     }
 
     @Test
-    public void testDataWithTextMessageAnnotationWithContentType()
+    void dataWithTextMessageAnnotationWithContentType()
     {
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8), TEXT_MESSAGE_MESSAGE_ANNOTATION, "foo/bar", "foo/bar");
     }
 
     @Test
-    public void testDataWithUnsupportedMessageAnnotation()
+    void dataWithUnsupportedMessageAnnotation()
     {
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
-                                 new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"),
-                                                                                 (byte) 11)),
-                                 null, "application/octet-stream");
+                new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 11)), null, "application/octet-stream");
     }
 
     @Test
-    public void testDataWithUnsupportedMessageAnnotationWithContentType()
+    void dataWithUnsupportedMessageAnnotationWithContentType()
     {
         final String mimeType = "foo/bar";
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
-                                 new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"),
-                                                                                 (byte) 11)),
-                                 mimeType, mimeType);
+                new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 11)), mimeType, mimeType);
     }
 
     @Test
-    public void testData() throws Exception
+    void data() throws Exception
     {
         final byte[] expected = getObjectBytes("helloworld".getBytes(UTF_8));
         final Data value = new Data(new Binary(expected));
@@ -478,10 +466,9 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testNoBodyWithMessageAnnotation()
+    void noBodyWithMessageAnnotation()
     {
-        Message_1_0 sourceMessage = createTestMessage(MESSAGE_MESSAGE_ANNOTATION, null);
-
+        final Message_1_0 sourceMessage = createTestMessage(MESSAGE_MESSAGE_ANNOTATION, null);
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
@@ -489,10 +476,9 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testNoBodyWithObjectMessageAnnotation()
+    void noBodyWithObjectMessageAnnotation()
     {
-        Message_1_0 sourceMessage = createTestMessage(OBJECT_MESSAGE_MESSAGE_ANNOTATION, null);
-
+        final Message_1_0 sourceMessage = createTestMessage(OBJECT_MESSAGE_MESSAGE_ANNOTATION, null);
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("application/x-java-serialized-object", convertedMessage.getMessageHeader().getMimeType(),
@@ -502,10 +488,9 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testNoBodyWithMapMessageAnnotation()
+    void noBodyWithMapMessageAnnotation()
     {
-        Message_1_0 sourceMessage = createTestMessage(MAP_MESSAGE_MESSAGE_ANNOTATION, null);
-
+        final Message_1_0 sourceMessage = createTestMessage(MAP_MESSAGE_MESSAGE_ANNOTATION, null);
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
@@ -513,10 +498,9 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testNoBodyWithBytesMessageAnnotation()
+    void noBodyWithBytesMessageAnnotation()
     {
-        Message_1_0 sourceMessage = createTestMessage(BYTE_MESSAGE_MESSAGE_ANNOTATION, null);
-
+        final Message_1_0 sourceMessage = createTestMessage(BYTE_MESSAGE_MESSAGE_ANNOTATION, null);
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("application/octet-stream", convertedMessage.getMessageHeader().getMimeType(),
@@ -525,10 +509,9 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testNoBodyWithStreamMessageAnnotation()
+    void noBodyWithStreamMessageAnnotation()
     {
-        Message_1_0 sourceMessage = createTestMessage(STREAM_MESSAGE_MESSAGE_ANNOTATION, null);
-
+        final Message_1_0 sourceMessage = createTestMessage(STREAM_MESSAGE_MESSAGE_ANNOTATION, null);
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
@@ -536,10 +519,9 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testNoBodyWithTextMessageAnnotation()
+    void noBodyWithTextMessageAnnotation()
     {
-        Message_1_0 sourceMessage = createTestMessage(TEXT_MESSAGE_MESSAGE_ANNOTATION, null);
-
+        final Message_1_0 sourceMessage = createTestMessage(TEXT_MESSAGE_MESSAGE_ANNOTATION, null);
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("text/plain", convertedMessage.getMessageHeader().getMimeType(),
@@ -548,13 +530,13 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testNoBodyWithTextMessageAnnotationWithKnownTextualContentType()
+    void noBodyWithTextMessageAnnotationWithKnownTextualContentType()
     {
         final String mimeType = "text/foo";
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf(mimeType));
 
-        Message_1_0 sourceMessage = createTestMessage(properties, TEXT_MESSAGE_MESSAGE_ANNOTATION, null);
+        final Message_1_0 sourceMessage = createTestMessage(properties, TEXT_MESSAGE_MESSAGE_ANNOTATION, null);
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -563,12 +545,12 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testNoBodyWithTextMessageAnnotationWithUnknownTextualContentType()
+    void noBodyWithTextMessageAnnotationWithUnknownTextualContentType()
     {
         final String mimeType = "foo/bar";
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf(mimeType));
-        Message_1_0 sourceMessage = createTestMessage(properties, TEXT_MESSAGE_MESSAGE_ANNOTATION, null);
+        final Message_1_0 sourceMessage = createTestMessage(properties, TEXT_MESSAGE_MESSAGE_ANNOTATION, null);
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -579,11 +561,10 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
 
     @Test
-    public void testNoBodyWithUnknownMessageAnnotation()
+    void noBodyWithUnknownMessageAnnotation()
     {
-        Message_1_0 sourceMessage =
-                createTestMessage(new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"),
-                                                                                  (byte) 11)), null);
+        final Message_1_0 sourceMessage =
+                createTestMessage(new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 11)), null);
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -592,14 +573,13 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testNoBodyWithUnknownMessageAnnotationWithContentType()
+    void noBodyWithUnknownMessageAnnotationWithContentType()
     {
-
         final String mimeType = "foo/bar";
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf(mimeType));
-        Message_1_0 sourceMessage =
-                createTestMessage(properties, new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"),
+        final Message_1_0 sourceMessage =
+                createTestMessage(properties, new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"),
                                                                                   (byte) 11)), null);
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
@@ -609,7 +589,7 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testNoBody()
+    void noBody()
     {
         final Message_1_0 sourceMessage = createTestMessage(null);
 
@@ -620,10 +600,10 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testNoBodyWithContentTypeApplicationOctetStream()
+    void noBodyWithContentTypeApplicationOctetStream()
     {
         final String mimeType = "foo/bar";
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf(mimeType));
         final Message_1_0 sourceMessage = createTestMessage(properties, null);
 
@@ -634,7 +614,7 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testMessageAnnotationTakesPrecedenceOverContentType()
+    void messageAnnotationTakesPrecedenceOverContentType()
     {
         final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf("application/octet-stream"));
@@ -647,43 +627,43 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
         assertNull(convertedMessage.getMessageBody(), "Unexpected content");
     }
 
-    private Message_1_0 createTestMessage(final EncodingRetainingSection encodingRetainingSection)
+    private Message_1_0 createTestMessage(final EncodingRetainingSection<?> encodingRetainingSection)
     {
         return createTestMessage(new Properties(), encodingRetainingSection);
     }
 
-    private Message_1_0 createTestMessage(final Properties properties, final EncodingRetainingSection section)
+    private Message_1_0 createTestMessage(final Properties properties, final EncodingRetainingSection<?> section)
     {
         return createTestMessage(new Header(),
-                                 new DeliveryAnnotations(Collections.emptyMap()),
-                                 new MessageAnnotations(Collections.emptyMap()),
+                                 new DeliveryAnnotations(Map.of()),
+                                 new MessageAnnotations(Map.of()),
                                  properties,
-                                 new ApplicationProperties(Collections.emptyMap()),
+                                 new ApplicationProperties(Map.of()),
                                  0,
                                  section);
     }
 
     private Message_1_0 createTestMessage(final Properties properties,
                                           final MessageAnnotations messageAnnotations,
-                                          final EncodingRetainingSection section)
+                                          final EncodingRetainingSection<?> section)
     {
         return createTestMessage(new Header(),
-                                 new DeliveryAnnotations(Collections.emptyMap()),
+                                 new DeliveryAnnotations(Map.of()),
                                  messageAnnotations,
                                  properties,
-                                 new ApplicationProperties(Collections.emptyMap()),
+                                 new ApplicationProperties(Map.of()),
                                  0,
                                  section);
     }
 
     private Message_1_0 createTestMessage(final MessageAnnotations messageAnnotations,
-                                          final EncodingRetainingSection section)
+                                          final EncodingRetainingSection<?> section)
     {
         return createTestMessage(new Header(),
-                                 new DeliveryAnnotations(Collections.emptyMap()),
+                                 new DeliveryAnnotations(Map.of()),
                                  messageAnnotations,
                                  new Properties(),
-                                 new ApplicationProperties(Collections.emptyMap()),
+                                 new ApplicationProperties(Map.of()),
                                  0,
                                  section);
     }
@@ -694,17 +674,17 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
                                           final Properties properties,
                                           final ApplicationProperties applicationProperties,
                                           final long arrivalTime,
-                                          final EncodingRetainingSection section)
+                                          final EncodingRetainingSection<?> section)
     {
         final StoredMessage<MessageMetaData_1_0> storedMessage = mock(StoredMessage.class);
-        MessageMetaData_1_0 metaData = new MessageMetaData_1_0(header.createEncodingRetainingSection(),
-                                                               deliveryAnnotations.createEncodingRetainingSection(),
-                                                               messageAnnotations.createEncodingRetainingSection(),
-                                                               properties.createEncodingRetainingSection(),
-                                                               applicationProperties.createEncodingRetainingSection(),
-                                                               new Footer(Collections.emptyMap()).createEncodingRetainingSection(),
-                                                               arrivalTime,
-                                                               0);
+        final MessageMetaData_1_0 metaData = new MessageMetaData_1_0(header.createEncodingRetainingSection(),
+                deliveryAnnotations.createEncodingRetainingSection(),
+                messageAnnotations.createEncodingRetainingSection(),
+                properties.createEncodingRetainingSection(),
+                applicationProperties.createEncodingRetainingSection(),
+                new Footer(Map.of()).createEncodingRetainingSection(),
+                arrivalTime,
+                0);
         when(storedMessage.getMetaData()).thenReturn(metaData);
 
         if (section != null)
@@ -715,9 +695,8 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
             final ArgumentCaptor<Integer> offsetCaptor = ArgumentCaptor.forClass(Integer.class);
             final ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
 
-            when(storedMessage.getContent(offsetCaptor.capture(),
-                                          sizeCaptor.capture())).then(invocation -> combined.view(offsetCaptor.getValue(),
-                                                                                                  sizeCaptor.getValue()));
+            when(storedMessage.getContent(offsetCaptor.capture(), sizeCaptor.capture()))
+                    .then(invocation -> combined.view(offsetCaptor.getValue(), sizeCaptor.getValue()));
         }
         else
         {
@@ -729,8 +708,8 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     private byte[] getObjectBytes(final Object object) throws IOException
     {
         final byte[] expected;
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(baos))
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             final ObjectOutputStream oos = new ObjectOutputStream(baos))
         {
             oos.writeObject(object);
             expected = baos.toByteArray();
@@ -745,10 +724,10 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 
         final Data value = new Data(new Binary(data));
 
-        Message_1_0 sourceMessage;
+        final Message_1_0 sourceMessage;
         if (mimeType != null)
         {
-            Properties properties = new Properties();
+            final Properties properties = new Properties();
             properties.setContentType(Symbol.valueOf(mimeType));
             sourceMessage = createTestMessage(properties, messageAnnotations, value.createEncodingRetainingSection());
         }
@@ -762,7 +741,5 @@ public class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
         assertEquals(expectedMimeType, convertedMessage.getMessageHeader().getMimeType(),
                 "Unexpected mime type");
         assertArrayEquals(data, ((byte[]) convertedMessage.getMessageBody()), "Unexpected content");
-
     }
-
 }

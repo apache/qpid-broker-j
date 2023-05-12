@@ -34,15 +34,16 @@ import org.apache.qpid.server.protocol.v1_0.LinkEndpoint;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class UnsettledDeliveryTest extends UnitTestBase
+class UnsettledDeliveryTest extends UnitTestBase
 {
     private static final byte[] DATA = new byte[]{(byte) 32, (byte) 33, (byte) 34};
+
     private Binary _deliveryTag;
     private LinkEndpoint<?, ?> _linkEndpoint;
     private UnsettledDelivery _unsettledDelivery;
 
     @BeforeAll
-    public void setUp()
+    void setUp()
     {
         _deliveryTag = new Binary(DATA);
         _linkEndpoint = mock(LinkEndpoint.class);
@@ -50,47 +51,47 @@ public class UnsettledDeliveryTest extends UnitTestBase
     }
 
     @Test
-    public void testGetDeliveryTag()
+    void getDeliveryTag()
     {
         assertThat(_unsettledDelivery.getDeliveryTag(), is(equalTo(_deliveryTag)));
     }
 
     @Test
-    public void testGetLinkEndpoint()
+    void getLinkEndpoint()
     {
         assertThat(_unsettledDelivery.getLinkEndpoint(), is(equalTo(_linkEndpoint)));
     }
 
     @Test
-    public void testEqualsToNewUnsettledDeliveryWithTheSameFields()
+    void equalsToNewUnsettledDeliveryWithTheSameFields()
     {
         assertThat(_unsettledDelivery.equals(new UnsettledDelivery(_deliveryTag, _linkEndpoint)), is(equalTo(true)));
     }
 
     @Test
-    public void testEqualsToNewUnsettledDeliveryWithEqualsFields()
+    void equalsToNewUnsettledDeliveryWithEqualsFields()
     {
         assertThat(_unsettledDelivery.equals(new UnsettledDelivery(new Binary(DATA), _linkEndpoint)),
-                   is(equalTo(true)));
+                is(equalTo(true)));
     }
 
     @Test
-    public void testNotEqualsWhenDeliveryTagIsDifferent()
+    void notEqualsWhenDeliveryTagIsDifferent()
     {
         assertThat(_unsettledDelivery.equals(new UnsettledDelivery(new Binary(new byte[]{(byte) 32, (byte) 33}),
-                                                                   _linkEndpoint)), is(equalTo(false)));
+                _linkEndpoint)), is(equalTo(false)));
     }
 
     @Test
-    public void testNotEqualsWhenLinkEndpointIsDifferent()
+    void notEqualsWhenLinkEndpointIsDifferent()
     {
         final LinkEndpoint<?, ?> linkEndpoint = mock(LinkEndpoint.class);
         assertThat(_unsettledDelivery.equals(new UnsettledDelivery(new Binary(new byte[]{(byte) 32, (byte) 33}),
-                                                                   linkEndpoint)), is(equalTo(false)));
+                linkEndpoint)), is(equalTo(false)));
     }
 
     @Test
-    public void testHashCode()
+    void hashCodes()
     {
         int expected = Objects.hash(_deliveryTag, _linkEndpoint);
         assertThat(_unsettledDelivery.hashCode(), is(equalTo(expected)));

@@ -37,142 +37,141 @@ import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class LinkRegistryTest extends UnitTestBase
+class LinkRegistryTest extends UnitTestBase
 {
-    public static final Pattern ANY = Pattern.compile(".*");
-    private QueueManagingVirtualHost _virtualHost;
-    private LinkRegistryImpl _linkRegistry;
+    static final Pattern ANY = Pattern.compile(".*");
+
+    private QueueManagingVirtualHost<?> _virtualHost;
+    private LinkRegistryImpl<?, ?> _linkRegistry;
 
     @BeforeAll
-    public void beforeAll()
+    void beforeAll()
     {
         _virtualHost = mock(QueueManagingVirtualHost.class);
     }
 
     @BeforeEach
-    public void beforeEach()
+    void beforeEach()
     {
-        _linkRegistry = new LinkRegistryImpl(_virtualHost);
+        _linkRegistry = new LinkRegistryImpl<>(_virtualHost);
     }
 
     @Test
-    public void testGetSendingLink()
+    void getSendingLink()
     {
-        String remoteContainerId = "testRemoteContainerId";
-        String linkName = "testLinkName";
-        LinkModel link = _linkRegistry.getSendingLink(remoteContainerId, linkName);
+        final String remoteContainerId = "testRemoteContainerId";
+        final String linkName = "testLinkName";
+        final LinkModel link = _linkRegistry.getSendingLink(remoteContainerId, linkName);
         assertNotNull(link, "LinkRegistryModel#getSendingLink should always return an object");
-        LinkModel link2 = _linkRegistry.getSendingLink(remoteContainerId, linkName);
+        final LinkModel link2 = _linkRegistry.getSendingLink(remoteContainerId, linkName);
         assertNotNull(link2, "LinkRegistryModel#getSendingLink should always return an object");
         assertSame(link, link2, "Two calls to LinkRegistryModel#getSendingLink should return the same object");
     }
 
     @Test
-    public void testGetReceivingLink()
+    void getReceivingLink()
     {
-        String remoteContainerId = "testRemoteContainerId";
-        String linkName = "testLinkName";
-        LinkModel link = _linkRegistry.getReceivingLink(remoteContainerId, linkName);
+        final String remoteContainerId = "testRemoteContainerId";
+        final String linkName = "testLinkName";
+        final LinkModel link = _linkRegistry.getReceivingLink(remoteContainerId, linkName);
         assertNotNull(link, "LinkRegistryModel#getReceivingLink should always return an object");
-        LinkModel link2 = _linkRegistry.getReceivingLink(remoteContainerId, linkName);
+        final LinkModel link2 = _linkRegistry.getReceivingLink(remoteContainerId, linkName);
         assertNotNull(link2, "LinkRegistryModel#getReceivingLink should always return an object");
-        assertSame(link,
-                              link2,
-                              "Two calls to LinkRegistryModel#getReceivingLink should return the same object");
+        assertSame(link, link2, "Two calls to LinkRegistryModel#getReceivingLink should return the same object");
     }
 
     @Test
-    public void testPurgeSendingLinksFromRegistryWithEmptyRegistry()
+    void purgeSendingLinksFromRegistryWithEmptyRegistry()
     {
         _linkRegistry.purgeSendingLinks(ANY, ANY);
     }
 
     @Test
-    public void testPurgeSendingLinksExactMatch()
+    void purgeSendingLinksExactMatch()
     {
         _linkRegistry.getSendingLink("testContainerId", "testLinkName");
         _linkRegistry.purgeSendingLinks(Pattern.compile("testContainerId"), Pattern.compile("testLinkName"));
-        LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
+        final LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
         assertEquals(dump.getContainers().size(), (long) 0);
     }
 
     @Test
-    public void testPurgeSendingLinksRegEx()
+    void purgeSendingLinksRegEx()
     {
         _linkRegistry.getSendingLink("testContainerId", "testLinkName");
         _linkRegistry.purgeSendingLinks(Pattern.compile("test.*Id"), Pattern.compile("testLink.*"));
-        LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
+        final LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
         assertEquals(dump.getContainers().size(), (long) 0);
     }
 
     @Test
-    public void testPurgeSendingLinksNotMatchingRegEx()
+    void purgeSendingLinksNotMatchingRegEx()
     {
         _linkRegistry.getSendingLink("testContainerId", "testLinkName");
         _linkRegistry.purgeSendingLinks(Pattern.compile("Foo.*"), Pattern.compile(".*bar"));
-        LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
+        final LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
         assertEquals(dump.getContainers().size(), (long) 1);
     }
 
     @Test
-    public void testPurgeSendingLinksDoesNotRemoveReceivingLink()
+    void purgeSendingLinksDoesNotRemoveReceivingLink()
     {
         _linkRegistry.getSendingLink("testContainerId", "testLinkName");
         _linkRegistry.getReceivingLink("testContainerId", "testLinkName");
         _linkRegistry.purgeSendingLinks(Pattern.compile("testContainerId"), Pattern.compile("testLinkName"));
-        LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
+        final LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
         assertEquals(dump.getContainers().size(), (long) 1);
         assertEquals(dump.getContainers().get("testContainerId").getReceivingLinks().size(), (long) 1);
         assertEquals(dump.getContainers().get("testContainerId").getSendingLinks().size(), (long) 0);
     }
 
     @Test
-    public void testPurgeReceivingLinksFromRegistryWithEmptyRegistry()
+    void purgeReceivingLinksFromRegistryWithEmptyRegistry()
     {
         _linkRegistry.purgeReceivingLinks(ANY, ANY);
     }
 
     @Test
-    public void testPurgeReceivingLinksExactMatch()
+    void purgeReceivingLinksExactMatch()
     {
         _linkRegistry.getReceivingLink("testContainerId", "testLinkName");
         _linkRegistry.purgeReceivingLinks(Pattern.compile("testContainerId"), Pattern.compile("testLinkName"));
-        LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
+        final LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
         assertEquals(dump.getContainers().size(), (long) 0);
     }
 
     @Test
-    public void testPurgeReceivingLinksRegEx()
+    void purgeReceivingLinksRegEx()
     {
         _linkRegistry.getReceivingLink("testContainerId", "testLinkName");
         _linkRegistry.purgeReceivingLinks(Pattern.compile("test.*Id"), Pattern.compile("testLink.*"));
-        LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
+        final LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
         assertEquals(dump.getContainers().size(), (long) 0);
     }
 
     @Test
-    public void testPurgeReceivingLinksNotMatchingRegEx()
+    void purgeReceivingLinksNotMatchingRegEx()
     {
         _linkRegistry.getReceivingLink("testContainerId", "testLinkName");
         _linkRegistry.purgeReceivingLinks(Pattern.compile("Foo.*"), Pattern.compile(".*bar"));
-        LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
+        final LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
         assertEquals(dump.getContainers().size(), (long) 1);
     }
 
     @Test
-    public void testPurgeReceivingLinksDoesNotRemoveSendingLink()
+    void purgeReceivingLinksDoesNotRemoveSendingLink()
     {
         _linkRegistry.getSendingLink("testContainerId", "testLinkName");
         _linkRegistry.getReceivingLink("testContainerId", "testLinkName");
         _linkRegistry.purgeReceivingLinks(Pattern.compile("testContainerId"), Pattern.compile("testLinkName"));
-        LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
+        final LinkRegistryImpl.LinkRegistryDump dump = _linkRegistry.dump();
         assertEquals(dump.getContainers().size(), (long) 1);
         assertEquals(dump.getContainers().get("testContainerId").getReceivingLinks().size(), (long) 0);
         assertEquals(dump.getContainers().get("testContainerId").getSendingLinks().size(), (long) 1);
     }
 
     @Test
-    public void testDump()
+    void dump()
     {
         _linkRegistry.getSendingLink("testContainerId1", "testLinkName");
         _linkRegistry.getReceivingLink("testContainerId2", "testLinkName");
@@ -206,7 +205,7 @@ public class LinkRegistryTest extends UnitTestBase
     }
 
     @Test
-    public void testDumpIsSerializable() throws Exception
+    void dumpIsSerializable() throws Exception
     {
         _linkRegistry.getSendingLink("testContainerId1", "testLinkName");
         _linkRegistry.getReceivingLink("testContainerId2", "testLinkName");
@@ -216,5 +215,4 @@ public class LinkRegistryTest extends UnitTestBase
 
         assertNotNull(data);
     }
-
 }

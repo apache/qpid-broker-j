@@ -21,7 +21,7 @@
 package org.apache.qpid.server.protocol.v1_0.codec;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -32,9 +32,9 @@ import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ValueHandlerTest extends UnitTestBase
+class ValueHandlerTest extends UnitTestBase
 {
-    private final byte[] FORMAT_CODES = {
+    private static final byte[] FORMAT_CODES = {
             0x00,
             0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56,
             0x60, 0x61,
@@ -50,25 +50,25 @@ public class ValueHandlerTest extends UnitTestBase
     };
 
     private static final AMQPDescribedTypeRegistry TYPE_REGISTRY = AMQPDescribedTypeRegistry.newInstance()
-                                                                                            .registerTransportLayer()
-                                                                                            .registerMessagingLayer()
-                                                                                            .registerTransactionLayer()
-                                                                                            .registerSecurityLayer();
+            .registerTransportLayer()
+            .registerMessagingLayer()
+            .registerTransactionLayer()
+            .registerSecurityLayer();
 
     private ValueHandler _valueHandle;
     private ValueHandler _sectionValueHandler;
 
     @BeforeAll
-    public void setUp() throws Exception
+    void setUp()
     {
         _valueHandle = new ValueHandler(TYPE_REGISTRY);
         _sectionValueHandler = new ValueHandler(TYPE_REGISTRY.getSectionDecoderRegistry());
     }
 
     @Test
-    public void testIncompleteValueParsingFormatCodeOnly()
+    void incompleteValueParsingFormatCodeOnly()
     {
-        for (byte b : FORMAT_CODES)
+        for (final byte b : FORMAT_CODES)
         {
             byte[] in = {b};
             performTest(b, in);
@@ -76,100 +76,99 @@ public class ValueHandlerTest extends UnitTestBase
     }
 
     @Test
-    public void testIncompleteValueParsingVariableOneFormatCodeOnlyAndSize()
+    void incompleteValueParsingVariableOneFormatCodeOnlyAndSize()
     {
-        byte[] variableOne = {(byte) 0xA0, (byte) 0xA1, (byte) 0xA3};
-        for (byte b : variableOne)
+        final byte[] variableOne = {(byte) 0xA0, (byte) 0xA1, (byte) 0xA3};
+        for (final byte b : variableOne)
         {
-            byte[] in = {b, (byte) 1};
+            final byte[] in = {b, (byte) 1};
             performTest(b, in);
         }
     }
 
     @Test
-    public void testIncompleteValueParsingVariableFour()
+    void incompleteValueParsingVariableFour()
     {
-        byte[] variableFour = {(byte) 0xB0, (byte) 0xB1, (byte) 0xB3};
-        for (byte b : variableFour)
+        final byte[] variableFour = {(byte) 0xB0, (byte) 0xB1, (byte) 0xB3};
+        for (final byte b : variableFour)
         {
-            byte[] in = {b, (byte) 0, (byte) 0, (byte) 0, (byte) 2};
+            final byte[] in = {b, (byte) 0, (byte) 0, (byte) 0, (byte) 2};
             performTest(b, in);
         }
     }
 
     @Test
-    public void testIncompleteValueParsingCompoundOneOrArrayOne()
+    void incompleteValueParsingCompoundOneOrArrayOne()
     {
-        byte[] compoundOne = {(byte) 0xC0, (byte) 0xC1, (byte) 0xE0};
-        for (byte b : compoundOne)
+        final byte[] compoundOne = {(byte) 0xC0, (byte) 0xC1, (byte) 0xE0};
+        for (final byte b : compoundOne)
         {
-            byte[] in = {b, (byte) 1};
+            final byte[] in = {b, (byte) 1};
             performTest(b, in);
         }
     }
 
     @Test
-    public void testIncompleteValueParsingCompoundFourOrArrayFour()
+    void incompleteValueParsingCompoundFourOrArrayFour()
     {
-        byte[] compoundFour = {(byte) 0xD0, (byte) 0xD1, (byte) 0xF0};
-        for (byte b : compoundFour)
+        final byte[] compoundFour = {(byte) 0xD0, (byte) 0xD1, (byte) 0xF0};
+        for (final byte b : compoundFour)
         {
-            byte[] in = {b, (byte) 0, (byte) 0, (byte) 0, (byte) 1};
-            performTest(b, in);
-        }
-    }
-
-
-    @Test
-    public void testIncompleteValueParsingCompoundOneWhenOnlySizeAndCountSpecified()
-    {
-        byte[] compoundOne = {(byte) 0xC0, (byte) 0xC1, (byte) 0xE0};
-        for (byte b : compoundOne)
-        {
-            byte[] in = {b, (byte) 2, (byte) 1};
+            final byte[] in = {b, (byte) 0, (byte) 0, (byte) 0, (byte) 1};
             performTest(b, in);
         }
     }
 
     @Test
-    public void testIncompleteValueParsingCompoundFourWhenOnlySizeAndCountSpecified()
+    void incompleteValueParsingCompoundOneWhenOnlySizeAndCountSpecified()
     {
-        byte[] compoundFour = {(byte) 0xD0, (byte) 0xD1, (byte) 0xF0};
-        for (byte b : compoundFour)
+        final byte[] compoundOne = {(byte) 0xC0, (byte) 0xC1, (byte) 0xE0};
+        for (final byte b : compoundOne)
         {
-            byte[] in = {b, (byte) 0, (byte) 0, (byte) 0, (byte) 2, (byte) 0, (byte) 0, (byte) 0, (byte) 1};
+            final byte[] in = {b, (byte) 2, (byte) 1};
             performTest(b, in);
         }
     }
 
     @Test
-    public void testIncompleteValueParsingArrayOneElementConstructor()
+    void incompleteValueParsingCompoundFourWhenOnlySizeAndCountSpecified()
     {
-        byte[] in = {(byte) 0xE0, (byte) 3, (byte) 1, 0x50};
+        final byte[] compoundFour = {(byte) 0xD0, (byte) 0xD1, (byte) 0xF0};
+        for (final byte b : compoundFour)
+        {
+            final byte[] in = {b, (byte) 0, (byte) 0, (byte) 0, (byte) 2, (byte) 0, (byte) 0, (byte) 0, (byte) 1};
+            performTest(b, in);
+        }
+    }
+
+    @Test
+    void incompleteValueParsingArrayOneElementConstructor()
+    {
+        final byte[] in = {(byte) 0xE0, (byte) 3, (byte) 1, 0x50};
         performTest((byte) 0xE0, in);
     }
 
     @Test
-    public void testIncompleteValueParsingArrayOneElementConstructorWhenSizeIsWrong()
+    void incompleteValueParsingArrayOneElementConstructorWhenSizeIsWrong()
     {
-        byte[] in = {(byte) 0xE0, (byte) 2, (byte) 1, 0x50, (byte) 1};
+        final byte[] in = {(byte) 0xE0, (byte) 2, (byte) 1, 0x50, (byte) 1};
         performTest((byte) 0xE0, in);
     }
 
     @Test
-    public void testIncompleteValueParsingArrayFourElementConstructor()
+    void incompleteValueParsingArrayFourElementConstructor()
     {
-        byte[] in = {(byte) 0xF0, (byte) 0, (byte) 0, (byte) 0, (byte) 2, (byte) 0, (byte) 0, (byte) 0, (byte) 1, 0x50};
+        final byte[] in = {(byte) 0xF0, (byte) 0, (byte) 0, (byte) 0, (byte) 2, (byte) 0, (byte) 0, (byte) 0, (byte) 1, 0x50};
         performTest((byte) 0xF0, in);
     }
 
     @Test
-    public void testIncompleteSection()
+    void incompleteSection()
     {
-        byte[] in = { 0x00, 0x53, 0x75, (byte) 0xA0, 0x01, 0x00 };
+        final byte[] in = { 0x00, 0x53, 0x75, (byte) 0xA0, 0x01, 0x00 };
         for (int i = in.length - 1; i > 1; --i)
         {
-            byte[] newArray = new byte[i];
+            final byte[] newArray = new byte[i];
             System.arraycopy(in, 0, newArray, 0, i);
             performSectionTest((byte) 0x00, newArray);
         }
@@ -185,24 +184,14 @@ public class ValueHandlerTest extends UnitTestBase
         performTest(type, encodedBytes, _valueHandle);
     }
 
-    private void performTest(final byte type, final byte[] encodedBytes, ValueHandler valueHandler)
+    private void performTest(final byte type, final byte[] encodedBytes, final ValueHandler valueHandler)
     {
-        QpidByteBuffer qbb = QpidByteBuffer.wrap(encodedBytes);
+        final QpidByteBuffer qbb = QpidByteBuffer.wrap(encodedBytes);
 
-        try
-        {
-            valueHandler.parse(qbb);
-            fail(String.format("AmqpErrorException is expected for %#02x", type));
-        }
-        catch (AmqpErrorException e)
-        {
-            assertEquals(AmqpError.DECODE_ERROR, e.getError().getCondition(),
-                    String.format("Unexpected error code for %#02x", type));
-
-        }
-        catch (Exception e)
-        {
-            fail(String.format("Unexpected exception for %#02x: %s", type, e));
-        }
+        final AmqpErrorException thrown =  assertThrows(AmqpErrorException.class,
+                () -> valueHandler.parse(qbb),
+                String.format("AmqpErrorException is expected for %#02x", type));
+        assertEquals(AmqpError.DECODE_ERROR, thrown.getError().getCondition(),
+                String.format("Unexpected error code for %#02x", type));
     }
 }
