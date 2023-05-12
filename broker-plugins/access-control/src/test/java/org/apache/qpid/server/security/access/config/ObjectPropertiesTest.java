@@ -30,10 +30,10 @@ import org.junit.jupiter.api.Test;
 import java.util.Collection;
 import java.util.Collections;
 
-public class ObjectPropertiesTest extends UnitTestBase
+class ObjectPropertiesTest extends UnitTestBase
 {
     @Test
-    public void testName()
+    void name()
     {
         ObjectProperties properties = new ObjectProperties("name");
         assertEquals("name", properties.get(Property.NAME));
@@ -44,7 +44,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testName_NullInput()
+    void name_NullInput()
     {
         ObjectProperties properties = new ObjectProperties((String) null);
         assertEquals("", properties.get(Property.NAME));
@@ -55,7 +55,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testCreatedBy_Null()
+    void createdBy_Null()
     {
         final ObjectProperties properties = new ObjectProperties();
         properties.setCreatedBy(null);
@@ -63,7 +63,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testCreatedBy()
+    void createdBy()
     {
         final ObjectProperties properties = new ObjectProperties();
         properties.setCreatedBy("username");
@@ -71,7 +71,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testOwner_Null()
+    void owner_Null()
     {
         final ObjectProperties properties = new ObjectProperties();
         properties.setOwner(null);
@@ -79,7 +79,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testOwner()
+    void owner()
     {
         final ObjectProperties properties = new ObjectProperties();
         properties.setOwner("username");
@@ -87,7 +87,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testPut_NullInput()
+    void put_NullInput()
     {
         final ObjectProperties properties = new ObjectProperties();
 
@@ -97,7 +97,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testPut_EmptyString()
+    void put_EmptyString()
     {
         final ObjectProperties properties = new ObjectProperties();
 
@@ -111,7 +111,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testPut()
+    void put()
     {
         final ObjectProperties properties = new ObjectProperties();
 
@@ -125,21 +125,20 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testDescription()
+    void description()
     {
         final ObjectProperties properties = new ObjectProperties();
         assertTrue(properties.withDescription("DES").toString().contains("DES"));
     }
 
     @Test
-    public void testAttributeNames_NullInput()
+    void attributeNames_NullInput()
     {
         ObjectProperties properties = new ObjectProperties();
         assertTrue(properties.getAttributeNames().isEmpty());
 
         properties.addAttributeNames((String[]) null);
         assertTrue(properties.getAttributeNames().isEmpty());
-
 
         properties = new ObjectProperties();
         assertTrue(properties.getAttributeNames().isEmpty());
@@ -149,14 +148,13 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testAttributeNames_EmptyInput()
+    void attributeNames_EmptyInput()
     {
         ObjectProperties properties = new ObjectProperties();
         assertTrue(properties.getAttributeNames().isEmpty());
 
         properties.addAttributeNames();
         assertTrue(properties.getAttributeNames().isEmpty());
-
 
         properties = new ObjectProperties();
         assertTrue(properties.getAttributeNames().isEmpty());
@@ -166,7 +164,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testAttributeNames()
+    void attributeNames()
     {
         ObjectProperties properties = new ObjectProperties();
         assertTrue(properties.getAttributeNames().isEmpty());
@@ -175,7 +173,6 @@ public class ObjectPropertiesTest extends UnitTestBase
         assertEquals(2, properties.getAttributeNames().size());
         assertTrue(properties.getAttributeNames().contains("name"));
         assertTrue(properties.getAttributeNames().contains("host"));
-
 
         properties = new ObjectProperties();
         assertTrue(properties.getAttributeNames().isEmpty());
@@ -186,7 +183,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testEquals()
+    void equals()
     {
         final ObjectProperties first = new ObjectProperties();
         first.addAttributeNames("name");
@@ -205,7 +202,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testNotEquals()
+    void notEquals()
     {
         final ObjectProperties first = new ObjectProperties();
         first.addAttributeNames("name");
@@ -231,7 +228,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testToString_withProperties()
+    void toString_withProperties()
     {
         final ObjectProperties properties = new ObjectProperties("vName");
         final String str = properties.toString();
@@ -241,7 +238,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testToString_withAttributes()
+    void toString_withAttributes()
     {
         final ObjectProperties properties = new ObjectProperties();
         properties.addAttributeNames("queue");
@@ -252,7 +249,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testToString_description()
+    void toString_description()
     {
         final ObjectProperties properties = new ObjectProperties().withDescription("desc");
         final String str = properties.toString();
@@ -261,7 +258,7 @@ public class ObjectPropertiesTest extends UnitTestBase
     }
 
     @Test
-    public void testToString_mixing()
+    void toString_mixing()
     {
         final ObjectProperties properties = new ObjectProperties("vName").withDescription("desc");
         properties.addAttributeNames("queue");

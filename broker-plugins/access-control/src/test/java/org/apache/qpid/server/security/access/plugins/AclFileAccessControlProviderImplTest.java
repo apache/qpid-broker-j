@@ -22,7 +22,7 @@
 package org.apache.qpid.server.security.access.plugins;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -43,48 +43,38 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AclFileAccessControlProviderImplTest extends UnitTestBase
+@SuppressWarnings("rawtypes")
+class AclFileAccessControlProviderImplTest extends UnitTestBase
 {
-    private TaskExecutor _taskExecutor;
-    private Model _model;
     private Broker _broker;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp()
     {
-        _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-        _model = BrokerModel.getInstance();
+        final TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
+        final Model model = BrokerModel.getInstance();
 
         _broker = mock(Broker.class);
-        when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
-        when(_broker.getModel()).thenReturn(_model);
+        when(_broker.getTaskExecutor()).thenReturn(taskExecutor);
+        when(_broker.getChildExecutor()).thenReturn(taskExecutor);
+        when(_broker.getModel()).thenReturn(model);
         when(_broker.getId()).thenReturn(UUID.randomUUID());
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
     }
 
     @Test
-    public void testValidationOnCreateWithNonExistingACLFile()
+    void validationOnCreateWithNonExistingACLFile()
     {
-        Map<String,Object> attributes = new HashMap<>();
-        String aclFilePath = new File(TMP_FOLDER, "test_" + getTestName() + System.nanoTime() + ".acl").getAbsolutePath();
-
+        final Map<String,Object> attributes = new HashMap<>();
+        final String aclFilePath = new File(TMP_FOLDER, "test_" + getTestName() + System.nanoTime() + ".acl").getAbsolutePath();
         attributes.put("path", aclFilePath);
         attributes.put(AclFileAccessControlProvider.NAME, getTestName());
 
-
-        AclFileAccessControlProviderImpl aclProvider = new AclFileAccessControlProviderImpl(attributes, _broker);
-        try
-        {
-            aclProvider.create();
-            fail("Exception is expected on validation with non-existing ACL file");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            assertEquals(String.format("Cannot convert %s to a readable resource", aclFilePath), e.getMessage(),
-                    "Unexpected exception message:" + e.getMessage());
-
-        }
+        final AclFileAccessControlProviderImpl aclProvider = new AclFileAccessControlProviderImpl(attributes, _broker);
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                aclProvider::create,
+                "Exception is expected on validation with non-existing ACL file");
+        assertEquals(String.format("Cannot convert %s to a readable resource", aclFilePath), thrown.getMessage(),
+                "Unexpected exception message:" + thrown.getMessage());
     }
-
 }

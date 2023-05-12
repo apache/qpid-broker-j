@@ -19,8 +19,8 @@
 package org.apache.qpid.server.security.access.config;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -31,9 +31,13 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.nio.CharBuffer;
+import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -41,30 +45,38 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AclFileParserTest extends UnitTestBase
+class AclFileParserTest extends UnitTestBase
 {
     private static final AclRulePredicates EMPTY = new AclRulePredicatesBuilder().build();
 
-    private RuleSet writeACLConfig(String... aclData) throws Exception
+    private RuleSet writeACLConfig(final String... aclData)
     {
-        final File acl = File.createTempFile(getClass().getName() + getTestName(), "acl");
-        acl.deleteOnExit();
-
-        // Write ACL file
-        try (final PrintWriter aclWriter = new PrintWriter(new FileWriter(acl)))
+        try
         {
-            for (final String line : aclData)
-            {
-                aclWriter.println(line);
-            }
-        }
+            final File acl = File.createTempFile(getClass().getName() + getTestName(), "acl");
+            acl.deleteOnExit();
 
-        // Load ruleset
-        return AclFileParser.parse(acl.toURI().toURL().toString(), mock(EventLoggerProvider.class));
+            // Write ACL file
+            try (final PrintWriter aclWriter = new PrintWriter(new FileWriter(acl)))
+            {
+                Arrays.stream(aclData).forEach(aclWriter::println);
+            }
+
+            // Load ruleset
+            return AclFileParser.parse(acl.toURI().toURL().toString(), mock(EventLoggerProvider.class));
+        }
+        catch (IllegalConfigurationException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+           throw new RuntimeException(e);
+        }
     }
 
     @Test
-    public void testEmptyRuleSetDefaults() throws Exception
+    void emptyRuleSetDefaults()
     {
         final RuleSet ruleSet = writeACLConfig();
         assertEquals(0, ruleSet.size());
@@ -72,226 +84,131 @@ public class AclFileParserTest extends UnitTestBase
     }
 
     @Test
-    public void testACLFileSyntaxContinuation() throws Exception
+    void ACLFileSyntaxContinuation()
     {
-        try
-        {
-            writeACLConfig("ACL ALLOW ALL \\ ALL");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.PREMATURE_CONTINUATION_MSG, 1), ce.getMessage());
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> writeACLConfig("ACL ALLOW ALL \\ ALL"),
+                "fail");
+        assertEquals(String.format(AclFileParser.PREMATURE_CONTINUATION_MSG, 1), thrown.getMessage());
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+    {
+            "ACL unparsed ALL ALL, " + AclFileParser.PARSE_TOKEN_FAILED_MSG + ", Not a valid permission: unparsed",
+            "ACL DENY ALL unparsed, " + AclFileParser.PARSE_TOKEN_FAILED_MSG + ", Not a valid operation: unparsed",
+            "ACL DENY ALL ALL unparsed, " + AclFileParser.PARSE_TOKEN_FAILED_MSG + ", Not a valid object type: unparsed"
+    })
+    void ACLFileSyntaxTokens(final String rule, final String expectedErrorMessage, final String expectedCause)
+    {
+        final IllegalConfigurationException thrown =
+                assertThrows(IllegalConfigurationException.class, () -> writeACLConfig(rule), "fail");
+        assertEquals(String.format(expectedErrorMessage, 1), thrown.getMessage());
+        assertTrue(thrown.getCause() instanceof IllegalArgumentException);
+        assertEquals(expectedCause, thrown.getCause().getMessage());
     }
 
     @Test
-    public void testACLFileSyntaxTokens() throws Exception
+    void ACLFileSyntaxNotEnoughACL()
     {
-        try
-        {
-            writeACLConfig("ACL unparsed ALL ALL");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.PARSE_TOKEN_FAILED_MSG, 1), ce.getMessage());
-            assertTrue(ce.getCause() instanceof IllegalArgumentException);
-            assertEquals("Not a valid permission: unparsed", ce.getCause().getMessage());
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> writeACLConfig("ACL ALLOW"),
+                "fail");
+        assertEquals(String.format(AclFileParser.NOT_ENOUGH_ACL_MSG, 1), thrown.getMessage());
+    }
 
-        try
-        {
-            writeACLConfig("ACL DENY ALL unparsed");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.PARSE_TOKEN_FAILED_MSG, 1), ce.getMessage());
-            assertTrue(ce.getCause() instanceof IllegalArgumentException);
-            assertEquals("Not a valid operation: unparsed", ce.getCause().getMessage());
-        }
-
-        try
-        {
-            writeACLConfig("ACL DENY ALL ALL unparsed");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.PARSE_TOKEN_FAILED_MSG, 1), ce.getMessage());
-            assertTrue(ce.getCause() instanceof IllegalArgumentException);
-            assertEquals("Not a valid object type: unparsed", ce.getCause().getMessage());
-        }
+    @ParameterizedTest
+    @CsvSource(
+    {
+            "CONFIG, " + AclFileParser.NOT_ENOUGH_TOKENS_MSG,
+            "CONFIG defaultdeny, " + AclFileParser.NOT_ENOUGH_CONFIG_MSG
+    })
+    void ACLFileSyntaxNotEnoughConfig(final String rule, final String expectedErrorMessage)
+    {
+        final IllegalConfigurationException thrown =
+                assertThrows(IllegalConfigurationException.class, () -> writeACLConfig(rule), "fail");
+        assertEquals(String.format(expectedErrorMessage, 1), thrown.getMessage());
     }
 
     @Test
-    public void testACLFileSyntaxNotEnoughACL() throws Exception
+    void ACLFileSyntaxOrderedConfig()
     {
-        try
-        {
-            writeACLConfig("ACL ALLOW");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.NOT_ENOUGH_ACL_MSG, 1), ce.getMessage());
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> writeACLConfig("3 CONFIG defaultdeny=true"),
+                "fail");
+        assertEquals(String.format(AclFileParser.NUMBER_NOT_ALLOWED_MSG, "CONFIG", 1), thrown.getMessage());
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+    {
+            "CONFIG default=false defaultdeny, " + AclFileParser.PROPERTY_KEY_ONLY_MSG,
+            "CONFIG default=false defaultdeny true, " + AclFileParser.PROPERTY_NO_EQUALS_MSG,
+            "CONFIG default=false defaultdeny=, " + AclFileParser.PROPERTY_NO_VALUE_MSG
+    })
+    void ACLFileSyntaxInvalidConfig(final String rule, final String expectedErrorMessage)
+    {
+        final IllegalConfigurationException thrown =
+                assertThrows(IllegalConfigurationException.class, () -> writeACLConfig(rule), "fail");
+        assertEquals(String.format(expectedErrorMessage, 1), thrown.getMessage());
     }
 
     @Test
-    public void testACLFileSyntaxNotEnoughConfig() throws Exception
+    void ACLFileSyntaxNotEnough()
     {
-        try
-        {
-            writeACLConfig("CONFIG");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.NOT_ENOUGH_TOKENS_MSG, 1), ce.getMessage());
-        }
-
-        try
-        {
-            writeACLConfig("CONFIG defaultdeny");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.NOT_ENOUGH_CONFIG_MSG, 1), ce.getMessage());
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> writeACLConfig("INVALID"),
+                "fail");
+        assertEquals(String.format(AclFileParser.NOT_ENOUGH_TOKENS_MSG, 1), thrown.getMessage());
     }
 
     @Test
-    public void testACLFileSyntaxOrderedConfig() throws Exception
+    void ACLFileSyntaxPropertyKeyOnly()
     {
-        try
-        {
-            writeACLConfig("3 CONFIG defaultdeny=true");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.NUMBER_NOT_ALLOWED_MSG, "CONFIG", 1), ce.getMessage());
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> writeACLConfig("ACL ALLOW adk CREATE QUEUE name"),
+                "fail");
+        assertEquals(String.format(AclFileParser.PROPERTY_KEY_ONLY_MSG, 1), thrown.getMessage());
     }
 
     @Test
-    public void testACLFileSyntaxInvalidConfig() throws Exception
+    void ACLFileSyntaxPropertyNoEquals()
     {
-        try
-        {
-            writeACLConfig("CONFIG default=false defaultdeny");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.PROPERTY_KEY_ONLY_MSG, 1), ce.getMessage());
-        }
-
-        try
-        {
-            writeACLConfig("CONFIG default=false defaultdeny true");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.PROPERTY_NO_EQUALS_MSG, 1), ce.getMessage());
-        }
-
-        try
-        {
-            writeACLConfig("CONFIG default=false defaultdeny=");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.PROPERTY_NO_VALUE_MSG, 1), ce.getMessage());
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> writeACLConfig("ACL ALLOW adk CREATE QUEUE name test"),
+                "fail");
+        assertEquals(String.format(AclFileParser.PROPERTY_NO_EQUALS_MSG, 1), thrown.getMessage());
     }
 
     @Test
-    public void testACLFileSyntaxNotEnough() throws Exception
+    void ACLFileSyntaxPropertyNoValue()
     {
-        try
-        {
-            writeACLConfig("INVALID");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.NOT_ENOUGH_TOKENS_MSG, 1), ce.getMessage());
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> writeACLConfig("ACL ALLOW adk CREATE QUEUE name ="),
+                "fail");
+        assertEquals(String.format(AclFileParser.PROPERTY_NO_VALUE_MSG, 1), thrown.getMessage());
     }
 
-    @Test
-    public void testACLFileSyntaxPropertyKeyOnly() throws Exception
+    @ParameterizedTest
+    @CsvSource(
     {
-        try
-        {
-            writeACLConfig("ACL ALLOW adk CREATE QUEUE name");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.PROPERTY_KEY_ONLY_MSG, 1), ce.getMessage());
-        }
-    }
-
-    @Test
-    public void testACLFileSyntaxPropertyNoEquals() throws Exception
+            "CONFIG defaultdefer=true, DEFER",
+            "CONFIG defaultdeny=true, DENIED",
+            "CONFIG defaultallow=true, ALLOWED",
+            "CONFIG defaultdefer=false defaultallow=true defaultdeny=false df=false, ALLOWED"
+    })
+    void validConfig(final String rule, final Result expectedResult)
     {
-        try
-        {
-            writeACLConfig("ACL ALLOW adk CREATE QUEUE name test");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.PROPERTY_NO_EQUALS_MSG, 1), ce.getMessage());
-        }
-    }
-
-    @Test
-    public void testACLFileSyntaxPropertyNoValue() throws Exception
-    {
-        try
-        {
-            writeACLConfig("ACL ALLOW adk CREATE QUEUE name =");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.PROPERTY_NO_VALUE_MSG, 1), ce.getMessage());
-        }
-    }
-
-    @Test
-    public void testValidConfig() throws Exception
-    {
-        RuleSet ruleSet = writeACLConfig("CONFIG defaultdefer=true");
+        final RuleSet ruleSet = writeACLConfig(rule);
         assertEquals(0, ruleSet.size(), "Unexpected number of rules");
-        assertEquals(Result.DEFER, ruleSet.getDefault(), "Unexpected default outcome");
-
-        ruleSet = writeACLConfig("CONFIG defaultdeny=true");
-        assertEquals(0, ruleSet.size(), "Unexpected number of rules");
-        assertEquals(Result.DENIED, ruleSet.getDefault(), "Unexpected default outcome");
-
-        ruleSet = writeACLConfig("CONFIG defaultallow=true");
-        assertEquals(0, ruleSet.size(), "Unexpected number of rules");
-        assertEquals(Result.ALLOWED, ruleSet.getDefault(), "Unexpected default outcome");
-
-        ruleSet = writeACLConfig("CONFIG defaultdefer=false defaultallow=true defaultdeny=false df=false");
-        assertEquals(0, ruleSet.size(), "Unexpected number of rules");
-        assertEquals(Result.ALLOWED, ruleSet.getDefault(), "Unexpected default outcome");
+        assertEquals(expectedResult, ruleSet.getDefault(), "Unexpected default outcome");
     }
 
     /**
      * Tests interpretation of an acl rule with no object properties.
      */
     @Test
-    public void testValidRule() throws Exception
+    void validRule()
     {
         final RuleSet rules = writeACLConfig("ACL DENY-LOG user1 ACCESS VIRTUALHOST");
         assertEquals(1, rules.size());
@@ -307,7 +224,7 @@ public class AclFileParserTest extends UnitTestBase
      * Tests interpretation of an acl rule with object properties quoted in single quotes.
      */
     @Test
-    public void testValidRuleWithSingleQuotedProperty() throws Exception
+    void validRuleWithSingleQuotedProperty()
     {
         final RuleSet rules = writeACLConfig("ACL ALLOW all CREATE EXCHANGE name = 'value'");
         assertEquals(1, rules.size());
@@ -316,10 +233,8 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals("all", rule.getIdentity(), "Rule has unexpected identity");
         assertEquals(LegacyOperation.CREATE, rule.getOperation(), "Rule has unexpected operation");
         assertEquals(ObjectType.EXCHANGE, rule.getObjectType(), "Rule has unexpected object type");
-        final AclRulePredicates expectedPredicates =
-                new AclRulePredicatesBuilder()
-                        .put(Property.NAME, "value")
-                        .build();
+        final AclRulePredicates expectedPredicates = new AclRulePredicatesBuilder()
+                .put(Property.NAME, "value").build();
         assertEquals(expectedPredicates, rule.getPredicates(), "Rule has unexpected predicates");
     }
 
@@ -327,7 +242,7 @@ public class AclFileParserTest extends UnitTestBase
      * Tests interpretation of an acl rule with object properties quoted in double quotes.
      */
     @Test
-    public void testValidRuleWithDoubleQuotedProperty() throws Exception
+    void validRuleWithDoubleQuotedProperty()
     {
         final RuleSet rules = writeACLConfig("ACL ALLOW all CREATE EXCHANGE name = \"value\"");
 
@@ -336,10 +251,8 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals("all", rule.getIdentity(), "Rule has unexpected identity");
         assertEquals(LegacyOperation.CREATE, rule.getOperation(), "Rule has unexpected operation");
         assertEquals(ObjectType.EXCHANGE, rule.getObjectType(), "Rule has unexpected object type");
-        final AclRulePredicates expectedPredicates =
-                new AclRulePredicatesBuilder()
-                        .put(Property.NAME, "value")
-                        .build();
+        final AclRulePredicates expectedPredicates = new AclRulePredicatesBuilder()
+                .put(Property.NAME, "value").build();
         assertEquals(expectedPredicates, rule.getPredicates(), "Rule has unexpected predicates");
     }
 
@@ -347,7 +260,7 @@ public class AclFileParserTest extends UnitTestBase
      * Tests interpretation of an acl rule with many object properties.
      */
     @Test
-    public void testValidRuleWithManyProperties() throws Exception
+    void validRuleWithManyProperties()
     {
         final RuleSet rules = writeACLConfig("ACL ALLOW admin DELETE QUEUE name=name1 owner = owner1");
         assertEquals(1, rules.size());
@@ -356,11 +269,9 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals("admin", rule.getIdentity(), "Rule has unexpected identity");
         assertEquals(LegacyOperation.DELETE, rule.getOperation(), "Rule has unexpected operation");
         assertEquals(ObjectType.QUEUE, rule.getObjectType(), "Rule has unexpected object type");
-        final AclRulePredicates expectedPredicates =
-                new AclRulePredicatesBuilder()
-                        .put(Property.NAME, "name1")
-                        .put(Property.OWNER, "owner1")
-                        .build();
+        final AclRulePredicates expectedPredicates = new AclRulePredicatesBuilder()
+                .put(Property.NAME, "name1")
+                .put(Property.OWNER, "owner1").build();
         assertEquals(expectedPredicates, rule.getPredicates(), "Rule has unexpected operation");
     }
 
@@ -369,58 +280,48 @@ public class AclFileParserTest extends UnitTestBase
      * hashes must be quoted otherwise they are interpreted as comments.
      */
     @Test
-    public void testValidRuleWithWildcardProperties() throws Exception
+    void validRuleWithWildcardProperties()
     {
         final RuleSet rules = writeACLConfig("ACL ALLOW all CREATE EXCHANGE routingKey = 'news.#'",
-                                             "ACL ALLOW all CREATE EXCHANGE routingKey = 'news.co.#'",
-                                             "ACL ALLOW all CREATE EXCHANGE routingKey = *.co.medellin");
+                "ACL ALLOW all CREATE EXCHANGE routingKey = 'news.co.#'",
+                "ACL ALLOW all CREATE EXCHANGE routingKey = *.co.medellin");
         assertEquals(3, rules.size());
 
         final Rule rule1 = rules.get(0);
         assertEquals("all", rule1.getIdentity(), "Rule has unexpected identity");
         assertEquals(LegacyOperation.CREATE, rule1.getOperation(), "Rule has unexpected operation");
         assertEquals(ObjectType.EXCHANGE, rule1.getObjectType(), "Rule has object type");
-        final AclRulePredicates expectedPredicates1 =
-                new AclRulePredicatesBuilder()
-                        .put(Property.ROUTING_KEY, "news.#")
-                        .build();
+        final AclRulePredicates expectedPredicates1 = new AclRulePredicatesBuilder()
+                .put(Property.ROUTING_KEY, "news.#").build();
         assertEquals(expectedPredicates1, rule1.getPredicates(), "Rule has unexpected predicates");
 
         final Rule rule2 = rules.get(1);
-        final AclRulePredicates expectedPredicates2 =
-                new AclRulePredicatesBuilder()
-                        .put(Property.ROUTING_KEY, "news.co.#")
-                        .build();
+        final AclRulePredicates expectedPredicates2 = new AclRulePredicatesBuilder()
+                .put(Property.ROUTING_KEY, "news.co.#").build();
         assertEquals(expectedPredicates2, rule2.getPredicates(), "Rule has unexpected predicates");
 
         final Rule rule3 = rules.get(2);
-        final AclRulePredicates expectedPredicates3 =
-                new AclRulePredicatesBuilder()
-                        .put(Property.ROUTING_KEY, "*.co.medellin")
-                        .build();
+        final AclRulePredicates expectedPredicates3 = new AclRulePredicatesBuilder()
+                .put(Property.ROUTING_KEY, "*.co.medellin").build();
         assertEquals(expectedPredicates3, rule3.getPredicates(), "Rule has unexpected predicates");
     }
 
     @Test
-    public void testOrderedValidRule() throws Exception
+    void orderedValidRule()
     {
         final RuleSet rules = writeACLConfig("5 ACL DENY all CREATE EXCHANGE",
-                                             "3 ACL ALLOW all CREATE EXCHANGE routingKey = 'news.co.#'",
-                                             "1 ACL ALLOW all CREATE EXCHANGE routingKey = *.co.medellin");
+                "3 ACL ALLOW all CREATE EXCHANGE routingKey = 'news.co.#'",
+                "1 ACL ALLOW all CREATE EXCHANGE routingKey = *.co.medellin");
         assertEquals(3, rules.size());
 
         final Rule rule1 = rules.get(0);
-        final AclRulePredicates expectedPredicates1 =
-                new AclRulePredicatesBuilder()
-                        .put(Property.ROUTING_KEY, "*.co.medellin")
-                        .build();
+        final AclRulePredicates expectedPredicates1 = new AclRulePredicatesBuilder()
+                .put(Property.ROUTING_KEY, "*.co.medellin").build();
         assertEquals(expectedPredicates1, rule1.getPredicates(), "Rule has unexpected predicates");
 
         final Rule rule3 = rules.get(1);
-        final AclRulePredicates expectedPredicates3 =
-                new AclRulePredicatesBuilder()
-                        .put(Property.ROUTING_KEY, "news.co.#")
-                        .build();
+        final AclRulePredicates expectedPredicates3 = new AclRulePredicatesBuilder()
+                .put(Property.ROUTING_KEY, "news.co.#").build();
         assertEquals(expectedPredicates3, rule3.getPredicates(), "Rule has unexpected predicates");
 
         final Rule rule5 = rules.get(2);
@@ -432,23 +333,18 @@ public class AclFileParserTest extends UnitTestBase
     }
 
     @Test
-    public void testOrderedInValidRule() throws Exception
+    void orderedInValidRule()
     {
-        try
-        {
-            writeACLConfig("5 ACL DENY all CREATE EXCHANGE",
-                           "3 ACL ALLOW all CREATE EXCHANGE routingKey = 'news.co.#'",
-                           "5 ACL ALLOW all CREATE EXCHANGE routingKey = *.co.medellin");
-            fail("fail");
-        }
-        catch (IllegalConfigurationException ce)
-        {
-            assertEquals(String.format(AclFileParser.BAD_ACL_RULE_NUMBER_MSG, 3), ce.getMessage());
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> writeACLConfig("5 ACL DENY all CREATE EXCHANGE",
+                        "3 ACL ALLOW all CREATE EXCHANGE routingKey = 'news.co.#'",
+                        "5 ACL ALLOW all CREATE EXCHANGE routingKey = *.co.medellin"),
+                "fail");
+        assertEquals(String.format(AclFileParser.BAD_ACL_RULE_NUMBER_MSG, 3), thrown.getMessage());
     }
 
     @Test
-    public void testShortValidRule() throws Exception
+    void shortValidRule()
     {
         final RuleSet rules = writeACLConfig("ACL DENY user UPDATE");
         assertEquals(1, rules.size());
@@ -459,7 +355,7 @@ public class AclFileParserTest extends UnitTestBase
      * Tests that rules are case insignificant.
      */
     @Test
-    public void testMixedCaseRuleInterpretation() throws Exception
+    void mixedCaseRuleInterpretation()
     {
         final RuleSet rules = writeACLConfig("AcL deny-LOG User1 BiND Exchange Name=AmQ.dIrect");
         assertEquals(1, rules.size());
@@ -468,10 +364,8 @@ public class AclFileParserTest extends UnitTestBase
         assertEquals("User1", rule.getIdentity(), "Rule has unexpected identity");
         assertEquals(LegacyOperation.BIND, rule.getOperation(), "Rule has unexpected operation");
         assertEquals(ObjectType.EXCHANGE, rule.getObjectType(), "Rule has unexpected object type");
-        final AclRulePredicates expectedPredicates =
-                new AclRulePredicatesBuilder()
-                        .put(Property.NAME, "AmQ.dIrect")
-                        .build();
+        final AclRulePredicates expectedPredicates = new AclRulePredicatesBuilder()
+                .put(Property.NAME, "AmQ.dIrect").build();
         assertEquals(expectedPredicates, rule.getPredicates(), "Rule has unexpected predicates");
     }
 
@@ -481,11 +375,11 @@ public class AclFileParserTest extends UnitTestBase
      * of line.
      */
     @Test
-    public void testCommentsSupported() throws Exception
+    void commentsSupported()
     {
         final RuleSet rules = writeACLConfig("#Comment",
-                                             "ACL DENY-LOG user1 ACCESS VIRTUALHOST # another comment",
-                                             "  # final comment with leading whitespace");
+                "ACL DENY-LOG user1 ACCESS VIRTUALHOST # another comment",
+                "  # final comment with leading whitespace");
         assertEquals(1, rules.size());
 
         final Rule rule = rules.get(0);
@@ -498,23 +392,15 @@ public class AclFileParserTest extends UnitTestBase
     /**
      * Tests interpretation of an acl rule using mixtures of tabs/spaces as token separators.
      */
-    @Test
-    public void testWhitespace() throws Exception
+    @ParameterizedTest
+    @ValueSource(strings =
     {
-        final RuleSet rules = writeACLConfig("ACL\tDENY-LOG\t\t user1\t \tACCESS VIRTUALHOST");
-        assertEquals(1, rules.size());
-
-        final Rule rule = rules.get(0);
-        assertEquals("user1", rule.getIdentity(), "Rule has unexpected identity");
-        assertEquals(LegacyOperation.ACCESS, rule.getOperation(), "Rule has unexpected operation");
-        assertEquals(ObjectType.VIRTUALHOST, rule.getObjectType(), "Rule has unexpected object type");
-        assertEquals(EMPTY, rule.getPredicates(), "Rule has unexpected predicates");
-    }
-
-    @Test
-    public void testWhitespace2() throws Exception
+            "ACL\tDENY-LOG\t\t user1\t \tACCESS VIRTUALHOST",
+            "ACL\u000B DENY-LOG\t\t user1\t \tACCESS VIRTUALHOST\u001E"
+    })
+    void whitespaces(final String arg)
     {
-        final RuleSet rules = writeACLConfig("ACL\u000B DENY-LOG\t\t user1\t \tACCESS VIRTUALHOST\u001E");
+        final RuleSet rules = writeACLConfig(arg);
         assertEquals(1, rules.size());
 
         final Rule rule = rules.get(0);
@@ -528,10 +414,9 @@ public class AclFileParserTest extends UnitTestBase
      * Tests interpretation of an acl utilising line continuation.
      */
     @Test
-    public void testLineContinuation() throws Exception
+    void lineContinuation()
     {
-        final RuleSet rules = writeACLConfig("ACL DENY-LOG user1 \\",
-                                             "ACCESS VIRTUALHOST");
+        final RuleSet rules = writeACLConfig("ACL DENY-LOG user1 \\", "ACCESS VIRTUALHOST");
         assertEquals(1, rules.size());
 
         final Rule rule = rules.get(0);
@@ -542,168 +427,144 @@ public class AclFileParserTest extends UnitTestBase
     }
 
     @Test
-    public void testUserRuleParsing() throws Exception
+    void userRuleParsing()
     {
-        final AclRulePredicates predicates =
-                new AclRulePredicatesBuilder()
-                        .put(Property.NAME, "otherUser")
-                        .build();
+        final AclRulePredicates predicates = new AclRulePredicatesBuilder()
+                .put(Property.NAME, "otherUser").build();
 
         validateRule(writeACLConfig("ACL ALLOW user1 CREATE USER"),
-                           "user1", LegacyOperation.CREATE, ObjectType.USER, EMPTY);
+                "user1", LegacyOperation.CREATE, ObjectType.USER, EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 CREATE USER name=\"otherUser\""),
-                           "user1", LegacyOperation.CREATE, ObjectType.USER, predicates);
+                "user1", LegacyOperation.CREATE, ObjectType.USER, predicates);
 
         validateRule(writeACLConfig("ACL ALLOW user1 DELETE USER"),
-                           "user1", LegacyOperation.DELETE, ObjectType.USER, EMPTY);
+                "user1", LegacyOperation.DELETE, ObjectType.USER, EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 DELETE USER name=\"otherUser\""),
-                           "user1", LegacyOperation.DELETE, ObjectType.USER, predicates);
+                "user1", LegacyOperation.DELETE, ObjectType.USER, predicates);
 
         validateRule(writeACLConfig("ACL ALLOW user1 UPDATE USER"),
-                           "user1", LegacyOperation.UPDATE, ObjectType.USER, EMPTY);
+                "user1", LegacyOperation.UPDATE, ObjectType.USER, EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 UPDATE USER name=\"otherUser\""),
-                           "user1", LegacyOperation.UPDATE, ObjectType.USER, predicates);
+                "user1", LegacyOperation.UPDATE, ObjectType.USER, predicates);
 
         validateRule(writeACLConfig("ACL ALLOW user1 ALL USER"),
-                           "user1", LegacyOperation.ALL, ObjectType.USER, EMPTY);
+                "user1", LegacyOperation.ALL, ObjectType.USER, EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 ALL USER name=\"otherUser\""),
-                           "user1", LegacyOperation.ALL, ObjectType.USER, predicates);
+                "user1", LegacyOperation.ALL, ObjectType.USER, predicates);
     }
 
     @Test
-    public void testGroupRuleParsing() throws Exception
+    void groupRuleParsing()
     {
-        final AclRulePredicates predicates =
-                new AclRulePredicatesBuilder()
-                        .put(Property.NAME, "groupName")
-                        .build();
+        final AclRulePredicates predicates = new AclRulePredicatesBuilder()
+                .put(Property.NAME, "groupName").build();
 
         validateRule(writeACLConfig("ACL ALLOW user1 CREATE GROUP"),
-                           "user1", LegacyOperation.CREATE, ObjectType.GROUP, EMPTY);
+                "user1", LegacyOperation.CREATE, ObjectType.GROUP, EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 CREATE GROUP name=\"groupName\""),
-                           "user1", LegacyOperation.CREATE, ObjectType.GROUP, predicates);
+                "user1", LegacyOperation.CREATE, ObjectType.GROUP, predicates);
 
         validateRule(writeACLConfig("ACL ALLOW user1 DELETE GROUP"),
-                           "user1", LegacyOperation.DELETE, ObjectType.GROUP, EMPTY);
+                "user1", LegacyOperation.DELETE, ObjectType.GROUP, EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 DELETE GROUP name=\"groupName\""),
-                           "user1", LegacyOperation.DELETE, ObjectType.GROUP, predicates);
+                "user1", LegacyOperation.DELETE, ObjectType.GROUP, predicates);
 
         validateRule(writeACLConfig("ACL ALLOW user1 UPDATE GROUP"),
-                           "user1", LegacyOperation.UPDATE, ObjectType.GROUP, EMPTY);
+                "user1", LegacyOperation.UPDATE, ObjectType.GROUP, EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 UPDATE GROUP name=\"groupName\""),
-                           "user1", LegacyOperation.UPDATE, ObjectType.GROUP, predicates);
+                "user1", LegacyOperation.UPDATE, ObjectType.GROUP, predicates);
 
         validateRule(writeACLConfig("ACL ALLOW user1 ALL GROUP"),
-                           "user1", LegacyOperation.ALL, ObjectType.GROUP, EMPTY);
+                "user1", LegacyOperation.ALL, ObjectType.GROUP, EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 ALL GROUP name=\"groupName\""),
-                           "user1", LegacyOperation.ALL, ObjectType.GROUP, predicates);
+                "user1", LegacyOperation.ALL, ObjectType.GROUP, predicates);
     }
 
     /**
-     * explicitly test for exception indicating that this functionality has been moved to Group Providers
+     * Explicitly test for exception indicating that this functionality has been moved to Group Providers
      */
     @Test
-    public void testGroupDefinitionThrowsException() throws Exception
+    void groupDefinitionThrowsException()
     {
-        try
-        {
-            writeACLConfig("GROUP group1 bob alice");
-            fail("Expected exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            assertTrue(e.getMessage().contains("GROUP keyword not supported"));
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> writeACLConfig("GROUP group1 bob alice"),
+                "Expected exception not thrown");
+        assertTrue(thrown.getMessage().contains("GROUP keyword not supported"));
     }
 
     @Test
-    public void testUnknownDefinitionThrowsException() throws Exception
+    void unknownDefinitionThrowsException()
     {
-        try
-        {
-            writeACLConfig("Unknown group1 bob alice");
-            fail("Expected exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            assertEquals(String.format(AclFileParser.UNRECOGNISED_INITIAL_MSG, "Unknown", 1), e.getMessage());
-        }
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> writeACLConfig("Unknown group1 bob alice"),
+                "Expected exception not thrown");
+        assertEquals(String.format(AclFileParser.UNRECOGNISED_INITIAL_MSG, "Unknown", 1), thrown.getMessage());
     }
 
     @Test
-    public void testManagementRuleParsing() throws Exception
+    void managementRuleParsing()
     {
         validateRule(writeACLConfig("ACL ALLOW user1 ALL MANAGEMENT"),
-                           "user1", LegacyOperation.ALL, ObjectType.MANAGEMENT, EMPTY);
+                "user1", LegacyOperation.ALL, ObjectType.MANAGEMENT, EMPTY);
 
         validateRule(writeACLConfig("ACL ALLOW user1 ACCESS MANAGEMENT"),
-                           "user1", LegacyOperation.ACCESS, ObjectType.MANAGEMENT, EMPTY);
+                "user1", LegacyOperation.ACCESS, ObjectType.MANAGEMENT, EMPTY);
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+    {
+            "ACL ALLOW user1 CONFIGURE BROKER, CONFIGURE",
+            "ACL ALLOW user1 ALL BROKER, ALL"
+    })
+    void brokerRuleParsing(final String rule, final LegacyOperation expectedOperation)
+    {
+        validateRule(writeACLConfig(rule), "user1", expectedOperation, ObjectType.BROKER, EMPTY);
     }
 
     @Test
-    public void testBrokerRuleParsing() throws Exception
+    void readerIOException() throws IOException
     {
-        validateRule(writeACLConfig("ACL ALLOW user1 CONFIGURE BROKER"),
-                           "user1",
-                                    LegacyOperation.CONFIGURE,
-                                    ObjectType.BROKER,
-                                    EMPTY);
-        validateRule(writeACLConfig("ACL ALLOW user1 ALL BROKER"),
-                           "user1",
-                                    LegacyOperation.ALL,
-                                    ObjectType.BROKER,
-                                    EMPTY);
-    }
-
-    @Test
-    public void testReaderIOException() throws IOException
-    {
-        Reader reader = mock(Reader.class);
+        final Reader reader = mock(Reader.class);
         doReturn(true).when(reader).ready();
         doReturn(1L).when(reader).skip(Mockito.anyLong());
         doThrow(IOException.class).when(reader).read();
         doThrow(IOException.class).when(reader).read(Mockito.any(CharBuffer.class));
         doThrow(IOException.class).when(reader).read(Mockito.any(char[].class));
         doThrow(IOException.class).when(reader)
-                                  .read(Mockito.any(char[].class), Mockito.anyInt(), Mockito.anyInt());
-        try
-        {
-            new AclFileParser().readAndParse(reader);
-            fail("Expected exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            assertEquals(AclFileParser.CANNOT_LOAD_MSG, e.getMessage());
-        }
+                .read(Mockito.any(char[].class), Mockito.anyInt(), Mockito.anyInt());
+
+        final AclFileParser aclFileParser =  new AclFileParser();
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> aclFileParser.readAndParse(reader),
+                "Expected exception not thrown");
+        assertEquals(AclFileParser.CANNOT_LOAD_MSG, thrown.getMessage());
     }
 
     @Test
-    public void testReaderRuntimeException() throws IOException
+    void readerRuntimeException() throws IOException
     {
-        Reader reader = mock(Reader.class);
+        final Reader reader = mock(Reader.class);
         doReturn(true).when(reader).ready();
         doReturn(1L).when(reader).skip(Mockito.anyLong());
         doThrow(RuntimeException.class).when(reader).read();
         doThrow(RuntimeException.class).when(reader).read(Mockito.any(CharBuffer.class));
         doThrow(RuntimeException.class).when(reader).read(Mockito.any(char[].class));
         doThrow(RuntimeException.class).when(reader)
-                                       .read(Mockito.any(char[].class), Mockito.anyInt(), Mockito.anyInt());
-        try
-        {
-            new AclFileParser().readAndParse(reader);
-            fail("Expected exception not thrown");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            assertEquals(String.format(AclFileParser.PARSE_TOKEN_FAILED_MSG, 0), e.getMessage());
-        }
+                .read(Mockito.any(char[].class), Mockito.anyInt(), Mockito.anyInt());
+
+        final AclFileParser aclFileParser =  new AclFileParser();
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> aclFileParser.readAndParse(reader),
+                "Expected exception not thrown");
+        assertEquals(String.format(AclFileParser.PARSE_TOKEN_FAILED_MSG, 0), thrown.getMessage());
     }
 
-    private void validateRule(RuleSet rules,
-                              String username,
-                              LegacyOperation operation,
-                              ObjectType objectType,
-                              AclRulePredicates predicates)
+    private void validateRule(final RuleSet rules,
+                              final String username,
+                              final LegacyOperation operation,
+                              final ObjectType objectType,
+                              final AclRulePredicates predicates)
     {
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
@@ -714,7 +575,7 @@ public class AclFileParserTest extends UnitTestBase
     }
 
     @Test
-    public void testConnectionLimitParsing() throws Exception
+    void connectionLimitParsing()
     {
         validateRule(writeACLConfig("ACL ALLOW all ACCESS VIRTUALHOST connection_limit=10 connection_frequency_limit=12"),
                 Rule.ALL,

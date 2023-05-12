@@ -21,6 +21,9 @@ package org.apache.qpid.server.security.access.plugins;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -36,32 +39,32 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-public class RuleOutcomeTest
+class RuleOutcomeTest
 {
     private EventLogger _logger;
     private EventLoggerProvider _provider;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         _logger = Mockito.mock(EventLogger.class);
         _provider =() ->_logger;
     }
 
     @Test
-    public void testLogResult()
+    void logResult()
     {
         assertEquals(Result.ALLOWED, RuleOutcome.ALLOW.logResult(_provider, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties()));
         assertEquals(Result.DENIED, RuleOutcome.DENY.logResult(_provider, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties()));
-        Mockito.verify(_logger, Mockito.never()).message(Mockito.any(LogMessage.class));
+        verify(_logger, never()).message(any(LogMessage.class));
     }
 
     @Test
-    public void testLogDeniedResult() {
+    void logDeniedResult() {
         assertEquals(Result.DENIED, RuleOutcome.DENY_LOG.logResult(_provider, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties()));
 
         final ArgumentCaptor<LogMessage> captor = ArgumentCaptor.forClass(LogMessage.class);
-        Mockito.verify(_logger, Mockito.times(1)).message(captor.capture());
+        verify(_logger, Mockito.times(1)).message(captor.capture());
 
         final LogMessage message = captor.getValue();
         assertNotNull(message);
@@ -71,11 +74,11 @@ public class RuleOutcomeTest
     }
 
     @Test
-    public void testLogAllowResult() {
+    void logAllowResult() {
         assertEquals(Result.ALLOWED, RuleOutcome.ALLOW_LOG.logResult(_provider, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties()));
 
         final ArgumentCaptor<LogMessage> captor = ArgumentCaptor.forClass(LogMessage.class);
-        Mockito.verify(_logger, Mockito.times(1)).message(captor.capture());
+        verify(_logger, Mockito.times(1)).message(captor.capture());
 
         final LogMessage message = captor.getValue();
         assertNotNull(message);

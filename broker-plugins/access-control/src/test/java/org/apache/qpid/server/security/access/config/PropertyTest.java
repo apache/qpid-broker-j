@@ -21,26 +21,26 @@ package org.apache.qpid.server.security.access.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
 import org.junit.jupiter.api.Test;
 
-public class PropertyTest extends UnitTestBase
+class PropertyTest extends UnitTestBase
 {
     @Test
-    public void testParse()
+    void parse()
     {
-        assertEquals(Property.parse(Property.AUTO_DELETE.getCanonicalName()), Property.AUTO_DELETE);
-        assertEquals(Property.parse(Property.AUTO_DELETE.name()), Property.AUTO_DELETE);
-        assertEquals(Property.parse("autoDelete"), Property.AUTO_DELETE);
-        assertEquals(Property.parse("attribute_names"), Property.ATTRIBUTES);
+        assertEquals(Property.AUTO_DELETE, Property.parse(Property.AUTO_DELETE.getCanonicalName()));
+        assertEquals(Property.AUTO_DELETE, Property.parse(Property.AUTO_DELETE.name()));
+        assertEquals(Property.AUTO_DELETE, Property.parse("autoDelete"));
+        assertEquals(Property.ATTRIBUTES, Property.parse("attribute_names"));
     }
 
     @Test
-    public void testIsBooleanType()
+    void isBooleanType()
     {
         assertFalse(Property.isBooleanType(Property.ROUTING_KEY));
         assertFalse(Property.isBooleanType(Property.NAME));
@@ -66,16 +66,11 @@ public class PropertyTest extends UnitTestBase
     }
 
     @Test
-    public void testParse_Exception()
+    void parse_Exception()
     {
-        try
-        {
-            Property.parse("X");
-            fail("An exception is expected");
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        final IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> Property.parse("X"),
+                "An exception is expected");
+        assertNotNull(thrown.getMessage());
     }
 }

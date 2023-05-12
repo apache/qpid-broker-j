@@ -27,9 +27,7 @@ import static org.mockito.Mockito.when;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Collections;
-
-import com.google.common.collect.ImmutableSet;
+import java.util.Set;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.access.config.FirewallRule;
@@ -45,26 +43,25 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 import javax.security.auth.Subject;
 
-public class NetworkFirewallRuleTest extends UnitTestBase
+class NetworkFirewallRuleTest extends UnitTestBase
 {
     private static final String LOCALHOST_IP = "127.0.0.1";
     private static final String OTHER_IP_1 = "192.168.23.1";
     private static final String OTHER_IP_2 = "192.168.23.2";
 
     private InetAddress _addressNotInRule;
-
     private NetworkFirewallRule _networkFirewallRule;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         _addressNotInRule = InetAddress.getByName(LOCALHOST_IP);
     }
 
     @Test
-    public void testIpRule() throws Exception
+    void ipRule() throws Exception
     {
-        String ipAddressInRule = OTHER_IP_1;
+        final String ipAddressInRule = OTHER_IP_1;
 
         _networkFirewallRule = new NetworkFirewallRule(ipAddressInRule);
 
@@ -73,9 +70,9 @@ public class NetworkFirewallRuleTest extends UnitTestBase
     }
 
     @Test
-    public void testNetMask() throws Exception
+    void netMask() throws Exception
     {
-        String ipAddressInRule = "192.168.23.0/24";
+        final String ipAddressInRule = "192.168.23.0/24";
         _networkFirewallRule = new NetworkFirewallRule(ipAddressInRule);
 
         assertFalse(_networkFirewallRule.matches(InetAddress.getByName("192.168.24.1")));
@@ -84,7 +81,7 @@ public class NetworkFirewallRuleTest extends UnitTestBase
     }
 
     @Test
-    public void testWildcard() throws Exception
+    void wildcard() throws Exception
     {
         // Test xxx.xxx.*
 
@@ -110,24 +107,24 @@ public class NetworkFirewallRuleTest extends UnitTestBase
     }
 
     @Test
-    public void testMultipleNetworks() throws Exception
+    void multipleNetworks() throws Exception
     {
-        String[] ipAddressesInRule = new String[] {OTHER_IP_1, OTHER_IP_2};
+        final String[] ipAddressesInRule = new String[] {OTHER_IP_1, OTHER_IP_2};
 
         _networkFirewallRule = new NetworkFirewallRule(ipAddressesInRule);
 
         assertFalse(_networkFirewallRule.matches(_addressNotInRule));
-        for (String ipAddressInRule : ipAddressesInRule)
+        for (final String ipAddressInRule : ipAddressesInRule)
         {
             assertTrue(_networkFirewallRule.matches(InetAddress.getByName(ipAddressInRule)));
         }
     }
 
     @Test
-    public void testEqualsAndHashCode()
+    void equalsAndHashCode()
     {
-        NetworkFirewallRule rule = new NetworkFirewallRule(LOCALHOST_IP, OTHER_IP_1);
-        NetworkFirewallRule equalRule = new NetworkFirewallRule(LOCALHOST_IP, OTHER_IP_1);
+        final NetworkFirewallRule rule = new NetworkFirewallRule(LOCALHOST_IP, OTHER_IP_1);
+        final NetworkFirewallRule equalRule = new NetworkFirewallRule(LOCALHOST_IP, OTHER_IP_1);
 
         assertEquals(rule, rule);
         assertEquals(rule, equalRule);
@@ -141,7 +138,7 @@ public class NetworkFirewallRuleTest extends UnitTestBase
     }
 
     @Test
-    public void testManagementConnectionPrincipals()
+    void managementConnectionPrincipals()
     {
         final ManagementConnectionPrincipal managementConnectionPrincipal = mock(ManagementConnectionPrincipal.class);
         when(managementConnectionPrincipal.getRemoteAddress())
@@ -162,11 +159,9 @@ public class NetworkFirewallRuleTest extends UnitTestBase
         assertTrue(RulePredicate.any().and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
 
         final Subject anotherSubject = new Subject(false,
-                ImmutableSet.of(
-                        new UsernamePrincipal("name", mock(AuthenticationProvider.class)), managementConnectionPrincipal
-                ),
-                Collections.emptySet(),
-                Collections.emptySet());
+                Set.of(new UsernamePrincipal("name", mock(AuthenticationProvider.class)), managementConnectionPrincipal),
+                Set.of(),
+                Set.of());
 
         assertTrue(rule1.and(RulePredicate.any()).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
         assertTrue(RulePredicate.any().and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
@@ -178,11 +173,9 @@ public class NetworkFirewallRuleTest extends UnitTestBase
         assertFalse(RulePredicate.any().and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
 
         final Subject invalidSubject = new Subject(false,
-            ImmutableSet.of(
-                new UsernamePrincipal("name", mock(AuthenticationProvider.class)), invalidManagementConnectionPrincipal
-            ),
-            Collections.emptySet(),
-            Collections.emptySet());
+                Set.of(new UsernamePrincipal("name", mock(AuthenticationProvider.class)), invalidManagementConnectionPrincipal),
+                Set.of(),
+                Set.of());
 
         assertFalse(rule1.and(RulePredicate.any()).matches(LegacyOperation.ACCESS, new ObjectProperties(), invalidSubject));
         assertFalse(RulePredicate.any().and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), invalidSubject));

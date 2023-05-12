@@ -24,14 +24,16 @@ package org.apache.qpid.server.security.access.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.ListIterator;
+import java.util.Set;
 
 import javax.security.auth.Subject;
 
@@ -60,17 +62,13 @@ import org.apache.qpid.test.utils.UnitTestBase;
  * access control mechanism is validated by checking whether operations would be authorised by calling the
  * {@link RuleSet#check(Subject, LegacyOperation, ObjectType, ObjectProperties)} method.
  * <p>
- * It ensure that permissions can be granted correctly on users directly and on groups.
+ * It ensures that permissions can be granted correctly on users directly and on groups.
  */
-public class RuleSetTest extends UnitTestBase
+class RuleSetTest extends UnitTestBase
 {
     private static final String DENIED_VH = "deniedVH";
     private static final String ALLOWED_VH = "allowedVH";
-
     private static final ObjectProperties EMPTY = new ObjectProperties();
-
-    private RuleCollector _ruleCollector = new RuleCollector();
-
     private static final String TEST_USER = "user";
 
     // Common things that are passed to frame constructors
@@ -79,8 +77,10 @@ public class RuleSetTest extends UnitTestBase
     private final String _exchangeType = "direct";
     private final Subject _testSubject = TestPrincipalUtils.createTestSubject(TEST_USER);
 
+    private RuleCollector _ruleCollector;
+
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp()
     {
         _ruleCollector = new RuleCollector();
     }
@@ -90,15 +90,15 @@ public class RuleSetTest extends UnitTestBase
         return _ruleCollector.createRuleSet(mock(EventLoggerProvider.class));
     }
 
-    private void assertDenyGrantAllow(Subject subject, LegacyOperation operation, ObjectType objectType)
+    private void assertDenyGrantAllow(final Subject subject, final LegacyOperation operation, final ObjectType objectType)
     {
         assertDenyGrantAllow(subject, operation, objectType, EMPTY);
     }
 
-    private void assertDenyGrantAllow(Subject subject,
-                                      LegacyOperation operation,
-                                      ObjectType objectType,
-                                      ObjectProperties properties)
+    private void assertDenyGrantAllow(final Subject subject,
+                                      final LegacyOperation operation,
+                                      final ObjectType objectType,
+                                      final ObjectProperties properties)
     {
         RuleSet ruleSet = createRuleSet();
         assertEquals(Result.DENIED, ruleSet.check(subject, operation, objectType, properties));
@@ -115,7 +115,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testEmptyRuleSet()
+    void emptyRuleSet()
     {
         final RuleSet ruleSet = createRuleSet();
         assertNotNull(ruleSet);
@@ -124,7 +124,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostNodeCreateAllowPermissionWithVirtualHostName()
+    void virtualHostNodeCreateAllowPermissionWithVirtualHostName()
     {
         _ruleCollector.addRule(0, new Builder()
                 .withIdentity(TEST_USER)
@@ -140,7 +140,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostAccessAllowPermissionWithVirtualHostName()
+    void virtualHostAccessAllowPermissionWithVirtualHostName()
     {
         _ruleCollector.addRule(0, new Builder()
                 .withIdentity(TEST_USER)
@@ -157,7 +157,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostAccessAllowPermissionWithNameSetToWildCard()
+    void virtualHostAccessAllowPermissionWithNameSetToWildCard()
     {
         _ruleCollector.addRule(0, new Builder()
                 .withIdentity(TEST_USER)
@@ -175,7 +175,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostAccessAllowPermissionWithNoName()
+    void virtualHostAccessAllowPermissionWithNoName()
     {
         _ruleCollector.addRule(0, new Builder()
                 .withIdentity(TEST_USER)
@@ -192,7 +192,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostAccessDenyPermissionWithNoName()
+    void virtualHostAccessDenyPermissionWithNoName()
     {
         _ruleCollector.addRule(0, new Builder()
                 .withIdentity(TEST_USER)
@@ -208,7 +208,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostAccessDenyPermissionWithNameSetToWildCard()
+    void virtualHostAccessDenyPermissionWithNameSetToWildCard()
     {
         _ruleCollector.addRule(0, new Builder()
                 .withIdentity(TEST_USER)
@@ -225,7 +225,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostAccessAllowDenyPermissions()
+    void virtualHostAccessAllowDenyPermissions()
     {
         _ruleCollector.addRule(0, new Builder()
                 .withIdentity(TEST_USER)
@@ -250,7 +250,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testVirtualHostAccessAllowPermissionWithVirtualHostNameOtherPredicate()
+    void virtualHostAccessAllowPermissionWithVirtualHostNameOtherPredicate()
     {
         final ObjectProperties properties = new ObjectProperties();
         properties.put(Property.VIRTUALHOST_NAME, ALLOWED_VH);
@@ -269,15 +269,14 @@ public class RuleSetTest extends UnitTestBase
                 ruleSet.check(_testSubject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, new ObjectProperties(DENIED_VH)));
     }
 
-
     @Test
-    public void testQueueCreateNamed()
+    void queueCreateNamed()
     {
         assertDenyGrantAllow(_testSubject, LegacyOperation.CREATE, ObjectType.QUEUE, new ObjectProperties(_queueName));
     }
 
     @Test
-    public void testQueueCreateNamedVirtualHost()
+    void queueCreateNamedVirtualHost()
     {
         _ruleCollector.addRule(0, new Builder()
                 .withIdentity(TEST_USER)
@@ -299,7 +298,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testQueueCreateNamedNullRoutingKey()
+    void queueCreateNamedNullRoutingKey()
     {
         final ObjectProperties properties = new ObjectProperties(_queueName);
         properties.put(Property.ROUTING_KEY, null);
@@ -308,7 +307,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testExchangeCreateNamedVirtualHost()
+    void exchangeCreateNamedVirtualHost()
     {
         _ruleCollector.addRule(0, new Builder()
                 .withIdentity(TEST_USER)
@@ -333,7 +332,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testExchangeCreate()
+    void exchangeCreate()
     {
         final ObjectProperties properties = new ObjectProperties(_exchangeName);
         properties.put(Property.TYPE, _exchangeType);
@@ -342,13 +341,13 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testConsume()
+    void consume()
     {
         assertDenyGrantAllow(_testSubject, LegacyOperation.CONSUME, ObjectType.QUEUE);
     }
 
     @Test
-    public void testPublish()
+    void publish()
     {
         assertDenyGrantAllow(_testSubject, LegacyOperation.PUBLISH, ObjectType.EXCHANGE);
     }
@@ -358,7 +357,7 @@ public class RuleSetTest extends UnitTestBase
     * be global for any temporary queue but not for any non-temporary queue
     */
     @Test
-    public void testTemporaryUnnamedQueueConsume()
+    void temporaryUnnamedQueueConsume()
     {
         final ObjectProperties temporary = new ObjectProperties();
         temporary.put(Property.AUTO_DELETE, Boolean.TRUE);
@@ -390,7 +389,7 @@ public class RuleSetTest extends UnitTestBase
      * Test that temporary queue permissions before queue perms in the ACL config work correctly
      */
     @Test
-    public void testTemporaryQueueFirstConsume()
+    void temporaryQueueFirstConsume()
     {
         final ObjectProperties temporary = new ObjectProperties(_queueName);
         temporary.put(Property.AUTO_DELETE, Boolean.TRUE);
@@ -431,7 +430,7 @@ public class RuleSetTest extends UnitTestBase
      * Test that temporary queue permissions after queue perms in the ACL config work correctly
      */
     @Test
-    public void testTemporaryQueueLastConsume()
+    void temporaryQueueLastConsume()
     {
         final ObjectProperties temporary = new ObjectProperties(_queueName);
         temporary.put(Property.AUTO_DELETE, Boolean.TRUE);
@@ -476,7 +475,7 @@ public class RuleSetTest extends UnitTestBase
      * The more generic rule first is used, so both requests are allowed.
      */
     @Test
-    public void testFirstNamedSecondTemporaryQueueDenied()
+    void firstNamedSecondTemporaryQueueDenied()
     {
         final ObjectProperties named = new ObjectProperties(_queueName);
         final ObjectProperties namedTemporary = new ObjectProperties(_queueName);
@@ -517,7 +516,7 @@ public class RuleSetTest extends UnitTestBase
      * The more specific rule is first, so those requests are denied.
      */
     @Test
-    public void testFirstTemporarySecondNamedQueueDenied()
+    void firstTemporarySecondNamedQueueDenied()
     {
         final ObjectProperties named = new ObjectProperties(_queueName);
         final ObjectProperties namedTemporary = new ObjectProperties(_queueName);
@@ -557,7 +556,7 @@ public class RuleSetTest extends UnitTestBase
      * The more specific rules are first, so those requests are denied.
      */
     @Test
-    public void testFirstTemporarySecondDurableThirdNamedQueueDenied()
+    void firstTemporarySecondDurableThirdNamedQueueDenied()
     {
         final ObjectProperties named = new ObjectProperties(_queueName);
         final ObjectProperties namedTemporary = new ObjectProperties(_queueName);
@@ -608,7 +607,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testNamedTemporaryQueueAllowed()
+    void namedTemporaryQueueAllowed()
     {
         final ObjectProperties named = new ObjectProperties(_queueName);
         final ObjectProperties namedTemporary = new ObjectProperties(_queueName);
@@ -643,7 +642,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testNamedTemporaryQueueDeniedAllowed()
+    void namedTemporaryQueueDeniedAllowed()
     {
         final ObjectProperties named = new ObjectProperties(_queueName);
         final ObjectProperties namedTemporary = new ObjectProperties(_queueName);
@@ -681,7 +680,7 @@ public class RuleSetTest extends UnitTestBase
      * Tests support for the {@link Rule#ALL} keyword.
      */
     @Test
-    public void testAllowToAll()
+    void allowToAll()
     {
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(Rule.ALL)
@@ -699,7 +698,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testGroupsSupported()
+    void groupsSupported()
     {
         final String allowGroup = "allowGroup";
         final String deniedGroup = "deniedGroup";
@@ -733,7 +732,7 @@ public class RuleSetTest extends UnitTestBase
      * to which the user belongs is later denied the permission.
      */
     @Test
-    public void testAllowDeterminedByRuleOrder()
+    void allowDeterminedByRuleOrder()
     {
         final String group = "group";
         final String user = "user";
@@ -762,7 +761,7 @@ public class RuleSetTest extends UnitTestBase
      * access by group, is denied access, despite there being a later rule granting permission to that user.
      */
     @Test
-    public void testDenyDeterminedByRuleOrder()
+    void denyDeterminedByRuleOrder()
     {
         final String group = "aclgroup";
         final String user = "usera";
@@ -788,7 +787,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testUserInMultipleGroups()
+    void userInMultipleGroups()
     {
         final String allowedGroup = "group1";
         final String deniedGroup = "group2";
@@ -821,7 +820,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testUpdatedAllowedAttribute()
+    void updatedAllowedAttribute()
     {
         final ObjectProperties ruleProperties = new ObjectProperties();
         ruleProperties.addAttributeNames(Collections.singleton("attribute1"));
@@ -853,7 +852,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testExistingObjectOwner()
+    void existingObjectOwner()
     {
         _ruleCollector.addRule(1, new Rule.Builder()
                 .withOwner()
@@ -872,7 +871,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateIgnoresOwnerRule()
+    void createIgnoresOwnerRule()
     {
         _ruleCollector.addRule(1, new Rule.Builder()
                 .withOwner()
@@ -892,7 +891,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testSuppressedRules()
+    void suppressedRules()
     {
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(TEST_USER)
@@ -933,7 +932,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testPublishToExchange()
+    void publishToExchange()
     {
         _ruleCollector.addRule(1, new Builder()
                 .withPredicate(Property.NAME, "broadcast")
@@ -1013,7 +1012,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testPublishToExchange_OwnerBased()
+    void publishToExchange_OwnerBased()
     {
         _ruleCollector.addRule(1, new Builder()
                 .withPredicate(Property.NAME, "broadcast")
@@ -1070,7 +1069,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testPublishToExchange_OwnerBased_withoutAuthPrincipal()
+    void publishToExchange_OwnerBased_withoutAuthPrincipal()
     {
         _ruleCollector.addRule(1, new Builder()
                 .withPredicate(Property.NAME, "broadcast")
@@ -1128,7 +1127,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testPublishToExchange_OwnerBased_byAnotherUser()
+    void publishToExchange_OwnerBased_byAnotherUser()
     {
         _ruleCollector.addRule(1, new Builder()
                 .withPredicate(Property.NAME,"broadcast")
@@ -1200,7 +1199,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testPublishToExchange_OwnerBased_withGenericRule()
+    void publishToExchange_OwnerBased_withGenericRule()
     {
         _ruleCollector.addRule(1, new Builder()
                 .withPredicate(Property.NAME, "broadcast")
@@ -1261,7 +1260,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testList_UnsupportedException()
+    void list_UnsupportedException()
     {
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(TEST_USER)
@@ -1291,109 +1290,25 @@ public class RuleSetTest extends UnitTestBase
                 .withOperation(LegacyOperation.ACCESS)
                 .withOutcome(RuleOutcome.ALLOW)
                 .build();
-        try
-        {
-            ruleSet.add(rule);
-            fail("An exception is expected!");
-        }
-        catch (RuntimeException e)
-        {
-            // Nothing to do
-        }
 
-        try
-        {
-            ruleSet.remove(ruleSet.get(1));
-            fail("An exception is expected!");
-        }
-        catch (RuntimeException e)
-        {
-            // Nothing to do
-        }
+        final Set<Rule> rulesSet = Set.of(rule);
+        final List<Rule> rulesList = new ArrayList<>(ruleSet);
+        final Rule secondRule = ruleSet.get(1);
 
-        try
-        {
-            ruleSet.addAll(Collections.singleton(rule));
-            fail("An exception is expected!");
-        }
-        catch (RuntimeException e)
-        {
-            // Nothing to do
-        }
-
-        try
-        {
-            ruleSet.removeAll(new ArrayList<>(ruleSet));
-            fail("An exception is expected!");
-        }
-        catch (RuntimeException e)
-        {
-            // Nothing to do
-        }
-
-        try
-        {
-            ruleSet.retainAll(Collections.singleton(rule));
-            fail("An exception is expected!");
-        }
-        catch (RuntimeException e)
-        {
-            // Nothing to do
-        }
-
-        try
-        {
-            ruleSet.clear();
-            fail("An exception is expected!");
-        }
-        catch (RuntimeException e)
-        {
-            // Nothing to do
-        }
-
-        try
-        {
-            ruleSet.addAll(1, Collections.singleton(rule));
-            fail("An exception is expected!");
-        }
-        catch (RuntimeException e)
-        {
-            // Nothing to do
-        }
-
-        try
-        {
-            ruleSet.set(1, rule);
-            fail("An exception is expected!");
-        }
-        catch (RuntimeException e)
-        {
-            // Nothing to do
-        }
-
-        try
-        {
-            ruleSet.add(1, rule);
-            fail("An exception is expected!");
-        }
-        catch (RuntimeException e)
-        {
-            // Nothing to do
-        }
-
-        try
-        {
-            ruleSet.remove(1);
-            fail("An exception is expected!");
-        }
-        catch (RuntimeException e)
-        {
-            // Nothing to do
-        }
+        assertThrows(RuntimeException.class, () -> ruleSet.add(rule), "An exception is expected!");
+        assertThrows(RuntimeException.class, () -> ruleSet.remove(secondRule), "An exception is expected!");
+        assertThrows(RuntimeException.class, () -> ruleSet.addAll(rulesSet), "An exception is expected!");
+        assertThrows(RuntimeException.class, () -> ruleSet.removeAll(rulesList), "An exception is expected!");
+        assertThrows(RuntimeException.class, () -> ruleSet.retainAll(rulesSet), "An exception is expected!");
+        assertThrows(RuntimeException.class, ruleSet::clear, "An exception is expected!");
+        assertThrows(RuntimeException.class, () -> ruleSet.addAll(1, rulesSet), "An exception is expected!");
+        assertThrows(RuntimeException.class, () -> ruleSet.set(1, rule), "An exception is expected!");
+        assertThrows(RuntimeException.class, () -> ruleSet.add(1, rule), "An exception is expected!");
+        assertThrows(RuntimeException.class, () -> ruleSet.remove(1), "An exception is expected!");
     }
 
     @Test
-    public void testList()
+    void list()
     {
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(TEST_USER)
@@ -1444,7 +1359,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testList_Arrays()
+    void list_Arrays()
     {
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(TEST_USER)
@@ -1471,8 +1386,8 @@ public class RuleSetTest extends UnitTestBase
         final RuleSet ruleSet = createRuleSet();
         assertNotNull(ruleSet);
 
-        Object[] array = ruleSet.toArray();
-        Rule[] ruleArray = ruleSet.toArray(new Rule[0]);
+        final Object[] array = ruleSet.toArray();
+        final Rule[] ruleArray = ruleSet.toArray(new Rule[0]);
         assertEquals(3, array.length);
         assertEquals(3, ruleArray.length);
 
@@ -1484,7 +1399,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testList_Iterators()
+    void list_Iterators()
     {
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(TEST_USER)
@@ -1510,46 +1425,30 @@ public class RuleSetTest extends UnitTestBase
         assertNotNull(ruleSet);
 
         int j = 0;
-        for (Rule r : ruleSet)
+        for (final Rule rule : ruleSet)
         {
-            assertEquals(ruleSet.get(j++), r);
+            assertEquals(ruleSet.get(j++), rule);
         }
 
-        ListIterator<Rule> iterator = ruleSet.listIterator();
+        final ListIterator<Rule> iterator = ruleSet.listIterator();
         assertNotNull(iterator);
         while (iterator.hasNext())
         {
             assertEquals(ruleSet.get(iterator.nextIndex()), iterator.next());
-            try
-            {
-                iterator.remove();
-                fail("An exception is expected!");
-            }
-            catch (RuntimeException e)
-            {
-                //
-            }
+            assertThrows(RuntimeException.class, iterator::remove, "An exception is expected");
         }
 
-        iterator = ruleSet.listIterator(1);
+        final ListIterator<Rule> iterator1 = ruleSet.listIterator(1);
         assertNotNull(iterator);
         while (iterator.hasNext())
         {
             assertEquals(ruleSet.get(iterator.nextIndex()), iterator.next());
-            try
-            {
-                iterator.remove();
-                fail("An exception is expected!");
-            }
-            catch (RuntimeException e)
-            {
-                //
-            }
+            assertThrows(RuntimeException.class, iterator1::remove, "An exception is expected!");
         }
     }
 
     @Test
-    public void testList_subList()
+    void list_subList()
     {
         _ruleCollector.addRule(1, new Builder()
                 .withIdentity(TEST_USER)
@@ -1586,19 +1485,12 @@ public class RuleSetTest extends UnitTestBase
         assertNotNull(ruleSet.subList(1, 2));
         assertEquals(rule, ruleSet.subList(1, 2).get(0));
 
-        try
-        {
-            ruleSet.subList(1, 2).add(rule);
-            fail("An exception is expected!");
-        }
-        catch (RuntimeException e)
-        {
-            //
-        }
+        final List<Rule> rules =  ruleSet.subList(1, 2);
+        assertThrows(RuntimeException.class, () -> rules.add(rule), "An exception is expected!");
     }
 
     @Test
-    public void testGetEventLogger()
+    void getEventLogger()
     {
         final Rule rule = new Builder()
                 .withIdentity(TEST_USER)
@@ -1614,7 +1506,7 @@ public class RuleSetTest extends UnitTestBase
     }
 
     @Test
-    public void testGetDefault()
+    void getDefault()
     {
         final Rule rule = new Builder()
                 .withIdentity(TEST_USER)
