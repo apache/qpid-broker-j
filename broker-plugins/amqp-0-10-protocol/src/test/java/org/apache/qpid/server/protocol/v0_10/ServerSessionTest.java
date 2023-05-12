@@ -26,9 +26,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 import javax.security.auth.Subject;
 
@@ -62,21 +62,21 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ServerSessionTest extends UnitTestBase
+@SuppressWarnings({"rawtypes"})
+class ServerSessionTest extends UnitTestBase
 {
     private VirtualHost<?> _virtualHost;
-    private CurrentThreadTaskExecutor _taskExecutor;
+    private TaskExecutor _taskExecutor;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
-        _taskExecutor = new CurrentThreadTaskExecutor();
-        _taskExecutor.start();
+        _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         _virtualHost = BrokerTestHelper.createVirtualHost(getTestName(), this);
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    void tearDown()
     {
         try
         {
@@ -95,12 +95,12 @@ public class ServerSessionTest extends UnitTestBase
     }
 
     @Test
-    public void testOverlargeMessageTest()
+    void overlargeMessageTest()
     {
         final Broker<?> broker = mock(Broker.class);
         when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0L);
 
-        AmqpPort port = createMockPort();
+        final AmqpPort<?> port = createMockPort();
 
         final AMQPConnection_0_10 modelConnection = mock(AMQPConnection_0_10.class);
         when(modelConnection.getCategoryClass()).thenReturn(Connection.class);
@@ -119,17 +119,16 @@ public class ServerSessionTest extends UnitTestBase
 
         final AuthenticatedPrincipal principal =
                 new AuthenticatedPrincipal(new UsernamePrincipal(getTestName(), mock(AuthenticationProvider.class)));
-        final Subject subject =
-                new Subject(false, Collections.singleton(principal), Collections.emptySet(), Collections.emptySet());
+        final Subject subject = new Subject(false, Set.of(principal), Set.of(), Set.of());
         when(modelConnection.getSubject()).thenReturn(subject);
         when(modelConnection.getMaxMessageSize()).thenReturn(1024L);
         when(modelConnection.getCreatedTime()).thenReturn(new Date());
-        ServerConnection connection = new ServerConnection(1, broker, port, Transport.TCP, modelConnection);
+        final ServerConnection connection = new ServerConnection(1, broker, port, Transport.TCP, modelConnection);
         connection.setVirtualHost(_virtualHost);
 
         final List<Method> invokedMethods = new ArrayList<>();
-        ServerSession session = new ServerSession(connection, new ServerSessionDelegate(),
-                                                  new Binary(getTestName().getBytes()), 0)
+        final ServerSession session =
+                new ServerSession(connection, new ServerSessionDelegate(), new Binary(getTestName().getBytes()), 0)
         {
             @Override
             public void invoke(final Method m)
@@ -137,34 +136,33 @@ public class ServerSessionTest extends UnitTestBase
                 invokedMethods.add(m);
             }
         };
-        Session_0_10 modelSession = new Session_0_10(modelConnection, 1, session, getTestName());
+        final Session_0_10 modelSession = new Session_0_10(modelConnection, 1, session, getTestName());
         session.setModelObject(modelSession);
-        ServerSessionDelegate delegate = new ServerSessionDelegate();
+        final ServerSessionDelegate delegate = new ServerSessionDelegate();
 
-        MessageTransfer xfr = new MessageTransfer();
-        byte[] body1 = new byte[2048];
+        final MessageTransfer xfr = new MessageTransfer();
+        final byte[] body1 = new byte[2048];
         xfr.setBody(QpidByteBuffer.wrap(body1));
         delegate.messageTransfer(session, xfr);
 
         assertFalse(invokedMethods.isEmpty(), "No methods invoked - expecting at least 1");
-        Method firstInvoked = invokedMethods.get(0);
+        final Method firstInvoked = invokedMethods.get(0);
         final boolean condition = firstInvoked instanceof ExecutionException;
         assertTrue(condition, "First invoked method not execution error");
         assertEquals(ExecutionErrorCode.RESOURCE_LIMIT_EXCEEDED, ((ExecutionException)firstInvoked).getErrorCode());
-
 
         invokedMethods.clear();
 
         // test the boundary condition
 
-        byte[] body = new byte[1024];
+        final byte[] body = new byte[1024];
         xfr.setBody(QpidByteBuffer.wrap(body));
         delegate.messageTransfer(session, xfr);
 
         assertTrue(invokedMethods.isEmpty(), "Methods invoked when not expecting any");
     }
 
-    public AmqpPort createMockPort()
+    AmqpPort<?> createMockPort()
     {
         AmqpPort port = mock(AmqpPort.class);
         TaskExecutor childExecutor = new TaskExecutorImpl();

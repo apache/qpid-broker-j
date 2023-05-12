@@ -34,27 +34,27 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class BBDecoderTest extends UnitTestBase
+class BBDecoderTest extends UnitTestBase
 {
     @Test
-    public void str8Caching()
+    void str8Caching()
     {
-        String testString = "Test";
-        BBEncoder encoder = new BBEncoder(64);
+        final String testString = "Test";
+        final BBEncoder encoder = new BBEncoder(64);
         encoder.writeStr8(testString);
         encoder.writeStr8(testString);
-        ByteBuffer buffer = encoder.buffer();
+        final ByteBuffer buffer = encoder.buffer();
 
-        BBDecoder decoder = new BBDecoder();
+        final BBDecoder decoder = new BBDecoder();
         decoder.init(buffer);
-        Cache<Binary, String> original  = BBDecoder.getStringCache();
-        Cache<Binary, String> cache = CacheBuilder.newBuilder().maximumSize(2).build();
+        final Cache<Binary, String> original  = BBDecoder.getStringCache();
+        final Cache<Binary, String> cache = CacheBuilder.newBuilder().maximumSize(2).build();
         try
         {
             BBDecoder.setStringCache(cache);
 
-            String decodedString1 = decoder.readStr8();
-            String decodedString2 = decoder.readStr8();
+            final String decodedString1 = decoder.readStr8();
+            final String decodedString2 = decoder.readStr8();
 
             assertThat(testString, is(equalTo(decodedString1)));
             assertThat(testString, is(equalTo(decodedString2)));

@@ -29,22 +29,20 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
-
 /**
  * GenTest
  */
-public class GenTest extends UnitTestBase
+class GenTest extends UnitTestBase
 {
     @Test
-    public void testBooleans()
+    void booleans()
     {
-        QueueDeclare qd = new QueueDeclare().queue("test-queue").durable(false);
-        assertEquals(qd.getQueue(), "test-queue");
+        final QueueDeclare qd = new QueueDeclare().queue("test-queue").durable(false);
+        assertEquals("test-queue", qd.getQueue());
         assertFalse(qd.getDurable(), "durable should be false");
         qd.setDurable(true);
         assertTrue(qd.getDurable(), "durable should be true");
         qd.setDurable(false);
         assertFalse(qd.getDurable(), "durable should be false again");
     }
-
 }

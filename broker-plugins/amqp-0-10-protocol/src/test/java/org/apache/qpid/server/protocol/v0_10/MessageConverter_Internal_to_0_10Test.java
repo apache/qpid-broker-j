@@ -30,8 +30,8 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
@@ -54,97 +54,97 @@ import org.apache.qpid.server.typedmessage.mimecontentconverter.ListToJmsStreamM
 import org.apache.qpid.server.typedmessage.mimecontentconverter.MapToJmsMapMessage;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class MessageConverter_Internal_to_0_10Test extends UnitTestBase
+class MessageConverter_Internal_to_0_10Test extends UnitTestBase
 {
     private final MessageConverter_Internal_to_v0_10 _converter = new MessageConverter_Internal_to_v0_10();
     private final StoredMessage<InternalMessageMetaData> _handle = mock(StoredMessage.class);
     private final AMQMessageHeader _amqpHeader = mock(AMQMessageHeader.class);
 
     @Test
-    public void testStringMessage() throws Exception
+    void stringMessage() throws Exception
     {
-        String content = "testContent";
+        final String content = "testContent";
         final String mimeType = "text/plain";
         doTest(content, mimeType, content.getBytes(UTF_8), mimeType);
     }
 
     @Test
-    public void testStringMessageWithUnknownMimeType() throws Exception
+    void stringMessageWithUnknownMimeType() throws Exception
     {
-        String content = "testContent";
+        final String content = "testContent";
         final String mimeType = "foo/bar";
         doTest(content, mimeType, content.getBytes(UTF_8), "text/plain");
     }
 
     @Test
-    public void testStringMessageWithoutMimeType() throws Exception
+    void stringMessageWithoutMimeType() throws Exception
     {
-        String content = "testContent";
+        final String content = "testContent";
         doTest(content, null, content.getBytes(UTF_8), "text/plain");
     }
 
     @Test
-    public void testListMessageWithMimeType() throws Exception
+    void listMessageWithMimeType() throws Exception
     {
-        ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
+        final ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
         final ListToJmsStreamMessage listToJmsStreamMessage = new ListToJmsStreamMessage();
         final byte[] expectedContent = listToJmsStreamMessage.toMimeContent(content);
         doTest(content, "foo/bar", expectedContent, listToJmsStreamMessage.getMimeType());
     }
 
     @Test
-    public void testListMessageWithoutMimeType() throws Exception
+    void listMessageWithoutMimeType() throws Exception
     {
-        ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
+        final ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
         final ListToJmsStreamMessage listToJmsStreamMessage = new ListToJmsStreamMessage();
         final byte[] expectedContent = listToJmsStreamMessage.toMimeContent(content);
         doTest(content, null, expectedContent, listToJmsStreamMessage.getMimeType());
     }
 
     @Test
-    public void testListMessageWithoutMimeTypeWithNonJmsContent() throws Exception
+    void listMessageWithoutMimeTypeWithNonJmsContent() throws Exception
     {
-        ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42, Lists.newArrayList());
+        final ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42, Lists.newArrayList());
         final ListToAmqpListConverter listToAmqpListConverter = new ListToAmqpListConverter();
         final byte[] expectedContent = listToAmqpListConverter.toMimeContent(content);
         doTest(content, null, expectedContent, listToAmqpListConverter.getMimeType());
     }
 
     @Test
-    public void testListMessageWithoutMimeTypeWithNonConvertibleItem() throws Exception
+    void listMessageWithoutMimeTypeWithNonConvertibleItem() throws Exception
     {
-        ArrayList<?> content = Lists.newArrayList(new MySerializable());
+        final ArrayList<?> content = Lists.newArrayList(new MySerializable());
         final InternalMessage sourceMessage = getAmqMessage(content, null);
         doTest(content, null, getObjectStreamMessageBytes(content), "application/java-object-stream");
     }
 
     @Test
-    public void testByteArrayMessageWithoutMimeType() throws Exception
+    void byteArrayMessageWithoutMimeType() throws Exception
     {
-        byte[] content = "testContent".getBytes(UTF_8);
+        final byte[] content = "testContent".getBytes(UTF_8);
         doTest(content, null, content, "application/octet-stream");
     }
 
     @Test
-    public void testByteArrayMessageWithMimeType() throws Exception
+    void byteArrayMessageWithMimeType() throws Exception
     {
-        byte[] content = "testContent".getBytes(UTF_8);
+        final byte[] content = "testContent".getBytes(UTF_8);
         final String mimeType = "foo/bar";
         doTest(content, mimeType, content, mimeType);
     }
 
     @Test
-    public void testEmptyByteArrayMessageWithMimeType() throws Exception
+    void emptyByteArrayMessageWithMimeType() throws Exception
     {
-        byte[] content = new byte[0];
+        final byte[] content = new byte[0];
         final String mimeType = "foo/bar";
         doTest(content, mimeType, content, mimeType);
     }
 
     @Test
-    public void testMapMessageWithMimeType() throws Exception
+    void mapMessageWithMimeType() throws Exception
     {
-        HashMap<Object, Object> content = new HashMap<>();
+        final HashMap<Object, Object> content = new HashMap<>();
         content.put("key1", 37);
         content.put("key2", "foo");
         final String mimeType = "foo/bar";
@@ -154,9 +154,9 @@ public class MessageConverter_Internal_to_0_10Test extends UnitTestBase
     }
 
     @Test
-    public void testMapMessageWithoutMimeType() throws Exception
+    void mapMessageWithoutMimeType() throws Exception
     {
-        HashMap<Object, Object> content = new HashMap<>();
+        final HashMap<Object, Object> content = new HashMap<>();
         content.put("key1", 37);
         content.put("key2", "foo");
         final MapToJmsMapMessage mapToJmsMapMessage = new MapToJmsMapMessage();
@@ -165,10 +165,10 @@ public class MessageConverter_Internal_to_0_10Test extends UnitTestBase
     }
 
     @Test
-    public void testMapMessageWithMimeTypeWithNonJmsContent() throws Exception
+    void mapMessageWithMimeTypeWithNonJmsContent() throws Exception
     {
-        HashMap<Object, Object> content = new HashMap<>();
-        content.put("key", Collections.singletonMap("foo", "bar"));
+        final HashMap<Object, Object> content = new HashMap<>();
+        content.put("key", Map.of("foo", "bar"));
         final String mimeType = "foo/bar";
         final MapToAmqpMapConverter mapToAmqpMapConverter = new MapToAmqpMapConverter();
         final byte[] expectedContent = mapToAmqpMapConverter.toMimeContent(content);
@@ -176,46 +176,44 @@ public class MessageConverter_Internal_to_0_10Test extends UnitTestBase
     }
 
     @Test
-    public void testMapMessageWithoutMimeTypeWithNonConvertibleEntry() throws Exception
+    void mapMessageWithoutMimeTypeWithNonConvertibleEntry() throws Exception
     {
-        HashMap<Object, Object> content = new HashMap<>();
+        final HashMap<Object, Object> content = new HashMap<>();
         content.put(37, new MySerializable());
 
         doTest(content, null, getObjectStreamMessageBytes(content), "application/java-object-stream");
     }
 
     @Test
-    public void testSerializableMessageWithMimeType() throws Exception
+    void serializableMessageWithMimeType() throws Exception
     {
-        Serializable content = new MySerializable();
+        final Serializable content = new MySerializable();
         final String mimeType = "foo/bar";
         doTest(content, mimeType, getObjectStreamMessageBytes(content), "application/java-object-stream");
     }
 
     @Test
-    public void testSerializableMessageWithoutMimeType() throws Exception
+    void serializableMessageWithoutMimeType() throws Exception
     {
-        Serializable content = new MySerializable();
+        final Serializable content = new MySerializable();
         doTest(content, null, getObjectStreamMessageBytes(content), "application/java-object-stream");
     }
 
     @Test
-    public void testNullMessageWithoutMimeType() throws Exception
+    void nullMessageWithoutMimeType() throws Exception
     {
         doTest(null, null, null, null);
     }
 
-
     private byte[] getObjectStreamMessageBytes(final Serializable o) throws Exception
     {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(bos))
+        try (final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             final ObjectOutputStream oos = new ObjectOutputStream(bos))
         {
             oos.writeObject(o);
             return bos.toByteArray();
         }
     }
-
 
     protected InternalMessage getAmqMessage(final Serializable content, final String mimeType) throws Exception
     {
@@ -248,9 +246,8 @@ public class MessageConverter_Internal_to_0_10Test extends UnitTestBase
         final ArgumentCaptor<Integer> offsetCaptor = ArgumentCaptor.forClass(Integer.class);
         final ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
 
-        when(_handle.getContent(offsetCaptor.capture(),
-                                sizeCaptor.capture())).then(invocation -> combined.view(offsetCaptor.getValue(),
-                                                                                        sizeCaptor.getValue()));
+        when(_handle.getContent(offsetCaptor.capture(), sizeCaptor.capture()))
+                .then(invocation -> combined.view(offsetCaptor.getValue(), sizeCaptor.getValue()));
     }
 
     private void doTest(final Serializable messageBytes,
@@ -268,15 +265,14 @@ public class MessageConverter_Internal_to_0_10Test extends UnitTestBase
 
     private byte[] getBytes(final QpidByteBuffer content) throws Exception
     {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             InputStream contentInputStream = content.asInputStream())
+        try (final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             final InputStream contentInputStream = content.asInputStream())
         {
             ByteStreams.copy(contentInputStream, bos);
             content.dispose();
             return bos.toByteArray();
         }
     }
-
 
     private static class MySerializable implements Serializable
     {

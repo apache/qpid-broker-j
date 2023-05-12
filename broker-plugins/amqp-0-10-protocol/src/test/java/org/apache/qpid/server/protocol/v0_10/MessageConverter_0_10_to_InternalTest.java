@@ -31,7 +31,6 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,21 +54,20 @@ import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.typedmessage.TypedBytesContentWriter;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class MessageConverter_0_10_to_InternalTest extends UnitTestBase
+@SuppressWarnings({"rawtypes"})
+class MessageConverter_0_10_to_InternalTest extends UnitTestBase
 {
     private final MessageConverter_v0_10_to_Internal _converter = new MessageConverter_v0_10_to_Internal();
-
     private final StoredMessage<MessageMetaData_0_10> _handle = mock(StoredMessage.class);
-
     private final MessageMetaData_0_10 _metaData = mock(MessageMetaData_0_10.class);
     private final AMQMessageHeader _amqpHeader = mock(AMQMessageHeader.class);
     private final Header _header = mock(Header.class);
+
     private MessageProperties _messageProperties;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp()
     {
-
         _messageProperties = new MessageProperties();
 
         when(_handle.getMetaData()).thenReturn(_metaData);
@@ -80,113 +78,112 @@ public class MessageConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testConvertStringMessageBody()
+    void convertStringMessageBody()
     {
         doTestTextMessage("helloworld", "text/plain");
     }
 
     @Test
-    public void testConvertEmptyStringMessageBody()
+    void convertEmptyStringMessageBody()
     {
         doTestTextMessage(null, "text/plain");
     }
 
     @Test
-    public void testConvertStringXmlMessageBody()
+    void convertStringXmlMessageBody()
     {
         doTestTextMessage("<helloworld></helloworld>", "text/xml");
     }
 
     @Test
-    public void testConvertEmptyStringXmlMessageBody()
+    void convertEmptyStringXmlMessageBody()
     {
         doTestTextMessage(null, "text/xml");
     }
 
     @Test
-    public void testConvertEmptyStringApplicationXmlMessageBody()
+    void convertEmptyStringApplicationXmlMessageBody()
     {
         doTestTextMessage(null, "application/xml");
     }
 
     @Test
-    public void testConvertStringWithContentTypeText()
+    void convertStringWithContentTypeText()
     {
         doTestTextMessage("foo","text/foobar");
     }
 
     @Test
-    public void testConvertStringWithContentTypeApplicationXml()
+    void convertStringWithContentTypeApplicationXml()
     {
         doTestTextMessage("<helloworld></helloworld>","application/xml");
     }
 
     @Test
-    public void testConvertStringWithContentTypeApplicationXmlDtd()
+    void convertStringWithContentTypeApplicationXmlDtd()
     {
         doTestTextMessage("<!DOCTYPE name []>","application/xml-dtd");
     }
 
     @Test
-    public void testConvertStringWithContentTypeApplicationFooXml()
+    void convertStringWithContentTypeApplicationFooXml()
     {
         doTestTextMessage("<helloworld></helloworld>","application/foo+xml");
     }
 
     @Test
-    public void testConvertStringWithContentTypeApplicationJson()
+    void convertStringWithContentTypeApplicationJson()
     {
         doTestTextMessage("[]","application/json");
     }
 
     @Test
-    public void testConvertStringWithContentTypeApplicationFooJson()
+    void convertStringWithContentTypeApplicationFooJson()
     {
         doTestTextMessage("[]","application/foo+json");
     }
 
     @Test
-    public void testConvertStringWithContentTypeApplicationJavascript()
+    void convertStringWithContentTypeApplicationJavascript()
     {
         doTestTextMessage("var foo","application/javascript");
     }
 
     @Test
-    public void testConvertStringWithContentTypeApplicationEcmascript()
+    void convertStringWithContentTypeApplicationEcmascript()
     {
         doTestTextMessage("var foo","application/ecmascript");
     }
 
     @Test
-    public void testConvertBytesMessageBody()
+    void convertBytesMessageBody()
     {
         doTestBytesMessage("helloworld".getBytes());
     }
 
     @Test
-    public void testConvertBytesMessageBodyNoContentType()
+    void convertBytesMessageBodyNoContentType()
     {
         final byte[] messageContent = "helloworld".getBytes();
         doTest(messageContent, null, messageContent, null);
     }
 
     @Test
-    public void testConvertMessageBodyUnknownContentType()
+    void convertMessageBodyUnknownContentType()
     {
         final byte[] messageContent = "helloworld".getBytes();
         final String mimeType = "my/bytes";
         doTest(messageContent, mimeType, messageContent, mimeType);
     }
 
-
     @Test
-    public void testConvertEmptyBytesMessageBody()
+    void convertEmptyBytesMessageBody()
     {
         doTestBytesMessage(new byte[0]);
     }
 
     @Test
-    public void testConvertJmsStreamMessageBody() throws Exception
+    void convertJmsStreamMessageBody() throws Exception
     {
         final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D);
         final byte[] messageBytes = getJmsStreamMessageBytes(expected);
@@ -196,7 +193,7 @@ public class MessageConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testConvertEmptyJmsStreamMessageBody()
+    void convertEmptyJmsStreamMessageBody()
     {
         final List<Object> expected = Lists.newArrayList();
         final String mimeType = "jms/stream-message";
@@ -204,7 +201,7 @@ public class MessageConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testConvertAmqpListMessageBody()
+    void convertAmqpListMessageBody()
     {
         final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D);
         final byte[] messageBytes = new ListToAmqpListConverter().toMimeContent(expected);
@@ -213,107 +210,106 @@ public class MessageConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testConvertEmptyAmqpListMessageBody()
+    void convertEmptyAmqpListMessageBody()
     {
         final List<Object> expected = Lists.newArrayList();
         doTestStreamMessage(null, "amqp/list", expected);
     }
 
     @Test
-    public void testConvertJmsMapMessageBody() throws Exception
+    void convertJmsMapMessageBody() throws Exception
     {
-        final Map<String, Object> expected = Collections.singletonMap("key", "value");
+        final Map<String, Object> expected = Map.of("key", "value");
         final byte[] messageBytes = getJmsMapMessageBytes(expected);
 
         doTestMapMessage(messageBytes, "jms/map-message", expected);
     }
 
     @Test
-    public void testConvertEmptyJmsMapMessageBody()
+    void convertEmptyJmsMapMessageBody()
     {
-        doTestMapMessage(null, "jms/map-message", Collections.emptyMap());
+        doTestMapMessage(null, "jms/map-message", Map.of());
     }
 
     @Test
-    public void testConvertAmqpMapMessageBody()
+    void convertAmqpMapMessageBody()
     {
-        final Map<String, Object> expected = Collections.singletonMap("key", "value");
+        final Map<String, Object> expected = Map.of("key", "value");
         final byte[] messageBytes = new MapToAmqpMapConverter().toMimeContent(expected);
 
         doTestMapMessage(messageBytes, "amqp/map", expected);
     }
 
     @Test
-    public void testConvertEmptyAmqpMapMessageBody()
+    void convertEmptyAmqpMapMessageBody()
     {
-        doTestMapMessage(null, "amqp/map", Collections.emptyMap());
+        doTestMapMessage(null, "amqp/map", Map.of());
     }
 
     @Test
-    public void testConvertObjectStreamMessageBody() throws Exception
+    void convertObjectStreamMessageBody() throws Exception
     {
         final byte[] messageBytes = getObjectStreamMessageBytes(UUID.randomUUID());
         doTestObjectMessage(messageBytes, "application/java-object-stream", messageBytes);
     }
 
     @Test
-    public void testConvertObjectStream2MessageBody() throws Exception
+    void convertObjectStream2MessageBody() throws Exception
     {
         final byte[] messageBytes = getObjectStreamMessageBytes(UUID.randomUUID());
         doTestObjectMessage(messageBytes, "application/x-java-serialized-object", messageBytes);
     }
 
     @Test
-    public void testConvertEmptyObjectStreamMessageBody() throws Exception
+    void convertEmptyObjectStreamMessageBody() throws Exception
     {
         doTestObjectMessage(null, "application/java-object-stream", new byte[0]);
     }
 
     @Test
-    public void testConvertEmptyMessageWithoutContentType()
+    void convertEmptyMessageWithoutContentType()
     {
         doTest(null, null, null, null);
     }
 
     @Test
-    public void testConvertEmptyMessageWithUnknownContentType()
+    void convertEmptyMessageWithUnknownContentType()
     {
         doTest(null, "foo/bar", new byte[0], "foo/bar");
     }
 
     @Test
-    public void testConvertMessageWithoutContentType() throws Exception
+    void convertMessageWithoutContentType()
     {
         final byte[] expectedContent = "someContent".getBytes(UTF_8);
         doTest(expectedContent, null, expectedContent, null);
     }
 
-
     private byte[] getObjectStreamMessageBytes(final Serializable o) throws Exception
     {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(bos))
+        try (final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             final ObjectOutputStream oos = new ObjectOutputStream(bos))
         {
             oos.writeObject(o);
             return bos.toByteArray();
         }
     }
 
-    private byte[] getJmsStreamMessageBytes(List<Object> objects) throws Exception
+    private byte[] getJmsStreamMessageBytes(final List<Object> objects) throws Exception
     {
-        TypedBytesContentWriter writer = new TypedBytesContentWriter();
-        for (Object o : objects)
+        final TypedBytesContentWriter writer = new TypedBytesContentWriter();
+        for (final Object o : objects)
         {
             writer.writeObject(o);
         }
         return getBytes(writer);
     }
 
-    private byte[] getJmsMapMessageBytes(Map<String, Object> map) throws Exception
+    private byte[] getJmsMapMessageBytes(final Map<String, Object> map) throws Exception
     {
-        TypedBytesContentWriter writer = new TypedBytesContentWriter();
+        final TypedBytesContentWriter writer = new TypedBytesContentWriter();
         writer.writeIntImpl(map.size());
-        for (Map.Entry<String, Object> entry : map.entrySet())
+        for (final Map.Entry<String, Object> entry : map.entrySet())
         {
             writer.writeNullTerminatedStringImpl(entry.getKey());
             writer.writeObject(entry.getValue());
@@ -323,7 +319,7 @@ public class MessageConverter_0_10_to_InternalTest extends UnitTestBase
 
     private byte[] getBytes(final TypedBytesContentWriter writer)
     {
-        ByteBuffer buf = writer.getData();
+        final ByteBuffer buf = writer.getData();
         final byte[] expected = new byte[buf.remaining()];
         buf.get(expected);
         return expected;
@@ -354,14 +350,12 @@ public class MessageConverter_0_10_to_InternalTest extends UnitTestBase
         final ArgumentCaptor<Integer> offsetCaptor = ArgumentCaptor.forClass(Integer.class);
         final ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
 
-        when(_handle.getContent(offsetCaptor.capture(),
-                                sizeCaptor.capture())).then(invocation -> combined.view(offsetCaptor.getValue(),
-                                                                                        sizeCaptor.getValue()));
+        when(_handle.getContent(offsetCaptor.capture(), sizeCaptor.capture()))
+                .then(invocation -> combined.view(offsetCaptor.getValue(), sizeCaptor.getValue()));
     }
 
     private void doTestTextMessage(final String originalContent, final String mimeType)
     {
-
         final byte[] contentBytes;
         final String expectedContent;
         if (originalContent == null)
@@ -376,7 +370,6 @@ public class MessageConverter_0_10_to_InternalTest extends UnitTestBase
         }
         doTest(contentBytes, mimeType, expectedContent, mimeType);
     }
-
 
     private void doTestMapMessage(final byte[] messageBytes,
                                   final String mimeType,
@@ -400,7 +393,6 @@ public class MessageConverter_0_10_to_InternalTest extends UnitTestBase
     private void doTestObjectMessage(final byte[] messageBytes,
                                      final String mimeType,
                                      final byte[] expectedBytes)
-            throws Exception
     {
         doTest(messageBytes, mimeType, expectedBytes, "application/x-java-serialized-object");
     }
@@ -434,7 +426,7 @@ public class MessageConverter_0_10_to_InternalTest extends UnitTestBase
         {
             assertEquals(expectedContent, convertedMessage.getMessageBody(), "Unexpected content");
         }
-        String convertedMimeType = convertedMessage.getMessageHeader().getMimeType();
+        final String convertedMimeType = convertedMessage.getMessageHeader().getMimeType();
         assertEquals(expectedMimeType, convertedMimeType, "Unexpected content type");
     }
 }

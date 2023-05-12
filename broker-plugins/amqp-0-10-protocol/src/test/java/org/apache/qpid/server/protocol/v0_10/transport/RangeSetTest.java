@@ -35,22 +35,21 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
-
 /**
  * RangeSetTest
  */
-public class RangeSetTest extends UnitTestBase
+class RangeSetTest extends UnitTestBase
 {
     private void check(RangeSet ranges)
     {
-        List<Integer> posts = new ArrayList<>();
-        for (Range range : ranges)
+        final List<Integer> posts = new ArrayList<>();
+        for (final Range range : ranges)
         {
             posts.add(range.getLower());
             posts.add(range.getUpper());
         }
 
-        List<Integer> sorted = new ArrayList<>(posts);
+        final List<Integer> sorted = new ArrayList<>(posts);
         sorted.sort(COMPARATOR);
 
         assertEquals(posts, sorted);
@@ -65,9 +64,9 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void test1()
+    void test1()
     {
-        RangeSet ranges = RangeSetFactory.createRangeSet();
+        final RangeSet ranges = RangeSetFactory.createRangeSet();
         ranges.add(5, 10);
         check(ranges);
         ranges.add(15, 20);
@@ -83,9 +82,9 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void test2()
+    void test2()
     {
-        RangeSet rs = RangeSetFactory.createRangeSet();
+        final RangeSet rs = RangeSetFactory.createRangeSet();
         check(rs);
 
         rs.add(1);
@@ -146,9 +145,9 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testAddSelf()
+    void addSelf()
     {
-        RangeSet a = RangeSetFactory.createRangeSet();
+        final RangeSet a = RangeSetFactory.createRangeSet();
         a.add(0, 8);
         check(a);
         a.add(0, 8);
@@ -160,12 +159,12 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testIntersect1()
+    void intersect1()
     {
-        Range a = Range.newInstance(0, 10);
-        Range b = Range.newInstance(9, 20);
-        Range i1 = a.intersect(b);
-        Range i2 = b.intersect(a);
+        final Range a = Range.newInstance(0, 10);
+        final Range b = Range.newInstance(9, 20);
+        final Range i1 = a.intersect(b);
+        final Range i2 = b.intersect(a);
         assertEquals(i1.getUpper(), (long) 10);
         assertEquals(i2.getUpper(), (long) 10);
         assertEquals(i1.getLower(), (long) 9);
@@ -173,21 +172,21 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testIntersect2()
+    void intersect2()
     {
-        Range a = Range.newInstance(0, 10);
-        Range b = Range.newInstance(11, 20);
+        final Range a = Range.newInstance(0, 10);
+        final Range b = Range.newInstance(11, 20);
         assertNull(a.intersect(b));
         assertNull(b.intersect(a));
     }
 
     @Test
-    public void testIntersect3()
+    void intersect3()
     {
-        Range a = Range.newInstance(0, 10);
-        Range b = Range.newInstance(3, 5);
-        Range i1 = a.intersect(b);
-        Range i2 = b.intersect(a);
+        final Range a = Range.newInstance(0, 10);
+        final Range b = Range.newInstance(3, 5);
+        final Range i1 = a.intersect(b);
+        final Range i2 = b.intersect(a);
         assertEquals(i1.getUpper(), (long) 5);
         assertEquals(i2.getUpper(), (long) 5);
         assertEquals(i1.getLower(), (long) 3);
@@ -195,45 +194,45 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testSubtract1()
+    void subtract1()
     {
-        Range a = Range.newInstance(0, 10);
+        final Range a = Range.newInstance(0, 10);
         assertTrue(a.subtract(a).isEmpty());
     }
 
     @Test
-    public void testSubtract2()
+    void subtract2()
     {
-        Range a = Range.newInstance(0, 10);
-        Range b = Range.newInstance(20, 30);
-        List<Range> ranges = a.subtract(b);
+        final Range a = Range.newInstance(0, 10);
+        final Range b = Range.newInstance(20, 30);
+        final List<Range> ranges = a.subtract(b);
         assertEquals(ranges.size(), (long) 1);
-        Range d = ranges.get(0);
+        final Range d = ranges.get(0);
         assertEquals(d.getLower(), (long) a.getLower());
         assertEquals(d.getUpper(), (long) a.getUpper());
     }
 
     @Test
-    public void testSubtract3()
+    void subtract3()
     {
-        Range a = Range.newInstance(20, 30);
-        Range b = Range.newInstance(0, 10);
-        List<Range> ranges = a.subtract(b);
+        final Range a = Range.newInstance(20, 30);
+        final Range b = Range.newInstance(0, 10);
+        final List<Range> ranges = a.subtract(b);
         assertEquals(ranges.size(), (long) 1);
-        Range d = ranges.get(0);
+        final Range d = ranges.get(0);
         assertEquals(d.getLower(), (long) a.getLower());
         assertEquals(d.getUpper(), (long) a.getUpper());
     }
 
     @Test
-    public void testSubtract4()
+    void subtract4()
     {
-        Range a = Range.newInstance(0, 10);
-        Range b = Range.newInstance(3, 5);
-        List<Range> ranges = a.subtract(b);
+        final Range a = Range.newInstance(0, 10);
+        final Range b = Range.newInstance(3, 5);
+        final List<Range> ranges = a.subtract(b);
         assertEquals(ranges.size(), (long) 2);
-        Range low = ranges.get(0);
-        Range high = ranges.get(1);
+        final Range low = ranges.get(0);
+        final Range high = ranges.get(1);
         assertEquals(low.getLower(), (long) 0);
         assertEquals(low.getUpper(), (long) 2);
         assertEquals(high.getLower(), (long) 6);
@@ -241,31 +240,31 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testSubtract5()
+    void subtract5()
     {
-        Range a = Range.newInstance(0, 10);
-        Range b = Range.newInstance(3, 20);
-        List<Range> ranges = a.subtract(b);
+        final Range a = Range.newInstance(0, 10);
+        final Range b = Range.newInstance(3, 20);
+        final List<Range> ranges = a.subtract(b);
         assertEquals(ranges.size(), (long) 1);
-        Range d = ranges.get(0);
+        final Range d = ranges.get(0);
         assertEquals(d.getLower(), (long) 0);
         assertEquals(d.getUpper(), (long) 2);
     }
 
     @Test
-    public void testSubtract6()
+    void subtract6()
     {
-        Range a = Range.newInstance(0, 10);
-        Range b = Range.newInstance(-10, 5);
-        List<Range> ranges = a.subtract(b);
+        final Range a = Range.newInstance(0, 10);
+        final Range b = Range.newInstance(-10, 5);
+        final List<Range> ranges = a.subtract(b);
         assertEquals(ranges.size(), (long) 1);
-        Range d = ranges.get(0);
+        final Range d = ranges.get(0);
         assertEquals(d.getLower(), (long) 6);
         assertEquals(d.getUpper(), (long) 10);
     }
 
     @Test
-    public void testSetSubtract1()
+    void setSubtract1()
     {
         final RangeSet orig = createRangeSet(0, 10) ;
         final RangeSet update = createRangeSet(3, 15) ;
@@ -274,7 +273,7 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testSetSubtract2()
+    void setSubtract2()
     {
         final RangeSet orig = createRangeSet(0, 10) ;
         final RangeSet update = createRangeSet(3, 10) ;
@@ -283,7 +282,7 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testSetSubtract3()
+    void setSubtract3()
     {
         final RangeSet orig = createRangeSet(0, 10) ;
         final RangeSet update = createRangeSet(3, 4) ;
@@ -292,7 +291,7 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testSetSubtract4()
+    void setSubtract4()
     {
         final RangeSet orig = createRangeSet(3, 15) ;
         final RangeSet update = createRangeSet(0, 10) ;
@@ -301,7 +300,7 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testSetSubtract5()
+    void setSubtract5()
     {
         final RangeSet orig = createRangeSet(3, 10) ;
         final RangeSet update = createRangeSet(0, 10) ;
@@ -310,7 +309,7 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testSetSubtract6()
+    void setSubtract6()
     {
         final RangeSet orig = createRangeSet(3, 10) ;
         final RangeSet update = createRangeSet(0, 15) ;
@@ -319,7 +318,7 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testSetSubtract7()
+    void setSubtract7()
     {
         final RangeSet orig = createRangeSet(0, 10) ;
         final RangeSet update = createRangeSet(0, 15) ;
@@ -328,7 +327,7 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testSetSubtract8()
+    void setSubtract8()
     {
         final RangeSet orig = createRangeSet(0, 15) ;
         final RangeSet update = createRangeSet(0, 10) ;
@@ -337,7 +336,7 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testSetSubtract9()
+    void setSubtract9()
     {
         final RangeSet orig = createRangeSet(0, 15, 20, 30) ;
         final RangeSet update = createRangeSet(2, 3, 5, 6, 8, 9, 22, 23, 27, 28) ;
@@ -346,7 +345,7 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testSetSubtract10()
+    void setSubtract10()
     {
         final RangeSet orig = createRangeSet(0, 15, 20, 30) ;
         final RangeSet update = createRangeSet(0, 2, 4, 6, 10, 22, 24, 24, 27, 30) ;
@@ -355,7 +354,7 @@ public class RangeSetTest extends UnitTestBase
     }
 
     @Test
-    public void testSetSubtract11()
+    void setSubtract11()
     {
         final RangeSet orig = createRangeSet(0, 2, 4, 6, 10, 22, 24, 24, 27, 30) ;
         final RangeSet update = createRangeSet(0, 2, 4, 6, 10, 22, 24, 24, 27, 30) ;
@@ -363,25 +362,25 @@ public class RangeSetTest extends UnitTestBase
         checkRange(orig) ;
     }
     
-    private RangeSet createRangeSet(int ... bounds)
+    private RangeSet createRangeSet(final int ... bounds)
     {
-        RangeSet set = RangeSetFactory.createRangeSet();
+        final RangeSet set = RangeSetFactory.createRangeSet();
         final int length = (bounds == null ? 0 : bounds.length) ;
         int count = 0 ;
-        while(count < length)
+        while (count < length)
         {
             set.add(bounds[count++], bounds[count++]) ;
         }
         return set ;
     }
     
-    private void checkRange(final RangeSet rangeSet, int ... bounds)
+    private void checkRange(final RangeSet rangeSet, final int ... bounds)
     {
         final int length = (bounds == null ? 0 : bounds.length) ;
         assertEquals(length / 2, (long) rangeSet.size(), "Range count");
         final Iterator<Range> iter = rangeSet.iterator() ;
         int count = 0 ;
-        while(count < length)
+        while (count < length)
         {
             final Range range = iter.next() ;
             final long expected1 = bounds[count++];
