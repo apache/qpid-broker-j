@@ -25,17 +25,34 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.UserPrincipal;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
@@ -48,6 +65,9 @@ import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
+import org.apache.qpid.server.security.encryption.AESGCMKeyFileEncrypterFactory;
+import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class BrokerRecovererTest extends UnitTestBase
@@ -80,7 +100,7 @@ public class BrokerRecovererTest extends UnitTestBase
         when(_brokerEntry.getParents()).thenReturn(Map.of(SystemConfig.class.getSimpleName(), _systemConfig
                 .getId()));
 
-        //Add a base AuthenticationProvider for all tests
+        // Add a base AuthenticationProvider for all tests
         final AuthenticationProvider<?> authenticationProvider1 = mock(AuthenticationProvider.class);
         when(authenticationProvider1.getName()).thenReturn("authenticationProvider1");
         when(authenticationProvider1.getId()).thenReturn(_authenticationProvider1Id);
@@ -90,6 +110,18 @@ public class BrokerRecovererTest extends UnitTestBase
     public void tearDown() throws Exception
     {
         _taskExecutor.stop();
+        final Path path = Path.of(_systemConfig.getContextValue(String.class, SystemConfig.QPID_WORK_DIR));
+        if (path.toFile().exists())
+        {
+            try (Stream<Path> stream = Files.walk(path))
+            {
+                stream.sorted(Comparator.reverseOrder()).map(Path::toFile).filter(File::exists).forEach(file ->
+                {
+                    makeFileDeletable(file);
+                    file.delete();
+                });
+            }
+        }
     }
 
     @Test
@@ -129,6 +161,16 @@ public class BrokerRecovererTest extends UnitTestBase
         return new ConfiguredObjectRecordImpl(id, AuthenticationProvider.class.getSimpleName(), authProviderAttrs, Map.of(Broker.class.getSimpleName(), _brokerEntry.getId()));
     }
 
+    public ConfiguredObjectRecord createSimpleLDAPAuthProviderRecord(final UUID id, final String name, final String password)
+    {
+        final Map<String, Object> authProviderAttrs = Map.of(AuthenticationProvider.NAME, name,
+                SimpleLDAPAuthenticationManager.TYPE, SimpleLDAPAuthenticationManager.PROVIDER_TYPE,
+                SimpleLDAPAuthenticationManager.PROVIDER_URL, "ldap://localhost:%d",
+                SimpleLDAPAuthenticationManager.SEARCH_CONTEXT, "ou=users,dc=qpid,dc=org",
+                SimpleLDAPAuthenticationManager.SEARCH_FILTER, "(uid={0})",
+                SimpleLDAPAuthenticationManager.SEARCH_PASSWORD, password);
+        return new ConfiguredObjectRecordImpl(id, AuthenticationProvider.class.getSimpleName(), authProviderAttrs, Map.of(Broker.class.getSimpleName(), _brokerEntry.getId()));
+    }
 
     public ConfiguredObjectRecord createGroupProviderRecord(final UUID id, final String name)
     {
@@ -177,6 +219,34 @@ public class BrokerRecovererTest extends UnitTestBase
         broker.open();
         assertEquals(_brokerId, broker.getId());
         assertEquals(1, (long) broker.getAuthenticationProviders().size());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testCreateBrokerWithSimpleLDAPAuthenticationProvider() throws Exception
+    {
+        final UUID authProviderId = randomUUID();
+
+        final String password = "password";
+        final ConfigurationSecretEncrypter configurationSecretEncrypter =
+                new AESGCMKeyFileEncrypterFactory().createEncrypter(_systemConfig);
+        final String encryptedPassword = configurationSecretEncrypter.encrypt(password);
+
+        final Method setter = _systemConfig.getClass().getSuperclass().getSuperclass().getSuperclass()
+                .getDeclaredMethod("setEncrypter", ConfigurationSecretEncrypter.class);
+        setter.setAccessible(true);
+        setter.invoke(_systemConfig, configurationSecretEncrypter);
+
+        // SimpleLDAPAuthenticationManager with the encrypted password is created
+        resolveObjects(_brokerEntry, createSimpleLDAPAuthProviderRecord(authProviderId, "ldap", encryptedPassword));
+        final Broker<?> broker = _systemConfig.getContainer(Broker.class);
+
+        broker.open();
+
+        // check if SimpleLDAPAuthenticationManager returns decrypted password
+        final SimpleLDAPAuthenticationManager<?> simpleLDAPAuthenticationManager =
+                (SimpleLDAPAuthenticationManager<?>) broker.getAuthenticationProviders().iterator().next();
+        assertEquals(password, simpleLDAPAuthenticationManager.getSearchPassword());
     }
 
     @Test
@@ -290,5 +360,40 @@ public class BrokerRecovererTest extends UnitTestBase
     {
         final GenericRecoverer recoverer = new GenericRecoverer(_systemConfig);
         recoverer.recover(Arrays.asList(records), false);
+    }
+
+    private void makeFileDeletable(File file)
+    {
+        try
+        {
+            if (Files.getFileAttributeView(file.toPath(), PosixFileAttributeView.class) != null)
+            {
+                Files.setPosixFilePermissions(file.toPath(), EnumSet.of(PosixFilePermission.OTHERS_WRITE));
+            }
+            else if (Files.getFileAttributeView(file.toPath(), AclFileAttributeView.class) != null)
+            {
+                file.setWritable(true);
+                final AclFileAttributeView attributeView =
+                        Files.getFileAttributeView(file.toPath(), AclFileAttributeView.class);
+                final ArrayList<AclEntry> acls = new ArrayList<>(attributeView.getAcl());
+
+                final AclEntry.Builder builder = AclEntry.newBuilder();
+                final UserPrincipal everyone = FileSystems.getDefault().getUserPrincipalLookupService()
+                    .lookupPrincipalByName("Everyone");
+                builder.setPrincipal(everyone);
+                builder.setType(AclEntryType.ALLOW);
+                builder.setPermissions(Stream.of(AclEntryPermission.values()).collect(Collectors.toSet()));
+                acls.add(builder.build());
+                attributeView.setAcl(acls);
+            }
+            else
+            {
+                throw new IllegalConfigurationException("Failed to change file permissions");
+            }
+        }
+        catch (IOException e)
+        {
+            throw new IllegalConfigurationException("Failed to change file permissions", e);
+        }
     }
 }

@@ -242,6 +242,10 @@ public class GenericRecoverer
                     updatesMade = true;
                     unresolvedIter.remove();
                     ConfiguredObject<?> resolved = unresolvedObject.resolve();
+                    if (!isNew)
+                    {
+                        resolved.decryptSecrets();
+                    }
                     resolvedObjects.put(resolved.getId(), resolved);
                 }
             }
