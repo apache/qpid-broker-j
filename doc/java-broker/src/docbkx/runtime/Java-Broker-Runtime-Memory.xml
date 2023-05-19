@@ -124,9 +124,6 @@
           See the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.oracle.com/us/products/database/berkeley-db/je">official webpage</link> especially <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/util/DbCacheSize.html">this page</link> for more information.
           For those interested, Qpid uses <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://docs.oracle.com/cd/E17277_02/html/java/com/sleepycat/je/CacheMode.html#EVICT_LN">EVICT_LN</link> as its default JE cacheMode.
         </para>
-        <para>
-          Note that due to licensing concerns Qpid does not ship the BDB JE jar files.
-        </para>
       </section>
       <section>
         <title>Derby</title>
