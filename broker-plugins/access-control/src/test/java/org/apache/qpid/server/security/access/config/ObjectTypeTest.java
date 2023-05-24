@@ -26,10 +26,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
 
-public class ObjectTypeTest
+class ObjectTypeTest
 {
     @Test
-    public void testIsSupported()
+    void isSupported()
     {
         for (LegacyOperation operation : LegacyOperation.values())
         {
@@ -38,21 +38,15 @@ public class ObjectTypeTest
 
         for (ObjectType objectType : ObjectType.values())
         {
-            for (LegacyOperation operation : objectType.getOperations())
-            {
-                assertTrue(objectType.isSupported(operation));
-            }
+            objectType.getOperations().forEach(operation -> assertTrue(objectType.isSupported(operation)));
             final EnumSet<LegacyOperation> legacyOperations = EnumSet.allOf(LegacyOperation.class);
             legacyOperations.removeAll(objectType.getOperations());
-            for (LegacyOperation operation : legacyOperations)
-            {
-                assertFalse(objectType.isSupported(operation));
-            }
+            legacyOperations.forEach(operation -> assertFalse(objectType.isSupported(operation)));
         }
     }
 
     @Test
-    public void testTestToString()
+    void string()
     {
         assertEquals("All", ObjectType.ALL.toString());
         assertEquals("Broker", ObjectType.BROKER.toString());

@@ -52,11 +52,10 @@ import static org.mockito.Mockito.when;
  *
  * @see RuleSetTest
  */
-public class RuleBasedAccessControlTest extends UnitTestBase
+class RuleBasedAccessControlTest extends UnitTestBase
 {
     private static final String ALLOWED_GROUP = "allowed_group";
     private static final String DENIED_GROUP = "denied_group";
-
     private static final ObjectProperties EMPTY = new ObjectProperties();
 
     private RuleBasedAccessControl _plugin = null;  // Class under test
@@ -64,7 +63,7 @@ public class RuleBasedAccessControlTest extends UnitTestBase
     private EventLogger _eventLogger;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp()
     {
         _messageLogger = new UnitTestMessageLogger();
         _eventLogger = new EventLogger(_messageLogger);
@@ -85,7 +84,7 @@ public class RuleBasedAccessControlTest extends UnitTestBase
     {
         final EventLoggerProvider provider = mock(EventLoggerProvider.class);
         when(provider.getEventLogger()).thenReturn(_eventLogger);
-        RuleCollector rsc = new RuleCollector();
+        final RuleCollector rsc = new RuleCollector();
 
         // Rule expressed with username
         rsc.addRule(0, new Rule.Builder()
@@ -122,7 +121,7 @@ public class RuleBasedAccessControlTest extends UnitTestBase
      * ACL plugin must always defer if there is no  subject attached to the thread.
      */
     @Test
-    public void testNoSubjectAlwaysDefers()
+    void noSubjectAlwaysDefers()
     {
         setUpGroupAccessControl();
         final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY);
@@ -134,19 +133,14 @@ public class RuleBasedAccessControlTest extends UnitTestBase
      * with the same username.
      */
     @Test
-    public void testUsernameAllowsOperation()
+    void usernameAllowsOperation()
     {
         setUpGroupAccessControl();
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user1"), new PrivilegedAction<Object>()
+        Subject.doAs(TestPrincipalUtils.createTestSubject("user1"), (PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY);
-
-                assertEquals(Result.ALLOWED, result);
-                return null;
-            }
+            final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY);
+            assertEquals(Result.ALLOWED, result);
+            return null;
         });
     }
 
@@ -155,7 +149,7 @@ public class RuleBasedAccessControlTest extends UnitTestBase
      * by a user who belongs to the same group..
      */
     @Test
-    public void testGroupMembershipAllowsOperation()
+    void groupMembershipAllowsOperation()
     {
         setUpGroupAccessControl();
 
@@ -169,7 +163,7 @@ public class RuleBasedAccessControlTest extends UnitTestBase
      * by a user who belongs to the same group.
      */
     @Test
-    public void testGroupMembershipDeniesOperation()
+    void groupMembershipDeniesOperation()
     {
         setUpGroupAccessControl();
         authoriseAndAssertResult(Result.DENIED, "user3", DENIED_GROUP);
@@ -179,37 +173,29 @@ public class RuleBasedAccessControlTest extends UnitTestBase
      * Tests that the catch all deny denies the operation and logs with the logging actor.
      */
     @Test
-    public void testCatchAllRuleDeniesUnrecognisedUsername()
+    void catchAllRuleDeniesUnrecognisedUsername()
     {
         setUpGroupAccessControl();
         Subject.doAs(TestPrincipalUtils.createTestSubject("unknown", "unkgroup1", "unkgroup2"),
-                     new PrivilegedAction<Object>()
-                     {
-                         @Override
-                         public Object run()
-                         {
-                             assertEquals(0, (long) _messageLogger.getLogMessages().size(),
-                                     "Expecting zero messages before test");
+                (PrivilegedAction<Object>) () ->
+                {
+                    assertEquals(0, (long) _messageLogger.getLogMessages().size(), "Expecting zero messages before test");
 
-                             final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST,
-                                                                     EMPTY);
-                             assertEquals(Result.DENIED, result);
+                    final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY);
+                    assertEquals(Result.DENIED, result);
 
-                             assertEquals(1, (long) _messageLogger.getLogMessages().size(),
-                                     "Expecting one message before test");
-                             assertTrue(_messageLogger.messageContains(0, "ACL-1002"),
-                                     "Logged message does not contain expected string");
-                             return null;
-                         }
-                     });
-
+                    assertEquals(1, (long) _messageLogger.getLogMessages().size(), "Expecting one message before test");
+                    assertTrue(_messageLogger.messageContains(0, "ACL-1002"),
+                            "Logged message does not contain expected string");
+                    return null;
+                });
     }
 
     /**
      * Tests that a grant access method rule allows any access operation to be performed on any component
      */
     @Test
-    public void testAuthoriseAccessMethodWhenAllAccessOperationsAllowedOnAllComponents()
+    void authoriseAccessMethodWhenAllAccessOperationsAllowedOnAllComponents()
     {
         final RuleCollector rs = new RuleCollector();
         // grant user4 access right on any method in any component
@@ -221,27 +207,22 @@ public class RuleBasedAccessControlTest extends UnitTestBase
                 .withObject(ObjectType.METHOD)
                 .build());
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user4"), new PrivilegedAction<Object>()
+        Subject.doAs(TestPrincipalUtils.createTestSubject("user4"), (PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                ObjectProperties actionProperties = new ObjectProperties("getName");
-                actionProperties.put(Property.COMPONENT, "Test");
+            final ObjectProperties actionProperties = new ObjectProperties("getName");
+            actionProperties.put(Property.COMPONENT, "Test");
 
-                final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, actionProperties);
-                assertEquals(Result.ALLOWED, result);
-                return null;
-            }
+            final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, actionProperties);
+            assertEquals(Result.ALLOWED, result);
+            return null;
         });
-
     }
 
     /**
      * Tests that a grant access method rule allows any access operation to be performed on a specified component
      */
     @Test
-    public void testAuthoriseAccessMethodWhenAllAccessOperationsAllowedOnSpecifiedComponent()
+    void authoriseAccessMethodWhenAllAccessOperationsAllowedOnSpecifiedComponent()
     {
         final RuleCollector rs = new RuleCollector();
 
@@ -255,99 +236,79 @@ public class RuleBasedAccessControlTest extends UnitTestBase
                 .withObject(ObjectType.METHOD)
                 .build());
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user5"), new PrivilegedAction<Object>()
+        Subject.doAs(TestPrincipalUtils.createTestSubject("user5"), (PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                ObjectProperties actionProperties = new ObjectProperties("getName");
-                actionProperties.put(Property.COMPONENT, "Test");
-                Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, actionProperties);
-                assertEquals(Result.ALLOWED, result);
+            final ObjectProperties actionProperties = new ObjectProperties("getName");
+            actionProperties.put(Property.COMPONENT, "Test");
+            Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, actionProperties);
+            assertEquals(Result.ALLOWED, result);
 
-                actionProperties.put(Property.COMPONENT, "Test2");
-                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, actionProperties);
-                assertEquals(Result.DEFER, result);
-                return null;
-            }
+            actionProperties.put(Property.COMPONENT, "Test2");
+            result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, actionProperties);
+            assertEquals(Result.DEFER, result);
+            return null;
         });
-
-
     }
 
     @Test
-    public void testAccess() throws Exception
+    void access() throws Exception
     {
         final Subject subject = TestPrincipalUtils.createTestSubject("user1");
         final String testVirtualHost = getTestName();
         final InetAddress inetAddress = InetAddress.getLocalHost();
         final InetSocketAddress inetSocketAddress = new InetSocketAddress(inetAddress, 1);
 
-        AMQPConnection connectionModel = mock(AMQPConnection.class);
+        final AMQPConnection<?> connectionModel = mock(AMQPConnection.class);
         when(connectionModel.getRemoteSocketAddress()).thenReturn(inetSocketAddress);
 
         subject.getPrincipals().add(new ConnectionPrincipal(connectionModel));
 
-        Subject.doAs(subject, new PrivilegedExceptionAction<Object>()
+        Subject.doAs(subject, (PrivilegedExceptionAction<Object>) () ->
         {
-            @Override
-            public Object run() throws Exception
-            {
-                RuleSet mockRuleSet = mock(RuleSet.class);
+            final RuleSet mockRuleSet = mock(RuleSet.class);
+            final RuleBasedAccessControl accessControl =
+                    new RuleBasedAccessControl(mockRuleSet, BrokerModel.getInstance());
 
-                RuleBasedAccessControl accessControl = new RuleBasedAccessControl(mockRuleSet,
-                                                                                  BrokerModel.getInstance());
+            final ObjectProperties properties = new ObjectProperties(testVirtualHost);
+            accessControl.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties);
 
-                ObjectProperties properties = new ObjectProperties(testVirtualHost);
-                accessControl.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties);
-
-                verify(mockRuleSet).check(subject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties);
-                return null;
-            }
+            verify(mockRuleSet).check(subject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties);
+            return null;
         });
-
     }
 
     @Test
-    public void testAccessIsDeniedIfRuleThrowsException() throws Exception
+    void accessIsDeniedIfRuleThrowsException() throws Exception
     {
         final Subject subject = TestPrincipalUtils.createTestSubject("user1");
         final InetAddress inetAddress = InetAddress.getLocalHost();
         final InetSocketAddress inetSocketAddress = new InetSocketAddress(inetAddress, 1);
 
-        AMQPConnection connectionModel = mock(AMQPConnection.class);
+        final AMQPConnection<?> connectionModel = mock(AMQPConnection.class);
         when(connectionModel.getRemoteSocketAddress()).thenReturn(inetSocketAddress);
 
         subject.getPrincipals().add(new ConnectionPrincipal(connectionModel));
 
-        Subject.doAs(subject, new PrivilegedExceptionAction<Object>()
+        Subject.doAs(subject, (PrivilegedExceptionAction<Object>) () ->
         {
-            @Override
-            public Object run() throws Exception
-            {
-                RuleSet mockRuleSet = mock(RuleSet.class);
-                when(mockRuleSet.check(
-                        subject,
-                        LegacyOperation.ACCESS,
-                        ObjectType.VIRTUALHOST,
-                        EMPTY)).thenThrow(new RuntimeException());
+            final RuleSet mockRuleSet = mock(RuleSet.class);
+            when(mockRuleSet.check(subject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY))
+                    .thenThrow(new RuntimeException());
 
-                RuleBasedAccessControl accessControl = new RuleBasedAccessControl(mockRuleSet,
-                                                                                  BrokerModel.getInstance());
-                Result result = accessControl.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY);
+            final RuleBasedAccessControl accessControl =
+                    new RuleBasedAccessControl(mockRuleSet, BrokerModel.getInstance());
+            final Result result = accessControl.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY);
 
-                assertEquals(Result.DENIED, result);
-                return null;
-            }
+            assertEquals(Result.DENIED, result);
+            return null;
         });
-
     }
 
     /**
      * Tests that a grant access method rule allows any access operation to be performed on a specified component
      */
     @Test
-    public void testAuthoriseAccessMethodWhenSpecifiedAccessOperationsAllowedOnSpecifiedComponent()
+    void authoriseAccessMethodWhenSpecifiedAccessOperationsAllowedOnSpecifiedComponent()
     {
         final RuleCollector rs = new RuleCollector();
 
@@ -361,36 +322,31 @@ public class RuleBasedAccessControlTest extends UnitTestBase
                 .withObject(ObjectType.METHOD)
                 .build());
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user6"), new PrivilegedAction<Object>()
+        Subject.doAs(TestPrincipalUtils.createTestSubject("user6"), (PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                ObjectProperties properties = new ObjectProperties("getAttribute");
-                properties.put(Property.COMPONENT, "Test");
-                Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
-                assertEquals(Result.ALLOWED, result);
+            ObjectProperties properties = new ObjectProperties("getAttribute");
+            properties.put(Property.COMPONENT, "Test");
+            Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
+            assertEquals(Result.ALLOWED, result);
 
-                properties.put(Property.COMPONENT, "Test2");
-                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
-                assertEquals(Result.DEFER, result);
+            properties.put(Property.COMPONENT, "Test2");
+            result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
+            assertEquals(Result.DEFER, result);
 
-                properties = new ObjectProperties("getAttribute2");
-                properties.put(Property.COMPONENT, "Test");
-                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
-                assertEquals(Result.DEFER, result);
+            properties = new ObjectProperties("getAttribute2");
+            properties.put(Property.COMPONENT, "Test");
+            result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
+            assertEquals(Result.DEFER, result);
 
-                return null;
-            }
+            return null;
         });
-
     }
 
     /**
      * Tests that granting of all method rights on a method allows a specified operation to be performed on any component
      */
     @Test
-    public void testAuthoriseAccessUpdateMethodWhenAllRightsGrantedOnSpecifiedMethodForAllComponents()
+    void authoriseAccessUpdateMethodWhenAllRightsGrantedOnSpecifiedMethodForAllComponents()
     {
         final RuleCollector rs = new RuleCollector();
         // grant user8 all rights on method queryNames in all component
@@ -402,40 +358,34 @@ public class RuleBasedAccessControlTest extends UnitTestBase
                 .withObject(ObjectType.METHOD)
                 .build());
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user8"), new PrivilegedAction<Object>()
+        Subject.doAs(TestPrincipalUtils.createTestSubject("user8"), (PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                ObjectProperties properties = new ObjectProperties();
-                properties.put(Property.COMPONENT, "Test");
-                properties.put(Property.NAME, "queryNames");
+            ObjectProperties properties = new ObjectProperties();
+            properties.put(Property.COMPONENT, "Test");
+            properties.put(Property.NAME, "queryNames");
 
-                Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
-                assertEquals(Result.ALLOWED, result);
+            Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
+            assertEquals(Result.ALLOWED, result);
 
-                result = _plugin.authorise(LegacyOperation.UPDATE, ObjectType.METHOD, properties);
-                assertEquals(Result.ALLOWED, result);
+            result = _plugin.authorise(LegacyOperation.UPDATE, ObjectType.METHOD, properties);
+            assertEquals(Result.ALLOWED, result);
 
-                properties = new ObjectProperties("getAttribute");
-                properties.put(Property.COMPONENT, "Test");
-                result = _plugin.authorise(LegacyOperation.UPDATE, ObjectType.METHOD, properties);
-                assertEquals(Result.DEFER, result);
+            properties = new ObjectProperties("getAttribute");
+            properties.put(Property.COMPONENT, "Test");
+            result = _plugin.authorise(LegacyOperation.UPDATE, ObjectType.METHOD, properties);
+            assertEquals(Result.DEFER, result);
 
-                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
-                assertEquals(Result.DEFER, result);
-                return null;
-            }
+            result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
+            assertEquals(Result.DEFER, result);
+            return null;
         });
-
-
     }
 
     /**
      * Tests that granting of all method rights allows any operation to be performed on any component
      */
     @Test
-    public void testAuthoriseAccessUpdateMethodWhenAllRightsGrantedOnAllMethodsInAllComponents()
+    void authoriseAccessUpdateMethodWhenAllRightsGrantedOnAllMethodsInAllComponents()
     {
         final RuleCollector rs = new RuleCollector();
 
@@ -447,39 +397,33 @@ public class RuleBasedAccessControlTest extends UnitTestBase
                 .withObject(ObjectType.METHOD)
                 .build());
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user9"), new PrivilegedAction<Object>()
+        Subject.doAs(TestPrincipalUtils.createTestSubject("user9"), (PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                ObjectProperties properties = new ObjectProperties("queryNames");
-                properties.put(Property.COMPONENT, "Test");
+            ObjectProperties properties = new ObjectProperties("queryNames");
+            properties.put(Property.COMPONENT, "Test");
 
-                Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
-                assertEquals(Result.ALLOWED, result);
+            Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
+            assertEquals(Result.ALLOWED, result);
 
-                result = _plugin.authorise(LegacyOperation.UPDATE, ObjectType.METHOD, properties);
-                assertEquals(Result.ALLOWED, result);
+            result = _plugin.authorise(LegacyOperation.UPDATE, ObjectType.METHOD, properties);
+            assertEquals(Result.ALLOWED, result);
 
-                properties = new ObjectProperties("getAttribute");
-                properties.put(Property.COMPONENT, "Test");
-                result = _plugin.authorise(LegacyOperation.UPDATE, ObjectType.METHOD, properties);
-                assertEquals(Result.ALLOWED, result);
+            properties = new ObjectProperties("getAttribute");
+            properties.put(Property.COMPONENT, "Test");
+            result = _plugin.authorise(LegacyOperation.UPDATE, ObjectType.METHOD, properties);
+            assertEquals(Result.ALLOWED, result);
 
-                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
-                assertEquals(Result.ALLOWED, result);
-                return null;
-            }
+            result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
+            assertEquals(Result.ALLOWED, result);
+            return null;
         });
-
-
     }
 
     /**
      * Tests that granting of access method rights with mask allows matching operations to be performed on the specified component
      */
     @Test
-    public void testAuthoriseAccessMethodWhenMatchingAccessOperationsAllowedOnSpecifiedComponent()
+    void authoriseAccessMethodWhenMatchingAccessOperationsAllowedOnSpecifiedComponent()
     {
         final RuleCollector rs = new RuleCollector();
 
@@ -495,43 +439,33 @@ public class RuleBasedAccessControlTest extends UnitTestBase
 
         rs.addRule(1, rule);
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user9"), new PrivilegedAction<Object>()
+        Subject.doAs(TestPrincipalUtils.createTestSubject("user9"), (PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                ObjectProperties properties = new ObjectProperties("getAttributes");
-                properties.put(Property.COMPONENT, "Test");
-                Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
-                assertEquals(Result.ALLOWED, result);
+            ObjectProperties properties = new ObjectProperties("getAttributes");
+            properties.put(Property.COMPONENT, "Test");
+            Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
+            assertEquals(Result.ALLOWED, result);
 
-                properties = new ObjectProperties("getAttribute");
-                properties.put(Property.COMPONENT, "Test");
-                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
-                assertEquals(Result.ALLOWED, result);
+            properties = new ObjectProperties("getAttribute");
+            properties.put(Property.COMPONENT, "Test");
+            result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
+            assertEquals(Result.ALLOWED, result);
 
-                properties = new ObjectProperties("getAttribut");
-                properties.put(Property.COMPONENT, "Test");
-                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
-                assertEquals(Result.DEFER, result);
-                return null;
-            }
+            properties = new ObjectProperties("getAttribut");
+            properties.put(Property.COMPONENT, "Test");
+            result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
+            assertEquals(Result.DEFER, result);
+            return null;
         });
     }
 
-    private void authoriseAndAssertResult(final Result expectedResult, String userName, String... groups)
+    private void authoriseAndAssertResult(final Result expectedResult, final String userName, final String... groups)
     {
-
-        Subject.doAs(TestPrincipalUtils.createTestSubject(userName, groups), new PrivilegedAction<Object>()
+        Subject.doAs(TestPrincipalUtils.createTestSubject(userName, groups), (PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY);
-                assertEquals(expectedResult, result);
-                return null;
-            }
+            final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY);
+            assertEquals(expectedResult, result);
+            return null;
         });
-
     }
 }

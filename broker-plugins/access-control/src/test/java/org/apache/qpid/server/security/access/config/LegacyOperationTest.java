@@ -22,10 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-public class LegacyOperationTest
+class LegacyOperationTest
 {
     @Test
-    public void testToString() {
+    void string() {
         assertEquals("Access", LegacyOperation.ACCESS.toString());
         assertEquals("Access_logs", LegacyOperation.ACCESS_LOGS.toString());
         assertEquals("All", LegacyOperation.ALL.toString());

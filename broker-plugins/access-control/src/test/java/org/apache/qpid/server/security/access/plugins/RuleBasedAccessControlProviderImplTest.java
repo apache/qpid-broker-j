@@ -30,7 +30,6 @@ import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -46,57 +45,54 @@ import org.apache.qpid.server.security.access.config.Property;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class RuleBasedAccessControlProviderImplTest extends UnitTestBase
+class RuleBasedAccessControlProviderImplTest extends UnitTestBase
 {
     private static final String ACL_RULE_PRINCIPAL = "guest";
     private RuleBasedAccessControlProviderImpl _aclProvider;
     private String _nameAttributeValue;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
-        final Map<String, Object>
-                attributes = Collections.singletonMap(RuleBasedAccessControlProvider.NAME, getTestName());
+        final Map<String, Object> attributes = Map.of(RuleBasedAccessControlProvider.NAME, getTestName());
         final Broker<?> broker = BrokerTestHelper.createBrokerMock();
         _aclProvider = new RuleBasedAccessControlProviderImpl(attributes, broker);
         _aclProvider.create();
-
         _nameAttributeValue = getTestName();
     }
 
     @Test
-    public void testLoadACLWithFromHostnameFirewallRule()
+    void loadACLWithFromHostnameFirewallRule()
     {
         loadAclAndAssertRule(Property.FROM_HOSTNAME, "localhost");
     }
 
     @Test
-    public void testLoadACLWithFromNetworkFirewallRule()
+    void loadACLWithFromNetworkFirewallRule()
     {
         loadAclAndAssertRule(Property.FROM_NETWORK, "192.168.1.0/24");
     }
 
     @Test
-    public void testLoadACLWithFromNetworkFirewallRuleContainingWildcard()
+    void loadACLWithFromNetworkFirewallRuleContainingWildcard()
     {
         loadAclAndAssertRule(Property.FROM_NETWORK, "192.168.1.*");
     }
 
     @Test
-    public void testLoadACLWithAttributes()
+    void loadACLWithAttributes()
     {
-        loadAclAndAssertRule(Property.ATTRIBUTES,
-                             String.join(",", ConfiguredObject.LIFETIME_POLICY, ConfiguredObject.NAME));
+        loadAclAndAssertRule(Property.ATTRIBUTES, String.join(",", ConfiguredObject.LIFETIME_POLICY, ConfiguredObject.NAME));
     }
 
     private void loadAclAndAssertRule(final Property attributeName,
                                       final String attributeValue)
     {
         final String acl = String.format("ACL ALLOW-LOG %s ACCESS VIRTUALHOST %s=\"%s\" name=\"%s\"",
-                                         ACL_RULE_PRINCIPAL,
-                                         attributeName,
-                                         attributeValue,
-                                         _nameAttributeValue);
+                ACL_RULE_PRINCIPAL,
+                attributeName,
+                attributeValue,
+                _nameAttributeValue);
 
         _aclProvider.loadFromFile(DataUrlUtils.getDataUrlForBytes(acl.getBytes(UTF_8)));
 
@@ -110,10 +106,7 @@ public class RuleBasedAccessControlProviderImplTest extends UnitTestBase
         assertThat(rule.getIdentity(), is(equalTo(ACL_RULE_PRINCIPAL)));
         assertThat(rule.getOperation(), is(equalTo(LegacyOperation.ACCESS)));
         assertThat(rule.getOutcome(), is(equalTo(RuleOutcome.ALLOW_LOG)));
-        assertThat(rule.getAttributes(),
-                   allOf(aMapWithSize(2),
-                         hasEntry(attributeName, attributeValue),
-                         hasEntry(Property.NAME, _nameAttributeValue)));
+        assertThat(rule.getAttributes(), allOf(aMapWithSize(2),
+                hasEntry(attributeName, attributeValue), hasEntry(Property.NAME, _nameAttributeValue)));
     }
-
 }

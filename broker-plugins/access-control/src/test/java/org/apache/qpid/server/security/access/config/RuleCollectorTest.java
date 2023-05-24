@@ -21,8 +21,8 @@ package org.apache.qpid.server.security.access.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import org.junit.jupiter.api.Test;
 
@@ -32,72 +32,66 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class RuleCollectorTest extends UnitTestBase
+class RuleCollectorTest extends UnitTestBase
 {
     @Test
-    public void testAddRule()
+    void addRule()
     {
         final RuleCollector creator = new RuleCollector();
-        creator.addRule(4, newRule(RuleOutcome.ALLOW, LegacyOperation.ACCESS));
-        creator.addRule(3, newRule(RuleOutcome.DENY, LegacyOperation.PUBLISH, ObjectType.EXCHANGE));
-        creator.addRule(6, newRule(RuleOutcome.ALLOW, LegacyOperation.ACCESS));
-        creator.addRule(7, newRule(RuleOutcome.DENY, LegacyOperation.PUBLISH, ObjectType.EXCHANGE));
+        creator.addRule(4, newRule());
+        creator.addRule(3, newRule(LegacyOperation.PUBLISH, ObjectType.EXCHANGE));
+        creator.addRule(6, newRule());
+        creator.addRule(7, newRule(LegacyOperation.PUBLISH, ObjectType.EXCHANGE));
 
-        RuleSet ruleSet = creator.createRuleSet(Mockito.mock(EventLoggerProvider.class));
+        final RuleSet ruleSet = creator.createRuleSet(Mockito.mock(EventLoggerProvider.class));
         assertNotNull(ruleSet);
         assertEquals(2, ruleSet.size());
-        assertEquals(newRule(RuleOutcome.ALLOW, LegacyOperation.ACCESS), ruleSet.get(1));
-        assertEquals(newRule(RuleOutcome.DENY, LegacyOperation.PUBLISH, ObjectType.EXCHANGE), ruleSet.get(0));
+        assertEquals(newRule(), ruleSet.get(1));
+        assertEquals(newRule(LegacyOperation.PUBLISH, ObjectType.EXCHANGE), ruleSet.get(0));
     }
 
     @Test
-    public void testAddRule_Reorder()
+    void addRule_Reorder()
     {
         final RuleCollector creator = new RuleCollector();
-        creator.addRule(4, newRule(RuleOutcome.ALLOW, LegacyOperation.ACCESS));
-        creator.addRule(7, newRule(RuleOutcome.DENY, LegacyOperation.PUBLISH, ObjectType.EXCHANGE));
-        creator.addRule(6, newRule(RuleOutcome.ALLOW, LegacyOperation.ACCESS));
-        creator.addRule(1, newRule(RuleOutcome.DENY, LegacyOperation.PUBLISH, ObjectType.EXCHANGE));
+        creator.addRule(4, newRule());
+        creator.addRule(7, newRule(LegacyOperation.PUBLISH, ObjectType.EXCHANGE));
+        creator.addRule(6, newRule());
+        creator.addRule(1, newRule(LegacyOperation.PUBLISH, ObjectType.EXCHANGE));
 
-        RuleSet ruleSet = creator.createRuleSet(Mockito.mock(EventLoggerProvider.class));
+        final RuleSet ruleSet = creator.createRuleSet(Mockito.mock(EventLoggerProvider.class));
         assertNotNull(ruleSet);
         assertEquals(2, ruleSet.size());
-        assertEquals(newRule(RuleOutcome.ALLOW, LegacyOperation.ACCESS), ruleSet.get(1));
-        assertEquals(newRule(RuleOutcome.DENY, LegacyOperation.PUBLISH, ObjectType.EXCHANGE), ruleSet.get(0));
+        assertEquals(newRule(), ruleSet.get(1));
+        assertEquals(newRule(LegacyOperation.PUBLISH, ObjectType.EXCHANGE), ruleSet.get(0));
     }
 
     @Test
-    public void testIsValid()
+    void isValid()
     {
-        final RuleCollector creator = new RuleCollector();
-        try
-        {
-            creator.addRule(3, newRule(RuleOutcome.DENY, LegacyOperation.DELETE, ObjectType.MANAGEMENT));
-            fail("An exception is required");
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        final IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> newRule(LegacyOperation.DELETE, ObjectType.MANAGEMENT),
+                "An exception is required");
+        assertNotNull(thrown.getMessage());
     }
 
     @Test
-    public void testIsValidNumber()
+    void isValidNumber()
     {
         final RuleCollector creator = new RuleCollector();
-        creator.addRule(4, newRule(RuleOutcome.ALLOW, LegacyOperation.ACCESS));
-        creator.addRule(3, newRule(RuleOutcome.DENY, LegacyOperation.PUBLISH, ObjectType.EXCHANGE));
+        creator.addRule(4, newRule());
+        creator.addRule(3, newRule(LegacyOperation.PUBLISH, ObjectType.EXCHANGE));
         assertTrue(creator.isValidNumber(5));
         assertFalse(creator.isValidNumber(4));
     }
 
-    private Rule newRule(RuleOutcome outcome, LegacyOperation operation)
+    private Rule newRule()
     {
-        return new Rule.Builder().withOutcome(outcome).withOperation(operation).build();
+        return new Rule.Builder().withOutcome(RuleOutcome.ALLOW).withOperation(LegacyOperation.ACCESS).build();
     }
 
-    private Rule newRule(RuleOutcome outcome, LegacyOperation operation, ObjectType objectType)
+    private Rule newRule(final LegacyOperation operation, final ObjectType objectType)
     {
-        return new Rule.Builder().withOutcome(outcome).withOperation(operation).withObject(objectType).build();
+        return new Rule.Builder().withOutcome(RuleOutcome.DENY).withOperation(operation).withObject(objectType).build();
     }
 }

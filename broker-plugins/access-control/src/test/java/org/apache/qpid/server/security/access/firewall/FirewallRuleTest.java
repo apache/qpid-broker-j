@@ -21,7 +21,7 @@ package org.apache.qpid.server.security.access.firewall;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Collections;
+import java.util.Set;
 
 import javax.security.auth.Subject;
 
@@ -37,10 +37,10 @@ import org.junit.jupiter.api.Test;
 
 import org.mockito.Mockito;
 
-public class FirewallRuleTest extends UnitTestBase
+class FirewallRuleTest extends UnitTestBase
 {
     @Test
-    public void testAnd_Match()
+    void and_Match()
     {
         final Subject subject = new Subject();
         final FirewallRule rule1 = s -> s.equals(subject);
@@ -53,9 +53,9 @@ public class FirewallRuleTest extends UnitTestBase
         assertTrue(RulePredicate.any().and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
 
         final Subject anotherSubject = new Subject(false,
-                Collections.singleton(new UsernamePrincipal("name", Mockito.mock(AuthenticationProvider.class))),
-                Collections.emptySet(),
-                Collections.emptySet());
+                Set.of(new UsernamePrincipal("name", Mockito.mock(AuthenticationProvider.class))),
+                Set.of(),
+                Set.of());
         assertFalse(rule1.and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
         assertFalse(rule2.and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
 
@@ -64,7 +64,7 @@ public class FirewallRuleTest extends UnitTestBase
     }
 
     @Test
-    public void testAnd_DoesNotMatch()
+    void and_DoesNotMatch()
     {
         final Subject subject = new Subject();
         final FirewallRule rule1 = s -> s.equals(subject);

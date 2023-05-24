@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -38,10 +38,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
-public class PrefixTreeTest extends UnitTestBase
+class PrefixTreeTest extends UnitTestBase
 {
     @Test
-    public void testPrefixWithWildcard_Single()
+    void prefixWithWildcard_Single()
     {
         testPrefixWithWildcard_Single(PrefixTree.fromPrefixWithWildCard("abcd"));
         testPrefixWithWildcard_Single(PrefixTree.fromPrefixWithWildCard("abcd").mergeWithPrefix("abcd"));
@@ -77,7 +77,7 @@ public class PrefixTreeTest extends UnitTestBase
     }
 
     @Test
-    public void testPrefixWithWildcard()
+    void prefixWithWildcard()
     {
         final String[] strings = new String[]{"exchange.public.*", "exchange.private.*", "response.public.*", "response.private.*", "response.*"};
         for (final String[] strs : permute(strings, 0))
@@ -143,7 +143,7 @@ public class PrefixTreeTest extends UnitTestBase
     }
 
     @Test
-    public void testPrefixWithWildcard_RootWith3Branches()
+    void prefixWithWildcard_RootWith3Branches()
     {
         final String[] strings = new String[]{"A", "B", "C"};
         for (final String[] strs : permute(strings, 0))
@@ -202,13 +202,12 @@ public class PrefixTreeTest extends UnitTestBase
     }
 
     @Test
-    public void testPrefixWithWildcard_BranchSplit()
+    void prefixWithWildcard_BranchSplit()
     {
         final String[] strings = new String[]{"AB*", "AC*"};
         for (final String[] strs : permute(strings, 0))
         {
-            final PrefixTree tree = PrefixTree.from(strs[0])
-                    .mergeWith(strs[1]);
+            final PrefixTree tree = PrefixTree.from(strs[0]).mergeWith(strs[1]);
             testPrefixWithWildcard_BranchSplit(tree);
             testPrefixWithWildcard_BranchSplit(PrefixTree.from(Arrays.asList(strs)));
         }
@@ -259,7 +258,7 @@ public class PrefixTreeTest extends UnitTestBase
     }
 
     @Test
-    public void testExactString_Single()
+    void exactString_Single()
     {
         testExactString_Single(PrefixTree.fromFinalValue("abcd"));
         testExactString_Single(PrefixTree.fromFinalValue("abcd").mergeWithFinalValue("abcd"));
@@ -288,7 +287,7 @@ public class PrefixTreeTest extends UnitTestBase
     }
 
     @Test
-    public void testExactString()
+    void exactString()
     {
         final String[] strings = new String[]{"exchange.public", "exchange.private", "response.public", "response.private", "response"};
         for (final String[] strs : permute(strings, 0))
@@ -374,7 +373,7 @@ public class PrefixTreeTest extends UnitTestBase
     }
 
     @Test
-    public void testExactString_RootWith3Branches()
+    void exactString_RootWith3Branches()
     {
         final String[] strings = new String[]{"A", "B", "C"};
         for (final String[] strs : permute(strings, 0))
@@ -430,7 +429,7 @@ public class PrefixTreeTest extends UnitTestBase
     }
 
     @Test
-    public void testExactString_BranchSpit()
+    void exactString_BranchSpit()
     {
         final String[] strings = new String[]{"A", "AB", "AC"};
         for (final String[] strs : permute(strings, 0))
@@ -484,7 +483,7 @@ public class PrefixTreeTest extends UnitTestBase
     }
 
     @Test
-    public void testMixing()
+    void mixing()
     {
         final String[] strings = new String[]{"exchange.public", "exchange.private.A", "exchange.private.*", "response.public", "response.private", "response.p*", "response"};
         for (final String[] strs : permute(strings, 0))
@@ -540,7 +539,6 @@ public class PrefixTreeTest extends UnitTestBase
         assertEquals(1, branch.size());
         assertTrue(branch.branches().isEmpty());
 
-
         assertTrue(tree.match("exchange.private.A"));
         assertTrue(tree.match("exchange.private."));
         assertTrue(tree.match("exchange.public"));
@@ -565,7 +563,7 @@ public class PrefixTreeTest extends UnitTestBase
     }
 
     @Test
-    public void testMixing_BranchSplit()
+    void mixing_BranchSplit()
     {
         final String[] strings = new String[]{"AB*", "AC*", "AD", "AE"};
         for (final String[] strs : permute(strings, 0))
@@ -640,7 +638,7 @@ public class PrefixTreeTest extends UnitTestBase
     }
 
     @Test
-    public void testMixing_BranchSplit2()
+    void mixing_BranchSplit2()
     {
         final String[] strings = new String[]{"AXB*", "AXC*", "AYD", "AYE"};
         for (final String[] strs : permute(strings, 0))
@@ -727,168 +725,107 @@ public class PrefixTreeTest extends UnitTestBase
     }
 
     @Test
-    public void testFrom_Exception()
+    void from_Exception()
     {
-        try
-        {
-            PrefixTree.from((String) null);
-            fail();
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> PrefixTree.from((String) null),
+                "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
 
-        try
-        {
-            PrefixTree.from("");
-            fail();
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        thrown = assertThrows(IllegalArgumentException.class,
+                () -> PrefixTree.from(""),
+                "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
     }
 
     @Test
-    public void testFromFinalValue_Exception()
+    void fromFinalValue_Exception()
     {
-        try
-        {
-            PrefixTree.fromFinalValue(null);
-            fail();
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> PrefixTree.fromFinalValue(null),
+                "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
 
-        try
-        {
-            PrefixTree.from("");
-            fail();
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        thrown = assertThrows(IllegalArgumentException.class,
+                () -> PrefixTree.from(""),
+                "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
     }
 
     @Test
-    public void testFromPrefixWithWildCard_Exception()
+    void fromPrefixWithWildCard_Exception()
     {
-        try
-        {
-            PrefixTree.fromPrefixWithWildCard(null);
-            fail();
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> PrefixTree.fromPrefixWithWildCard(null),
+                "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
 
-        try
-        {
-            PrefixTree.fromPrefixWithWildCard("");
-            fail();
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        thrown = assertThrows(IllegalArgumentException.class,
+                () -> PrefixTree.fromPrefixWithWildCard(""),
+                "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
     }
 
     @Test
-    public void testMergeWith_Exception()
+    void mergeWith_Exception()
     {
         final PrefixTree tree = PrefixTree.from("A");
-        try
-        {
-            tree.mergeWith((String) null);
-            fail();
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
 
-        try
-        {
-            tree.mergeWith("");
-            fail();
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> tree.mergeWith((String) null),
+                "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
+
+        thrown = assertThrows(IllegalArgumentException.class,
+                () -> tree.mergeWith(""),
+                "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
     }
 
     @Test
-    public void testMergeWithPrefix_Exception()
+    void mergeWithPrefix_Exception()
     {
         final PrefixTree tree = PrefixTree.from("A");
-        try
-        {
-            tree.mergeWithPrefix(null);
-            fail();
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
 
-        try
-        {
-            tree.mergeWithPrefix("");
-            fail();
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> tree.mergeWithPrefix(null),
+                "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
+
+        thrown = assertThrows(IllegalArgumentException.class,
+            () -> tree.mergeWithPrefix(""),
+            "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
     }
 
     @Test
-    public void testMergeWithFinalValue_Exception()
+    void mergeWithFinalValue_Exception()
     {
         final PrefixTree tree = PrefixTree.from("A");
-        try
-        {
-            tree.mergeWithFinalValue(null);
-            fail();
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
 
-        try
-        {
-            tree.mergeWithFinalValue("");
-            fail();
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> tree.mergeWithFinalValue(null),
+                "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
+
+        thrown = assertThrows(IllegalArgumentException.class,
+                () -> tree.mergeWithFinalValue(""),
+                "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
     }
 
     @Test
-    public void testFirstPrefixCharacter()
+    void firstPrefixCharacter()
     {
         final PrefixTree tree = PrefixTree.fromFinalValue("A").mergeWithFinalValue("B");
-        try
-        {
-            tree.firstPrefixCharacter();
-            fail();
-        }
-        catch (UnsupportedOperationException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+
+        final UnsupportedOperationException thrown = assertThrows(UnsupportedOperationException.class,
+                tree::firstPrefixCharacter,
+                "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
     }
 
-    private List<String[]> permute(String[] array, int startIndex)
+    private List<String[]> permute(final String[] array, final int startIndex)
     {
         final List<String[]> result = new ArrayList<>();
         result.add(array);
@@ -904,7 +841,7 @@ public class PrefixTreeTest extends UnitTestBase
     }
 
     @Test
-    public void testIterator()
+    void iterator()
     {
         final String[] strings = new String[]{"AXB*", "AXC*", "AYD", "AYE", "D"};
         for (final String[] strs : permute(strings, 0))
@@ -914,7 +851,7 @@ public class PrefixTreeTest extends UnitTestBase
         }
     }
 
-    private void testIterator(PrefixTree tree, String[] strings)
+    private void testIterator(final PrefixTree tree, final String[] strings)
     {
         assertNotNull(tree);
 
@@ -931,14 +868,6 @@ public class PrefixTreeTest extends UnitTestBase
         assertFalse(iterator.hasNext());
         assertFalse(iterator.hasNext());
 
-        try
-        {
-            iterator.next();
-            fail("An exception is expected");
-        }
-        catch (NoSuchElementException e)
-        {
-            // do nothing
-        }
+        assertThrows(NoSuchElementException.class, iterator::next, "An exception is expected");
     }
 }

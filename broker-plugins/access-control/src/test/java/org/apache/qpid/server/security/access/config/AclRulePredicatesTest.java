@@ -18,10 +18,8 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -44,17 +42,17 @@ import static org.apache.qpid.server.security.access.config.Property.FROM_NETWOR
 import static org.apache.qpid.server.security.access.config.Property.NAME;
 import static org.apache.qpid.server.security.access.config.Property.QUEUE_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class AclRulePredicatesTest extends UnitTestBase
+@SuppressWarnings("unchecked")
+class AclRulePredicatesTest extends UnitTestBase
 {
     private AclRulePredicatesBuilder _builder;
     private FirewallRuleFactory _firewallRuleFactory;
@@ -70,7 +68,7 @@ public class AclRulePredicatesTest extends UnitTestBase
     }
 
     @Test
-    public void testParse()
+    void parse()
     {
         final String name = "name";
         final String className = "class";
@@ -84,7 +82,7 @@ public class AclRulePredicatesTest extends UnitTestBase
     }
 
     @Test
-    public void testParseHostnameFirewallRule()
+    void parseHostnameFirewallRule()
     {
         final String hostname = "hostname1,hostname2";
         _builder.parse(FROM_HOSTNAME.name(), hostname).build(_firewallRuleFactory);
@@ -95,9 +93,9 @@ public class AclRulePredicatesTest extends UnitTestBase
     }
 
     @Test
-    public void testParseNetworkFirewallRule()
+    void parseNetworkFirewallRule()
     {
-        String networks = "network1,network2";
+        final String networks = "network1,network2";
         _builder.parse(FROM_NETWORK.name(), networks).build(_firewallRuleFactory);
 
         final ArgumentCaptor<Collection<String>> captor = ArgumentCaptor.forClass(Collection.class);
@@ -106,22 +104,17 @@ public class AclRulePredicatesTest extends UnitTestBase
     }
 
     @Test
-    public void testParseThrowsExceptionIfBothHostnameAndNetworkSpecified()
+    void parseThrowsExceptionIfBothHostnameAndNetworkSpecified()
     {
+        final String fromHostnameName = FROM_HOSTNAME.name();
         _builder.parse(FROM_NETWORK.name(), "network1,network2");
-        try
-        {
-            _builder.parse(FROM_HOSTNAME.name(), "hostname1,hostname2");
-            fail("Exception not thrown");
-        }
-        catch (IllegalStateException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalStateException.class,
+                () -> _builder.parse(fromHostnameName, "hostname1,hostname2"),
+                "Exception not thrown");
     }
 
     @Test
-    public void testParseAttributesRule()
+    void parseAttributesRule()
     {
         final String attributes = "attribute1,attribute2";
         final AclRulePredicates predicates = _builder.parse(ATTRIBUTES.name(), attributes).build(_firewallRuleFactory);
@@ -131,7 +124,7 @@ public class AclRulePredicatesTest extends UnitTestBase
     }
 
     @Test
-    public void testParseAttributeNamesRule()
+    void parseAttributeNamesRule()
     {
         final String attributes = "attribute1,attribute2";
         final AclRulePredicates predicates = _builder.parse("attribute_names", attributes).build(_firewallRuleFactory);
@@ -141,7 +134,7 @@ public class AclRulePredicatesTest extends UnitTestBase
     }
 
     @Test
-    public void testGetParsedProperties()
+    void getParsedProperties()
     {
         final AclRulePredicates predicates = _builder
                 .parse(NAME.name(), "name")
@@ -152,13 +145,13 @@ public class AclRulePredicatesTest extends UnitTestBase
         final Map<Property, Object> properties = predicates.getParsedProperties();
 
         assertEquals(3, properties.size());
-        assertEquals(properties.get(NAME), "name");
-        assertEquals(properties.get(ATTRIBUTES), "attribute1,attribute2");
-        assertEquals(properties.get(FROM_NETWORK), "network");
+        assertEquals("name", properties.get(NAME));
+        assertEquals("attribute1,attribute2", properties.get(ATTRIBUTES));
+        assertEquals("network", properties.get(FROM_NETWORK));
     }
 
     @Test
-    public void testAttributeNames()
+    void attributeNames()
     {
         AclRulePredicates predicates = _builder.build(_firewallRuleFactory);
         assertTrue(predicates.get(ATTRIBUTES).isEmpty());
@@ -171,7 +164,7 @@ public class AclRulePredicatesTest extends UnitTestBase
     }
 
     @Test
-    public void testPut_NullInput()
+    void put_NullInput()
     {
         AclRulePredicates predicates = _builder.build(_firewallRuleFactory);
         assertTrue(predicates.get(Property.ROUTING_KEY).isEmpty());
@@ -182,7 +175,7 @@ public class AclRulePredicatesTest extends UnitTestBase
     }
 
     @Test
-    public void testPut_emptyString()
+    void put_emptyString()
     {
         AclRulePredicates predicates = _builder.build(_firewallRuleFactory);
         assertTrue(predicates.get(QUEUE_NAME).isEmpty());
@@ -193,7 +186,7 @@ public class AclRulePredicatesTest extends UnitTestBase
     }
 
     @Test
-    public void testPut_Boolean()
+    void put_Boolean()
     {
         AclRulePredicates predicates = _builder.build(_firewallRuleFactory);
         assertTrue(predicates.get(DURABLE).isEmpty());
@@ -215,7 +208,7 @@ public class AclRulePredicatesTest extends UnitTestBase
     }
 
     @Test
-    public void testPut_Boolean_SpecialCharacters()
+    void put_Boolean_SpecialCharacters()
     {
         AclRulePredicates predicates = _builder.build(_firewallRuleFactory);
         assertTrue(predicates.get(DURABLE).isEmpty());
@@ -226,18 +219,14 @@ public class AclRulePredicatesTest extends UnitTestBase
         assertEquals(1, predicates.get(DURABLE).size());
         assertEquals("*", Iterables.getOnlyElement(predicates.get(DURABLE)));
 
-        try
-        {
-            _builder.put(DURABLE, "X*").build(_firewallRuleFactory);
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        final IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> _builder.put(DURABLE, "X*"),
+                "Expected exception not thrown");
+        assertNotNull(thrown.getMessage());
     }
 
     @Test
-    public void testPut()
+    void put()
     {
         AclRulePredicates predicates = _builder.build(_firewallRuleFactory);
         assertTrue(predicates.get(Property.TYPE).isEmpty());
@@ -248,30 +237,30 @@ public class AclRulePredicatesTest extends UnitTestBase
     }
 
     @Test
-    public void testParse_MultiValue()
+    void parse_MultiValue()
     {
         final String nameA = "name.A";
         AclRulePredicates predicates = _builder.parse(NAME.name(), nameA).build(_firewallRuleFactory);
-        assertEquals(Collections.singleton(nameA), predicates.get(NAME));
+        assertEquals(Set.of(nameA), predicates.get(NAME));
 
         final String nameB = "name.B";
         predicates = _builder.parse(NAME.name(), nameB).build(_firewallRuleFactory);
-        assertEquals(new HashSet<>(Arrays.asList(nameA, nameB)), predicates.get(NAME));
+        assertEquals(Set.of(nameA, nameB), predicates.get(NAME));
 
         final String nameX = "name.*";
         predicates = _builder.parse(NAME.name(), nameX).build(_firewallRuleFactory);
-        assertEquals(Collections.singleton(nameX), predicates.get(NAME));
+        assertEquals(Set.of(nameX), predicates.get(NAME));
 
         final String nameC = "name.C";
         predicates = _builder.parse(NAME.name(), nameC).build(_firewallRuleFactory);
-        assertEquals(Collections.singleton(nameX), predicates.get(NAME));
+        assertEquals(Set.of(nameX), predicates.get(NAME));
 
         predicates = _builder.parse(NAME.name(), "*").build(_firewallRuleFactory);
-        assertEquals(Collections.singleton("*"), predicates.get(NAME));
+        assertEquals(Set.of("*"), predicates.get(NAME));
     }
 
     @Test
-    public void testEqualsHashCode()
+    void equalsHashCode()
     {
         _builder.parse(NAME.name(), "name");
         _builder.parse(QUEUE_NAME.name(), "queue");
@@ -296,7 +285,7 @@ public class AclRulePredicatesTest extends UnitTestBase
     }
 
     @Test
-    public void testNotEquals()
+    void notEquals()
     {
         _builder.parse(NAME.name(), "name");
         _builder.parse(QUEUE_NAME.name(), "queue");
@@ -318,12 +307,12 @@ public class AclRulePredicatesTest extends UnitTestBase
         assertNotEquals(another, first);
         assertNotEquals(first, another);
 
-        assertFalse(first.equals("X"));
-        assertFalse(first.equals(null));
+        assertNotEquals("X", first);
+        assertNotEquals(null, first);
     }
 
     @Test
-    public void testToString()
+    void string()
     {
         final String name = "xName";
         final String className = "class";

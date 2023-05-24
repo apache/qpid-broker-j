@@ -22,13 +22,12 @@ package org.apache.qpid.server.security.access.plugins;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -47,13 +46,14 @@ import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AclFileAccessControlProviderFactoryTest extends UnitTestBase
+@SuppressWarnings({"rawtypes", "unchecked"})
+class AclFileAccessControlProviderFactoryTest extends UnitTestBase
 {
     private Broker _broker;
     private ConfiguredObjectFactoryImpl _objectFactory;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp()
     {
         _broker = mock(Broker.class);
         _objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
@@ -61,69 +61,51 @@ public class AclFileAccessControlProviderFactoryTest extends UnitTestBase
         when(_broker.getObjectFactory()).thenReturn(_objectFactory);
         when(_broker.getModel()).thenReturn(_objectFactory.getModel());
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
-        TaskExecutor taskExecutor = new CurrentThreadTaskExecutor();
-        taskExecutor.start();
+        final TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         when(_broker.getTaskExecutor()).thenReturn(taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(taskExecutor);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
-
     }
 
     @Test
-    public void testCreateInstanceWhenAclFileIsNotPresent()
+    void createInstanceWhenAclFileIsNotPresent()
     {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(AccessControlProvider.ID, UUID.randomUUID());
-        attributes.put(AccessControlProvider.NAME, "acl");
-        attributes.put(AccessControlProvider.TYPE, AclFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
+        final Map<String, Object> attributes = Map.of(AccessControlProvider.ID, UUID.randomUUID(),
+                AccessControlProvider.NAME, "acl",
+                AccessControlProvider.TYPE, AclFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
 
-        try
-        {
-            AccessControlProvider acl = _objectFactory.create(AccessControlProvider.class, attributes, _broker);
-            fail("ACL was created without a configuration file path specified");
-        }
-        catch(IllegalArgumentException e)
-        {
-            // pass
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> _objectFactory.create(AccessControlProvider.class, attributes, _broker),
+                "ACL was created without a configuration file path specified");
     }
 
-
     @Test
-    public void testCreateInstanceWhenAclFileIsSpecified()
+    void createInstanceWhenAclFileIsSpecified()
     {
-        File aclFile = TestFileUtils.createTempFile(this, ".acl", "ACL ALLOW all all");
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(AccessControlProvider.ID, UUID.randomUUID());
-        attributes.put(AccessControlProvider.NAME, "acl");
-        attributes.put(AccessControlProvider.TYPE, AclFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
-        attributes.put(AclFileAccessControlProvider.PATH, aclFile.getAbsolutePath());
-        AccessControlProvider acl = _objectFactory.create(AccessControlProvider.class, attributes, _broker);
+        final File aclFile = TestFileUtils.createTempFile(this, ".acl", "ACL ALLOW all all");
+        final Map<String, Object> attributes = Map.of(AccessControlProvider.ID, UUID.randomUUID(),
+                AccessControlProvider.NAME, "acl",
+                AccessControlProvider.TYPE, AclFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE,
+                AclFileAccessControlProvider.PATH, aclFile.getAbsolutePath());
+        final AccessControlProvider acl = _objectFactory.create(AccessControlProvider.class, attributes, _broker);
 
         assertNotNull(acl, "ACL was not created from acl file: " + aclFile.getAbsolutePath());
     }
 
     @Test
-    public void testCreateInstanceWhenAclFileIsSpecifiedButDoesNotExist()
+    void createInstanceWhenAclFileIsSpecifiedButDoesNotExist()
     {
-        File aclFile = new File(TMP_FOLDER, "my-non-existing-acl-" + System.currentTimeMillis());
+        final File aclFile = new File(TMP_FOLDER, "my-non-existing-acl-" + System.currentTimeMillis());
         assertFalse(aclFile.exists(), "ACL file " + aclFile.getAbsolutePath() + " actually exists but should not");
 
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(AccessControlProvider.ID, UUID.randomUUID());
-        attributes.put(AccessControlProvider.NAME, "acl");
-        attributes.put(AccessControlProvider.TYPE, AclFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
-        attributes.put(AclFileAccessControlProvider.PATH, aclFile.getAbsolutePath());
-        try
-        {
-            AccessControlProvider control = _objectFactory.create(AccessControlProvider.class, attributes, _broker);
-            fail("It should not be possible to create and initialise ACL with non existing file");
-        }
-        catch (IllegalConfigurationException e)
-        {
-            assertTrue(Pattern.matches("Cannot convert .* to a readable resource", e.getMessage()),
-                    "Unexpected exception message: " + e.getMessage());
-
-        }
+        final Map<String, Object> attributes = Map.of(AccessControlProvider.ID, UUID.randomUUID(),
+                AccessControlProvider.NAME, "acl",
+                AccessControlProvider.TYPE, AclFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE,
+                AclFileAccessControlProvider.PATH, aclFile.getAbsolutePath());
+        final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
+                () -> _objectFactory.create(AccessControlProvider.class, attributes, _broker),
+                "It should not be possible to create and initialise ACL with non existing file");
+        assertTrue(Pattern.matches("Cannot convert .* to a readable resource", thrown.getMessage()),
+                "Unexpected exception message: " + thrown.getMessage());
     }
 }

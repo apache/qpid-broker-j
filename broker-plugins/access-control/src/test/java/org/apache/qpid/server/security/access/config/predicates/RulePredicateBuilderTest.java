@@ -18,11 +18,10 @@
  */
 package org.apache.qpid.server.security.access.config.predicates;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.security.auth.Subject;
 
@@ -38,6 +37,9 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.qpid.server.security.access.config.Property.ATTRIBUTES;
 import static org.apache.qpid.server.security.access.config.Property.COMPONENT;
@@ -53,7 +55,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RulePredicateBuilderTest extends UnitTestBase
+class RulePredicateBuilderTest extends UnitTestBase
 {
     private final FirewallRuleFactory _firewallRuleFactory = mock(FirewallRuleFactory.class);
     private final Subject _subject = TestPrincipalUtils.createTestSubject("TEST_USER");
@@ -71,10 +73,9 @@ public class RulePredicateBuilderTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_Attributes()
+    void match_Attributes()
     {
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(ATTRIBUTES, Arrays.asList("name", "port", "host", "active")));
+        final RulePredicate predicate = _builder.build(Map.of(ATTRIBUTES, List.of("name", "port", "host", "active")));
 
         final ObjectProperties action = new ObjectProperties();
         action.addAttributeNames("name", "host", "port");
@@ -84,10 +85,9 @@ public class RulePredicateBuilderTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_Attributes_empty()
+    void match_Attributes_empty()
     {
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(ATTRIBUTES, Collections.emptySet()));
+        final RulePredicate predicate = _builder.build(Map.of(ATTRIBUTES, Set.of()));
 
         final ObjectProperties action = new ObjectProperties();
         action.addAttributeNames("name", "host", "port");
@@ -97,10 +97,9 @@ public class RulePredicateBuilderTest extends UnitTestBase
     }
 
     @Test
-    public void testDoesNotMatch_Attributes()
+    void doesNotMatch_Attributes()
     {
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(ATTRIBUTES, Arrays.asList("name", "port")));
+        final RulePredicate predicate = _builder.build(Map.of(ATTRIBUTES, List.of("name", "port")));
 
         final ObjectProperties action = new ObjectProperties();
         action.addAttributeNames("name", "host", "port");
@@ -110,130 +109,114 @@ public class RulePredicateBuilderTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_Hostname()
+    void match_Hostname()
     {
         _firewallRule.setSubject(_subject);
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(FROM_HOSTNAME, Collections.singleton("localhost")));
+        final RulePredicate predicate = _builder.build(Map.of(FROM_HOSTNAME, Set.of("localhost")));
 
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
 
     @Test
-    public void testMatch_Hostname_empty()
+    void match_Hostname_empty()
     {
         _firewallRule.setSubject(_subject);
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(FROM_HOSTNAME, Collections.emptySet()));
+        final RulePredicate predicate = _builder.build(Map.of(FROM_HOSTNAME, Set.of()));
 
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
 
     @Test
-    public void testDoesNotMatch_Hostname()
+    void doesNotMatch_Hostname()
     {
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(FROM_HOSTNAME, Collections.singleton("localhost")));
+        final RulePredicate predicate = _builder.build(Map.of(FROM_HOSTNAME, Set.of("localhost")));
 
         assertFalse(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
 
     @Test
-    public void testMatch_Network()
+    void match_Network()
     {
         _firewallRule.setSubject(_subject);
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(FROM_NETWORK, Collections.singleton("localhost")));
+        final RulePredicate predicate = _builder.build(Map.of(FROM_NETWORK, Set.of("localhost")));
 
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
 
     @Test
-    public void testMatch_Network_empty()
+    void match_Network_empty()
     {
         _firewallRule.setSubject(_subject);
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(FROM_NETWORK, Collections.emptySet()));
+        final RulePredicate predicate = _builder.build(Map.of(FROM_NETWORK, Set.of()));
 
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
 
     @Test
-    public void testDoesNotMatch_Network()
+    void doesNotMatch_Network()
     {
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(FROM_NETWORK, Collections.singleton("localhost")));
+        final RulePredicate predicate = _builder.build(Map.of(FROM_NETWORK, Set.of("localhost")));
 
         assertFalse(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
 
     @Test
-    public void testMatch_Boolean()
+    void match_Boolean()
     {
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(DURABLE, Collections.singleton(Boolean.TRUE)));
+        final RulePredicate predicate = _builder.build(Map.of(DURABLE, Set.of(Boolean.TRUE)));
         final ObjectProperties op = new ObjectProperties();
         op.put(DURABLE, true);
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
     }
 
     @Test
-    public void testDoesNotMatch_Boolean()
+    void doesNotMatch_Boolean()
     {
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(DURABLE, Collections.singleton(Boolean.TRUE)));
+        final RulePredicate predicate = _builder.build(Map.of(DURABLE, Set.of(Boolean.TRUE)));
         final ObjectProperties op = new ObjectProperties();
         op.put(DURABLE, false);
         assertFalse(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
     }
 
-    @Test
-    public void testMatch_String()
+    @ParameterizedTest
+    @ValueSource(strings = {"Exchange.private.A", "Exchange.public.ABC"})
+    void match_String(final String value)
     {
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(NAME, Arrays.asList("Exchange.public.*", "Exchange.private.A")));
-
-        ObjectProperties op = new ObjectProperties(NAME, "Exchange.private.A");
-        assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
-
-        op = new ObjectProperties(NAME, "Exchange.public.ABC");
+        final RulePredicate predicate = _builder.build(Map.of(NAME, List.of("Exchange.public.*", "Exchange.private.A")));
+        final ObjectProperties op = new ObjectProperties(NAME, value);
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
     }
 
     @Test
-    public void testDoesNotMatch_String()
+    void doesNotMatch_String()
     {
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(NAME, Arrays.asList("Exchange.public.*", "Exchange.private.A")));
+        final RulePredicate predicate = _builder.build(Map.of(NAME, List.of("Exchange.public.*", "Exchange.private.A")));
 
         final ObjectProperties op = new ObjectProperties(NAME, "Exchange.private.B");
         assertFalse(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
     }
 
     @Test
-    public void testMatch_AnyString()
+    void match_AnyString()
     {
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(NAME, Arrays.asList("*", "Exchange.private.ABC")));
+        final RulePredicate predicate = _builder.build(Map.of(NAME, List.of("*", "Exchange.private.ABC")));
 
         final ObjectProperties op = new ObjectProperties(NAME, "ABC");
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
     }
 
     @Test
-    public void testDoesNotMatch_AnyString()
+    void doesNotMatch_AnyString()
     {
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(NAME, Arrays.asList("*", "Exchange.private.ABC")));
+        final RulePredicate predicate = _builder.build(Map.of(NAME, List.of("*", "Exchange.private.ABC")));
 
         assertFalse(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
 
     @Test
-    public void testMatch_Mixing()
+    void match_Mixing()
     {
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(DURABLE, Arrays.asList(Boolean.TRUE, "Yes")));
+        final RulePredicate predicate = _builder.build(Map.of(DURABLE, List.of(Boolean.TRUE, "Yes")));
 
         ObjectProperties op = new ObjectProperties();
         op.put(DURABLE, true);
@@ -245,10 +228,9 @@ public class RulePredicateBuilderTest extends UnitTestBase
     }
 
     @Test
-    public void testDoesNotMatch_Mixing()
+    void doesNotMatch_Mixing()
     {
-        final RulePredicate predicate = _builder.build(
-                Collections.singletonMap(DURABLE, Arrays.asList(Boolean.TRUE, "Y*")));
+        final RulePredicate predicate = _builder.build(Map.of(DURABLE, List.of(Boolean.TRUE, "Y*")));
 
         ObjectProperties op = new ObjectProperties();
         op.put(DURABLE, false);
@@ -260,13 +242,13 @@ public class RulePredicateBuilderTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_Multiple()
+    void match_Multiple()
     {
         final Map<Property, List<?>> properties = new HashMap<>();
-        properties.put(DURABLE, Collections.singletonList(Boolean.TRUE));
-        properties.put(NAME, Arrays.asList("Exchange.public.*", "Exchange.private.A", "Exchange.private.B"));
-        properties.put(COMPONENT, Collections.singletonList("*"));
-        properties.put(METHOD_NAME, Collections.emptyList());
+        properties.put(DURABLE, List.of(Boolean.TRUE));
+        properties.put(NAME, List.of("Exchange.public.*", "Exchange.private.A", "Exchange.private.B"));
+        properties.put(COMPONENT, List.of("*"));
+        properties.put(METHOD_NAME, List.of());
         properties.put(ROUTING_KEY, null);
         final RulePredicate predicate = _builder.build(properties);
 
@@ -277,99 +259,82 @@ public class RulePredicateBuilderTest extends UnitTestBase
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
     }
 
-    @Test
-    public void testDoesNotMatch_Multiple()
+    @ParameterizedTest
+    @CsvSource({"false,exchange,Exchange.public.A", "true,,Exchange.public.A", "true,exchange,Exchange.private.C"})
+    void doesNotMatch_Multiple(final boolean durable, final String component, final String name)
     {
         final Map<Property, List<?>> properties = new HashMap<>();
-        properties.put(DURABLE, Collections.singletonList(Boolean.TRUE));
-        properties.put(NAME, Arrays.asList("Exchange.public.*", "Exchange.private.A", "Exchange.private.B"));
-        properties.put(COMPONENT, Collections.singletonList("*"));
-        properties.put(METHOD_NAME, Collections.emptyList());
+        properties.put(DURABLE, List.of(Boolean.TRUE));
+        properties.put(NAME, List.of("Exchange.public.*", "Exchange.private.A", "Exchange.private.B"));
+        properties.put(COMPONENT, List.of("*"));
+        properties.put(METHOD_NAME, List.of());
         properties.put(ROUTING_KEY, null);
         final RulePredicate predicate = _builder.build(properties);
 
-        ObjectProperties op = new ObjectProperties();
-        op.put(DURABLE, false);
-        op.put(COMPONENT, "exchange");
-        op.setName("Exchange.public.A");
+        final ObjectProperties op = new ObjectProperties();
+        op.put(DURABLE, durable);
+        if (component != null)
+        {
+            op.put(COMPONENT, component);
+        }
+        if (name != null)
+        {
+            op.setName(name);
+        }
         assertFalse(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
-
-        op = new ObjectProperties();
-        op.put(DURABLE, true);
-        op.setName("Exchange.public.A");
-        assertFalse(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
-
-        op = new ObjectProperties();
-        op.put(DURABLE, true);
-        op.put(COMPONENT, "exchange");
-        op.setName("Exchange.private.C");
-        assertFalse(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
-
-        assertFalse(predicate.matches(LegacyOperation.PUBLISH, new ObjectProperties(), _subject));
     }
 
-    @Test
-    public void testMatch_PrefixTree()
+    @ParameterizedTest
+    @ValueSource(strings = {"Exchange.private.A", "Exchange.private.B", "Exchange.public.ABC"})
+    void match_PrefixTree(final String value)
     {
         final PrefixTreeSet tree = new PrefixTreeSet();
-        tree.addAll(Arrays.asList("Exchange.public.*", "Exchange.private.A", "Exchange.private.B"));
-        final RulePredicate predicate = _builder.build(Collections.singletonMap(NAME, tree));
+        tree.addAll(List.of("Exchange.public.*", "Exchange.private.A", "Exchange.private.B"));
+        final RulePredicate predicate = _builder.build(Map.of(NAME, tree));
 
-        ObjectProperties op = new ObjectProperties(NAME, "Exchange.private.A");
-        assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
-
-        op = new ObjectProperties(NAME, "Exchange.private.B");
-        assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
-
-        op = new ObjectProperties(NAME, "Exchange.public.ABC");
+        final ObjectProperties op = new ObjectProperties(NAME, value);
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
     }
 
     @Test
-    public void testDoesNotMatch_PrefixTree()
+    void doesNotMatch_PrefixTree()
     {
         final PrefixTreeSet tree = new PrefixTreeSet();
-        tree.addAll(Arrays.asList("Exchange.public.*", "Exchange.private.A", "Exchange.private.B"));
-        final RulePredicate predicate = _builder.build(Collections.singletonMap(NAME, tree));
+        tree.addAll(List.of("Exchange.public.*", "Exchange.private.A", "Exchange.private.B"));
+        final RulePredicate predicate = _builder.build(Map.of(NAME, tree));
 
         final ObjectProperties op = new ObjectProperties(NAME, "Exchange.private.xyz");
         assertFalse(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
     }
 
     @Test
-    public void testMatch_PrefixTree_single()
+    void match_PrefixTree_single()
     {
         final PrefixTreeSet tree = new PrefixTreeSet();
         tree.add("Exchange.public.*");
-        final RulePredicate predicate = _builder.build(Collections.singletonMap(NAME, tree));
+        final RulePredicate predicate = _builder.build(Map.of(NAME, tree));
 
         final ObjectProperties op = new ObjectProperties(NAME, "Exchange.public.A");
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
     }
 
     @Test
-    public void testDoesNotMatch_PrefixTree_single()
+    void doesNotMatch_PrefixTree_single()
     {
         final PrefixTreeSet tree = new PrefixTreeSet();
         tree.add("Exchange.public.*");
-        final RulePredicate predicate = _builder.build(Collections.singletonMap(NAME, tree));
+        final RulePredicate predicate = _builder.build(Map.of(NAME, tree));
 
         final ObjectProperties op = new ObjectProperties(NAME, "Exchange.private.xyz");
         assertFalse(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
     }
 
-    @Test
-    public void testMatch_WildcardSet()
+    @ParameterizedTest
+    @ValueSource(strings = {"Exchange.private.A", "Exchange.private.B", "Exchange.public.ABC"})
+    void match_WildcardSet(final String value)
     {
-        final RulePredicate predicate = _builder.build(Collections.singletonMap(NAME, WildCardSet.newSet()));
-
-        ObjectProperties op = new ObjectProperties(NAME, "Exchange.private.A");
-        assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
-
-        op = new ObjectProperties(NAME, "Exchange.private.B");
-        assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
-
-        op = new ObjectProperties(NAME, "Exchange.public.ABC");
+        final RulePredicate predicate = _builder.build(Map.of(NAME, WildCardSet.newSet()));
+        final ObjectProperties op = new ObjectProperties(NAME, value);
         assertTrue(predicate.matches(LegacyOperation.PUBLISH, op, _subject));
     }
 }

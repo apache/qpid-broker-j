@@ -27,9 +27,7 @@ import static org.mockito.Mockito.when;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Collections;
-
-import com.google.common.collect.ImmutableSet;
+import java.util.Set;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.access.config.FirewallRule;
@@ -45,23 +43,22 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 import javax.security.auth.Subject;
 
-public class HostnameFirewallRuleTest extends UnitTestBase
+class HostnameFirewallRuleTest extends UnitTestBase
 {
     private InetAddress _addressNotInRule;
-
     private HostnameFirewallRule _HostnameFirewallRule;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         _addressNotInRule = InetAddress.getByName("127.0.0.1");
     }
 
     @Test
-    public void testSingleHostname()
+    void singleHostname()
     {
-        String hostnameInRule = "hostnameInRule";
-        InetAddress addressWithMatchingHostname = mock(InetAddress.class);
+        final String hostnameInRule = "hostnameInRule";
+        final InetAddress addressWithMatchingHostname = mock(InetAddress.class);
         when(addressWithMatchingHostname.getCanonicalHostName()).thenReturn(hostnameInRule);
 
         _HostnameFirewallRule = new HostnameFirewallRule(hostnameInRule);
@@ -71,10 +68,10 @@ public class HostnameFirewallRuleTest extends UnitTestBase
     }
 
     @Test
-    public void testSingleHostnameWildcard()
+    void singleHostnameWildcard()
     {
-        String hostnameInRule = ".*FOO.*";
-        InetAddress addressWithMatchingHostname = mock(InetAddress.class);
+        final String hostnameInRule = ".*FOO.*";
+        final InetAddress addressWithMatchingHostname = mock(InetAddress.class);
         when(addressWithMatchingHostname.getCanonicalHostName()).thenReturn("xxFOOxx");
 
         _HostnameFirewallRule = new HostnameFirewallRule(hostnameInRule);
@@ -84,16 +81,16 @@ public class HostnameFirewallRuleTest extends UnitTestBase
     }
 
     @Test
-    public void testMultipleHostnames()
+    void multipleHostnames()
     {
-        String[] hostnamesInRule = new String[] {"hostnameInRule1", "hostnameInRule2"};
+        final String[] hostnamesInRule = new String[] {"hostnameInRule1", "hostnameInRule2"};
 
         _HostnameFirewallRule = new HostnameFirewallRule(hostnamesInRule);
 
         assertFalse(_HostnameFirewallRule.matches(_addressNotInRule));
-        for (String hostnameInRule : hostnamesInRule)
+        for (final String hostnameInRule : hostnamesInRule)
         {
-            InetAddress addressWithMatchingHostname = mock(InetAddress.class);
+            final InetAddress addressWithMatchingHostname = mock(InetAddress.class);
             when(addressWithMatchingHostname.getCanonicalHostName()).thenReturn(hostnameInRule);
 
             assertTrue(_HostnameFirewallRule.matches(addressWithMatchingHostname));
@@ -101,13 +98,13 @@ public class HostnameFirewallRuleTest extends UnitTestBase
     }
 
     @Test
-    public void testEqualsAndHashCode()
+    void equalsAndHashCode()
     {
-        String hostname1 = "hostname1";
-        String hostname2 = "hostname2";
+        final String hostname1 = "hostname1";
+        final String hostname2 = "hostname2";
 
-        HostnameFirewallRule rule = new HostnameFirewallRule(hostname1, hostname2);
-        HostnameFirewallRule equalRule = new HostnameFirewallRule(hostname1, hostname2);
+        final HostnameFirewallRule rule = new HostnameFirewallRule(hostname1, hostname2);
+        final HostnameFirewallRule equalRule = new HostnameFirewallRule(hostname1, hostname2);
 
         assertEquals(rule, rule);
         assertEquals(rule, equalRule);
@@ -117,19 +114,18 @@ public class HostnameFirewallRuleTest extends UnitTestBase
 
         assertNotEquals(rule, new HostnameFirewallRule(hostname1, "different-hostname"),
                 "Different hostnames should cause rules to be unequal");
-
     }
 
     @Test
-    public void testManagementConnectionPrincipals()
+    void managementConnectionPrincipals()
     {
         final ManagementConnectionPrincipal managementConnectionPrincipal = mock(ManagementConnectionPrincipal.class);
         when(managementConnectionPrincipal.getRemoteAddress())
-            .thenReturn(new InetSocketAddress("127.0.0.1", 8000));
+                .thenReturn(new InetSocketAddress("127.0.0.1", 8000));
 
         final ManagementConnectionPrincipal invalidManagementConnectionPrincipal = mock(ManagementConnectionPrincipal.class);
         when(invalidManagementConnectionPrincipal.getRemoteAddress())
-            .thenReturn(new InetSocketAddress("127.0.0.3", 8000));
+                .thenReturn(new InetSocketAddress("127.0.0.3", 8000));
 
         final Subject subject = new Subject();
         final FirewallRule rule1 = new HostnameFirewallRule("127.0.0.1", "localhost");
@@ -142,11 +138,9 @@ public class HostnameFirewallRuleTest extends UnitTestBase
         assertTrue(RulePredicate.any().and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), subject));
 
         final Subject anotherSubject = new Subject(false,
-            ImmutableSet.of(
-                new UsernamePrincipal("name", mock(AuthenticationProvider.class)), managementConnectionPrincipal
-            ),
-            Collections.emptySet(),
-            Collections.emptySet());
+                Set.of(new UsernamePrincipal("name", mock(AuthenticationProvider.class)), managementConnectionPrincipal),
+                Set.of(),
+                Set.of());
 
         assertTrue(rule1.and(RulePredicate.any()).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
         assertTrue(RulePredicate.any().and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
@@ -158,11 +152,9 @@ public class HostnameFirewallRuleTest extends UnitTestBase
         assertFalse(RulePredicate.any().and(rule2).matches(LegacyOperation.ACCESS, new ObjectProperties(), anotherSubject));
 
         final Subject invalidSubject = new Subject(false,
-            ImmutableSet.of(
-                new UsernamePrincipal("name", mock(AuthenticationProvider.class)), invalidManagementConnectionPrincipal
-            ),
-            Collections.emptySet(),
-            Collections.emptySet());
+                Set.of(new UsernamePrincipal("name", mock(AuthenticationProvider.class)), invalidManagementConnectionPrincipal),
+                Set.of(),
+                Set.of());
 
         assertFalse(rule1.and(RulePredicate.any()).matches(LegacyOperation.ACCESS, new ObjectProperties(), invalidSubject));
         assertFalse(RulePredicate.any().and(rule1).matches(LegacyOperation.ACCESS, new ObjectProperties(), invalidSubject));

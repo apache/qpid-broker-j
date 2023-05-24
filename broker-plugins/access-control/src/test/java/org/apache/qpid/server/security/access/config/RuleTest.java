@@ -30,6 +30,8 @@ import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.qpid.server.security.access.config.Property.FROM_HOSTNAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,10 +39,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RuleTest extends UnitTestBase
+class RuleTest extends UnitTestBase
 {
     @Test
-    public void testEqualsAndHashCode()
+    void equalsAndHashCode()
     {
         final String identity = "identity";
         final RuleOutcome allow = RuleOutcome.ALLOW;
@@ -64,7 +66,7 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testNotEquals()
+    void notEquals()
     {
         final String identity = "identity";
         final RuleOutcome allow = RuleOutcome.ALLOW;
@@ -160,7 +162,7 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testAsAclRule()
+    void asAclRule()
     {
         final Rule rule = new Rule.Builder()
                 .withIdentity("identity")
@@ -187,7 +189,7 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testDoesNotMatch_Operation()
+    void doesNotMatch_Operation()
     {
         final Rule rule = new Rule.Builder()
                 .withIdentity("identity")
@@ -201,7 +203,7 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_AnyOperation()
+    void match_AnyOperation()
     {
         final Rule rule = new Rule.Builder()
                 .withIdentity("identity")
@@ -214,7 +216,7 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testDoesNotMatch_ObjectType()
+    void doesNotMatch_ObjectType()
     {
         final Rule rule = new Rule.Builder()
                 .withIdentity("identity")
@@ -228,7 +230,7 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_AnyObjectType()
+    void match_AnyObjectType()
     {
         final Rule rule = new Rule.Builder()
                 .withIdentity("identity")
@@ -241,20 +243,20 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testDoesNotMatch_FirewallRule()
+    void doesNotMatch_FirewallRule()
     {
         final FirewallRule firewallRule = subject -> false;
 
         final FirewallRuleFactory firewallRuleFactory = new FirewallRuleFactory()
         {
             @Override
-            public FirewallRule createForHostname(Collection<String> hostnames)
+            public FirewallRule createForHostname(final Collection<String> hostnames)
             {
                 return firewallRule;
             }
 
             @Override
-            public FirewallRule createForNetwork(Collection<String> networks)
+            public FirewallRule createForNetwork(final Collection<String> networks)
             {
                 return firewallRule;
             }
@@ -272,20 +274,20 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_FirewallRule()
+    void match_FirewallRule()
     {
         final FirewallRule firewallRule = subject -> true;
 
         final FirewallRuleFactory firewallRuleFactory = new FirewallRuleFactory()
         {
             @Override
-            public FirewallRule createForHostname(Collection<String> hostnames)
+            public FirewallRule createForHostname(final Collection<String> hostnames)
             {
                 return firewallRule;
             }
 
             @Override
-            public FirewallRule createForNetwork(Collection<String> networks)
+            public FirewallRule createForNetwork(final Collection<String> networks)
             {
                 return firewallRule;
             }
@@ -303,7 +305,7 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testDoesNotMatch_Attributes()
+    void doesNotMatch_Attributes()
     {
         final Rule rule = new Rule.Builder()
                 .withIdentity("identity")
@@ -320,7 +322,7 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_Attributes()
+    void match_Attributes()
     {
         final Rule rule = new Rule.Builder()
                 .withIdentity("identity")
@@ -335,7 +337,7 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_Attributes2()
+    void match_Attributes2()
     {
         final Rule rule = new Rule.Builder()
                 .withIdentity("identity")
@@ -352,7 +354,7 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testDoesNotMatch_Predicates()
+    void doesNotMatch_Predicates()
     {
         final Rule rule = new Rule.Builder()
                 .withIdentity("identity")
@@ -368,7 +370,7 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_Predicates()
+    void match_Predicates()
     {
         final Rule rule = new Rule.Builder()
                 .withIdentity("identity")
@@ -384,7 +386,7 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_Any()
+    void match_Any()
     {
         final Rule rule = new Rule.Builder()
                 .withIdentity("identity")
@@ -399,7 +401,7 @@ public class RuleTest extends UnitTestBase
     }
 
     @Test
-    public void testGetAttributes()
+    void getAttributes()
     {
         final Rule rule = new Rule.Builder()
                 .withIdentity("identity")
@@ -419,62 +421,35 @@ public class RuleTest extends UnitTestBase
         assertEquals(rule.getAttributes(), expected);
     }
 
-    @Test
-    public void testIsAll()
+    @ParameterizedTest
+    @CsvSource(
     {
-        Rule rule = new Rule.Builder().withIdentity("all").build();
-        assertTrue(rule.isForAll());
-        assertTrue(rule.isForOwnerOrAll());
+            "all,true,true", "All,true,true", "ALL,true,true", "any,false,false", "Any,false,false", "ANY,false,false"
+    })
+    void isAll(final String identity, final boolean isForAll, final boolean isForOwnerOrAll)
+    {
+        final Rule rule = new Rule.Builder().withIdentity(identity).build();
+        assertEquals(isForAll, rule.isForAll());
+        assertEquals(isForOwnerOrAll, rule.isForOwnerOrAll());
+    }
 
-        rule = new Rule.Builder().withIdentity("All").build();
-        assertTrue(rule.isForAll());
-        assertTrue(rule.isForOwnerOrAll());
-
-        rule = new Rule.Builder().withIdentity("ALL").build();
-        assertTrue(rule.isForAll());
-        assertTrue(rule.isForOwnerOrAll());
-
-        rule = new Rule.Builder().withIdentity("any").build();
-        assertFalse(rule.isForAll());
-        assertFalse(rule.isForOwnerOrAll());
-
-        rule = new Rule.Builder().withIdentity("Any").build();
-        assertFalse(rule.isForAll());
-        assertFalse(rule.isForOwnerOrAll());
-
-        rule = new Rule.Builder().withIdentity("ANY").build();
-        assertFalse(rule.isForAll());
-        assertFalse(rule.isForOwnerOrAll());
+    @ParameterizedTest
+    @CsvSource(
+    {
+            "owner,true,true", "Owner,true,true", "OWNER,true,true",
+            "any,false,false", "Any,false,false", "ANY,false,false"
+    })
+    void isOwner(final String identity, final boolean isForOwner, final boolean isForOwnerOrAll)
+    {
+        final Rule rule = new Rule.Builder().withIdentity(identity).build();
+        assertEquals(isForOwner, rule.isForOwner());
+        assertEquals(isForOwnerOrAll, rule.isForOwnerOrAll());
     }
 
     @Test
-    public void testIsOwner()
+    void withOwner()
     {
-        Rule rule = new Rule.Builder().withIdentity("owner").build();
-        assertTrue(rule.isForOwner());
-        assertTrue(rule.isForOwnerOrAll());
-
-        rule = new Rule.Builder().withIdentity("Owner").build();
-        assertTrue(rule.isForOwner());
-        assertTrue(rule.isForOwnerOrAll());
-
-        rule = new Rule.Builder().withIdentity("OWNER").build();
-        assertTrue(rule.isForOwner());
-        assertTrue(rule.isForOwnerOrAll());
-
-        rule = new Rule.Builder().withIdentity("any").build();
-        assertFalse(rule.isForOwner());
-        assertFalse(rule.isForOwnerOrAll());
-
-        rule = new Rule.Builder().withIdentity("Any").build();
-        assertFalse(rule.isForOwner());
-        assertFalse(rule.isForOwnerOrAll());
-
-        rule = new Rule.Builder().withIdentity("ANY").build();
-        assertFalse(rule.isForOwner());
-        assertFalse(rule.isForOwnerOrAll());
-
-        rule = new Rule.Builder().withOwner().build();
+        final Rule rule = new Rule.Builder().withOwner().build();
         assertTrue(rule.isForOwner());
         assertTrue(rule.isForOwnerOrAll());
     }

@@ -32,6 +32,8 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.qpid.server.security.access.config.Property.ATTRIBUTES;
 import static org.apache.qpid.server.security.access.config.Property.FROM_HOSTNAME;
@@ -42,13 +44,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RulePredicateTest extends UnitTestBase
+class RulePredicateTest extends UnitTestBase
 {
     private final FirewallRuleFactory _firewallRuleFactory = mock(FirewallRuleFactory.class);
     private final Subject _subject = TestPrincipalUtils.createTestSubject("TEST_USER");
 
     private Rule.Builder _builder = new Rule.Builder();
-
     private TestFirewallRule _firewallRule;
 
     @BeforeEach
@@ -61,7 +62,7 @@ public class RulePredicateTest extends UnitTestBase
     }
 
     @Test
-    public void testMatchAny()
+    void matchAny()
     {
         final Rule rule = _builder
                 .withOperation(LegacyOperation.UPDATE)
@@ -81,7 +82,7 @@ public class RulePredicateTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_Attributes()
+    void match_Attributes()
     {
         final Rule rule = _builder
                 .withPredicate(ATTRIBUTES, "name,port,host,active")
@@ -102,7 +103,7 @@ public class RulePredicateTest extends UnitTestBase
     }
 
     @Test
-    public void testDoesNotMatch_Attributes()
+    void doesNotMatch_Attributes()
     {
         final Rule rule = _builder
                 .withPredicate(ATTRIBUTES, "name,port")
@@ -123,7 +124,7 @@ public class RulePredicateTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_Properties_WildCard()
+    void match_Properties_WildCard()
     {
         final Rule rule = _builder
                 .withPredicate(Property.ROUTING_KEY, "*")
@@ -144,7 +145,7 @@ public class RulePredicateTest extends UnitTestBase
     }
 
     @Test
-    public void testDoesNotMatch_Properties_WildCard()
+    void doesNotMatch_Properties_WildCard()
     {
         final Rule rule = _builder
                 .withPredicate(Property.ROUTING_KEY, "*")
@@ -165,7 +166,7 @@ public class RulePredicateTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_Properties_EndWithWildCard()
+    void match_Properties_EndWithWildCard()
     {
         final Rule rule = _builder
                 .withPredicate(Property.ROUTING_KEY, "broadcast.*")
@@ -185,7 +186,7 @@ public class RulePredicateTest extends UnitTestBase
     }
 
     @Test
-    public void testDoesNotMatch_Properties_EndWithWildCard()
+    void doesNotMatch_Properties_EndWithWildCard()
     {
         final Rule rule = _builder
                 .withPredicate(Property.ROUTING_KEY, "broadcast.*")
@@ -206,7 +207,7 @@ public class RulePredicateTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_Properties_SpecificValue()
+    void match_Properties_SpecificValue()
     {
         final Rule rule = _builder
                 .withPredicate(Property.ROUTING_KEY, "broadcast.public")
@@ -226,7 +227,7 @@ public class RulePredicateTest extends UnitTestBase
     }
 
     @Test
-    public void testDoesNotMatch_Properties_SpecificValue()
+    void doesNotMatch_Properties_SpecificValue()
     {
         final Rule rule = _builder
                 .withPredicate(Property.ROUTING_KEY, "generic.public")
@@ -247,7 +248,7 @@ public class RulePredicateTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_Properties_Combination()
+    void match_Properties_Combination()
     {
         final Rule rule = _builder
                 .withPredicate(Property.ROUTING_KEY, "broadcast.*")
@@ -267,8 +268,9 @@ public class RulePredicateTest extends UnitTestBase
         assertFalse(rule.anyPropertiesMatch());
     }
 
-    @Test
-    public void testDoesMatch_Properties_Combination()
+    @ParameterizedTest
+    @CsvSource({"generic.public,broadcast,publish", "generic.public,generic,publish", "generic.public,generic,", ",,"})
+    void doesMatch_Properties_Combination(final String routingKey, final String name, final String methodName)
     {
         final Rule rule = _builder
                 .withPredicate(Property.ROUTING_KEY, "broadcast.*")
@@ -280,32 +282,26 @@ public class RulePredicateTest extends UnitTestBase
                 .build(_firewallRuleFactory);
 
         assertFalse(rule.anyPropertiesMatch());
-        ObjectProperties action = new ObjectProperties();
-        action.put(Property.ROUTING_KEY, "generic.public");
-        action.setName("broadcast");
-        action.put(Property.METHOD_NAME, "publish");
 
-        assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
+        final ObjectProperties action = new ObjectProperties();
+        if (routingKey != null)
+        {
+            action.put(Property.ROUTING_KEY, routingKey);
+        }
+        if (name != null)
+        {
+            action.setName(name);
+        }
+        if (methodName != null)
+        {
+            action.put(Property.METHOD_NAME, methodName);
+        }
 
-        action = new ObjectProperties();
-        action.put(Property.ROUTING_KEY, "broadcast.public");
-        action.setName("generic");
-        action.put(Property.METHOD_NAME, "publish");
-
-        assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
-
-        action = new ObjectProperties();
-        action.put(Property.ROUTING_KEY, "broadcast.public");
-        action.setName("generic");
-
-        assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
-
-        action = new ObjectProperties();
         assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
     }
 
     @Test
-    public void testMatch_Properties()
+    void match_Properties()
     {
         final Rule rule = _builder
                 .withPredicate(Property.ROUTING_KEY, "broadcast.*")
@@ -329,8 +325,16 @@ public class RulePredicateTest extends UnitTestBase
         assertFalse(rule.anyPropertiesMatch());
     }
 
-    @Test
-    public void testDoesNotMatch_Properties()
+    @ParameterizedTest
+    @CsvSource(
+    {
+            "broadcast.public,broadcast,",
+            "broadcast.public,,publish",
+            "broadcast.public,generic,publish",
+            ",broadcast,publish",
+            "generic.public,broadcast,publish"
+    })
+    void doesNotMatch_Properties(final String routingKey, final String name, final String methodName)
     {
         final Rule rule = _builder
                 .withPredicate(Property.ROUTING_KEY, "broadcast.*")
@@ -344,43 +348,20 @@ public class RulePredicateTest extends UnitTestBase
                 .build(_firewallRuleFactory);
 
         assertFalse(rule.anyPropertiesMatch());
-        ObjectProperties action = new ObjectProperties();
-        action.put(Property.ROUTING_KEY, "broadcast.public");
-        action.setName("broadcast");
-        action.setCreatedBy("JJ");
-        action.put(Property.DURABLE, true);
 
-        assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
-
-        action = new ObjectProperties();
-        action.put(Property.ROUTING_KEY, "broadcast.public");
-        action.put(Property.METHOD_NAME, "publish");
-        action.setCreatedBy("JJ");
-        action.put(Property.DURABLE, true);
-
-        assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
-
-        action = new ObjectProperties();
-        action.put(Property.ROUTING_KEY, "broadcast.public");
-        action.setName("generic");
-        action.put(Property.METHOD_NAME, "publish");
-        action.setCreatedBy("JJ");
-        action.put(Property.DURABLE, true);
-
-        assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
-
-        action = new ObjectProperties();
-        action.setName("broadcast");
-        action.put(Property.METHOD_NAME, "publish");
-        action.setCreatedBy("JJ");
-        action.put(Property.DURABLE, true);
-
-        assertFalse(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
-
-        action = new ObjectProperties();
-        action.put(Property.ROUTING_KEY, "generic.public");
-        action.setName("broadcast");
-        action.put(Property.METHOD_NAME, "publish");
+        final ObjectProperties action = new ObjectProperties();
+        if (routingKey != null)
+        {
+            action.put(Property.ROUTING_KEY, routingKey);
+        }
+        if (name != null)
+        {
+            action.setName(name);
+        }
+        if (methodName != null)
+        {
+            action.put(Property.METHOD_NAME, methodName);
+        }
         action.setCreatedBy("JJ");
         action.put(Property.DURABLE, true);
 
@@ -388,7 +369,7 @@ public class RulePredicateTest extends UnitTestBase
     }
 
     @Test
-    public void testMatch_FirewallRule()
+    void match_FirewallRule()
     {
         _firewallRule.setSubject(_subject);
         final Rule rule = _builder
@@ -403,7 +384,7 @@ public class RulePredicateTest extends UnitTestBase
     }
 
     @Test
-    public void testDoesNotMatch_FirewallRule()
+    void doesNotMatch_FirewallRule()
     {
         _firewallRule.setSubject(TestPrincipalUtils.createTestSubject("X"));
         final Rule rule = _builder
@@ -417,8 +398,14 @@ public class RulePredicateTest extends UnitTestBase
         assertFalse(rule.anyPropertiesMatch());
     }
 
-    @Test
-    public void testMatch_Properties_MultiValue()
+    @ParameterizedTest
+    @CsvSource(
+    {
+            "broadcast.public,broadcast.A,publish",
+            "broadcast.public,broadcast.B,publish",
+            "broadcast.public,broadcast.X.new,publish"
+    })
+    void match_Properties_MultiValue(final String routingKey, final String name, final String methodName)
     {
         final Rule rule = _builder
                 .withPredicate(Property.ROUTING_KEY, "broadcast.public")
@@ -430,30 +417,16 @@ public class RulePredicateTest extends UnitTestBase
                 .withOutcome(RuleOutcome.ALLOW)
                 .build(_firewallRuleFactory);
 
-        ObjectProperties action = new ObjectProperties();
-        action.put(Property.ROUTING_KEY, "broadcast.public");
-        action.put(Property.NAME, "broadcast.A");
-        action.put(Property.METHOD_NAME, "publish");
-
-        assertTrue(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
-
-        action = new ObjectProperties();
-        action.put(Property.ROUTING_KEY, "broadcast.public");
-        action.put(Property.NAME, "broadcast.B");
-        action.put(Property.METHOD_NAME, "publish");
-
-        assertTrue(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
-
-        action = new ObjectProperties();
-        action.put(Property.ROUTING_KEY, "broadcast.public");
-        action.put(Property.NAME, "broadcast.X.new");
-        action.put(Property.METHOD_NAME, "publish");
+        final ObjectProperties action = new ObjectProperties();
+        action.put(Property.ROUTING_KEY, routingKey);
+        action.put(Property.NAME, name);
+        action.put(Property.METHOD_NAME, methodName);
 
         assertTrue(rule.matches(LegacyOperation.PUBLISH, ObjectType.EXCHANGE, action, _subject));
     }
 
     @Test
-    public void testDoesNotMatch_Properties_MultiValue()
+    void doesNotMatch_Properties_MultiValue()
     {
         final Rule rule = _builder
                 .withPredicate(Property.ROUTING_KEY, "generic.public")
