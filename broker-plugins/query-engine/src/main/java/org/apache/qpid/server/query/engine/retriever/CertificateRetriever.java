@@ -78,7 +78,7 @@ public class CertificateRetriever<C extends ConfiguredObject<?>> extends Configu
     private final BiFunction<ConfiguredObject<?>, CertificateDetails, Map<String, Object>> certificateMapping =
         (ConfiguredObject<?> parent, CertificateDetails certificate) -> ImmutableMap.<String, Object>builder()
             .put(_fieldNames.get(0), parent.getName())
-            .put(_fieldNames.get(1), certificate.getAlias())
+            .put(_fieldNames.get(1), certificate.getAlias() == null ? "null" : certificate.getAlias())
             .put(_fieldNames.get(2), certificate.getIssuerName())
             .put(_fieldNames.get(3), certificate.getSerialNumber())
             .put(_fieldNames.get(4), toHex(certificate.getSerialNumber()))

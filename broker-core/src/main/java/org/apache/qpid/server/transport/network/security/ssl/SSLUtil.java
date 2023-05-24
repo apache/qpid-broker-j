@@ -27,9 +27,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.URL;
@@ -38,11 +35,16 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.PrivateKey;
+import java.security.Provider;
+import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -63,6 +65,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
@@ -76,9 +80,24 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.StandardConstants;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import javax.security.auth.x500.X500Principal;
 
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.GeneralNames;
+import org.bouncycastle.cert.CertIOException;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.util.IPAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,108 +111,25 @@ public class SSLUtil
     private static final Logger LOGGER = LoggerFactory.getLogger(SSLUtil.class);
 
     private static final Integer DNS_NAME_TYPE = 2;
-    private static final String[] TLS_PROTOCOL_PREFERENCES = new String[]{"TLSv1.3", "TLSv1.2", "TLSv1.1", "TLS", "TLSv1"};
+    private static final String[] TLS_PROTOCOL_PREFERENCES = new String[] { "TLSv1.3", "TLSv1.2", "TLSv1.1", "TLS", "TLSv1" };
+    private static final Pattern DNS_NAME_PATTERN = Pattern.compile("[\\w&&[^\\d]][\\w\\d.-]*");
 
-
-    private static final Constructor<?> CONSTRUCTOR;
-    private static final Method GENERATE_METHOD;
-    private static final Method GET_PRIVATE_KEY_METHOD;
-    private static final Method GET_SELF_CERTIFICATE_METHOD;
-    private static final Constructor<?> X500_NAME_CONSTRUCTOR;
-    private static final Constructor<?> DNS_NAME_CONSTRUCTOR;
-    private static final Constructor<?> IP_ADDR_NAME_CONSTRUCTOR;
-    private static final Constructor<?> GENERAL_NAMES_CONSTRUCTOR;
-    private static final Constructor<?> GENERAL_NAME_CONSTRUCTOR;
-    private static final Method ADD_NAME_TO_NAMES_METHOD;
-    private static final Constructor<?> ALT_NAMES_CONSTRUCTOR;
-    private static final Constructor<?> CERTIFICATE_EXTENSIONS_CONSTRUCTOR;
-    private static final Method SET_EXTENSION_METHOD;
-    private static final Method EXTENSION_GET_NAME_METHOD;
-    private static final boolean CAN_GENERATE_CERTS;
+    private static final Provider PROVIDER = new BouncyCastleProvider();
+    private static final boolean CA_SIGNED = false;
+    private static final boolean CRITICAL = true;
     private static final CertificateFactory CERTIFICATE_FACTORY;
 
     static
     {
-        Constructor<?> constructor = null;
-        Method generateMethod = null;
-        Method getPrivateKeyMethod = null;
-        Method getSelfCertificateMethod = null;
-        Constructor<?> x500NameConstructor = null;
-        Constructor<?> dnsNameConstructor = null;
-        Constructor<?> ipAddrNameConstructor = null;
-        Constructor<?> generalNamesConstructor = null;
-        Constructor<?> generalNameConstructor = null;
-        Method addNameToNamesMethod = null;
-        Constructor<?> altNamesConstructor = null;
-        Constructor<?> certificateExtensionsConstructor = null;
-        Method setExtensionMethod = null;
-        Method extensionGetNameMethod = null;
-        boolean canGenerateCerts = false;
-        CertificateFactory certificateFactory = null;
-
+        CertificateFactory certificateFactory;
         try
         {
             certificateFactory = CertificateFactory.getInstance("X.509");
         }
         catch (CertificateException e)
         {
-            // ignore
+            certificateFactory = null;
         }
-
-        try
-        {
-            Class<?> certAndKeyGenClass;
-            try
-            {
-                certAndKeyGenClass = Class.forName("sun.security.x509.CertAndKeyGen");
-            }
-            catch (ClassNotFoundException e)
-            {
-                certAndKeyGenClass = Class.forName("sun.security.tools.keytool.CertAndKeyGen");
-            }
-
-            final Class<?> x500NameClass = Class.forName("sun.security.x509.X500Name");
-            final Class<?> certificateExtensionsClass = Class.forName("sun.security.x509.CertificateExtensions");
-            final Class<?> generalNamesClass = Class.forName("sun.security.x509.GeneralNames");
-            final Class<?> generalNameClass = Class.forName("sun.security.x509.GeneralName");
-            final Class<?> extensionClass = Class.forName("sun.security.x509.SubjectAlternativeNameExtension");
-
-            constructor = certAndKeyGenClass.getConstructor(String.class, String.class);
-            generateMethod = certAndKeyGenClass.getMethod("generate", Integer.TYPE);
-            getPrivateKeyMethod = certAndKeyGenClass.getMethod("getPrivateKey");
-            getSelfCertificateMethod = certAndKeyGenClass.getMethod("getSelfCertificate", x500NameClass,
-                                                                    Date.class, Long.TYPE, certificateExtensionsClass);
-            x500NameConstructor = x500NameClass.getConstructor(String.class);
-            dnsNameConstructor = Class.forName("sun.security.x509.DNSName").getConstructor(String.class);
-            ipAddrNameConstructor = Class.forName("sun.security.x509.IPAddressName").getConstructor(String.class);
-            generalNamesConstructor = generalNamesClass.getConstructor();
-            generalNameConstructor = generalNameClass.getConstructor(Class.forName("sun.security.x509.GeneralNameInterface"));
-            addNameToNamesMethod = generalNamesClass.getMethod("add", generalNameClass);
-            altNamesConstructor = extensionClass.getConstructor(generalNamesClass);
-            certificateExtensionsConstructor = certificateExtensionsClass.getConstructor();
-            setExtensionMethod = certificateExtensionsClass.getMethod("set", String.class, Object.class);
-            extensionGetNameMethod = extensionClass.getMethod("getName");
-            canGenerateCerts = true;
-        }
-        catch (ClassNotFoundException | LinkageError | NoSuchMethodException e)
-        {
-            // ignore
-        }
-        GET_SELF_CERTIFICATE_METHOD = getSelfCertificateMethod;
-        CONSTRUCTOR = constructor;
-        GENERATE_METHOD = generateMethod;
-        GET_PRIVATE_KEY_METHOD = getPrivateKeyMethod;
-        X500_NAME_CONSTRUCTOR = x500NameConstructor;
-        DNS_NAME_CONSTRUCTOR = dnsNameConstructor;
-        IP_ADDR_NAME_CONSTRUCTOR = ipAddrNameConstructor;
-        GENERAL_NAMES_CONSTRUCTOR = generalNamesConstructor;
-        GENERAL_NAME_CONSTRUCTOR = generalNameConstructor;
-        ADD_NAME_TO_NAMES_METHOD = addNameToNamesMethod;
-        ALT_NAMES_CONSTRUCTOR = altNamesConstructor;
-        CERTIFICATE_EXTENSIONS_CONSTRUCTOR = certificateExtensionsConstructor;
-        SET_EXTENSION_METHOD = setExtensionMethod;
-        EXTENSION_GET_NAME_METHOD = extensionGetNameMethod;
-        CAN_GENERATE_CERTS = canGenerateCerts;
         CERTIFICATE_FACTORY = certificateFactory;
     }
 
@@ -210,11 +146,11 @@ public class SSLUtil
         return CERTIFICATE_FACTORY;
     }
 
-    public static void verifyHostname(SSLEngine engine,String hostnameExpected)
+    public static void verifyHostname(final SSLEngine engine, final String hostnameExpected)
     {
         try
         {
-            Certificate cert = engine.getSession().getPeerCertificates()[0];
+            final Certificate cert = engine.getSession().getPeerCertificates()[0];
             if (cert instanceof X509Certificate)
             {
                 verifyHostname(hostnameExpected, (X509Certificate) cert);
@@ -222,10 +158,10 @@ public class SSLUtil
             else
             {
                 throw new TransportException("Cannot verify peer's hostname as peer does not present a X509Certificate. "
-                                             + "Presented certificate : " + cert);
+                        + "Presented certificate : " + cert);
             }
         }
-        catch(SSLPeerUnverifiedException e)
+        catch (SSLPeerUnverifiedException e)
         {
             throw new TransportException("Failed to verify peer's hostname", e);
         }
@@ -233,29 +169,27 @@ public class SSLUtil
 
     public static void verifyHostname(final String hostnameExpected, final X509Certificate cert)
     {
-
         try
         {
-            SortedSet<String> names = getNamesFromCert(cert);
+            final SortedSet<String> names = getNamesFromCert(cert);
 
             if (names.isEmpty())
             {
                 throw new TransportException("SSL hostname verification failed. Certificate for did not contain CN or DNS subjectAlt");
             }
 
-            boolean match = verifyHostname(hostnameExpected, names);
+            final boolean match = verifyHostname(hostnameExpected, names);
             if (!match)
             {
-                throw new TransportException("SSL hostname verification failed." +
-                                             " Expected : " + hostnameExpected +
-                                             " Found in cert : " + names);
+                throw new TransportException("SSL hostname verification failed. Expected : " +
+                        hostnameExpected + " Found in cert : " + names);
             }
 
         }
         catch (InvalidNameException e)
         {
-            Principal p = cert.getSubjectDN();
-            String dn = p.getName();
+            final Principal p = cert.getSubjectX500Principal();
+            final String dn = p.getName();
             throw new TransportException("SSL hostname verification failed. Could not parse name " + dn, e);
         }
         catch (CertificateParsingException e)
@@ -264,7 +198,7 @@ public class SSLUtil
         }
     }
 
-    public static boolean checkHostname(String hostname, X509Certificate cert)
+    public static boolean checkHostname(final String hostname, final X509Certificate cert)
     {
         try
         {
@@ -281,13 +215,11 @@ public class SSLUtil
         boolean match = false;
 
         final String hostName = hostnameExpected.trim().toLowerCase();
-        for (String cn : names)
+        for (final String cn : names)
         {
-
-            boolean doWildcard = cn.startsWith("*.") &&
-                                 cn.lastIndexOf('.') >= 3 &&
-                                 !cn.matches("\\*\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}");
-
+            final boolean doWildcard = cn.startsWith("*.") &&
+                    cn.lastIndexOf('.') >= 3 &&
+                    !cn.matches("\\*\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}");
 
             match = doWildcard
                     ? hostName.endsWith(cn.substring(1)) && hostName.indexOf(".") == (1 + hostName.length() - cn.length())
@@ -305,11 +237,11 @@ public class SSLUtil
     private static SortedSet<String> getNamesFromCert(final X509Certificate cert)
             throws InvalidNameException, CertificateParsingException
     {
-        Principal p = cert.getSubjectDN();
-        String dn = p.getName();
-        SortedSet<String> names = new TreeSet<>();
-        LdapName ldapName = new LdapName(dn);
-        for (Rdn part : ldapName.getRdns())
+        final Principal p = cert.getSubjectX500Principal();
+        final String dn = p.getName();
+        final SortedSet<String> names = new TreeSet<>();
+        final LdapName ldapName = new LdapName(dn);
+        for (final Rdn part : ldapName.getRdns())
         {
             if (part.getType().equalsIgnoreCase("CN"))
             {
@@ -318,9 +250,9 @@ public class SSLUtil
             }
         }
 
-        if(cert.getSubjectAlternativeNames() != null)
+        if (cert.getSubjectAlternativeNames() != null)
         {
-            for (List<?> entry : cert.getSubjectAlternativeNames())
+            for (final List<?> entry : cert.getSubjectAlternativeNames())
             {
                 if (DNS_NAME_TYPE.equals(entry.get(0)))
                 {
@@ -331,11 +263,11 @@ public class SSLUtil
         return names;
     }
 
-    public static String getIdFromSubjectDN(String dn)
+    public static String getIdFromSubjectDN(final String dn)
     {
         String cnStr = null;
-        String dcStr = null;
-        if(dn == null)
+        StringBuilder dcStr = null;
+        if (dn == null)
         {
             return "";
         }
@@ -343,22 +275,22 @@ public class SSLUtil
         {
             try
             {
-                LdapName ln = new LdapName(dn);
-                for(Rdn rdn : ln.getRdns())
+                final LdapName ln = new LdapName(dn);
+                for (final Rdn rdn : ln.getRdns())
                 {
-                    if("CN".equalsIgnoreCase(rdn.getType()))
+                    if ("CN".equalsIgnoreCase(rdn.getType()))
                     {
                         cnStr = rdn.getValue().toString();
                     }
-                    else if("DC".equalsIgnoreCase(rdn.getType()))
+                    else if ("DC".equalsIgnoreCase(rdn.getType()))
                     {
-                        if(dcStr == null)
+                        if (dcStr == null)
                         {
-                            dcStr = rdn.getValue().toString();
+                            dcStr = new StringBuilder(rdn.getValue().toString());
                         }
                         else
                         {
-                            dcStr = rdn.getValue().toString() + '.' + dcStr;
+                            dcStr.insert(0, rdn.getValue().toString() + '.');
                         }
                     }
                 }
@@ -372,32 +304,16 @@ public class SSLUtil
         }
     }
 
-
-    public static String retrieveIdentity(SSLEngine engine)
+    public static KeyStore getInitializedKeyStore(final String storePath,
+                                                  final String storePassword,
+                                                  final String keyStoreType)
+            throws GeneralSecurityException, IOException
     {
-        String id = "";
-        Certificate cert = engine.getSession().getLocalCertificates()[0];
-        Principal p = ((X509Certificate)cert).getSubjectDN();
-        String dn = p.getName();
-        try
-        {
-            id = SSLUtil.getIdFromSubjectDN(dn);
-        }
-        catch (Exception e)
-        {
-            LOGGER.info("Exception received while trying to retrieve client identity from SSL cert", e);
-        }
-        LOGGER.debug("Extracted Identity from client certificate : {}", id);
-        return id;
-    }
-
-    public static KeyStore getInitializedKeyStore(String storePath, String storePassword, String keyStoreType) throws GeneralSecurityException, IOException
-    {
-        KeyStore ks = KeyStore.getInstance(keyStoreType);
+        final KeyStore ks = KeyStore.getInstance(keyStoreType);
         InputStream in = null;
         try
         {
-            File f = new File(storePath);
+            final File f = new File(storePath);
             if (f.exists())
             {
                 in = new FileInputStream(f);
@@ -411,7 +327,7 @@ public class SSLUtil
                 throw new IOException("Unable to load keystore resource: " + storePath);
             }
 
-            char[] storeCharPassword = storePassword == null ? null : storePassword.toCharArray();
+            final char[] storeCharPassword = storePassword == null ? null : storePassword.toCharArray();
 
             ks.load(in, storeCharPassword);
         }
@@ -432,17 +348,20 @@ public class SSLUtil
         return ks;
     }
 
-    public static KeyStore getInitializedKeyStore(URL storePath, String storePassword, String keyStoreType) throws GeneralSecurityException, IOException
+    public static KeyStore getInitializedKeyStore(final URL storePath,
+                                                  final String storePassword,
+                                                  final String keyStoreType)
+            throws GeneralSecurityException, IOException
     {
-        KeyStore ks = KeyStore.getInstance(keyStoreType);
-        try(InputStream in = storePath.openStream())
+        final KeyStore ks = KeyStore.getInstance(keyStoreType);
+        try (final InputStream in = storePath.openStream())
         {
             if (in == null && !"PKCS11".equalsIgnoreCase(keyStoreType)) // PKCS11 will not require an explicit path
             {
                 throw new IOException("Unable to load keystore resource: " + storePath);
             }
 
-            char[] storeCharPassword = storePassword == null ? null : storePassword.toCharArray();
+            final char[] storeCharPassword = storePassword == null ? null : storePassword.toCharArray();
 
             ks.load(in, storeCharPassword);
         }
@@ -460,67 +379,63 @@ public class SSLUtil
         return ks;
     }
 
-    public static X509Certificate[] readCertificates(URL certFile)
-            throws IOException, GeneralSecurityException
+    public static X509Certificate[] readCertificates(final URL certFile) throws IOException, GeneralSecurityException
     {
-        try (InputStream is = certFile.openStream())
+        try (final InputStream is = certFile.openStream())
         {
             return readCertificates(is);
         }
     }
 
-    public static X509Certificate[] readCertificates(InputStream input)
-            throws IOException, GeneralSecurityException
+    public static X509Certificate[] readCertificates(final InputStream input) throws IOException, GeneralSecurityException
     {
-        List<X509Certificate> crt = new ArrayList<>();
+        final List<X509Certificate> crt = new ArrayList<>();
         try
         {
             do
             {
                 crt.add( (X509Certificate) getCertificateFactory().generateCertificate(input));
-            } while(input.available() != 0);
+            } while (input.available() != 0);
         }
-        catch(CertificateException e)
+        catch (CertificateException e)
         {
-            if(crt.isEmpty())
+            if (crt.isEmpty())
             {
                 throw e;
             }
         }
-        return crt.toArray(new X509Certificate[crt.size()]);
+        return crt.toArray(new X509Certificate[0]);
     }
 
-    public static PrivateKey readPrivateKey(final URL url)
-            throws IOException, GeneralSecurityException
+    public static PrivateKey readPrivateKey(final URL url) throws IOException, GeneralSecurityException
     {
-        try (InputStream urlStream = url.openStream())
+        try (final InputStream urlStream = url.openStream())
         {
             return readPrivateKey(urlStream);
         }
     }
 
-    public static PrivateKey readPrivateKey(InputStream input)
-            throws IOException, GeneralSecurityException
+    public static PrivateKey readPrivateKey(final InputStream input) throws IOException, GeneralSecurityException
     {
         byte[] content = toByteArray(input);
-        String contentAsString = new String(content, StandardCharsets.US_ASCII);
-        if(contentAsString.contains("-----BEGIN ") && contentAsString.contains(" PRIVATE KEY-----"))
+        final String contentAsString = new String(content, StandardCharsets.US_ASCII);
+        if (contentAsString.contains("-----BEGIN ") && contentAsString.contains(" PRIVATE KEY-----"))
         {
-            BufferedReader lineReader = new BufferedReader(new StringReader(contentAsString));
+            final BufferedReader lineReader = new BufferedReader(new StringReader(contentAsString));
 
             String line;
             do
             {
                 line = lineReader.readLine();
-            } while(line != null && !(line.startsWith("-----BEGIN ") && line.endsWith(" PRIVATE KEY-----")));
+            } while (line != null && !(line.startsWith("-----BEGIN ") && line.endsWith(" PRIVATE KEY-----")));
 
-            if(line != null)
+            if (line != null)
             {
-                StringBuilder keyBuilder = new StringBuilder();
+                final StringBuilder keyBuilder = new StringBuilder();
 
-                while((line = lineReader.readLine()) != null)
+                while ((line = lineReader.readLine()) != null)
                 {
-                    if(line.startsWith("-----END ") && line.endsWith(" PRIVATE KEY-----"))
+                    if (line.startsWith("-----END ") && line.endsWith(" PRIVATE KEY-----"))
                     {
                         break;
                     }
@@ -535,17 +450,14 @@ public class SSLUtil
 
     private static byte[] toByteArray(final InputStream input) throws IOException
     {
-        try(ByteArrayOutputStream buffer = new ByteArrayOutputStream())
+        try (final ByteArrayOutputStream buffer = new ByteArrayOutputStream())
         {
-
-            byte[] tmp = new byte[1024];
+            final byte[] tmp = new byte[1024];
             int read;
-            while((read=input.read(tmp))!=-1)
-
+            while ((read = input.read(tmp)) != -1)
             {
                 buffer.write(tmp, 0, read);
             }
-
             return buffer.toByteArray();
         }
     }
@@ -556,31 +468,30 @@ public class SSLUtil
         PrivateKey key;
         try
         {
-            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(content);
-            KeyFactory kf = KeyFactory.getInstance(algorithm);
+            final PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(content);
+            final KeyFactory kf = KeyFactory.getInstance(algorithm);
             key = kf.generatePrivate(keySpec);
         }
-        catch(InvalidKeySpecException e)
+        catch (InvalidKeySpecException e)
         {
             // not in PCKS#8 format - try parsing as PKCS#1
-            RSAPrivateCrtKeySpec keySpec = getRSAKeySpec(content);
-            KeyFactory kf = KeyFactory.getInstance(algorithm);
+            final RSAPrivateCrtKeySpec keySpec = getRSAKeySpec(content);
+            final KeyFactory kf = KeyFactory.getInstance(algorithm);
             try
             {
                 key = kf.generatePrivate(keySpec);
             }
-            catch(InvalidKeySpecException e2)
+            catch (InvalidKeySpecException e2)
             {
                 throw new InvalidKeySpecException("Cannot parse the provided key as either PKCS#1 or PCKS#8 format");
             }
-
         }
         return key;
     }
 
-    private static RSAPrivateCrtKeySpec getRSAKeySpec(byte[] keyBytes) throws InvalidKeySpecException
+    @SuppressWarnings("unused")
+    private static RSAPrivateCrtKeySpec getRSAKeySpec(final byte[] keyBytes) throws InvalidKeySpecException
     {
-
         ByteBuffer buffer = ByteBuffer.wrap(keyBytes);
         try
         {
@@ -588,41 +499,37 @@ public class SSLUtil
             // (version, modulus, publicExponent, privateExponent, primeP, primeQ,
             //  primeExponentP, primeExponentQ, crtCoefficient)
 
-            int tag = ((int)buffer.get()) & 0xff;
+            final int tag = ((int)buffer.get()) & 0xff;
 
             // check tag is that of a sequence
-            if(((tag & 0x20) != 0x20) || ((tag & 0x1F) != 0x10))
+            if (((tag & 0x20) != 0x20) || ((tag & 0x1F) != 0x10))
             {
                 throw new InvalidKeySpecException("Unable to parse key as PKCS#1 format");
             }
 
-            int length = getLength(buffer);
+            final int length = getLength(buffer);
 
             buffer = buffer.slice();
             buffer.limit(length);
 
             // first tlv is version - which we'll ignore
-            byte versionTag = buffer.get();
-            int versionLength = getLength(buffer);
+            final byte versionTag = buffer.get();
+            final int versionLength = getLength(buffer);
             buffer.position(buffer.position()+versionLength);
 
-
-            RSAPrivateCrtKeySpec keySpec = new RSAPrivateCrtKeySpec(
+            return new RSAPrivateCrtKeySpec(
                     getInteger(buffer), getInteger(buffer), getInteger(buffer), getInteger(buffer), getInteger(buffer),
                     getInteger(buffer), getInteger(buffer), getInteger(buffer));
-
-            return keySpec;
         }
-        catch(BufferUnderflowException e)
+        catch (BufferUnderflowException e)
         {
             throw new InvalidKeySpecException("Unable to parse key as PKCS#1 format");
         }
     }
 
-    private static int getLength(ByteBuffer buffer)
+    private static int getLength(final ByteBuffer buffer)
     {
-
-        int i = ((int) buffer.get()) & 0xff;
+        final int i = ((int) buffer.get()) & 0xff;
 
         // length 0 <= i <= 127 encoded as a single byte
         if ((i & ~0x7F) == 0)
@@ -631,21 +538,21 @@ public class SSLUtil
         }
 
         // otherwise the first octet gives us the number of octets needed to read the length
-        byte[] bytes = new byte[i & 0x7f];
+        final byte[] bytes = new byte[i & 0x7f];
         buffer.get(bytes);
 
         return new BigInteger(1, bytes).intValue();
     }
 
-    private static BigInteger getInteger(ByteBuffer buffer) throws InvalidKeySpecException
+    private static BigInteger getInteger(final ByteBuffer buffer) throws InvalidKeySpecException
     {
-        int tag = ((int) buffer.get()) & 0xff;
+        final int tag = ((int) buffer.get()) & 0xff;
         // 0x02 indicates an integer type
         if((tag & 0x1f) != 0x02)
         {
             throw new InvalidKeySpecException("Unable to parse key as PKCS#1 format");
         }
-        byte[] num = new byte[getLength(buffer)];
+        final byte[] num = new byte[getLength(buffer)];
         buffer.get(num);
         return new BigInteger(num);
     }
@@ -654,21 +561,17 @@ public class SSLUtil
                                                  final List<String> protocolAllowList,
                                                  final List<String> protocolDenyList)
     {
-        String[] filteredProtocols = filterEnabledProtocols(engine.getEnabledProtocols(),
-                                                            engine.getSupportedProtocols(),
-                                                            protocolAllowList,
-                                                            protocolDenyList);
+        final String[] filteredProtocols = filterEnabledProtocols(engine.getEnabledProtocols(),
+                engine.getSupportedProtocols(), protocolAllowList, protocolDenyList);
         engine.setEnabledProtocols(filteredProtocols);
     }
 
     public static void updateEnabledTlsProtocols(final SSLSocket socket,
-                                             final List<String> protocolAllowList,
-                                             final List<String> protocolDenyList)
+                                                 final List<String> protocolAllowList,
+                                                 final List<String> protocolDenyList)
     {
-        String[] filteredProtocols = filterEnabledProtocols(socket.getEnabledProtocols(),
-                                                            socket.getSupportedProtocols(),
-                                                            protocolAllowList,
-                                                            protocolDenyList);
+        final String[] filteredProtocols = filterEnabledProtocols(socket.getEnabledProtocols(),
+                socket.getSupportedProtocols(), protocolAllowList, protocolDenyList);
         socket.setEnabledProtocols(filteredProtocols);
     }
 
@@ -688,15 +591,12 @@ public class SSLUtil
         return filterEntries(enabledCipherSuites, supportedCipherSuites, cipherSuiteAllowList, cipherSuiteDenyList);
     }
 
-
     public static void updateEnabledCipherSuites(final SSLEngine engine,
                                                  final List<String> cipherSuitesAllowList,
                                                  final List<String> cipherSuitesDenyList)
     {
-        String[] filteredCipherSuites = filterEntries(engine.getEnabledCipherSuites(),
-                                                      engine.getSupportedCipherSuites(),
-                                                      cipherSuitesAllowList,
-                                                      cipherSuitesDenyList);
+        final String[] filteredCipherSuites = filterEntries(engine.getEnabledCipherSuites(),
+                engine.getSupportedCipherSuites(), cipherSuitesAllowList, cipherSuitesDenyList);
         engine.setEnabledCipherSuites(filteredCipherSuites);
     }
 
@@ -704,10 +604,8 @@ public class SSLUtil
                                                  final List<String> cipherSuitesAllowList,
                                                  final List<String> cipherSuitesDenyList)
     {
-        String[] filteredCipherSuites = filterEntries(socket.getEnabledCipherSuites(),
-                                                      socket.getSupportedCipherSuites(),
-                                                      cipherSuitesAllowList,
-                                                      cipherSuitesDenyList);
+        final String[] filteredCipherSuites = filterEntries(socket.getEnabledCipherSuites(),
+                socket.getSupportedCipherSuites(), cipherSuitesAllowList, cipherSuitesDenyList);
         socket.setEnabledCipherSuites(filteredCipherSuites);
     }
 
@@ -720,14 +618,14 @@ public class SSLUtil
         if (allowList != null && !allowList.isEmpty())
         {
             filteredList = new ArrayList<>();
-            List<String> supportedList = new ArrayList<>(Arrays.asList(supportedEntries));
+            final List<String> supportedList = new ArrayList<>(Arrays.asList(supportedEntries));
             // the outer loop must be over the allow list to preserve its order
-            for (String allowListedRegEx : allowList)
+            for (final String allowListedRegEx : allowList)
             {
-                Iterator<String> supportedIter = supportedList.iterator();
+                final Iterator<String> supportedIter = supportedList.iterator();
                 while (supportedIter.hasNext())
                 {
-                    String supportedEntry = supportedIter.next();
+                    final String supportedEntry = supportedIter.next();
                     if (supportedEntry.matches(allowListedRegEx))
                     {
                         filteredList.add(supportedEntry);
@@ -743,20 +641,13 @@ public class SSLUtil
 
         if (denyList != null && !denyList.isEmpty())
         {
-            for (String denyListedRegEx : denyList)
+            for (final String denyListedRegEx : denyList)
             {
-                Iterator<String> entriesIter = filteredList.iterator();
-                while (entriesIter.hasNext())
-                {
-                    if (entriesIter.next().matches(denyListedRegEx))
-                    {
-                        entriesIter.remove();
-                    }
-                }
+                filteredList.removeIf(s -> s.matches(denyListedRegEx));
             }
         }
 
-        return filteredList.toArray(new String[filteredList.size()]);
+        return filteredList.toArray(new String[0]);
     }
 
     public static SSLContext tryGetSSLContext() throws NoSuchAlgorithmException
@@ -766,7 +657,7 @@ public class SSLUtil
 
     public static SSLContext tryGetSSLContext(final String[] protocols) throws NoSuchAlgorithmException
     {
-        for (String protocol : protocols)
+        for (final String protocol : protocols)
         {
             try
             {
@@ -778,16 +669,16 @@ public class SSLUtil
             }
         }
         throw new NoSuchAlgorithmException(String.format("Could not create SSLContext with one of the requested protocols: %s",
-                                                         Arrays.toString(protocols)));
+                Arrays.toString(protocols)));
     }
 
-    public static boolean isSufficientToDetermineClientSNIHost(QpidByteBuffer buffer)
+    public static boolean isSufficientToDetermineClientSNIHost(final QpidByteBuffer buffer)
     {
-        if(buffer.remaining() < 6)
+        if (buffer.remaining() < 6)
         {
             return false;
         }
-        else if(looksLikeSSLv3ClientHello(buffer))
+        else if (looksLikeSSLv3ClientHello(buffer))
         {
             final int position = buffer.position();
             final int recordSize = 5 + (((buffer.get(position + 3) & 0xFF) << 8) | (buffer.get(position + 4) & 0xFF));
@@ -799,27 +690,27 @@ public class SSLUtil
         }
     }
 
-    private static boolean looksLikeSSLv3ClientHello(QpidByteBuffer buffer)
+    private static boolean looksLikeSSLv3ClientHello(final QpidByteBuffer buffer)
     {
-        int contentType = buffer.get(buffer.position()+0);
-        int majorVersion = buffer.get(buffer.position()+1);
-        int minorVersion = buffer.get(buffer.position()+2);
-        int messageType = buffer.get(buffer.position()+5);
+        final int contentType = buffer.get(buffer.position());
+        final int majorVersion = buffer.get(buffer.position() + 1);
+        final int minorVersion = buffer.get(buffer.position() + 2);
+        final int messageType = buffer.get(buffer.position() + 5);
 
         return contentType == 22 && // SSL Handshake
-                   (majorVersion == 3 && // SSL 3.0 / TLS 1.x
-                    (minorVersion == 0 || // SSL 3.0
-                     minorVersion == 1 || // TLS 1.0
-                     minorVersion == 2 || // TLS 1.1
-                     minorVersion == 3)) && // TLS1.2
-                   (messageType == 1); // client_hello
+                (majorVersion == 3 && // SSL 3.0 / TLS 1.x
+                (minorVersion == 0 || // SSL 3.0
+                minorVersion == 1 || // TLS 1.0
+                minorVersion == 2 || // TLS 1.1
+                minorVersion == 3)) && // TLS1.2
+                (messageType == 1); // client_hello
     }
 
-    public final static String getServerNameFromTLSClientHello(QpidByteBuffer source)
+    @SuppressWarnings("unused")
+    public static String getServerNameFromTLSClientHello(final QpidByteBuffer source)
     {
-        try (QpidByteBuffer input = source.duplicate())
+        try (final QpidByteBuffer input = source.duplicate())
         {
-
             // Do we have a complete header?
             if (!isSufficientToDetermineClientSNIHost(source))
             {
@@ -830,36 +721,34 @@ public class SSLUtil
                 return null;
             }
 
-            byte contentType = input.get();
-            byte majorVersion = input.get();
-            byte minorVersion = input.get();
+            final byte contentType = input.get();
+            final byte majorVersion = input.get();
+            final byte minorVersion = input.get();
             if (minorVersion != 0x00) // not supported for SSL 3.0
             {
-
-                int recordLength = input.getUnsignedShort();
-                int messageType = input.get();
+                final int recordLength = input.getUnsignedShort();
+                final int messageType = input.get();
                 // 24-bit length field
-                int length = (input.getUnsignedByte() << 16) | (input.getUnsignedByte() << 8) | input.getUnsignedByte();
-                if(input.remaining() < length)
+                final int length = (input.getUnsignedByte() << 16) | (input.getUnsignedByte() << 8) | input.getUnsignedByte();
+                if (input.remaining() < length)
                 {
                     return null;
                 }
                 input.limit(length + input.position());
 
                 input.position(input.position() + 34);  // hello minor/major version + random
-                int skip = (int) input.get(); // session-id
+                int skip = input.get(); // session-id
                 input.position(input.position() + skip);
                 skip = input.getUnsignedShort(); // cipher suites
                 input.position(input.position() + skip);
-                skip = (int) input.get(); // compression methods
+                skip = input.get(); // compression methods
                 input.position(input.position() + skip);
 
                 if (input.hasRemaining())
                 {
+                    final int remaining = input.getUnsignedShort();
 
-                    int remaining = input.getUnsignedShort();
-
-                    if(input.remaining() < remaining)
+                    if (input.remaining() < remaining)
                     {
                         // invalid remaining length
                         return null;
@@ -868,17 +757,15 @@ public class SSLUtil
                     input.limit(input.position()+remaining);
                     while (input.hasRemaining())
                     {
-                        int extensionType = input.getUnsignedShort();
-
-                        int extensionLength = input.getUnsignedShort();
+                        final int extensionType = input.getUnsignedShort();
+                        final int extensionLength = input.getUnsignedShort();
 
                         if (extensionType == 0x00)
                         {
-
                             int extensionDataRemaining = extensionLength;
                             if (extensionDataRemaining >= 2)
                             {
-                                int listLength = input.getUnsignedShort();     // length of server_name_list
+                                final int listLength = input.getUnsignedShort();     // length of server_name_list
                                 if (listLength + 2 != extensionDataRemaining)
                                 {
                                     // invalid format
@@ -888,14 +775,14 @@ public class SSLUtil
                                 extensionDataRemaining -= 2;
                                 while (extensionDataRemaining > 0)
                                 {
-                                    int code = input.get();
-                                    int serverNameLength = input.getUnsignedShort();
+                                    final int code = input.get();
+                                    final int serverNameLength = input.getUnsignedShort();
                                     if (serverNameLength > extensionDataRemaining)
                                     {
                                         // invalid format;
                                         return null;
                                     }
-                                    byte[] encoded = new byte[serverNameLength];
+                                    final byte[] encoded = new byte[serverNameLength];
                                     input.get(encoded);
 
                                     if (code == StandardConstants.SNI_HOST_NAME)
@@ -909,7 +796,7 @@ public class SSLUtil
                         }
                         else
                         {
-                            if(input.remaining() < extensionLength)
+                            if (input.remaining() < extensionLength)
                             {
                                 return null;
                             }
@@ -917,12 +804,12 @@ public class SSLUtil
                         }
                     }
                 }
-
             }
             return null;
         }
     }
 
+    @SuppressWarnings("rawtypes")
     public static SSLContext createSslContext(final org.apache.qpid.server.model.KeyStore keyStore,
                                               final Collection<TrustStore> trustStores,
                                               final String portName)
@@ -931,30 +818,30 @@ public class SSLUtil
         try
         {
             sslContext = tryGetSSLContext();
-            KeyManager[] keyManagers = keyStore.getKeyManagers();
+            final KeyManager[] keyManagers = keyStore.getKeyManagers();
 
             TrustManager[] trustManagers;
-            if(trustStores == null || trustStores.isEmpty())
+            if (trustStores == null || trustStores.isEmpty())
             {
                 trustManagers = null;
             }
-            else if(trustStores.size() == 1)
+            else if (trustStores.size() == 1)
             {
                 trustManagers = trustStores.iterator().next().getTrustManagers();
             }
             else
             {
-                Collection<TrustManager> trustManagerList = new ArrayList<>();
+                final Collection<TrustManager> trustManagerList = new ArrayList<>();
                 final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
 
-                for(TrustStore ts : trustStores)
+                for (final TrustStore<?> ts : trustStores)
                 {
-                    TrustManager[] managers = ts.getTrustManagers();
-                    if(managers != null)
+                    final TrustManager[] managers = ts.getTrustManagers();
+                    if (managers != null)
                     {
-                        for(TrustManager manager : managers)
+                        for (final TrustManager manager : managers)
                         {
-                            if(manager instanceof X509TrustManager)
+                            if (manager instanceof X509TrustManager)
                             {
                                 mulTrustManager.addTrustManager((X509TrustManager)manager);
                             }
@@ -965,11 +852,11 @@ public class SSLUtil
                         }
                     }
                 }
-                if(!mulTrustManager.isEmpty())
+                if (!mulTrustManager.isEmpty())
                 {
                     trustManagerList.add(mulTrustManager);
                 }
-                trustManagers = trustManagerList.toArray(new TrustManager[trustManagerList.size()]);
+                trustManagers = trustManagerList.toArray(new TrustManager[0]);
             }
             sslContext.init(keyManagers, trustManagers, null);
         }
@@ -982,75 +869,67 @@ public class SSLUtil
 
     public static boolean canGenerateCerts()
     {
-        return CAN_GENERATE_CERTS;
+        return true;
     }
 
     public static KeyCertPair generateSelfSignedCertificate(final String keyAlgorithm,
                                                             final String signatureAlgorithm,
                                                             final int keyLength,
-                                                            long startTime,
-                                                            long duration,
-                                                            String x500Name,
-                                                            Set<String> dnsNames,
-                                                            Set<InetAddress> addresses)
-            throws IllegalAccessException, InvocationTargetException, InstantiationException
+                                                            final long startTime,
+                                                            final long endTime,
+                                                            final String x500Name,
+                                                            final Set<String> dnsNames,
+                                                            final Set<InetAddress> addresses)
+            throws NoSuchAlgorithmException, OperatorCreationException, CertificateException, CertIOException
     {
-        Object certAndKeyGen = CONSTRUCTOR.newInstance(keyAlgorithm, signatureAlgorithm);
-        GENERATE_METHOD.invoke(certAndKeyGen, keyLength);
-        final PrivateKey _privateKey = (PrivateKey) GET_PRIVATE_KEY_METHOD.invoke(certAndKeyGen);
+        final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(keyAlgorithm);
+        keyPairGenerator.initialize(keyLength);
 
-        Object generalNames = GENERAL_NAMES_CONSTRUCTOR.newInstance();
+        final KeyPair keyPair = keyPairGenerator.generateKeyPair();
+        final PrivateKey privateKey = keyPair.getPrivate();
 
-        for(String dnsName : dnsNames)
-        {
-            if(dnsName.matches("[\\w&&[^\\d]][\\w\\d.-]*"))
-            {
-                ADD_NAME_TO_NAMES_METHOD.invoke(generalNames,
-                                                GENERAL_NAME_CONSTRUCTOR.newInstance(DNS_NAME_CONSTRUCTOR.newInstance(
-                                                        dnsName)));
-            }
-        }
+        final ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
 
-        for(InetAddress inetAddress : addresses)
-        {
-            ADD_NAME_TO_NAMES_METHOD.invoke(generalNames, GENERAL_NAME_CONSTRUCTOR.newInstance(IP_ADDR_NAME_CONSTRUCTOR.newInstance(inetAddress.getHostAddress())));
-        }
-        Object certificateExtensions;
-        if(dnsNames.isEmpty() && addresses.isEmpty())
-        {
-            certificateExtensions = null;
-        }
-        else
-        {
-            Object altNamesExtension = ALT_NAMES_CONSTRUCTOR.newInstance(generalNames);
-            certificateExtensions = CERTIFICATE_EXTENSIONS_CONSTRUCTOR.newInstance();
-            SET_EXTENSION_METHOD.invoke(certificateExtensions,
-                                        EXTENSION_GET_NAME_METHOD.invoke(altNamesExtension),
-                                        altNamesExtension);
-        }
+        final GeneralName[] sanLocalHost = Stream.concat(dnsNames.stream()
+                    .filter(dnsName -> DNS_NAME_PATTERN.matcher(dnsName).matches())
+                    .map(dnaName -> new GeneralName(GeneralName.dNSName, dnaName)),
+                addresses.stream()
+                    .map(InetAddress::getHostAddress)
+                    .filter(address -> IPAddress.isValidIPv4(address) || IPAddress.isValidIPv4WithNetmask(address) ||
+                            IPAddress.isValidIPv6(address) || IPAddress.isValidIPv6WithNetmask(address))
+                    .map(address -> new GeneralName(GeneralName.iPAddress, address)))
+                    .toArray(GeneralName[]::new);
 
-        final X509Certificate _certificate = (X509Certificate) GET_SELF_CERTIFICATE_METHOD.invoke(certAndKeyGen,
-                                                                                                  X500_NAME_CONSTRUCTOR
-                                                                                                          .newInstance(x500Name),
-                                                                                                  new Date(startTime),
-                                                                                                  duration,
-                                                                                                  certificateExtensions);
+        final X500Principal issuerDn = new X500Principal(x500Name);
+        final X500Principal subjectDn = new X500Principal(x500Name);
+        final BigInteger serialNumber = new BigInteger(64, new SecureRandom());
+        final Date startDate = new Date(startTime);
+        final Date endDate = new Date(endTime);
+        final PublicKey publicKey = keyPair.getPublic();
+
+        final X509v3CertificateBuilder certificateBuilder =
+                new JcaX509v3CertificateBuilder(issuerDn, serialNumber, startDate, endDate, subjectDn, publicKey)
+                    .addExtension(Extension.basicConstraints, CRITICAL, new BasicConstraints(CA_SIGNED))
+                    .addExtension(Extension.subjectAlternativeName, false, new GeneralNames(sanLocalHost));
+
+        final X509Certificate certificate = new JcaX509CertificateConverter()
+                .setProvider(PROVIDER)
+                .getCertificate(certificateBuilder.build(contentSigner));
 
         return new KeyCertPair()
         {
             @Override
             public PrivateKey getPrivateKey()
             {
-                return _privateKey;
+                return privateKey;
             }
 
             @Override
             public X509Certificate getCertificate()
             {
-                return _certificate;
+                return certificate;
             }
         };
-
     }
 
     public static Map<String, Certificate> getCertificates(final KeyStore ks) throws KeyStoreException
@@ -1068,7 +947,7 @@ public class SSLUtil
         return certificates;
     }
 
-    public static SNIHostName createSNIHostName(String hostName)
+    public static SNIHostName createSNIHostName(final String hostName)
     {
         try
         {
@@ -1080,7 +959,7 @@ public class SSLUtil
         }
     }
 
-    public static SNIHostName createSNIHostName(byte[] hostName)
+    public static SNIHostName createSNIHostName(final byte[] hostName)
     {
         try
         {
