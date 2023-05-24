@@ -38,7 +38,7 @@ import java.security.AccessController;
 import java.security.MessageDigest;
 import java.security.PrivilegedAction;
 import java.util.Base64;
-import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,7 +64,8 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionAttach;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ServerConnectionDelegateTest extends UnitTestBase
+@SuppressWarnings({"rawtypes", "unchecked"})
+class ServerConnectionDelegateTest extends UnitTestBase
 {
     private ServerConnectionDelegate _delegate;
     private ServerConnection _serverConnection;
@@ -72,7 +73,7 @@ public class ServerConnectionDelegateTest extends UnitTestBase
     private AccessControlContext _accessControlContext;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         final Broker broker = mock(Broker.class);
@@ -81,7 +82,7 @@ public class ServerConnectionDelegateTest extends UnitTestBase
         when(broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(broker.getModel()).thenReturn(BrokerModel.getInstance());
         final AuthenticationProvider authenticationProvider = mock(AuthenticationProvider.class);
-        when(authenticationProvider.getAvailableMechanisms(anyBoolean())).thenReturn(Collections.singletonList("PLAIN"));
+        when(authenticationProvider.getAvailableMechanisms(anyBoolean())).thenReturn(List.of("PLAIN"));
         final AmqpPort<?> port = mock(AmqpPort.class);
         when(port.getAuthenticationProvider()).thenReturn(authenticationProvider);
         when(port.getParent()).thenReturn(broker);
@@ -89,12 +90,12 @@ public class ServerConnectionDelegateTest extends UnitTestBase
         _delegate = new ServerConnectionDelegate(port, true, "test");
         _delegate.setState(ServerConnectionDelegate.ConnectionState.OPEN);
         final NamedAddressSpace addressSpace = mock(NamedAddressSpace.class);
-        when(addressSpace.getConnections()).thenReturn(Collections.emptyList());
+        when(addressSpace.getConnections()).thenReturn(List.of());
 
         final Subject subject = new Subject();
         subject.setReadOnly();
          _accessControlContext = AccessController.getContext();
-        final AMQPConnection_0_10 amqpConnection = mock(AMQPConnection_0_10.class);
+        final AMQPConnection_0_10<?> amqpConnection = mock(AMQPConnection_0_10.class);
         when(amqpConnection.getParent()).thenReturn(broker);
         when(amqpConnection.getBroker()).thenReturn(broker);
         when(amqpConnection.getChildExecutor()).thenReturn(_taskExecutor);
@@ -104,10 +105,9 @@ public class ServerConnectionDelegateTest extends UnitTestBase
         when(amqpConnection.getContextValue(Integer.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Integer.MAX_VALUE);
         doAnswer((Answer<AccessControlContext>) invocationOnMock ->
         {
-            Subject subject1 = invocationOnMock.getArgument(0);
-            return AccessController.doPrivileged(
-                    (PrivilegedAction<AccessControlContext>) () ->
-                            new AccessControlContext(_accessControlContext, new SubjectDomainCombiner(subject1)));
+            final Subject subject1 = invocationOnMock.getArgument(0);
+            return AccessController.doPrivileged((PrivilegedAction<AccessControlContext>) () ->
+                    new AccessControlContext(_accessControlContext, new SubjectDomainCombiner(subject1)));
         }).when(amqpConnection).getAccessControlContextFromSubject(any());
         when(amqpConnection.getEventLogger()).thenReturn(mock(EventLogger.class));
 
@@ -118,13 +118,13 @@ public class ServerConnectionDelegateTest extends UnitTestBase
     }
 
     @AfterEach
-    public void tearDown()
+    void tearDown()
     {
         _taskExecutor.stop();
     }
 
     @Test
-    public void sessionAttachWhenNameIsUUID()
+    void sessionAttachWhenNameIsUUID()
     {
         final String name = UUID.randomUUID().toString();
         final SessionAttach attach = createSessionAttach(name);
@@ -135,12 +135,12 @@ public class ServerConnectionDelegateTest extends UnitTestBase
         verify(_serverConnection).registerSession(sessionCaptor.capture());
 
         final ServerSession serverSession = sessionCaptor.getValue();
-        final Session session = serverSession.getModelObject();
+        final Session<?> session = serverSession.getModelObject();
         assertThat(session.getPeerSessionName(), CoreMatchers.is(equalTo(name)));
     }
 
     @Test
-    public void sessionAttachWhenNameIsNotUUID()
+    void sessionAttachWhenNameIsNotUUID()
     {
         final String name = "ABC";
         final SessionAttach attach = createSessionAttach(name);
@@ -151,14 +151,15 @@ public class ServerConnectionDelegateTest extends UnitTestBase
         verify(_serverConnection).registerSession(sessionCaptor.capture());
 
         final ServerSession serverSession = sessionCaptor.getValue();
-        final Session session = serverSession.getModelObject();
+        final Session<?> session = serverSession.getModelObject();
         assertThat(session.getPeerSessionName(), CoreMatchers.is(equalTo(Base64.getEncoder().encodeToString(name.getBytes(UTF_8)))));
     }
 
     @Test
-    public void sessionAttachWhenNameExceedsSizeLimit() throws Exception
+    void sessionAttachWhenNameExceedsSizeLimit() throws Exception
     {
-        final String name = Stream.generate(() -> String.valueOf('a')).limit(BASE64_LIMIT + 1).collect(Collectors.joining());;
+        final String name = Stream.generate(() ->
+                String.valueOf('a')).limit(BASE64_LIMIT + 1).collect(Collectors.joining());;
         final SessionAttach attach = createSessionAttach(name);
 
         _delegate.sessionAttach(_serverConnection, attach);
@@ -167,8 +168,9 @@ public class ServerConnectionDelegateTest extends UnitTestBase
         verify(_serverConnection).registerSession(sessionCaptor.capture());
 
         final ServerSession serverSession = sessionCaptor.getValue();
-        final Session session = serverSession.getModelObject();
-        final String digest = Base64.getEncoder().encodeToString(MessageDigest.getInstance(MESSAGE_DIGEST_SHA1).digest(name.getBytes(UTF_8)));
+        final Session<?> session = serverSession.getModelObject();
+        final String digest = Base64.getEncoder().encodeToString(MessageDigest.getInstance(MESSAGE_DIGEST_SHA1)
+                .digest(name.getBytes(UTF_8)));
         assertThat(session.getPeerSessionName(), CoreMatchers.is(equalTo(digest)));
     }
 

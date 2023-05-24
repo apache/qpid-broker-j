@@ -32,14 +32,14 @@ import org.junit.jupiter.api.Test;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class WindowCreditManagerTest extends UnitTestBase
+class WindowCreditManagerTest extends UnitTestBase
 {
     private WindowCreditManager _creditManager;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp()
     {
-        ProtocolEngine protocolEngine = mock(ProtocolEngine.class);
+        final ProtocolEngine protocolEngine = mock(ProtocolEngine.class);
         when(protocolEngine.isTransportBlockedForWriting()).thenReturn(false);
 
         _creditManager = new WindowCreditManager(0L, 0L);
@@ -52,7 +52,7 @@ public class WindowCreditManagerTest extends UnitTestBase
      * and message credit are returned along with appropriate 'hasCredit' results (QPID-3592).
      */
     @Test
-    public void testRestoreCreditDecrementsUsedCountAfterCreditClear()
+    void restoreCreditDecrementsUsedCountAfterCreditClear()
     {
         assertEquals(0, _creditManager.getMessageCredit(), "unexpected credit value");
         assertEquals(0, _creditManager.getBytesCredit(), "unexpected credit value");
@@ -96,7 +96,7 @@ public class WindowCreditManagerTest extends UnitTestBase
     }
 
     @Test
-    public void testRestoreCreditWhenInfiniteBytesCredit()
+    void restoreCreditWhenInfiniteBytesCredit()
     {
         _creditManager.addCredit(1, WindowCreditManager.INFINITE_CREDIT);
 

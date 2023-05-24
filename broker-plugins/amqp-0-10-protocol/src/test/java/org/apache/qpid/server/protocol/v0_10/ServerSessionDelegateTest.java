@@ -40,18 +40,18 @@ import org.apache.qpid.server.protocol.v0_10.transport.ExecutionException;
 import org.apache.qpid.server.protocol.v0_10.transport.Option;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ServerSessionDelegateTest extends UnitTestBase
+class ServerSessionDelegateTest extends UnitTestBase
 {
     private VirtualHost<?> _host;
     private ServerSession _session;
     private ServerSessionDelegate _delegate;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp()
     {
         _host = mock(VirtualHost.class);
 
-        ServerConnection serverConnection = mock(ServerConnection.class);
+        final ServerConnection serverConnection = mock(ServerConnection.class);
         doReturn(_host).when(serverConnection).getAddressSpace();
 
         _session = mock(ServerSession.class);
@@ -61,9 +61,9 @@ public class ServerSessionDelegateTest extends UnitTestBase
     }
 
     @Test
-    public void testExchangeDeleteWhenIfUsedIsSetAndExchangeHasBindings() throws Exception
+    void exchangeDeleteWhenIfUsedIsSetAndExchangeHasBindings()
     {
-        Exchange<?> exchange = mock(Exchange.class);
+        final Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(true);
 
         doReturn(exchange).when(_host).getAttainedMessageDestination(eq(getTestName()), anyBoolean());
@@ -71,16 +71,15 @@ public class ServerSessionDelegateTest extends UnitTestBase
         final ExchangeDelete method = new ExchangeDelete(getTestName(), Option.IF_UNUSED);
         _delegate.exchangeDelete(_session, method);
 
-        verify(_session).invoke(argThat((ArgumentMatcher<ExecutionException>) exception -> exception.getErrorCode()
-                                                                                           == ExecutionErrorCode.PRECONDITION_FAILED
-                                                                                           && "Exchange has bindings".equals(
-                exception.getDescription())));
+        verify(_session).invoke(argThat((ArgumentMatcher<ExecutionException>) exception ->
+                exception.getErrorCode() == ExecutionErrorCode.PRECONDITION_FAILED &&
+                "Exchange has bindings".equals(exception.getDescription())));
     }
 
     @Test
-    public void testExchangeDeleteWhenIfUsedIsSetAndExchangeHasNoBinding() throws Exception
+    void exchangeDeleteWhenIfUsedIsSetAndExchangeHasNoBinding()
     {
-        Exchange<?> exchange = mock(Exchange.class);
+        final Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(false);
 
         doReturn(exchange).when(_host).getAttainedMessageDestination(eq(getTestName()), anyBoolean());
@@ -90,5 +89,4 @@ public class ServerSessionDelegateTest extends UnitTestBase
 
         verify(exchange).delete();
     }
-
 }

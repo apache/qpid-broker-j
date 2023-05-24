@@ -29,9 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,12 +40,12 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class BBEncoderTest extends UnitTestBase
+class BBEncoderTest extends UnitTestBase
 {
     @Test
-    public void testGrow()
+    void grow()
     {
-        BBEncoder enc = new BBEncoder(4);
+        final BBEncoder enc = new BBEncoder(4);
         enc.writeInt32(0xDEADBEEF);
         ByteBuffer buf = enc.buffer();
         assertEquals(0xDEADBEEF, (long) buf.getInt(0));
@@ -58,54 +56,53 @@ public class BBEncoderTest extends UnitTestBase
     }
 
     @Test
-    public void testReadWriteStruct()
+    void readWriteStruct()
     {
-        BBEncoder encoder = new BBEncoder(4);
+        final BBEncoder encoder = new BBEncoder(4);
 
-        ReplyTo replyTo = new ReplyTo("amq.direct", "test");
+        final ReplyTo replyTo = new ReplyTo("amq.direct", "test");
         encoder.writeStruct(ReplyTo.TYPE, replyTo);
 
-        ByteBuffer buffer = encoder.buffer();
+        final ByteBuffer buffer = encoder.buffer();
 
         assertEquals(EncoderUtils.getStructLength(ReplyTo.TYPE, replyTo), (long) buffer.remaining(), "Unexpected size");
 
-        BBDecoder decoder = new BBDecoder();
+        final BBDecoder decoder = new BBDecoder();
         decoder.init(buffer);
 
-        ReplyTo decoded = (ReplyTo)decoder.readStruct(ReplyTo.TYPE);
+        final ReplyTo decoded = (ReplyTo)decoder.readStruct(ReplyTo.TYPE);
 
         assertEquals(replyTo.getExchange(), decoded.getExchange(), "Unexpected exchange");
         assertEquals(replyTo.getRoutingKey(), decoded.getRoutingKey(), "Unexpected routing key");
     }
 
     @Test
-    public void testReadWriteStruct32()
+    void readWriteStruct32()
     {
-        BBEncoder encoder = new BBEncoder(4);
-        Map<String, Object> applicationHeaders = new HashMap<>();
-        applicationHeaders.put("testProperty", "testValue");
-        applicationHeaders.put("list", Arrays.asList("a", 1, 2.0));
-        applicationHeaders.put("map", Collections.singletonMap("mapKey", "mapValue"));
-        MessageProperties messageProperties = new MessageProperties(10,
-                                                                    UUID.randomUUID(),
-                                                                    "abc".getBytes(UTF_8),
-                                                                    new ReplyTo("amq.direct", "test"),
-                                                                    "text/plain",
-                                                                    "identity",
-                                                                    "cba".getBytes(UTF_8),
-                                                                    "app".getBytes(UTF_8),
-                                                                    applicationHeaders);
+        final BBEncoder encoder = new BBEncoder(4);
+        final Map<String, Object> applicationHeaders = Map.of("testProperty", "testValue",
+                "list", List.of("a", 1, 2.0),
+                "map", Map.of("mapKey", "mapValue"));
+        final MessageProperties messageProperties = new MessageProperties(10,
+                UUID.randomUUID(),
+                "abc".getBytes(UTF_8),
+                new ReplyTo("amq.direct", "test"),
+                "text/plain",
+                "identity",
+                "cba".getBytes(UTF_8),
+                "app".getBytes(UTF_8),
+                applicationHeaders);
 
         encoder.writeStruct32(messageProperties);
 
-        ByteBuffer buffer = encoder.buffer();
+        final ByteBuffer buffer = encoder.buffer();
 
         assertEquals(EncoderUtils.getStruct32Length(messageProperties), (long) buffer.remaining(), "Unexpected size");
 
-        BBDecoder decoder = new BBDecoder();
+        final BBDecoder decoder = new BBDecoder();
         decoder.init(buffer);
 
-        MessageProperties decoded = (MessageProperties)decoder.readStruct32();
+        final MessageProperties decoded = (MessageProperties)decoder.readStruct32();
 
         assertEquals(messageProperties.getContentLength(), decoded.getContentLength(), "Unexpected content length");
         assertEquals(messageProperties.getMessageId(), decoded.getMessageId(), "Unexpected message id");
@@ -120,14 +117,14 @@ public class BBEncoderTest extends UnitTestBase
     }
 
     @Test
-    public void encodedStr8Caching()
+    void encodedStr8Caching()
     {
-        String testString = "Test";
-        Cache< String, byte[]> original = BBEncoder.getEncodedStringCache();
-        Cache< String, byte[]> cache = CacheBuilder.newBuilder().maximumSize(2).build();
+        final String testString = "Test";
+        final Cache< String, byte[]> original = BBEncoder.getEncodedStringCache();
+        final Cache< String, byte[]> cache = CacheBuilder.newBuilder().maximumSize(2).build();
         try
         {
-            BBEncoder encoder = new BBEncoder(64);
+            final BBEncoder encoder = new BBEncoder(64);
             BBEncoder.setEncodedStringCache(cache);
             encoder.writeStr8(testString);
             encoder.writeStr8(testString);

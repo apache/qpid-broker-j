@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -49,26 +48,26 @@ import org.apache.qpid.server.protocol.v0_10.transport.ReplyTo;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
+class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
 {
     private NamedAddressSpace _namedAddressSpace;
     private MessageConverter_v0_10_to_Internal _messageConverter;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp()
     {
         _namedAddressSpace = mock(NamedAddressSpace.class);
         _messageConverter = new MessageConverter_v0_10_to_Internal();
     }
 
     @Test
-    public void testContentEncodingConversion()
+    void contentEncodingConversion()
     {
-        String contentEncoding = "my-test-encoding";
+        final String contentEncoding = "my-test-encoding";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setContentEncoding(contentEncoding);
-        MessageTransferMessage message =
-                createTestMessage(new DeliveryProperties(), messageProperties, new byte[]{(byte) 1}, 0);
+        final MessageTransferMessage message =
+                createTestMessage(new DeliveryProperties(), messageProperties, new byte[] {(byte) 1}, 0);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -77,29 +76,29 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testApplicationHeadersConversion()
+    void applicationHeadersConversion()
     {
-        Map<String, Object> headers = new HashMap<>();
+        final Map<String, Object> headers = new HashMap<>();
         headers.put("testProperty1", "testProperty1Value");
         headers.put("intProperty", 1);
         headers.put("nullProperty", null);
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setApplicationHeaders(headers);
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
-        Map<String, Object> header = convertedMessage.getMessageHeader().getHeaderMap();
+        final Map<String, Object> header = convertedMessage.getMessageHeader().getHeaderMap();
         assertEquals(headers, new HashMap<>(header), "Unexpected headers");
     }
 
     @Test
-    public void testPersistentDeliveryModeConversion()
+    void persistentDeliveryModeConversion()
     {
-        MessageDeliveryMode deliveryMode = MessageDeliveryMode.PERSISTENT;
+        final MessageDeliveryMode deliveryMode = MessageDeliveryMode.PERSISTENT;
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setDeliveryMode(deliveryMode);
-        MessageTransferMessage message = createTestMessage(deliveryProperties);
+        final MessageTransferMessage message = createTestMessage(deliveryProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -109,12 +108,12 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testNonPersistentDeliveryModeConversion()
+    void nonPersistentDeliveryModeConversion()
     {
-        MessageDeliveryMode deliveryMode = MessageDeliveryMode.NON_PERSISTENT;
+        final MessageDeliveryMode deliveryMode = MessageDeliveryMode.NON_PERSISTENT;
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setDeliveryMode(deliveryMode);
-        MessageTransferMessage message = createTestMessage(deliveryProperties);
+        final MessageTransferMessage message = createTestMessage(deliveryProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -124,26 +123,25 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testPriorityConversion()
+    void priorityConversion()
     {
         final byte priority = 7;
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setPriority(MessageDeliveryPriority.get(priority));
-        MessageTransferMessage message = createTestMessage(deliveryProperties);
+        final MessageTransferMessage message = createTestMessage(deliveryProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
         assertEquals(priority, (long) convertedMessage.getMessageHeader().getPriority(), "Unexpected priority");
-
     }
 
     @Test
-    public void testCorrelationIdConversion()
+    void correlationIdConversion()
     {
         final byte[] correlationId = "testCorrelationId".getBytes();
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setCorrelationId(correlationId);
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -152,12 +150,12 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testCorrelationIdConversionWhenNotString()
+    void correlationIdConversionWhenNotString()
     {
         final byte[] correlationId = new byte[]{(byte) 0xc3, 0x28};
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setCorrelationId(correlationId);
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -166,27 +164,27 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testReplyToConversionWhenExchangeAndRoutingKeySpecified()
+    void replyToConversionWhenExchangeAndRoutingKeySpecified()
     {
         final String exchangeName = "amq.direct";
         final String routingKey = "test_routing_key";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setReplyTo(new ReplyTo(exchangeName, routingKey));
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
-        String expectedReplyTo = String.format("%s/%s", exchangeName, routingKey);
+        final String expectedReplyTo = String.format("%s/%s", exchangeName, routingKey);
         assertEquals(expectedReplyTo, convertedMessage.getMessageHeader().getReplyTo(), "Unexpected reply-to");
     }
 
     @Test
-    public void testReplyToConversionWhenExchangeSpecified()
+    void replyToConversionWhenExchangeSpecified()
     {
         final String exchangeName = "amq.direct";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setReplyTo(new ReplyTo(exchangeName, null));
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -194,12 +192,12 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testReplyToConversionWhenRoutingKeySpecified()
+    void replyToConversionWhenRoutingKeySpecified()
     {
         final String routingKey = "test_routing_key";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setReplyTo(new ReplyTo(null, routingKey));
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -207,12 +205,12 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testReplyToConversionWhenExchangeIsEmptyStringAndRoutingKeySpecified()
+    void replyToConversionWhenExchangeIsEmptyStringAndRoutingKeySpecified()
     {
         final String routingKey = "test_routing_key";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setReplyTo(new ReplyTo("", routingKey));
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -220,11 +218,11 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testReplyToConversionWhenExchangeAndRoutingKeyAreNull()
+    void replyToConversionWhenExchangeAndRoutingKeyAreNull()
     {
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setReplyTo(new ReplyTo(null, null));
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -232,15 +230,15 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testExpirationConversion()
+    void expirationConversion()
     {
-        long timestamp = System.currentTimeMillis();
-        int ttl = 100000;
+        final long timestamp = System.currentTimeMillis();
+        final int ttl = 100000;
         final long expiration = timestamp + ttl;
 
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setExpiration(expiration);
-        MessageTransferMessage message =
+        final MessageTransferMessage message =
                 createTestMessage(deliveryProperties, new MessageProperties(), null, timestamp);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
@@ -249,14 +247,14 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testTtlConversion()
+    void ttlConversion()
     {
-        long timestamp = System.currentTimeMillis();
-        int ttl = 100000;
+        final long timestamp = System.currentTimeMillis();
+        final int ttl = 100000;
 
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setTtl(ttl);
-        MessageTransferMessage message =
+        final MessageTransferMessage message =
                 createTestMessage(deliveryProperties, new MessageProperties(), null, timestamp);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
@@ -265,15 +263,15 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testTtlTakesPrecedenceOverExpiration()
+    void ttlTakesPrecedenceOverExpiration()
     {
-        long timestamp = System.currentTimeMillis();
-        int ttl = 100000;
+        final long timestamp = System.currentTimeMillis();
+        final int ttl = 100000;
 
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setTtl(ttl);
         deliveryProperties.setExpiration(timestamp + ttl + 10000);
-        MessageTransferMessage message =
+        final MessageTransferMessage message =
                 createTestMessage(deliveryProperties, new MessageProperties(), null, timestamp);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
@@ -282,12 +280,12 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testMessageIdConversion()
+    void messageIdConversion()
     {
-        UUID messageId = UUID.randomUUID();
+        final UUID messageId = UUID.randomUUID();
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setMessageId(messageId);
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -295,12 +293,12 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testTimestampConversion()
+    void timestampConversion()
     {
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         final long timestamp = System.currentTimeMillis() - 1000;
         deliveryProperties.setTimestamp(timestamp);
-        MessageTransferMessage message = createTestMessage(deliveryProperties);
+        final MessageTransferMessage message = createTestMessage(deliveryProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -308,10 +306,10 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testArrivalTimeConversion()
+    void arrivalTimeConversion()
     {
         final long timestamp = System.currentTimeMillis() - 1000;
-        MessageTransferMessage message =
+        final MessageTransferMessage message =
                 createTestMessage(new DeliveryProperties(), new MessageProperties(), null, timestamp);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
@@ -320,13 +318,13 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testJmsTypeConversion()
+    void jmsTypeConversion()
     {
         final String type = "test-type";
-        final Map<String, Object> headers = Collections.singletonMap("x-jms-type", type);
+        final Map<String, Object> headers = Map.of("x-jms-type", type);
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setApplicationHeaders(headers);
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -334,12 +332,12 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testUserIdConversion()
+    void userIdConversion()
     {
         final String userId = "test-userId";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setUserId(userId.getBytes());
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -347,12 +345,12 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testUserIdConversionWhenNotUtf8()
+    void userIdConversionWhenNotUtf8()
     {
         final byte[] userId = new byte[]{(byte) 0xc3, 0x28};
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setUserId(userId);
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -360,12 +358,12 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testExchangeConversion()
+    void exchangeConversion()
     {
         final String testExchange = "testExchange";
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setExchange(testExchange);
-        MessageTransferMessage message = createTestMessage(deliveryProperties);
+        final MessageTransferMessage message = createTestMessage(deliveryProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -373,14 +371,14 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testInitialRoutingAddressConversion()
+    void initialRoutingAddressConversion()
     {
         final String testExchange = "testExchange";
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setExchange(testExchange);
         final String testRoutingKey = "testRoutingKey";
         deliveryProperties.setRoutingKey(testRoutingKey);
-        MessageTransferMessage message = createTestMessage(deliveryProperties);
+        final MessageTransferMessage message = createTestMessage(deliveryProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -388,12 +386,12 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testApplicationIdConversion()
+    void applicationIdConversion()
     {
-        String applicationId = "testAppId";
-        MessageProperties messageProperties = new MessageProperties();
+        final String applicationId = "testAppId";
+        final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setAppId(applicationId.getBytes(UTF_8));
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
 
@@ -415,7 +413,7 @@ public class PropertyConverter_0_10_to_InternalTest extends UnitTestBase
                                                      final byte[] content,
                                                      final long arrivalTime)
     {
-        int bodySize = content == null ? 0 : content.length;
+        final int bodySize = content == null ? 0 : content.length;
         final org.apache.qpid.server.protocol.v0_10.transport.Header header =
                 new org.apache.qpid.server.protocol.v0_10.transport.Header(deliveryProperties, messageProperties);
         final MessageMetaData_0_10 metaData = new MessageMetaData_0_10(header, bodySize, arrivalTime);
