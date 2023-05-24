@@ -31,7 +31,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,23 +62,23 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSec
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
+class MessageConverter_Internal_to_1_0Test extends UnitTestBase
 {
-    private final MessageConverter_Internal_to_v1_0 _converter = new MessageConverter_Internal_to_v1_0();
-    private final AMQPDescribedTypeRegistry _typeRegistry = AMQPDescribedTypeRegistry.newInstance()
-                                                                                     .registerTransportLayer()
-                                                                                     .registerMessagingLayer()
-                                                                                     .registerTransactionLayer()
-                                                                                     .registerSecurityLayer();
+    private static final MessageConverter_Internal_to_v1_0 CONVERTER = new MessageConverter_Internal_to_v1_0();
+    private static final AMQPDescribedTypeRegistry TYPE_REGISTRY = AMQPDescribedTypeRegistry.newInstance()
+            .registerTransportLayer()
+            .registerMessagingLayer()
+            .registerTransactionLayer()
+            .registerSecurityLayer();
 
-    private final StoredMessage<InternalMessageMetaData> _handle = mock(StoredMessage.class);
+    private static final StoredMessage<InternalMessageMetaData> HANDLE = mock(StoredMessage.class);
 
-    private final AMQMessageHeader _amqpHeader = mock(AMQMessageHeader.class);
+    private static final AMQMessageHeader AMQP_HEADER = mock(AMQMessageHeader.class);
 
     @Test
-    public void testStringMessage() throws Exception
+    void stringMessage() throws Exception
     {
-        String content = "testContent";
+        final String content = "testContent";
         final String mimeType = "text/plain";
         doTest(content,
                mimeType,
@@ -90,9 +89,9 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testStringMessageWithUnknownMimeType() throws Exception
+    void stringMessageWithUnknownMimeType() throws Exception
     {
-        String content = "testContent";
+        final String content = "testContent";
         final String mimeType = "foo/bar";
         doTest(content,
                mimeType,
@@ -103,9 +102,9 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testStringMessageWithoutMimeType() throws Exception
+    void stringMessageWithoutMimeType() throws Exception
     {
-        String content = "testContent";
+        final String content = "testContent";
         doTest(content,
                null,
                AmqpValueSection.class,
@@ -115,9 +114,9 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testListMessageWithMimeType() throws Exception
+    void listMessageWithMimeType() throws Exception
     {
-        ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
+        final ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
         doTest(content,
                "text/plain",
                AmqpSequenceSection.class,
@@ -127,9 +126,9 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testListMessageWithoutMimeType() throws Exception
+    void listMessageWithoutMimeType() throws Exception
     {
-        ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
+        final ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
         doTest(content,
                null,
                AmqpSequenceSection.class,
@@ -139,9 +138,9 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testListMessageWithoutMimeTypeWithNonJmsContent() throws Exception
+    void listMessageWithoutMimeTypeWithNonJmsContent() throws Exception
     {
-        ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42, Lists.newArrayList());
+        final ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42, Lists.newArrayList());
         doTest(content,
                null,
                AmqpSequenceSection.class,
@@ -151,9 +150,9 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testByteArrayMessageWithoutMimeType() throws Exception
+    void byteArrayMessageWithoutMimeType() throws Exception
     {
-        byte[] content = "testContent".getBytes(UTF_8);
+        final byte[] content = "testContent".getBytes(UTF_8);
         doTest(content,
                null,
                DataSection.class,
@@ -163,9 +162,9 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testByteArrayMessageWithMimeType() throws Exception
+    void byteArrayMessageWithMimeType() throws Exception
     {
-        byte[] content = "testContent".getBytes(UTF_8);
+        final byte[] content = "testContent".getBytes(UTF_8);
         final String mimeType = "foo/bar";
         doTest(content,
                mimeType,
@@ -176,9 +175,9 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testEmptyByteArrayMessageWithMimeType() throws Exception
+    void emptyByteArrayMessageWithMimeType() throws Exception
     {
-        byte[] content = new byte[0];
+        final byte[] content = new byte[0];
         final String mimeType = "foo/bar";
         doTest(content,
                mimeType,
@@ -189,9 +188,9 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testMapMessageWithMimeType() throws Exception
+    void mapMessageWithMimeType() throws Exception
     {
-        HashMap<Object, Object> content = new HashMap<>();
+        final HashMap<Object, Object> content = new HashMap<>();
         content.put("key1", 37);
         content.put("key2", "foo");
         final String mimeType = "foo/bar";
@@ -204,9 +203,9 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testMapMessageWithoutMimeType() throws Exception
+    void mapMessageWithoutMimeType() throws Exception
     {
-        HashMap<Object, Object> content = new HashMap<>();
+        final HashMap<Object, Object> content = new HashMap<>();
         content.put("key1", 37);
         content.put("key2", "foo");
         doTest(content,
@@ -218,10 +217,10 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testMapMessageWithMimeTypeWithNonJmsContent() throws Exception
+    void mapMessageWithMimeTypeWithNonJmsContent() throws Exception
     {
-        HashMap<Object, Object> content = new HashMap<>();
-        content.put(37, Collections.singletonMap("foo", "bar"));
+        final HashMap<Object, Object> content = new HashMap<>();
+        content.put(37, Map.of("foo", "bar"));
         final String mimeType = "foo/bar";
         doTest(content,
                mimeType,
@@ -232,9 +231,9 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testSerializableMessageWithMimeType() throws Exception
+    void serializableMessageWithMimeType() throws Exception
     {
-        Serializable content = new MySerializable();
+        final Serializable content = new MySerializable();
         final String mimeType = "foo/bar";
         doTest(content,
                mimeType,
@@ -245,9 +244,9 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testSerializableMessageWithoutMimeType() throws Exception
+    void serializableMessageWithoutMimeType() throws Exception
     {
-        Serializable content = new MySerializable();
+        final Serializable content = new MySerializable();
         doTest(content,
                null,
                DataSection.class,
@@ -257,7 +256,7 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testNullMessageWithoutMimeType() throws Exception
+    void nullMessageWithoutMimeType() throws Exception
     {
         doTest(null,
                null,
@@ -268,9 +267,9 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testUuidMessageWithMimeType() throws Exception
+    void uuidMessageWithMimeType() throws Exception
     {
-        UUID content = UUID.randomUUID();
+        final UUID content = UUID.randomUUID();
         final String mimeType = "foo/bar";
         doTest(content,
                mimeType,
@@ -280,12 +279,10 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
                null);
     }
 
-
-
     private byte[] getObjectStreamMessageBytes(final Serializable o) throws Exception
     {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(bos))
+        try (final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             final ObjectOutputStream oos = new ObjectOutputStream(bos))
         {
             oos.writeObject(o);
             return bos.toByteArray();
@@ -296,12 +293,11 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
                                                                            final int expectedNumberOfSections)
             throws Exception
     {
-        SectionDecoder sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
+        final SectionDecoder sectionDecoder = new SectionDecoderImpl(TYPE_REGISTRY.getSectionDecoderRegistry());
         final List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(content);
         assertEquals(expectedNumberOfSections, (long) sections.size(), "Unexpected number of sections");
         return sections;
     }
-
 
     protected InternalMessage getAmqMessage(final Serializable content, final String mimeType) throws Exception
     {
@@ -309,18 +305,18 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
         configureMessageContent(serializedContent);
         configureMessageHeader(mimeType);
 
-        final InternalMessageHeader internalMessageHeader = new InternalMessageHeader(_amqpHeader);
+        final InternalMessageHeader internalMessageHeader = new InternalMessageHeader(AMQP_HEADER);
         final int contentSize = serializedContent == null ? 0 : serializedContent.length;
         final InternalMessageMetaData metaData =
                 new InternalMessageMetaData(false, internalMessageHeader, contentSize);
-        when(_handle.getMetaData()).thenReturn(metaData);
+        when(HANDLE.getMetaData()).thenReturn(metaData);
 
-        return ((InternalMessage) InternalMessageMetaDataType.INSTANCE.createMessage(_handle));
+        return ((InternalMessage) InternalMessageMetaDataType.INSTANCE.createMessage(HANDLE));
     }
 
     private void configureMessageHeader(final String mimeType)
     {
-        when(_amqpHeader.getMimeType()).thenReturn(mimeType);
+        when(AMQP_HEADER.getMimeType()).thenReturn(mimeType);
     }
 
     private void configureMessageContent(byte[] section)
@@ -330,24 +326,23 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
             section = new byte[0];
         }
         final QpidByteBuffer combined = QpidByteBuffer.wrap(section);
-        when(_handle.getContentSize()).thenReturn(section.length);
+        when(HANDLE.getContentSize()).thenReturn(section.length);
         final ArgumentCaptor<Integer> offsetCaptor = ArgumentCaptor.forClass(Integer.class);
         final ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
 
-        when(_handle.getContent(offsetCaptor.capture(),
-                                sizeCaptor.capture())).then(invocation -> combined.view(offsetCaptor.getValue(),
-                                                                                        sizeCaptor.getValue()));
+        when(HANDLE.getContent(offsetCaptor.capture(), sizeCaptor.capture()))
+                .then(invocation -> combined.view(offsetCaptor.getValue(), sizeCaptor.getValue()));
     }
 
     private Byte getJmsMessageTypeAnnotation(final Message_1_0 convertedMessage)
     {
-        MessageAnnotationsSection messageAnnotationsSection = convertedMessage.getMessageAnnotationsSection();
+        final MessageAnnotationsSection messageAnnotationsSection = convertedMessage.getMessageAnnotationsSection();
         if (messageAnnotationsSection != null)
         {
-            Map<Symbol, Object> messageAnnotations = messageAnnotationsSection.getValue();
+            final Map<Symbol, Object> messageAnnotations = messageAnnotationsSection.getValue();
             if (messageAnnotations != null)
             {
-                Object annotation = messageAnnotations.get(Symbol.valueOf("x-opt-jms-msg-type"));
+                final Object annotation = messageAnnotations.get(Symbol.valueOf("x-opt-jms-msg-type"));
                 if (annotation instanceof Byte)
                 {
                     return ((Byte) annotation);
@@ -365,25 +360,24 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
                         final Byte expectedJmsTypeAnnotation) throws Exception
     {
         final InternalMessage sourceMessage = getAmqMessage(messageBytes, mimeType);
-        final Message_1_0 convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final Message_1_0 convertedMessage = CONVERTER.convert(sourceMessage, mock(NamedAddressSpace.class));
         final QpidByteBuffer content = convertedMessage.getContent();
 
-        List<EncodingRetainingSection<?>> sections = getEncodingRetainingSections(content, 1);
-        EncodingRetainingSection<?> encodingRetainingSection = sections.get(0);
+        final List<EncodingRetainingSection<?>> sections = getEncodingRetainingSections(content, 1);
+        final EncodingRetainingSection<?> encodingRetainingSection = sections.get(0);
         assertEquals(expectedBodySection, encodingRetainingSection.getClass(), "Unexpected section type");
 
         if (expectedContent instanceof byte[])
         {
-            assertArrayEquals(((byte[]) expectedContent),
-                                         ((Binary) encodingRetainingSection.getValue()).getArray(),
-                                         "Unexpected content");
+            assertArrayEquals(((byte[]) expectedContent), ((Binary) encodingRetainingSection.getValue()).getArray(),
+                    "Unexpected content");
         }
         else
         {
             assertEquals(expectedContent, encodingRetainingSection.getValue(), "Unexpected content");
         }
 
-        Symbol contentType = getContentType(convertedMessage);
+        final Symbol contentType = getContentType(convertedMessage);
         if (expectedContentType == null)
         {
             assertNull(contentType, "Content type should be null");
@@ -393,7 +387,7 @@ public class MessageConverter_Internal_to_1_0Test extends UnitTestBase
             assertEquals(expectedContentType, contentType, "Unexpected content type");
         }
 
-        Byte jmsMessageTypeAnnotation = getJmsMessageTypeAnnotation(convertedMessage);
+        final Byte jmsMessageTypeAnnotation = getJmsMessageTypeAnnotation(convertedMessage);
         if (expectedJmsTypeAnnotation == null)
         {
             assertNull(jmsMessageTypeAnnotation, "Unexpected annotation 'x-opt-jms-msg-type'");

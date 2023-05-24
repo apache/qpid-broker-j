@@ -53,7 +53,7 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class LinkImplTest
+class LinkImplTest
 {
     private final static String REMOTE_CONTAINER_ID = "remote-container-id";
     private final static String LINK_NAME = "link-name";
@@ -61,13 +61,13 @@ public class LinkImplTest
     private LinkRegistry<Source, Target> _linkRegistry;
 
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         _linkRegistry = mock(LinkRegistry.class);
     }
 
     @Test
-    public void linkStealing_PublishToQueue() throws Exception
+    void linkStealing_PublishToQueue() throws Exception
     {
         final Queue<?> queue = mock(Queue.class);
         final Session_1_0 session1 = createSession("principal1", queue);
@@ -87,7 +87,7 @@ public class LinkImplTest
     }
 
     @Test
-    public void linkStealing_ConsumeQueue() throws Exception
+    void linkStealing_ConsumeQueue() throws Exception
     {
         final Queue<?> queue = mock(Queue.class);
         final Session_1_0 session1 = createSession("principal1", queue);
@@ -107,7 +107,7 @@ public class LinkImplTest
     }
 
     @Test
-    public void linkStealing_PublishToExchange() throws Exception
+    void linkStealing_PublishToExchange() throws Exception
     {
         final Exchange<?> exchange = mock(Exchange.class);
         final Queue<?> queue = mock(Queue.class);
@@ -128,7 +128,7 @@ public class LinkImplTest
     }
 
     @Test
-    public void linkStealing_ConsumeExchange() throws Exception
+    void linkStealing_ConsumeExchange() throws Exception
     {
         final Exchange<?> exchange = mock(Exchange.class);
         final Queue<?> queue = mock(Queue.class);

@@ -32,8 +32,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -62,19 +62,21 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ConsumerTarget_1_0Test extends UnitTestBase
+@SuppressWarnings({"rawtypes", "unchecked"})
+class ConsumerTarget_1_0Test extends UnitTestBase
 {
-    private final AMQPDescribedTypeRegistry _describedTypeRegistry = AMQPDescribedTypeRegistry.newInstance()
-                                                                                              .registerTransportLayer()
-                                                                                              .registerMessagingLayer()
-                                                                                              .registerTransactionLayer()
-                                                                                              .registerSecurityLayer()
-                                                                                              .registerExtensionSoleconnLayer();
+    private static final AMQPDescribedTypeRegistry AMQP_DESCRIBED_TYPE_REGISTRY = AMQPDescribedTypeRegistry.newInstance()
+            .registerTransportLayer()
+            .registerMessagingLayer()
+            .registerTransactionLayer()
+            .registerSecurityLayer()
+            .registerExtensionSoleconnLayer();
+
     private ConsumerTarget_1_0 _consumerTarget;
     private SendingLinkEndpoint _sendingLinkEndpoint;
 
     @BeforeAll
-    public void setUp() throws Exception
+    void setUp()
     {
         final AMQPConnection_1_0 connection = mock(AMQPConnection_1_0.class);
         final Session_1_0 session = mock(Session_1_0.class);
@@ -83,19 +85,19 @@ public class ConsumerTarget_1_0Test extends UnitTestBase
         when(_sendingLinkEndpoint.isAttached()).thenReturn(true);
         when(session.getAMQPConnection()).thenReturn(connection);
         when(session.getConnection()).thenReturn(connection);
-        when(connection.getDescribedTypeRegistry()).thenReturn(_describedTypeRegistry);
+        when(connection.getDescribedTypeRegistry()).thenReturn(AMQP_DESCRIBED_TYPE_REGISTRY);
         when(connection.getContextValue(Long.class, Consumer.SUSPEND_NOTIFICATION_PERIOD)).thenReturn(10000L);
 
         _consumerTarget = new ConsumerTarget_1_0(_sendingLinkEndpoint, true);
     }
 
     @Test
-    public void testTTLAdjustedOnSend() throws Exception
+    void TTLAdjustedOnSend() throws Exception
     {
-        final MessageInstanceConsumer comsumer = mock(MessageInstanceConsumer.class);
+        final MessageInstanceConsumer consumer = mock(MessageInstanceConsumer.class);
 
-        long ttl = 2000L;
-        long arrivalTime = System.currentTimeMillis() - 1000L;
+        final long ttl = 2000L;
+        final long arrivalTime = System.currentTimeMillis() - 1000L;
 
         final Header header = new Header();
         header.setTtl(UnsignedInteger.valueOf(ttl));
@@ -103,30 +105,30 @@ public class ConsumerTarget_1_0Test extends UnitTestBase
         final MessageInstance messageInstance = mock(MessageInstance.class);
         when(messageInstance.getMessage()).thenReturn(message);
 
-        AtomicReference<QpidByteBuffer> payloadRef = new AtomicReference<>();
+        final AtomicReference<QpidByteBuffer> payloadRef = new AtomicReference<>();
         doAnswer(invocation ->
-                 {
-                     final Object[] args = invocation.getArguments();
-                     Transfer transfer = (Transfer) args[0];
+        {
+            final Object[] args = invocation.getArguments();
+            final Transfer transfer = (Transfer) args[0];
 
-                     QpidByteBuffer transferPayload = transfer.getPayload();
+            final QpidByteBuffer transferPayload = transfer.getPayload();
 
-                     QpidByteBuffer payloadCopy = transferPayload.duplicate();
-                     payloadRef.set(payloadCopy);
-                     return null;
-                 }).when(_sendingLinkEndpoint).transfer(any(Transfer.class), anyBoolean());
+            final QpidByteBuffer payloadCopy = transferPayload.duplicate();
+            payloadRef.set(payloadCopy);
+            return null;
+        }).when(_sendingLinkEndpoint).transfer(any(Transfer.class), anyBoolean());
 
-        _consumerTarget.doSend(comsumer, messageInstance, false);
+        _consumerTarget.doSend(consumer, messageInstance, false);
 
         verify(_sendingLinkEndpoint, times(1)).transfer(any(Transfer.class), anyBoolean());
 
         final List<EncodingRetainingSection<?>> sections;
-        try (QpidByteBuffer payload = payloadRef.get())
+        try (final QpidByteBuffer payload = payloadRef.get())
         {
-            sections = new SectionDecoderImpl(_describedTypeRegistry.getSectionDecoderRegistry()).parseAll(payload);
+            sections = new SectionDecoderImpl(AMQP_DESCRIBED_TYPE_REGISTRY.getSectionDecoderRegistry()).parseAll(payload);
         }
         Header sentHeader = null;
-        for (EncodingRetainingSection<?> section : sections)
+        for (final EncodingRetainingSection<?> section : sections)
         {
             if (section instanceof HeaderSection)
             {
@@ -141,21 +143,21 @@ public class ConsumerTarget_1_0Test extends UnitTestBase
 
     private Message_1_0 createTestMessage(final Header header, long arrivalTime)
     {
-        DeliveryAnnotationsSection deliveryAnnotations =
-                new DeliveryAnnotations(Collections.emptyMap()).createEncodingRetainingSection();
-        MessageAnnotationsSection messageAnnotations =
-                new MessageAnnotations(Collections.emptyMap()).createEncodingRetainingSection();
-        ApplicationPropertiesSection applicationProperties =
-                new ApplicationProperties(Collections.emptyMap()).createEncodingRetainingSection();
-        FooterSection footer = new Footer(Collections.emptyMap()).createEncodingRetainingSection();
-        MessageMetaData_1_0 metaData = new MessageMetaData_1_0(header.createEncodingRetainingSection(),
-                                                               deliveryAnnotations,
-                                                               messageAnnotations,
-                                                               new Properties().createEncodingRetainingSection(),
-                                                               applicationProperties,
-                                                               footer,
-                                                               arrivalTime,
-                                                               0);
+        final DeliveryAnnotationsSection deliveryAnnotations =
+                new DeliveryAnnotations(Map.of()).createEncodingRetainingSection();
+        final MessageAnnotationsSection messageAnnotations =
+                new MessageAnnotations(Map.of()).createEncodingRetainingSection();
+        final ApplicationPropertiesSection applicationProperties =
+                new ApplicationProperties(Map.of()).createEncodingRetainingSection();
+        final FooterSection footer = new Footer(Map.of()).createEncodingRetainingSection();
+        final MessageMetaData_1_0 metaData = new MessageMetaData_1_0(header.createEncodingRetainingSection(),
+                deliveryAnnotations,
+                messageAnnotations,
+                new Properties().createEncodingRetainingSection(),
+                applicationProperties,
+                footer,
+                arrivalTime,
+                0);
 
         final StoredMessage<MessageMetaData_1_0> storedMessage = mock(StoredMessage.class);
         when(storedMessage.getContent(eq(0), anyInt())).thenReturn(QpidByteBuffer.emptyQpidByteBuffer());

@@ -20,43 +20,38 @@ package org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 import org.junit.jupiter.api.Test;
 
-public class SoleConnectionDetectionPolicyTest extends UnitTestBase
+class SoleConnectionDetectionPolicyTest extends UnitTestBase
 {
     @Test
-    public void testValue()
+    void value()
     {
         assertEquals(new UnsignedInteger(0), SoleConnectionDetectionPolicy.STRONG.getValue());
         assertEquals(new UnsignedInteger(1), SoleConnectionDetectionPolicy.WEAK.getValue());
     }
 
     @Test
-    public void testValueOf()
+    void valueOf()
     {
         assertEquals(SoleConnectionDetectionPolicy.STRONG,
                 SoleConnectionDetectionPolicy.valueOf(new UnsignedInteger(0)));
         assertEquals(SoleConnectionDetectionPolicy.WEAK,
                 SoleConnectionDetectionPolicy.valueOf(new UnsignedInteger(1)));
 
-        try
-        {
-            SoleConnectionDetectionPolicy.valueOf(new UnsignedInteger(2));
-            fail("An exception is expected");
-        }
-        catch (RuntimeException e)
-        {
-            assertNotNull(e.getMessage());
-        }
+        final RuntimeException thrown = assertThrows(RuntimeException.class,
+                () -> SoleConnectionDetectionPolicy.valueOf(new UnsignedInteger(2)),
+                "An exception is expected");
+        assertNotNull(thrown.getMessage());
     }
 
     @Test
-    public void testToString()
+    void toStrings()
     {
         assertEquals("strong", SoleConnectionDetectionPolicy.STRONG.toString());
         assertEquals("weak", SoleConnectionDetectionPolicy.WEAK.toString());

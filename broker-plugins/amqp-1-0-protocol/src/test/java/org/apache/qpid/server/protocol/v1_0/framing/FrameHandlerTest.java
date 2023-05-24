@@ -40,25 +40,26 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class FrameHandlerTest extends UnitTestBase
+class FrameHandlerTest extends UnitTestBase
 {
     private static final int MAX_FRAME_SIZE = 4096;
+
     private ValueHandler _valueHandler;
 
     @BeforeAll
-    public void setUp() throws Exception
+    void setUp()
     {
         _valueHandler = new ValueHandler(AMQPDescribedTypeRegistry.newInstance());
     }
 
     @Test
-    public void testSaslHeartbeat()
+    void saslHeartbeat()
     {
-        ConnectionHandler connectionHandler = mock(ConnectionHandler.class);
+        final ConnectionHandler connectionHandler = mock(ConnectionHandler.class);
         when(connectionHandler.getMaxFrameSize()).thenReturn(MAX_FRAME_SIZE);
-        FrameHandler handler = new  FrameHandler(_valueHandler, connectionHandler, true);
+        final FrameHandler handler = new  FrameHandler(_valueHandler, connectionHandler, true);
 
-        QpidByteBuffer body = QpidByteBuffer.allocate(false, 8);
+        final QpidByteBuffer body = QpidByteBuffer.allocate(false, 8);
         body.putInt(8);    // size
         body.put((byte)2); // DOFF
         body.put((byte)1); // AMQP Frame Type
@@ -67,23 +68,23 @@ public class FrameHandlerTest extends UnitTestBase
 
         handler.parse(body);
 
-        ArgumentCaptor<Error> errorCaptor = ArgumentCaptor.forClass(Error.class);
+        final ArgumentCaptor<Error> errorCaptor = ArgumentCaptor.forClass(Error.class);
         verify(connectionHandler).handleError(errorCaptor.capture());
 
-        Error error = errorCaptor.getValue();
+        final Error error = errorCaptor.getValue();
         assertNotNull(error);
         assertEquals(ConnectionError.FRAMING_ERROR, error.getCondition());
         assertEquals("Empty (heartbeat) frames are not permitted during SASL negotiation", error.getDescription());
     }
 
     @Test
-    public void testOversizedFrame()
+    void oversizedFrame()
     {
-        ConnectionHandler connectionHandler = mock(ConnectionHandler.class);
+        final ConnectionHandler connectionHandler = mock(ConnectionHandler.class);
         when(connectionHandler.getMaxFrameSize()).thenReturn(MAX_FRAME_SIZE);
-        FrameHandler handler = new FrameHandler(_valueHandler, connectionHandler, true);
+        final FrameHandler handler = new FrameHandler(_valueHandler, connectionHandler, true);
 
-        QpidByteBuffer body = QpidByteBuffer.allocate(false, MAX_FRAME_SIZE + 8);
+        final QpidByteBuffer body = QpidByteBuffer.allocate(false, MAX_FRAME_SIZE + 8);
         body.putInt(body.capacity()); // size
         body.put((byte) 2); // DOFF
         body.put((byte) 1); // AMQP Frame Type
@@ -93,10 +94,10 @@ public class FrameHandlerTest extends UnitTestBase
 
         handler.parse(body);
 
-        ArgumentCaptor<Error> errorCaptor = ArgumentCaptor.forClass(Error.class);
+        final ArgumentCaptor<Error> errorCaptor = ArgumentCaptor.forClass(Error.class);
         verify(connectionHandler).handleError(errorCaptor.capture());
 
-        Error error = errorCaptor.getValue();
+        final Error error = errorCaptor.getValue();
         assertNotNull(error);
         assertEquals(ConnectionError.FRAMING_ERROR, error.getCondition());
         assertEquals(String.format("specified frame size %s larger than maximum frame header size %s", body.capacity(),

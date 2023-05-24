@@ -26,16 +26,16 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -55,25 +55,25 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class PropertyConverter_Internal_to_v1_0Test extends UnitTestBase
+class PropertyConverter_Internal_to_v1_0Test extends UnitTestBase
 {
     private MessageConverter_Internal_to_v1_0 _messageConverter;
     private NamedAddressSpace _addressSpace;
 
     @BeforeAll
-    public void setUp() throws Exception
+    void setUp()
     {
         _messageConverter = new MessageConverter_Internal_to_v1_0();
         _addressSpace = mock(NamedAddressSpace.class);
     }
 
     @Test
-    public void testDurableTrueConversion()
+    void durableTrueConversion()
     {
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
-        InternalMessage originalMessage = createTestMessage(header, null, true);
+        final InternalMessage originalMessage = createTestMessage(header, null, true);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertTrue(convertedMessage.isPersistent(), "Unexpected persistence of message");
         assertTrue(convertedMessage.getStoredMessage().getMetaData().isPersistent(),
@@ -81,12 +81,12 @@ public class PropertyConverter_Internal_to_v1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testDurableFalseConversion()
+    void durableFalseConversion()
     {
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
-        InternalMessage originalMessage = createTestMessage(header, null, false);
+        final InternalMessage originalMessage = createTestMessage(header, null, false);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertFalse(convertedMessage.isPersistent(), "Unexpected persistence of message");
         assertFalse(convertedMessage.getStoredMessage().getMetaData().isPersistent(),
@@ -94,229 +94,222 @@ public class PropertyConverter_Internal_to_v1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testPriorityConversion()
+    void priorityConversion()
     {
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         byte priority = (byte) 7;
         when(header.getPriority()).thenReturn(priority);
-        InternalMessage originalMessage = createTestMessage(header);
+        final InternalMessage originalMessage = createTestMessage(header);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(priority, (long) convertedMessage.getMessageHeader().getPriority(), "Unexpected priority");
     }
 
     @Test
-    public void testExpirationConversion() throws InterruptedException
+    void expirationConversion() throws InterruptedException
     {
-        long ttl = 10000;
-        long expiryTime = System.currentTimeMillis() + ttl;
+        final long ttl = 10000;
+        final long expiryTime = System.currentTimeMillis() + ttl;
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getExpiration()).thenReturn(expiryTime);
-        InternalMessage originalMessage = createTestMessage(header);
+        final InternalMessage originalMessage = createTestMessage(header);
         Thread.sleep(1L);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        Long convertedTtl = MessageConverter_from_1_0.getTtl(convertedMessage);
+        final Long convertedTtl = MessageConverter_from_1_0.getTtl(convertedMessage);
+        assertNotNull(convertedTtl);
         assertEquals(expiryTime - originalMessage.getArrivalTime(), convertedTtl.longValue(), "Unexpected TTL");
     }
 
     @Test
-    public void testContentEncodingConversion()
+    void contentEncodingConversion()
     {
-        String contentEncoding = "my-test-encoding";
+        final String contentEncoding = "my-test-encoding";
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getEncoding()).thenReturn(contentEncoding);
-        InternalMessage originalMessage = createTestMessage(header);
+        final InternalMessage originalMessage = createTestMessage(header);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        Symbol convertedContentEncoding = MessageConverter_from_1_0.getContentEncoding(convertedMessage);
+        final Symbol convertedContentEncoding = MessageConverter_from_1_0.getContentEncoding(convertedMessage);
         assertEquals(contentEncoding, convertedContentEncoding.toString(), "Unexpected content encoding");
     }
 
     @Test
-    public void testMessageIdStringConversion()
+    void messageIdStringConversion()
     {
         final String messageId = "testMessageId";
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getMessageId()).thenReturn(messageId);
-        InternalMessage originalMessage = createTestMessage(header);
+        final InternalMessage originalMessage = createTestMessage(header);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        Object convertedMessageId = MessageConverter_from_1_0.getMessageId(convertedMessage);
+        final Object convertedMessageId = MessageConverter_from_1_0.getMessageId(convertedMessage);
         assertEquals(messageId, convertedMessageId, "Unexpected messageId");
     }
 
     @Test
-    public void testMessageIdUuidConversion()
+    void messageIdUuidConversion()
     {
         final UUID messageId = UUID.randomUUID();
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getMessageId()).thenReturn(messageId.toString());
-        InternalMessage originalMessage = createTestMessage(header);
+        final InternalMessage originalMessage = createTestMessage(header);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        Object convertedMessageId = MessageConverter_from_1_0.getMessageId(convertedMessage);
+        final Object convertedMessageId = MessageConverter_from_1_0.getMessageId(convertedMessage);
         assertEquals(messageId, convertedMessageId, "Unexpected messageId");
     }
 
     @Test
-    public void testMessageIdUnsignedLongConversion()
+    void messageIdUnsignedLongConversion()
     {
         final UnsignedLong messageId = UnsignedLong.valueOf(-1L);
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getMessageId()).thenReturn(messageId.toString());
-        InternalMessage originalMessage = createTestMessage(header);
+        final InternalMessage originalMessage = createTestMessage(header);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        Object convertedMessageId = MessageConverter_from_1_0.getMessageId(convertedMessage);
+        final Object convertedMessageId = MessageConverter_from_1_0.getMessageId(convertedMessage);
         assertEquals(messageId, convertedMessageId, "Unexpected messageId");
     }
 
     @Test
-    public void testCorrelationIdStringConversion()
+    void correlationIdStringConversion()
     {
         final String correlationId = "testCorrelationId";
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getCorrelationId()).thenReturn(correlationId);
-        InternalMessage originalMessage = createTestMessage(header);
+        final InternalMessage originalMessage = createTestMessage(header);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        Object convertedCorrelationId = MessageConverter_from_1_0.getCorrelationId(convertedMessage);
+        final Object convertedCorrelationId = MessageConverter_from_1_0.getCorrelationId(convertedMessage);
         assertEquals(correlationId, convertedCorrelationId, "Unexpected messageId");
     }
 
     @Test
-    public void testCorrelationIdUuidConversion()
+    void correlationIdUuidConversion()
     {
         final UUID correlationId = UUID.randomUUID();
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getCorrelationId()).thenReturn(correlationId.toString());
-        InternalMessage originalMessage = createTestMessage(header);
+        final InternalMessage originalMessage = createTestMessage(header);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        Object convertedCorrelationId = MessageConverter_from_1_0.getCorrelationId(convertedMessage);
+        final Object convertedCorrelationId = MessageConverter_from_1_0.getCorrelationId(convertedMessage);
         assertEquals(correlationId, convertedCorrelationId, "Unexpected correlationId");
     }
 
     @Test
-    public void testCorrelationIdUnsignedLongConversion()
+    void correlationIdUnsignedLongConversion()
     {
         final UnsignedLong correlationId = UnsignedLong.valueOf(-1L);
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getCorrelationId()).thenReturn(correlationId.toString());
-        InternalMessage originalMessage = createTestMessage(header);
+        final InternalMessage originalMessage = createTestMessage(header);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        Object convertedCorrelationId = MessageConverter_from_1_0.getCorrelationId(convertedMessage);
+        final Object convertedCorrelationId = MessageConverter_from_1_0.getCorrelationId(convertedMessage);
         assertEquals(correlationId, convertedCorrelationId, "Unexpected correlationId");
     }
 
     @Test
-    public void testUserIdConversion()
+    void userIdConversion()
     {
         final String userId = "testUserId";
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getUserId()).thenReturn(userId);
-        InternalMessage originalMessage = createTestMessage(header);
+        final InternalMessage originalMessage = createTestMessage(header);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        Binary convertedUserId = MessageConverter_from_1_0.getUserId(convertedMessage);
+        final Binary convertedUserId = MessageConverter_from_1_0.getUserId(convertedMessage);
         assertArrayEquals(userId.getBytes(UTF_8), convertedUserId.getArray(), "Unexpected userId");
     }
 
     @Test
-    public void testReplyToConversion()
+    void replyToConversion()
     {
         final String replyTo = "amq.direct/test";
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getReplyTo()).thenReturn(replyTo);
-        InternalMessage originalMessage = createTestMessage(header);
+        final InternalMessage originalMessage = createTestMessage(header);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        String convertedReplyTo = MessageConverter_from_1_0.getReplyTo(convertedMessage);
+        final String convertedReplyTo = MessageConverter_from_1_0.getReplyTo(convertedMessage);
         assertEquals(replyTo, convertedReplyTo, "Unexpected replyTo");
     }
 
     @Test
-    public void testToConversion()
+    void toConversion()
     {
         final String to = "amq.direct/test";
-        InternalMessage originalMessage = createTestMessage(to);
-
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage originalMessage = createTestMessage(to);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(to, convertedMessage.getTo(), "Unexpected to");
     }
 
     @Test
-    public void testTimestampConversion()
+    void timestampConversion()
     {
         final long timestamp = System.currentTimeMillis();
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getTimestamp()).thenReturn(timestamp);
-        InternalMessage originalMessage = createTestMessage(header);
+        final InternalMessage originalMessage = createTestMessage(header);
 
-        Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        Date creationTime = MessageConverter_from_1_0.getCreationTime(convertedMessage);
+        final Date creationTime = MessageConverter_from_1_0.getCreationTime(convertedMessage);
         assertNotNull(creationTime, "timestamp not converted");
         assertEquals(timestamp, creationTime.getTime(), "Unexpected timestamp");
     }
 
     @Test
-    public void testHeadersConversion()
+    void headersConversion()
     {
-        final Map<String, Object> properties = new HashMap<>();
-        properties.put("testProperty1", "testProperty1Value");
-        properties.put("intProperty", 1);
+        final Map<String, Object> properties = Map.of("testProperty1", "testProperty1Value",
+                "intProperty", 1);
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getHeaderNames()).thenReturn(properties.keySet());
         doAnswer(invocation ->
-                 {
-                     final String originalArgument = (String) (invocation.getArguments())[0];
-                     return properties.get(originalArgument);
-                 }).when(header).getHeader(any(String.class));
-        InternalMessage originalMessage = createTestMessage(header);
+        {
+            final String originalArgument = (String) (invocation.getArguments())[0];
+            return properties.get(originalArgument);
+        }).when(header).getHeader(any(String.class));
+        final InternalMessage originalMessage = createTestMessage(header);
 
         final Message_1_0 convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
-        Map<String, Object> convertedHeaders = convertedMessage.getApplicationPropertiesSection().getValue();
+        final Map<String, Object> convertedHeaders = convertedMessage.getApplicationPropertiesSection().getValue();
         assertEquals(properties, new HashMap<>(convertedHeaders), "Unexpected application properties");
     }
 
     @Test
-    public void testHeadersConversionWithNonSimpleTypes()
+    void headersConversionWithNonSimpleTypes()
     {
-        final Map<String, Object> properties = Collections.singletonMap("listProperty", Collections.emptyList());
+        final Map<String, Object> properties = Map.of("listProperty", List.of());
         final AMQMessageHeader header = mock(AMQMessageHeader.class);
         when(header.getHeaderNames()).thenReturn(properties.keySet());
         doAnswer(invocation ->
-                 {
-                     final String originalArgument = (String) (invocation.getArguments())[0];
-                     return properties.get(originalArgument);
-                 }).when(header).getHeader(any(String.class));
-        InternalMessage originalMessage = createTestMessage(header);
+        {
+            final String originalArgument = (String) (invocation.getArguments())[0];
+            return properties.get(originalArgument);
+        }).when(header).getHeader(any(String.class));
+        final InternalMessage originalMessage = createTestMessage(header);
 
-        try
-        {
-            _messageConverter.convert(originalMessage, _addressSpace);
-            fail("Expected exception not thrown");
-        }
-        catch (MessageConversionException e)
-        {
-            // pass
-        }
+        assertThrows(MessageConversionException.class,
+                () -> _messageConverter.convert(originalMessage, _addressSpace),
+                "Expected exception not thrown");
     }
 
     private InternalMessage createTestMessage(String to)
@@ -333,7 +326,7 @@ public class PropertyConverter_Internal_to_v1_0Test extends UnitTestBase
     }
 
     private InternalMessage createTestMessage(final AMQMessageHeader header,
-                                              byte[] content,
+                                              final byte[] content,
                                               final boolean persistent)
     {
         final InternalMessageHeader internalMessageHeader = new InternalMessageHeader(header);

@@ -21,11 +21,11 @@
 package org.apache.qpid.server.protocol.v1_0.store;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,15 +71,13 @@ public abstract class LinkStoreTestCase extends UnitTestBase
         _source.setDurable(TerminusDurability.UNSETTLED_STATE);
         _source.setDynamic(Boolean.TRUE);
         _source.setExpiryPolicy(TerminusExpiryPolicy.CONNECTION_CLOSE);
-        _source.setFilter(Collections.singletonMap(Symbol.valueOf("foo"), NoLocalFilter.INSTANCE));
+        _source.setFilter(Map.of(Symbol.valueOf("foo"), NoLocalFilter.INSTANCE));
         _source.setOutcomes(new Accepted().getSymbol());
-        _source.setDynamicNodeProperties(Collections.singletonMap(Symbol.valueOf("dynamicProperty"),
-                                                                  "dynamicPropertyValue"));
+        _source.setDynamicNodeProperties(Map.of(Symbol.valueOf("dynamicProperty"), "dynamicPropertyValue"));
         _source.setTimeout(new UnsignedInteger(1));
 
         _target.setTimeout(new UnsignedInteger(2));
-        _target.setDynamicNodeProperties(Collections.singletonMap(Symbol.valueOf("targetDynamicProperty"),
-                                                                  "targetDynamicPropertyValue"));
+        _target.setDynamicNodeProperties(Map.of(Symbol.valueOf("targetDynamicProperty"), "targetDynamicPropertyValue"));
         _target.setDynamic(Boolean.TRUE);
         _target.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
         _target.setAddress("bar");
@@ -94,22 +92,16 @@ public abstract class LinkStoreTestCase extends UnitTestBase
     }
 
     @Test
-    public void testOpenAndLoad()
+    public void openAndLoad()
     {
         Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         assertTrue(links.isEmpty(), "Unexpected links");
 
-        try
-        {
-            _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
-            fail("Repeated open of already opened store should fail");
-        }
-        catch (StoreException e)
-        {
-            // pass
-        }
+        assertThrows(StoreException.class,
+                () -> _linkStore.openAndLoad(new LinkStoreUpdaterImpl()),
+                "Repeated open of already opened store should fail");
 
-        LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
+        final LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
         _linkStore.saveLink(linkDefinition);
         _linkStore.close();
 
@@ -117,48 +109,35 @@ public abstract class LinkStoreTestCase extends UnitTestBase
         assertEquals(1, links.size(), "Unexpected link number");
     }
 
-
     @Test
-    public void testClose() throws Exception
+    public void close()
     {
         _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
-
         _linkStore.close();
-        try
+
+        assertThrows(StoreException.class, () ->
         {
             LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
             _linkStore.saveLink(linkDefinition);
-            fail("Saving link with close store should fail");
-        }
-        catch (StoreException e)
-        {
-            // pass
-        }
+        }, "Saving link with close store should fail");
     }
 
     @Test
-    public void testSaveLink()
+    public void saveLink()
     {
-
-        LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
+        final LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
         _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         _linkStore.saveLink(linkDefinition);
         _linkStore.close();
 
-        try
-        {
-            _linkStore.saveLink(createLinkDefinition("2", "test2"));
-            fail("Save on unopened database should fail");
-        }
-        catch (StoreException e)
-        {
-            // pass
-        }
+        assertThrows(StoreException.class,
+                () -> _linkStore.saveLink(createLinkDefinition("2", "test2")),
+                "Save on unopened database should fail");
 
-        Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
+        final Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         assertEquals(1, links.size(), "Unexpected link number");
 
-        LinkDefinition<Source, Target> recoveredLink = links.iterator().next();
+        final LinkDefinition<Source, Target> recoveredLink = links.iterator().next();
 
         assertEquals(linkDefinition.getName(), recoveredLink.getName(), "Unexpected link name");
         assertEquals(linkDefinition.getRemoteContainerId(), recoveredLink.getRemoteContainerId(),
@@ -169,33 +148,27 @@ public abstract class LinkStoreTestCase extends UnitTestBase
     }
 
     @Test
-    public void testDeleteLink()
+    public void deleteLink()
     {
         _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
 
-        LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
+        final LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
         _linkStore.saveLink(linkDefinition);
 
-        LinkDefinition<Source, Target> linkDefinition2 = createLinkDefinition("2", "test2");
+        final LinkDefinition<Source, Target> linkDefinition2 = createLinkDefinition("2", "test2");
         _linkStore.saveLink(linkDefinition2);
 
         _linkStore.deleteLink(linkDefinition2);
         _linkStore.close();
 
-        try
-        {
-            _linkStore.deleteLink(linkDefinition);
-            fail("Delete on unopened database should fail");
-        }
-        catch (StoreException e)
-        {
-            // pass
-        }
+        assertThrows(StoreException.class,
+                () -> _linkStore.deleteLink(linkDefinition),
+                "Delete on unopened database should fail");
 
-        Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
+        final Collection<LinkDefinition<Source, Target>> links = _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
         assertEquals(1, links.size(), "Unexpected link number");
 
-        LinkDefinition<Source, Target> recoveredLink = links.iterator().next();
+        final LinkDefinition<Source, Target> recoveredLink = links.iterator().next();
 
         assertEquals(linkDefinition.getName(), recoveredLink.getName(), "Unexpected link name");
         assertEquals(linkDefinition.getRemoteContainerId(), recoveredLink.getRemoteContainerId(),
@@ -206,14 +179,14 @@ public abstract class LinkStoreTestCase extends UnitTestBase
     }
 
     @Test
-    public void testDelete()
+    public void delete()
     {
         _linkStore.openAndLoad(new LinkStoreUpdaterImpl());
 
-        LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
+        final LinkDefinition<Source, Target> linkDefinition = createLinkDefinition("1", "test");
         _linkStore.saveLink(linkDefinition);
 
-        LinkDefinition<Source, Target> linkDefinition2 = createLinkDefinition("2", "test2");
+        final LinkDefinition<Source, Target> linkDefinition2 = createLinkDefinition("2", "test2");
         _linkStore.saveLink(linkDefinition2);
 
         _linkStore.close();
@@ -232,6 +205,6 @@ public abstract class LinkStoreTestCase extends UnitTestBase
 
     private LinkDefinitionImpl<Source, Target> createLinkDefinition(final String remoteContainerId, final String linkName)
     {
-        return new LinkDefinitionImpl(remoteContainerId, linkName, Role.RECEIVER, _source, _target);
+        return new LinkDefinitionImpl<>(remoteContainerId, linkName, Role.RECEIVER, _source, _target);
     }
 }

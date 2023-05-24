@@ -24,8 +24,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -49,50 +49,51 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TestMemoryMessageStore;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class Message_1_0_MutatorTest extends UnitTestBase
+class Message_1_0_MutatorTest extends UnitTestBase
 {
     private static final byte TEST_PRIORITY = (byte) 1;
     private static final String TEST_HEADER_NAME = "foo";
     private static final String TEST_HEADER_VALUE = "bar";
     private static final String TEST_CONTENT_TYPE = "text/plain";
     private static final String TEST_CONTENT = "testContent";
+
     private MessageStore _messageStore;
     private Message_1_0_Mutator _messageMutator;
 
     @BeforeAll
-    public void beforeAll()
+    void beforeAll()
     {
         _messageStore = new TestMemoryMessageStore();
     }
 
     @BeforeEach
-    public void beforeEach()
+    void beforeEach()
     {
         final Message_1_0 message = createTestMessage();
         _messageMutator = new Message_1_0_Mutator(message, _messageStore);
     }
 
     @AfterAll
-    public void tearDown()
+    void tearDown()
     {
         _messageStore.closeMessageStore();
     }
 
     @Test
-    public void setPriority()
+    void setPriority()
     {
         _messageMutator.setPriority((byte) (TEST_PRIORITY + 1));
         assertThat(_messageMutator.getPriority(), is(equalTo((byte) (TEST_PRIORITY + 1))));
     }
 
     @Test
-    public void getPriority()
+    void getPriority()
     {
         assertThat((int) _messageMutator.getPriority(), is(equalTo((int) TEST_PRIORITY)));
     }
 
     @Test
-    public void create() throws Exception
+    void create() throws Exception
     {
         _messageMutator.setPriority((byte) (TEST_PRIORITY + 1));
 
@@ -127,17 +128,16 @@ public class Message_1_0_MutatorTest extends UnitTestBase
         final PropertiesSection propertiesSection = properties.createEncodingRetainingSection();
 
         final ApplicationPropertiesSection applicationPropertiesSection =
-                new ApplicationProperties(Collections.singletonMap(TEST_HEADER_NAME, TEST_HEADER_VALUE))
-                        .createEncodingRetainingSection();
+                new ApplicationProperties(Map.of(TEST_HEADER_NAME, TEST_HEADER_VALUE)).createEncodingRetainingSection();
 
         final MessageMetaData_1_0 mmd = new MessageMetaData_1_0(headerSection,
-                                                                null,
-                                                                null,
-                                                                propertiesSection,
-                                                                applicationPropertiesSection,
-                                                                null,
-                                                                System.currentTimeMillis(),
-                                                                contentSize);
+                null,
+                null,
+                propertiesSection,
+                applicationPropertiesSection,
+                null,
+                System.currentTimeMillis(),
+                contentSize);
 
         final MessageHandle<MessageMetaData_1_0> handle = _messageStore.addMessage(mmd);
         handle.addContent(content);

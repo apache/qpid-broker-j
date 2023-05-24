@@ -34,24 +34,25 @@ import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class DeliveryRegistryImplTest extends UnitTestBase
+class DeliveryRegistryImplTest extends UnitTestBase
 {
     private static final UnsignedInteger DELIVERY_ID = UnsignedInteger.ZERO;
     private static final UnsignedInteger DELIVERY_ID_2 = UnsignedInteger.ONE;
     private static final Binary DELIVERY_TAG = new Binary(new byte[]{(byte) 32, (byte) 33});
     private static final Binary DELIVERY_TAG_2 = new Binary(new byte[]{(byte) 32});
 
-    private DeliveryRegistryImpl _registry;
     private final UnsettledDelivery _unsettledDelivery = new UnsettledDelivery(DELIVERY_TAG, mock(LinkEndpoint.class));
 
+    private DeliveryRegistryImpl _registry;
+
     @BeforeEach
-    public void setUp()
+    void setUp()
     {
         _registry = new DeliveryRegistryImpl();
     }
 
     @Test
-    public void addDelivery()
+    void addDelivery()
     {
         assertThat(_registry.size(), is(equalTo(0)));
 
@@ -61,7 +62,7 @@ public class DeliveryRegistryImplTest extends UnitTestBase
     }
 
     @Test
-    public void removeDelivery()
+    void removeDelivery()
     {
         _registry.addDelivery(DELIVERY_ID, _unsettledDelivery);
         assertThat(_registry.size(), is(equalTo(1)));
@@ -71,7 +72,7 @@ public class DeliveryRegistryImplTest extends UnitTestBase
     }
 
     @Test
-    public void getDelivery()
+    void getDelivery()
     {
         _registry.addDelivery(DELIVERY_ID, _unsettledDelivery);
 
@@ -82,7 +83,7 @@ public class DeliveryRegistryImplTest extends UnitTestBase
     }
 
     @Test
-    public void removeDeliveriesForLinkEndpoint()
+    void removeDeliveriesForLinkEndpoint()
     {
         _registry.addDelivery(DELIVERY_ID, _unsettledDelivery);
         _registry.addDelivery(DELIVERY_ID_2, new UnsettledDelivery(DELIVERY_TAG_2, _unsettledDelivery.getLinkEndpoint()));
@@ -96,7 +97,7 @@ public class DeliveryRegistryImplTest extends UnitTestBase
     }
 
     @Test
-    public void getDeliveryId()
+    void getDeliveryId()
     {
         _registry.addDelivery(DELIVERY_ID, _unsettledDelivery);
         _registry.addDelivery(DELIVERY_ID_2, new UnsettledDelivery(DELIVERY_TAG, mock(LinkEndpoint.class)));
@@ -107,7 +108,7 @@ public class DeliveryRegistryImplTest extends UnitTestBase
     }
 
     @Test
-    public void size()
+    void size()
     {
         assertThat(_registry.size(), is(equalTo(0)));
 

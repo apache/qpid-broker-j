@@ -33,9 +33,9 @@ import static org.mockito.Mockito.when;
 
 import java.net.InetSocketAddress;
 import java.security.Principal;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.security.auth.Subject;
@@ -79,19 +79,20 @@ import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class ProtocolEngine_1_0_0Test extends UnitTestBase
+@SuppressWarnings({"rawtypes"})
+class ProtocolEngine_1_0_0Test extends UnitTestBase
 {
     private AMQPConnection_1_0Impl _protocolEngine_1_0_0;
     private ServerNetworkConnection _networkConnection;
     private Broker<?> _broker;
     private AmqpPort _port;
-    private AuthenticationProvider _authenticationProvider;
+    private AuthenticationProvider<?> _authenticationProvider;
     private FrameWriter _frameWriter;
-    private AMQPConnection _connection;
+    private AMQPConnection<?> _connection;
     private VirtualHost<?> _virtualHost;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp()
     {
         _networkConnection = mock(ServerNetworkConnection.class);
         when(_networkConnection.getLocalAddress()).thenReturn(new InetSocketAddress(0));
@@ -124,7 +125,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         doAnswer(invocation ->
         {
             _connection = connectionCaptor.getValue();
-            throw new SoleConnectionEnforcementPolicyException(null, Collections.emptySet(), "abc1");
+            throw new SoleConnectionEnforcementPolicyException(null, Set.of(), "abc1");
         }).when(_virtualHost).registerConnection(connectionCaptor.capture());
         when(_virtualHost.getPrincipal()).thenReturn(mock(VirtualHostPrincipal.class));
         when(_port.getAddressSpace(anyString())).thenReturn(_virtualHost);
@@ -133,7 +134,7 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         final ArgumentCaptor<Principal> userCaptor = ArgumentCaptor.forClass(Principal.class);
         when(subjectCreator.createSubjectWithGroups(userCaptor.capture())).then((Answer<Subject>) invocation ->
         {
-            Subject subject = new Subject();
+            final Subject subject = new Subject();
             subject.getPrincipals().add(userCaptor.getValue());
             return subject;
         });
@@ -141,44 +142,43 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         final ByteBufferSender sender = mock(ByteBufferSender.class);
         when(_networkConnection.getSender()).thenReturn(sender);
 
-        AMQPDescribedTypeRegistry registry = AMQPDescribedTypeRegistry.newInstance().registerTransportLayer()
+        final AMQPDescribedTypeRegistry registry = AMQPDescribedTypeRegistry.newInstance().registerTransportLayer()
                 .registerMessagingLayer()
                 .registerTransactionLayer()
                 .registerSecurityLayer();
 
         _frameWriter = new FrameWriter(registry, new ByteBufferSender()
-                                                {
+        {
+            @Override
+            public boolean isDirectBufferPreferred()
+            {
+                return false;
+            }
 
-                                                    @Override
-                                                    public boolean isDirectBufferPreferred()
-                                                    {
-                                                        return false;
-                                                    }
+            @Override
+            public void send(final QpidByteBuffer msg)
+            {
+                _protocolEngine_1_0_0.received(msg);
+            }
 
-                                                    @Override
-                                                    public void send(final QpidByteBuffer msg)
-                                                    {
-                                                        _protocolEngine_1_0_0.received(msg);
-                                                    }
+            @Override
+            public void flush()
+            {
 
-                                                    @Override
-                                                    public void flush()
-                                                    {
+            }
 
-                                                    }
+            @Override
+            public void close()
+            {
 
-                                                    @Override
-                                                    public void close()
-                                                    {
-
-                                                    }
-                                                });
+            }
+        });
     }
 
     @Test
-    public void testProtocolEngineWithNoSaslNonTLSandAnon()
+    void protocolEngineWithNoSaslNonTLSandAnon()
     {
-        final Map<String, Object> attrs = Collections.singletonMap(ConfiguredObject.NAME, getTestName());
+        final Map<String, Object> attrs = Map.of(ConfiguredObject.NAME, getTestName());
         final AnonymousAuthenticationManager anonymousAuthenticationManager =
                 (new AnonymousAuthenticationManagerFactory()).create(null, attrs, _broker);
         when(_port.getAuthenticationProvider()).thenReturn(anonymousAuthenticationManager);
@@ -187,21 +187,20 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         createEngine(Transport.TCP);
 
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance()
-                                                                   .getHeaderIdentifier()));
+                .getHeaderIdentifier()));
 
-        Open open = new Open();
+        final Open open = new Open();
         open.setContainerId("testContainerId");
-        _frameWriter.send(new TransportFrame((int) (short) 0, open));
+        _frameWriter.send(new TransportFrame((short) 0, open));
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
-        AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
+        final AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal, new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
-
     }
 
     @Test
-    public void testProtocolEngineWithNoSaslNonTLSandNoAnon()
+    void protocolEngineWithNoSaslNonTLSandNoAnon()
     {
         allowMechanisms("foo");
 
@@ -209,16 +208,16 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
 
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
 
-        Open open = new Open();
+        final Open open = new Open();
         open.setContainerId("testContainerId");
-        _frameWriter.send(new TransportFrame((int) (short) 0, open));
+        _frameWriter.send(new TransportFrame((short) 0, open));
 
         verify(_virtualHost, never()).registerConnection(any(AMQPConnection.class));
         verify(_networkConnection).close();
     }
 
     @Test
-    public void testProtocolEngineWithNoSaslTLSandExternal()
+    void protocolEngineWithNoSaslTLSandExternal()
     {
         final Principal principal = () -> "test";
         when(_networkConnection.getPeerPrincipal()).thenReturn(principal);
@@ -228,58 +227,58 @@ public class ProtocolEngine_1_0_0Test extends UnitTestBase
         createEngine(Transport.SSL);
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
 
-        Open open = new Open();
+        final Open open = new Open();
         open.setContainerId("testContainerId");
-        _frameWriter.send(new TransportFrame((int) (short) 0, open));
+        _frameWriter.send(new TransportFrame((short) 0, open));
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
-        AuthenticatedPrincipal authPrincipal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
+        final AuthenticatedPrincipal authPrincipal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(authPrincipal);
         assertEquals(authPrincipal, new AuthenticatedPrincipal(principal));
     }
 
     @Test
-    public void testProtocolEngineWithSaslNonTLSandAnon()
+    void protocolEngineWithSaslNonTLSandAnon()
     {
-        final Map<String, Object> attrs = Collections.singletonMap(ConfiguredObject.NAME, getTestName());
+        final Map<String, Object> attrs = Map.of(ConfiguredObject.NAME, getTestName());
         final AnonymousAuthenticationManager anonymousAuthenticationManager =
                 (new AnonymousAuthenticationManagerFactory()).create(null, attrs, _broker);
         when(_port.getAuthenticationProvider()).thenReturn(anonymousAuthenticationManager);
-        when(_port.getSubjectCreator(anyBoolean(), anyString())).thenReturn(new SubjectCreator(anonymousAuthenticationManager, Collections.emptyList(), null));
+        when(_port.getSubjectCreator(anyBoolean(), anyString()))
+                .thenReturn(new SubjectCreator(anonymousAuthenticationManager, List.of(), null));
 
         allowMechanisms(AnonymousAuthenticationManager.MECHANISM_NAME);
 
         createEngine(Transport.TCP);
 
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0_SASL.getInstance()
-                                                                   .getHeaderIdentifier()));
+                .getHeaderIdentifier()));
 
-        SaslInit init = new SaslInit();
+        final SaslInit init = new SaslInit();
         init.setMechanism(Symbol.valueOf("ANONYMOUS"));
         _frameWriter.send(new SASLFrame(init));
 
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance()
-                                                                   .getHeaderIdentifier()));
+                .getHeaderIdentifier()));
 
-        Open open = new Open();
+        final Open open = new Open();
         open.setContainerId("testContainerId");
-        _frameWriter.send(new TransportFrame((int) (short) 0, open));
+        _frameWriter.send(new TransportFrame((short) 0, open));
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
-        AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
+        final AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal, new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
     }
 
-
-    private void createEngine(Transport transport)
+    private void createEngine(final Transport transport)
     {
         _protocolEngine_1_0_0 =
                 new AMQPConnection_1_0Impl(_broker, _networkConnection, _port, transport, 1, new AggregateTicker());
     }
 
-    private void allowMechanisms(String... mechanisms)
+    private void allowMechanisms(final String... mechanisms)
     {
-        when(_authenticationProvider.getAvailableMechanisms(anyBoolean())).thenReturn(Arrays.asList(mechanisms));
+        when(_authenticationProvider.getAvailableMechanisms(anyBoolean())).thenReturn(List.of(mechanisms));
     }
 }

@@ -20,8 +20,10 @@ package org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -38,27 +40,27 @@ import org.junit.jupiter.api.Test;
 
 import org.mockito.Mockito;
 
-public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
+class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
 {
     private StrongConnectionEstablishmentLimiter _limiter;
 
     private Registry _registry;
 
     @BeforeAll
-    public void setUp()
+    void setUp()
     {
         _registry = new Registry();
         _limiter = (StrongConnectionEstablishmentLimiter) new StrongConnectionEstablishmentLimiter().append(_registry);
     }
 
     @Test
-    public void testType()
+    void type()
     {
         assertEquals("EstablishmentPolicy.strong", _limiter.getType());
     }
 
     @Test
-    public void testNoPolicy()
+    void noPolicy()
     {
         final AMQPConnection_1_0<?> connection1 = newConnection("C", null);
         final ConnectionSlot slot1 = _limiter.register(connection1);
@@ -86,7 +88,7 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
     }
 
     @Test
-    public void testNewConnectionWithPolicy()
+    void newConnectionWithPolicy()
     {
         final AMQPConnection_1_0<?> connection1 = newConnection("C", null);
         final ConnectionSlot slot1 = _limiter.register(connection1);
@@ -97,21 +99,18 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
         assertTrue(_registry.isRegistered(connection2));
 
         final AMQPConnection_1_0<?> connection3 = newConnection("C", SoleConnectionEnforcementPolicy.REFUSE_CONNECTION);
-        try
-        {
-            _limiter.register(connection3);
-            fail("A sole connection enforcement policy exception is expected");
-        }
-        catch (SoleConnectionEnforcementPolicyException e)
-        {
-            assertEquals("Single connection with container ID 'C' is required due to sole connection enforcement policy 'refuse-connection'",
-                    e.getMessage());
 
-            assertEquals(2, e.getExistingConnections().size());
-            assertTrue(e.getExistingConnections().contains(connection1));
-            assertTrue(e.getExistingConnections().contains(connection2));
-            assertEquals(SoleConnectionEnforcementPolicy.REFUSE_CONNECTION, e.getPolicy());
-        }
+        final SoleConnectionEnforcementPolicyException thrown = assertThrows(SoleConnectionEnforcementPolicyException.class,
+                () -> _limiter.register(connection3),
+                "A sole connection enforcement policy exception is expected");
+
+        assertEquals("Single connection with container ID 'C' is required due to sole connection enforcement policy 'refuse-connection'",
+                thrown.getMessage());
+
+        assertEquals(2, thrown.getExistingConnections().size());
+        assertTrue(thrown.getExistingConnections().contains(connection1));
+        assertTrue(thrown.getExistingConnections().contains(connection2));
+        assertEquals(SoleConnectionEnforcementPolicy.REFUSE_CONNECTION, thrown.getPolicy());
 
         slot2.free();
         assertFalse(_registry.isRegistered(connection2));
@@ -123,27 +122,24 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
     }
 
     @Test
-    public void testExistingConnectionWithPolicy()
+    void existingConnectionWithPolicy()
     {
         final AMQPConnection_1_0<?> connection1 = newConnection("C", SoleConnectionEnforcementPolicy.CLOSE_EXISTING);
         final ConnectionSlot slot1 = _limiter.register(connection1);
         assertTrue(_registry.isRegistered(connection1));
 
         final AMQPConnection_1_0<?> connection2 = newConnection("C", SoleConnectionEnforcementPolicy.REFUSE_CONNECTION);
-        try
-        {
-            _limiter.register(connection2);
-            fail("A sole connection enforcement policy exception is expected");
-        }
-        catch (SoleConnectionEnforcementPolicyException e)
-        {
-            assertEquals("Single connection with container ID 'C' is required due to sole connection enforcement policy 'close-existing'",
-                    e.getMessage());
 
-            assertEquals(1, e.getExistingConnections().size());
-            assertTrue(e.getExistingConnections().contains(connection1));
-            assertEquals(SoleConnectionEnforcementPolicy.CLOSE_EXISTING, e.getPolicy());
-        }
+        final SoleConnectionEnforcementPolicyException thrown = assertThrows(SoleConnectionEnforcementPolicyException.class,
+                () -> _limiter.register(connection2),
+                "A sole connection enforcement policy exception is expected");
+
+        assertEquals("Single connection with container ID 'C' is required due to sole connection enforcement policy 'close-existing'",
+                thrown.getMessage());
+
+        assertEquals(1, thrown.getExistingConnections().size());
+        assertTrue(thrown.getExistingConnections().contains(connection1));
+        assertEquals(SoleConnectionEnforcementPolicy.CLOSE_EXISTING, thrown.getPolicy());
 
         slot1.free();
         assertFalse(_registry.isRegistered(connection1));
@@ -151,14 +147,14 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
     }
 
     @Test
-    public void testExistingClosedConnectionWithPolicy()
+    void existingClosedConnectionWithPolicy()
     {
         final AMQPConnection_1_0<?> connection1 = newConnection("C", SoleConnectionEnforcementPolicy.CLOSE_EXISTING);
-        Mockito.doReturn(false).when(connection1).isClosing();
+        doReturn(false).when(connection1).isClosing();
         final ConnectionSlot slot1 = _limiter.register(connection1);
         assertTrue(_registry.isRegistered(connection1));
 
-        Mockito.doReturn(true).when(connection1).isClosing();
+        doReturn(true).when(connection1).isClosing();
         final AMQPConnection_1_0<?> connection2 = newConnection("C", SoleConnectionEnforcementPolicy.CLOSE_EXISTING);
         final ConnectionSlot slot2 = _limiter.register(connection2);
         assertTrue(_registry.isRegistered(connection2));
@@ -173,14 +169,14 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
     }
 
     @Test
-    public void testClosedConnection()
+    void closedConnection()
     {
         final AMQPConnection_1_0<?> connection1 = newConnection("C", SoleConnectionEnforcementPolicy.REFUSE_CONNECTION);
         final ConnectionSlot slot1 = _limiter.register(connection1);
         assertTrue(_registry.isRegistered(connection1));
 
         final AMQPConnection_1_0<?> connection2 = newConnection("C", SoleConnectionEnforcementPolicy.CLOSE_EXISTING);
-        Mockito.doReturn(true).when(connection1).isClosing();
+        doReturn(true).when(connection1).isClosing();
         final ConnectionSlot slot2 = _limiter.register(connection2);
         assertTrue(_registry.isRegistered(connection2));
 
@@ -194,33 +190,30 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
     }
 
     @Test
-    public void testNewConnectionWithPolicy_ClosedExisting()
+    void newConnectionWithPolicy_ClosedExisting()
     {
         final AMQPConnection_1_0<?> connection1 = newConnection("C", SoleConnectionEnforcementPolicy.REFUSE_CONNECTION);
-        Mockito.doReturn(false).when(connection1).isClosing();
+        doReturn(false).when(connection1).isClosing();
         final ConnectionSlot slot1 = _limiter.register(connection1);
         assertTrue(_registry.isRegistered(connection1));
 
-        Mockito.doReturn(true).when(connection1).isClosing();
+        doReturn(true).when(connection1).isClosing();
         final AMQPConnection_1_0<?> connection2 = newConnection("C", null);
         final ConnectionSlot slot2 = _limiter.register(connection2);
         assertTrue(_registry.isRegistered(connection2));
 
         final AMQPConnection_1_0<?> connection3 = newConnection("C", SoleConnectionEnforcementPolicy.CLOSE_EXISTING);
-        try
-        {
-            _limiter.register(connection3);
-            fail("A sole connection enforcement policy exception is expected");
-        }
-        catch (SoleConnectionEnforcementPolicyException e)
-        {
-            assertEquals("Single connection with container ID 'C' is required due to sole connection enforcement policy 'close-existing'",
-                    e.getMessage());
 
-            assertEquals(1, e.getExistingConnections().size());
-            assertTrue(e.getExistingConnections().contains(connection2));
-            assertEquals(SoleConnectionEnforcementPolicy.CLOSE_EXISTING, e.getPolicy());
-        }
+        final SoleConnectionEnforcementPolicyException thrown = assertThrows(SoleConnectionEnforcementPolicyException.class,
+                () -> _limiter.register(connection3),
+                "A sole connection enforcement policy exception is expected");
+
+        assertEquals("Single connection with container ID 'C' is required due to sole connection enforcement policy 'close-existing'",
+                thrown.getMessage());
+
+        assertEquals(1, thrown.getExistingConnections().size());
+        assertTrue(thrown.getExistingConnections().contains(connection2));
+        assertEquals(SoleConnectionEnforcementPolicy.CLOSE_EXISTING, thrown.getPolicy());
 
         slot2.free();
         assertFalse(_registry.isRegistered(connection2));
@@ -232,33 +225,30 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
     }
 
     @Test
-    public void testNewConnectionWithPolicy2_ClosedExisting()
+    void newConnectionWithPolicy2_ClosedExisting()
     {
         final AMQPConnection_1_0<?> connection1 = newConnection("C", SoleConnectionEnforcementPolicy.REFUSE_CONNECTION);
-        Mockito.doReturn(false).when(connection1).isClosing();
+        doReturn(false).when(connection1).isClosing();
         final ConnectionSlot slot1 = _limiter.register(connection1);
         assertTrue(_registry.isRegistered(connection1));
 
-        Mockito.doReturn(true).when(connection1).isClosing();
+        doReturn(true).when(connection1).isClosing();
         final AMQPConnection_1_0<?> connection2 = newConnection("C", SoleConnectionEnforcementPolicy.REFUSE_CONNECTION);
         final ConnectionSlot slot2 = _limiter.register(connection2);
         assertTrue(_registry.isRegistered(connection2));
 
         final AMQPConnection_1_0<?> connection3 = newConnection("C", SoleConnectionEnforcementPolicy.CLOSE_EXISTING);
-        try
-        {
-            _limiter.register(connection3);
-            fail("A sole connection enforcement policy exception is expected");
-        }
-        catch (SoleConnectionEnforcementPolicyException e)
-        {
-            assertEquals("Single connection with container ID 'C' is required due to sole connection enforcement policy 'refuse-connection'",
-                    e.getMessage());
 
-            assertEquals(1, e.getExistingConnections().size());
-            assertTrue(e.getExistingConnections().contains(connection2));
-            assertEquals(SoleConnectionEnforcementPolicy.REFUSE_CONNECTION, e.getPolicy());
-        }
+        final SoleConnectionEnforcementPolicyException thrown = assertThrows(SoleConnectionEnforcementPolicyException.class,
+                () -> _limiter.register(connection3),
+                "A sole connection enforcement policy exception is expected");
+
+        assertEquals("Single connection with container ID 'C' is required due to sole connection enforcement policy 'refuse-connection'",
+                thrown.getMessage());
+
+        assertEquals(1, thrown.getExistingConnections().size());
+        assertTrue(thrown.getExistingConnections().contains(connection2));
+        assertEquals(SoleConnectionEnforcementPolicy.REFUSE_CONNECTION, thrown.getPolicy());
 
         slot2.free();
         assertFalse(_registry.isRegistered(connection2));
@@ -270,7 +260,7 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
     }
 
     @Test
-    public void testAnotherConnectionType()
+    void anotherConnectionType()
     {
         final AMQPConnection<?> connection = Mockito.mock(AMQPConnection.class);
         final ConnectionSlot slot = _limiter.register(connection);
@@ -278,11 +268,11 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
         slot.free();
         assertFalse(_registry.isRegistered(connection));
         assertTrue(_registry.hasBeenRegistered(connection));
-        Mockito.verifyNoInteractions(connection);
+        verifyNoInteractions(connection);
     }
 
     @Test
-    public void testMultipleIndependentConnections()
+    void multipleIndependentConnections()
     {
         final AMQPConnection_1_0<?> connection1 = newConnection("C1", null);
         final ConnectionSlot slot1 = _limiter.register(connection1);
@@ -310,7 +300,7 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
     }
 
     @Test
-    public void testMultipleIndependentConnections2()
+    void multipleIndependentConnections2()
     {
         final AMQPConnection_1_0<?> connection1 = newConnection(null, null);
         final ConnectionSlot slot1 = _limiter.register(connection1);
@@ -340,17 +330,15 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
     private AMQPConnection_1_0<?> newConnection(String id, SoleConnectionEnforcementPolicy policy)
     {
         final AMQPConnection_1_0<?> connection = Mockito.mock(AMQPConnection_1_0.class);
-        Mockito.doReturn(id).when(connection).getRemoteContainerId();
-        Mockito.doReturn(policy).when(connection).getSoleConnectionEnforcementPolicy();
+        doReturn(id).when(connection).getRemoteContainerId();
+        doReturn(policy).when(connection).getSoleConnectionEnforcementPolicy();
         return connection;
     }
 
     static final class Registry implements ConnectionLimiter
     {
         private final Set<AMQPConnection<?>> _registered;
-
         private final Set<AMQPConnection<?>> _connections;
-
         private final ConnectionLimiter _subLimiter;
 
         public Registry()
@@ -360,7 +348,7 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
             _subLimiter = ConnectionLimiter.noLimits();
         }
 
-        private Registry(Registry limiter, ConnectionLimiter subLimiter)
+        private Registry(final Registry limiter, final ConnectionLimiter subLimiter)
         {
             _registered = limiter._registered;
             _connections = limiter._connections;
@@ -377,17 +365,17 @@ public class StrongConnectionEstablishmentLimiterTest extends UnitTestBase
         }
 
         @Override
-        public ConnectionLimiter append(ConnectionLimiter limiter)
+        public ConnectionLimiter append(final ConnectionLimiter limiter)
         {
             return new Registry(this, _subLimiter.append(limiter));
         }
 
-        public boolean isRegistered(AMQPConnection<?> connection)
+        public boolean isRegistered(final AMQPConnection<?> connection)
         {
             return _connections.contains(connection);
         }
 
-        public boolean hasBeenRegistered(AMQPConnection<?> connection)
+        public boolean hasBeenRegistered(final AMQPConnection<?> connection)
         {
             return _registered.contains(connection);
         }

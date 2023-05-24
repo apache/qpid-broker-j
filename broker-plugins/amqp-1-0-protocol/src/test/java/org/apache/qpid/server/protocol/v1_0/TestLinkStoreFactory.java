@@ -21,7 +21,7 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -52,7 +52,7 @@ public class TestLinkStoreFactory implements LinkStoreFactory
             @Override
             public Collection<LinkDefinition<Source, Target>> openAndLoad(final LinkStoreUpdater updater) throws StoreException
             {
-                return Collections.emptyList();
+                return List.of();
             }
 
             @Override

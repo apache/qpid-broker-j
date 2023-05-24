@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,26 +55,26 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
+class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 {
     private MessageConverter_v1_0_to_Internal _messageConverter;
     private NamedAddressSpace _addressSpace;
 
     @BeforeAll
-    public void setUp() throws Exception
+    void setUp()
     {
         _messageConverter = new MessageConverter_v1_0_to_Internal();
         _addressSpace = mock(NamedAddressSpace.class);
     }
 
     @Test
-    public void testDurableTrueConversion()
+    void durableTrueConversion()
     {
         final Header header = new Header();
         header.setDurable(true);
         final Message_1_0 originalMessage = createTestMessage(header);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertTrue(convertedMessage.isPersistent(), "Unexpected persistence of message");
         assertTrue(convertedMessage.getStoredMessage().getMetaData().isPersistent(),
@@ -83,13 +82,13 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testDurableFalseConversion()
+    void durableFalseConversion()
     {
         final Header header = new Header();
         header.setDurable(false);
         final Message_1_0 originalMessage = createTestMessage(header);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertFalse(convertedMessage.isPersistent(), "Unexpected persistence of message");
         assertFalse(convertedMessage.getStoredMessage().getMetaData().isPersistent(),
@@ -97,70 +96,69 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testPriorityConversion()
+    void priorityConversion()
     {
         final byte priority = 7;
         final Header header = new Header();
         header.setPriority(UnsignedByte.valueOf(priority));
         final Message_1_0 originalMessage = createTestMessage(header);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(priority, (long) convertedMessage.getMessageHeader().getPriority(), "Unexpected priority");
     }
 
     @Test
-    public void testAbsoluteExpiryTimeConversion()
+    void absoluteExpiryTimeConversion()
     {
         long ttl = 10000;
         long arrivalTime = System.currentTimeMillis();
         long expiryTime = arrivalTime + ttl;
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setAbsoluteExpiryTime(new Date(expiryTime));
-        Message_1_0 originalMessage = createTestMessage(properties, arrivalTime);
+        final Message_1_0 originalMessage = createTestMessage(properties, arrivalTime);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(0, convertedMessage.getMessageHeader().getExpiration(), "Unexpected expiration");
     }
 
     @Test
-    public void testTTLConversion()
+    void TTLConversion()
     {
-        long ttl = 10000;
-        long arrivalTime = System.currentTimeMillis();
-        long expiryTime = arrivalTime + ttl;
+        final long ttl = 10000;
+        final long arrivalTime = System.currentTimeMillis();
+        final long expiryTime = arrivalTime + ttl;
         final Header header = new Header();
         header.setTtl(UnsignedInteger.valueOf(ttl));
 
-        Message_1_0 originalMessage = createTestMessage(header, arrivalTime);
+        final Message_1_0 originalMessage = createTestMessage(header, arrivalTime);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(expiryTime, convertedMessage.getMessageHeader().getExpiration(), "Unexpected expiration");
     }
 
     @Test
-    public void testContentEncodingConversion()
+    void contentEncodingConversion()
     {
-        String contentEncoding = "my-test-encoding";
+        final String contentEncoding = "my-test-encoding";
         final Properties properties = new Properties();
         properties.setContentEncoding(Symbol.valueOf(contentEncoding));
-        Message_1_0 originalMessage = createTestMessage(properties);
+        final Message_1_0 originalMessage = createTestMessage(properties);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(contentEncoding, convertedMessage.getMessageHeader().getEncoding(), "Unexpected content encoding");
-
     }
 
     @Test
-    public void testMessageIdStringConversion()
+    void messageIdStringConversion()
     {
         final String messageId = "testMessageId";
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setMessageId(messageId);
-        Message_1_0 originalMessage = createTestMessage(properties);
+        final Message_1_0 originalMessage = createTestMessage(properties);
 
         InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
@@ -168,170 +166,169 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
     }
 
     @Test
-    public void testMessageIdUuidConversion()
+    void messageIdUuidConversion()
     {
         final UUID messageId = UUID.randomUUID();
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setMessageId(messageId);
-        Message_1_0 originalMessage = createTestMessage(properties);
+        final Message_1_0 originalMessage = createTestMessage(properties);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(messageId.toString(), convertedMessage.getMessageHeader().getMessageId(), "Unexpected messageId");
     }
 
     @Test
-    public void testMessageIdUnsignedLongConversion()
+    void messageIdUnsignedLongConversion()
     {
         final UnsignedLong messageId = UnsignedLong.valueOf(-1L);
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setMessageId(messageId);
-        Message_1_0 originalMessage = createTestMessage(properties);
+        final Message_1_0 originalMessage = createTestMessage(properties);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(messageId.toString(), convertedMessage.getMessageHeader().getMessageId(), "Unexpected messageId");
     }
 
     @Test
-    public void testMessageIdBinaryConversion()
+    void messageIdBinaryConversion()
     {
         final byte[] data = new byte[]{(byte) 0xc3, 0x28};
         final Binary messageId = new Binary(data);
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setMessageId(messageId);
-        Message_1_0 originalMessage = createTestMessage(properties);
+        final Message_1_0 originalMessage = createTestMessage(properties);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(messageId.toString(), convertedMessage.getMessageHeader().getMessageId(), "Unexpected messageId");
     }
 
     @Test
-    public void testCorrelationIdStringConversion()
+    void correlationIdStringConversion()
     {
         final String correlationId = "testMessageCorrelationId";
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setCorrelationId(correlationId);
-        Message_1_0 originalMessage = createTestMessage(properties);
+        final Message_1_0 originalMessage = createTestMessage(properties);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(correlationId, convertedMessage.getMessageHeader().getCorrelationId(), "Unexpected correlationId");
     }
 
     @Test
-    public void testCorrelationIdUuidConversion()
+    void correlationIdUuidConversion()
     {
         final UUID correlationId = UUID.randomUUID();
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setCorrelationId(correlationId);
-        Message_1_0 originalMessage = createTestMessage(properties);
+        final Message_1_0 originalMessage = createTestMessage(properties);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(correlationId.toString(), convertedMessage.getMessageHeader().getCorrelationId(), "Unexpected correlationId");
     }
 
     @Test
-    public void testCorrelationIdUnsignedLongConversion()
+    void correlationIdUnsignedLongConversion()
     {
         final UnsignedLong correlationId = UnsignedLong.valueOf(-1L);
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setCorrelationId(correlationId);
-        Message_1_0 originalMessage = createTestMessage(properties);
+        final Message_1_0 originalMessage = createTestMessage(properties);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(correlationId.toString(), convertedMessage.getMessageHeader().getCorrelationId(), "Unexpected correlationId");
     }
 
     @Test
-    public void testCorrelationIdBinaryConversion()
+    void correlationIdBinaryConversion()
     {
         final byte[] data = new byte[]{(byte) 0xc3, 0x28};
         final Binary correlationId = new Binary(data);
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setCorrelationId(correlationId);
-        Message_1_0 originalMessage = createTestMessage(properties);
+        final Message_1_0 originalMessage = createTestMessage(properties);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(correlationId.toString(), convertedMessage.getMessageHeader().getCorrelationId(), "Unexpected correlationId");
     }
 
     @Test
-    public void testUserIdConversion()
+    void userIdConversion()
     {
         final byte[] data = new byte[]{(byte) 0xc3, 0x28};
         final Binary userId = new Binary(data);
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setUserId(userId);
-        Message_1_0 originalMessage = createTestMessage(properties);
+        final Message_1_0 originalMessage = createTestMessage(properties);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(new String(data, UTF_8), convertedMessage.getMessageHeader().getUserId(), "Unexpected userId");
     }
 
     @Test
-    public void testReplyToConversion()
+    void replyToConversion()
     {
         final String replyTo = "amq.direct/test";
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setReplyTo(replyTo);
-        Message_1_0 originalMessage = createTestMessage(properties);
+        final Message_1_0 originalMessage = createTestMessage(properties);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(replyTo, convertedMessage.getMessageHeader().getReplyTo(), "Unexpected replyTo");
     }
 
     @Test
-    public void testCreationTimeConversion()
+    void creationTimeConversion()
     {
         final long creationTime = System.currentTimeMillis();
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setCreationTime(new Date(creationTime));
-        Message_1_0 originalMessage = createTestMessage(properties);
+        final Message_1_0 originalMessage = createTestMessage(properties);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(creationTime, convertedMessage.getMessageHeader().getTimestamp(), "Unexpected timestamp");
     }
 
     @Test
-    public void testToConversionIntoToAndInitialRoutingAddressWhenToIncludesExchangeNameAndRoutingKey()
+    void toConversionIntoToAndInitialRoutingAddressWhenToIncludesExchangeNameAndRoutingKey()
     {
         final String exchangeName = "amq.direct";
         final String routingKey = "test";
         final String to = String.format("%s/%s", exchangeName, routingKey);
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setTo(to);
-        Message_1_0 originalMessage = createTestMessage(properties);
+        final Message_1_0 originalMessage = createTestMessage(properties);
 
-        InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
+        final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         assertEquals(to, convertedMessage.getTo(), "Unexpected to");
         assertEquals("", convertedMessage.getInitialRoutingAddress(), "Unexpected initialRoutingAddress");
     }
 
     @Test
-    public void testApplicationPropertiesConversion()
+    void applicationPropertiesConversion()
     {
-        Map<String, Object> properties = new HashMap<>();
+        final Map<String, Object> properties = new HashMap<>();
         properties.put("testProperty1", "testProperty1Value");
         properties.put("intProperty", 1);
         properties.put("nullProperty", null);
-        ApplicationProperties applicationProperties = new ApplicationProperties(properties);
-        Message_1_0 originalMessage = createTestMessage(applicationProperties);
+        final ApplicationProperties applicationProperties = new ApplicationProperties(properties);
+        final Message_1_0 originalMessage = createTestMessage(applicationProperties);
 
         final InternalMessage convertedMessage = _messageConverter.convert(originalMessage, _addressSpace);
 
         final Map<String, Object> headers = convertedMessage.getMessageHeader().getHeaderMap();
         assertEquals(properties, new HashMap<>(headers), "Unexpected headers");
     }
-
 
     private Message_1_0 createTestMessage(final Header header)
     {
@@ -340,13 +337,8 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
     private Message_1_0 createTestMessage(final Header header, long arrivalTime)
     {
-        return createTestMessage(header,
-                                 new DeliveryAnnotations(Collections.emptyMap()),
-                                 new MessageAnnotations(Collections.emptyMap()),
-                                 new Properties(),
-                                 new ApplicationProperties(Collections.emptyMap()),
-                                 arrivalTime,
-                                 null);
+        return createTestMessage(header, new DeliveryAnnotations(Map.of()), new MessageAnnotations(Map.of()),
+                new Properties(), new ApplicationProperties(Map.of()), arrivalTime, null);
     }
 
     private Message_1_0 createTestMessage(final Properties properties)
@@ -356,24 +348,14 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
 
     private Message_1_0 createTestMessage(final Properties properties, final long arrivalTime)
     {
-        return createTestMessage(new Header(),
-                                 new DeliveryAnnotations(Collections.emptyMap()),
-                                 new MessageAnnotations(Collections.emptyMap()),
-                                 properties,
-                                 new ApplicationProperties(Collections.emptyMap()),
-                                 arrivalTime,
-                                 null);
+        return createTestMessage(new Header(), new DeliveryAnnotations(Map.of()), new MessageAnnotations(Map.of()),
+                properties, new ApplicationProperties(Map.of()), arrivalTime, null);
     }
 
     private Message_1_0 createTestMessage(final ApplicationProperties applicationProperties)
     {
-        return createTestMessage(new Header(),
-                                 new DeliveryAnnotations(Collections.emptyMap()),
-                                 new MessageAnnotations(Collections.emptyMap()),
-                                 new Properties(),
-                                 applicationProperties,
-                                 0,
-                                 null);
+        return createTestMessage(new Header(), new DeliveryAnnotations(Map.of()), new MessageAnnotations(Map.of()),
+                new Properties(), applicationProperties, 0, null);
     }
 
     private Message_1_0 createTestMessage(final Header header,
@@ -385,22 +367,22 @@ public class PropertyConverter_v1_0_to_InternalTest extends UnitTestBase
                                           final byte[] content)
     {
         final StoredMessage<MessageMetaData_1_0> storedMessage = mock(StoredMessage.class);
-        MessageMetaData_1_0 metaData = new MessageMetaData_1_0(header.createEncodingRetainingSection(),
-                                                               deliveryAnnotations.createEncodingRetainingSection(),
-                                                               messageAnnotations.createEncodingRetainingSection(),
-                                                               properties.createEncodingRetainingSection(),
-                                                               applicationProperties.createEncodingRetainingSection(),
-                                                               new Footer(Collections.emptyMap()).createEncodingRetainingSection(),
-                                                               arrivalTime,
-                                                               content == null ? 0 : content.length);
+        final MessageMetaData_1_0 metaData = new MessageMetaData_1_0(header.createEncodingRetainingSection(),
+                deliveryAnnotations.createEncodingRetainingSection(),
+                messageAnnotations.createEncodingRetainingSection(),
+                properties.createEncodingRetainingSection(),
+                applicationProperties.createEncodingRetainingSection(),
+                new Footer(Map.of()).createEncodingRetainingSection(),
+                arrivalTime,
+                content == null ? 0 : content.length);
         when(storedMessage.getMetaData()).thenReturn(metaData);
 
         if (content != null)
         {
-            Binary binary = new Binary(content);
-            DataSection dataSection = new Data(binary).createEncodingRetainingSection();
-            QpidByteBuffer qbb = dataSection.getEncodedForm();
-            int length = qbb.remaining();
+            final Binary binary = new Binary(content);
+            final DataSection dataSection = new Data(binary).createEncodingRetainingSection();
+            final QpidByteBuffer qbb = dataSection.getEncodedForm();
+            final int length = qbb.remaining();
             when(storedMessage.getContentSize()).thenReturn(length);
             when(storedMessage.getContent(0, length)).thenReturn(qbb);
         }

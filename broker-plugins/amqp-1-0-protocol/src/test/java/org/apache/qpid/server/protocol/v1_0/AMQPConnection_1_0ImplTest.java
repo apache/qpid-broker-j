@@ -24,7 +24,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -47,7 +47,7 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AMQPConnection_1_0ImplTest extends UnitTestBase
+class AMQPConnection_1_0ImplTest extends UnitTestBase
 {
     private Broker<?> _broker;
     private ServerNetworkConnection _network;
@@ -56,7 +56,7 @@ public class AMQPConnection_1_0ImplTest extends UnitTestBase
     private QueueManagingVirtualHost<?> _virtualHost;
 
     @BeforeAll
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         _broker = BrokerTestHelper.createBrokerMock();
         final Model model = _broker.getModel();
@@ -72,7 +72,7 @@ public class AMQPConnection_1_0ImplTest extends UnitTestBase
     }
 
     @Test
-    public void testGetOpenTransactions()
+    void getOpenTransactions()
     {
         final AMQPConnection_1_0Impl connection =
                 new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
@@ -90,7 +90,7 @@ public class AMQPConnection_1_0ImplTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateIdentifiedTransaction()
+    void createIdentifiedTransaction()
     {
         final AMQPConnection_1_0Impl connection =
                 new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
@@ -105,7 +105,7 @@ public class AMQPConnection_1_0ImplTest extends UnitTestBase
     }
 
     @Test
-    public void testGetTransaction()
+    void getTransaction()
     {
         final AMQPConnection_1_0Impl connection =
                 new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
@@ -121,26 +121,20 @@ public class AMQPConnection_1_0ImplTest extends UnitTestBase
     }
 
     @Test
-    public void testGetTransactionUnknownId()
+    void getTransactionUnknownId()
     {
         final AMQPConnection_1_0Impl connection =
                 new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
         connection.setAddressSpace(_virtualHost);
         final IdentifiedTransaction tx1 = connection.createIdentifiedTransaction();
 
-        try
-        {
-            connection.getTransaction(tx1.getId() + 1);
-            fail("UnknownTransactionException is not thrown");
-        }
-        catch (UnknownTransactionException e)
-        {
-            // pass
-        }
+        assertThrows(UnknownTransactionException.class,
+                () -> connection.getTransaction(tx1.getId() + 1),
+                "UnknownTransactionException is not thrown");
     }
 
     @Test
-    public void testRemoveTransaction()
+    void removeTransaction()
     {
         final AMQPConnection_1_0Impl connection =
                 new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
@@ -148,19 +142,13 @@ public class AMQPConnection_1_0ImplTest extends UnitTestBase
         final IdentifiedTransaction tx1 = connection.createIdentifiedTransaction();
         connection.removeTransaction(tx1.getId());
 
-        try
-        {
-            connection.getTransaction(tx1.getId());
-            fail("UnknownTransactionException is not thrown");
-        }
-        catch (UnknownTransactionException e)
-        {
-            // pass
-        }
+        assertThrows(UnknownTransactionException.class,
+                () -> connection.getTransaction(tx1.getId()),
+                "UnknownTransactionException is not thrown");
     }
 
     @Test
-    public void resetStatistics()
+    void resetStatistics()
     {
         final AMQPConnection_1_0Impl connection =
                 new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
