@@ -30,24 +30,25 @@ import org.junit.jupiter.api.Test;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class MessagePublishInfoImplTest extends UnitTestBase
+class MessagePublishInfoImplTest extends UnitTestBase
 {
-    private MessagePublishInfo _mpi;
     private final AMQShortString _exchange = AMQShortString.createAMQShortString("exchange");
     private final AMQShortString _routingKey = AMQShortString.createAMQShortString("routingKey");
 
+    private MessagePublishInfo _mpi;
+
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp()
     {
         _mpi = new MessagePublishInfo(_exchange, true, true, _routingKey);
     }
 
     /** Test that we can update the exchange value. */
     @Test
-    public void testExchange()
+    void exchange()
     {
         assertEquals(_exchange, _mpi.getExchange());
-        AMQShortString newExchange = AMQShortString.createAMQShortString("newExchange");
+        final AMQShortString newExchange = AMQShortString.createAMQShortString("newExchange");
         //Check we can update the exchange
         _mpi.setExchange(newExchange);
         assertEquals(newExchange, _mpi.getExchange());
@@ -59,12 +60,12 @@ public class MessagePublishInfoImplTest extends UnitTestBase
      * Check that the immedate value is set correctly and defaulted correctly
      */
     @Test
-    public void testIsImmediate()
+    void isImmediate()
     {
         //Check that the set value is correct
         assertTrue(_mpi.isImmediate(), "Set value for immediate not as expected");
 
-        MessagePublishInfo mpi = new MessagePublishInfo();
+        final MessagePublishInfo mpi = new MessagePublishInfo();
 
         assertFalse(mpi.isImmediate(), "Default value for immediate should be false");
 
@@ -77,11 +78,11 @@ public class MessagePublishInfoImplTest extends UnitTestBase
      * Check that the mandatory value is set correctly and defaulted correctly
      */
     @Test
-    public void testIsMandatory()
+    void isMandatory()
     {
         assertTrue(_mpi.isMandatory(), "Set value for mandatory not as expected");
 
-        MessagePublishInfo mpi = new MessagePublishInfo();
+        final MessagePublishInfo mpi = new MessagePublishInfo();
 
         assertFalse(mpi.isMandatory(), "Default value for mandatory should be false");
 
@@ -94,10 +95,10 @@ public class MessagePublishInfoImplTest extends UnitTestBase
      * Check that the routingKey value is perserved
      */
     @Test
-    public void testRoutingKey()
+    void routingKey()
     {
         assertEquals(_routingKey, _mpi.getRoutingKey());
-        AMQShortString newRoutingKey = AMQShortString.createAMQShortString("newRoutingKey");
+        final AMQShortString newRoutingKey = AMQShortString.createAMQShortString("newRoutingKey");
 
         //Check we can update the routingKey
         _mpi.setRoutingKey(newRoutingKey);

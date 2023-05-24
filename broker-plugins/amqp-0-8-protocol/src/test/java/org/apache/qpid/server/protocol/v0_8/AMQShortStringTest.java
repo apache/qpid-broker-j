@@ -22,8 +22,9 @@ package org.apache.qpid.server.protocol.v0_8;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -36,12 +37,12 @@ import org.junit.jupiter.api.Test;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AMQShortStringTest extends UnitTestBase
+class AMQShortStringTest extends UnitTestBase
 {
     private static final AMQShortString GOODBYE = AMQShortString.createAMQShortString("Goodbye");
 
     @Test
-    public void testEquals()
+    void testEquals()
     {
         assertEquals(GOODBYE, AMQShortString.createAMQShortString("Goodbye"));
         assertEquals(AMQShortString.createAMQShortString("A"), AMQShortString.createAMQShortString("A"));
@@ -53,12 +54,11 @@ public class AMQShortStringTest extends UnitTestBase
      * {@link AMQShortString#AMQShortString(byte[])}.
      */
     @Test
-    public void testCreateAMQShortStringByteArray()
+    void createAMQShortStringByteArray()
     {
-        byte[] bytes = "test".getBytes(StandardCharsets.UTF_8);
-        AMQShortString string = AMQShortString.createAMQShortString(bytes);
+        final byte[] bytes = "test".getBytes(StandardCharsets.UTF_8);
+        final AMQShortString string = AMQShortString.createAMQShortString(bytes);
         assertEquals(4, (long) string.length(), "constructed amq short string length differs from expected");
-
         assertEquals("test", string.toString(), "constructed amq short string differs from expected");
     }
 
@@ -66,11 +66,10 @@ public class AMQShortStringTest extends UnitTestBase
      * Tests short string construction from string with length less than 255.
      */
     @Test
-    public void testCreateAMQShortStringString()
+    void createAMQShortStringString()
     {
-        AMQShortString string = AMQShortString.createAMQShortString("test");
+        final AMQShortString string = AMQShortString.createAMQShortString("test");
         assertEquals(4, (long) string.length(), "constructed amq short string length differs from expected");
-
         assertEquals("test", string.toString(), "constructed amq short string differs from expected");
     }
 
@@ -81,90 +80,79 @@ public class AMQShortStringTest extends UnitTestBase
      * Tests an attempt to create an AMQP short string from byte array with length over 255.
      */
     @Test
-    public void testCreateAMQShortStringByteArrayOver255()
+    void createAMQShortStringByteArrayOver255()
     {
-        String test = buildString('a', 256);
-        byte[] bytes = test.getBytes(StandardCharsets.UTF_8);
-        try
-        {
-            AMQShortString.createAMQShortString(bytes);
-            fail("It should not be possible to create AMQShortString with length over 255");
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertEquals("Cannot create AMQShortString with number of octets over 255!", e.getMessage(),
-                    "Exception message differs from expected");
-
-        }
+        final String test = buildString(256);
+        final byte[] bytes = test.getBytes(StandardCharsets.UTF_8);
+        final IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> AMQShortString.createAMQShortString(bytes),
+                "It should not be possible to create AMQShortString with length over 255");
+        assertEquals("Cannot create AMQShortString with number of octets over 255!", thrown.getMessage(),
+                "Exception message differs from expected");
     }
 
     /**
      * Tests an attempt to create an AMQP short string from string with length over 255
      */
     @Test
-    public void testCreateAMQShortStringStringOver255()
+    void createAMQShortStringStringOver255()
     {
-        String test = buildString('a', 256);
-        try
-        {
-            AMQShortString.createAMQShortString(test);
-            fail("It should not be possible to create AMQShortString with length over 255");
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertEquals("Cannot create AMQShortString with number of octets over 255!", e.getMessage(),
-                    "Exception message differs from expected");
-        }
+        final String test = buildString(256);
+        final IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                () -> AMQShortString.createAMQShortString(test),
+                "It should not be possible to create AMQShortString with length over 255");
+        assertEquals("Cannot create AMQShortString with number of octets over 255!", thrown.getMessage(),
+                "Exception message differs from expected");
     }
 
     @Test
-    public void testValueOf()
+    void valueOf()
     {
-        String string = buildString('a', 255);
-        AMQShortString shortString = AMQShortString.valueOf(string, true, true);
+        final String string = buildString(255);
+        final AMQShortString shortString = AMQShortString.valueOf(string, true, true);
         assertEquals(string, shortString.toString(), "Unexpected string from valueOf");
     }
 
     @Test
-    public void testValueOfTruncated()
+    void valueOfTruncated()
     {
-        String string = buildString('a', 256);
-        AMQShortString shortString = AMQShortString.valueOf(string, true, true);
+        final String string = buildString(256);
+        final AMQShortString shortString = AMQShortString.valueOf(string, true, true);
         assertEquals(string.substring(0, AMQShortString.MAX_LENGTH - 3) + "...", shortString.toString(),
                 "Unexpected truncated string from valueOf");
     }
 
     @Test
-    public void testValueOfNulAsEmptyString()
+    void valueOfNulAsEmptyString()
     {
-        AMQShortString shortString = AMQShortString.valueOf(null, true, true);
+        final AMQShortString shortString = AMQShortString.valueOf(null, true, true);
         assertEquals(AMQShortString.EMPTY_STRING, shortString, "Unexpected empty string from valueOf");
     }
 
     @Test
-    public void testValueOfNullAsNull()
+    void valueOfNullAsNull()
     {
-        AMQShortString shortString = AMQShortString.valueOf(null, true, false);
-        assertEquals(null, shortString, "Unexpected null string from valueOf");
+        final AMQShortString shortString = AMQShortString.valueOf(null, true, false);
+        assertNull(shortString, "Unexpected null string from valueOf");
     }
 
     @Test
-    public void testCaching()
+    void caching()
     {
-        Cache<ByteBuffer, AMQShortString> original = AMQShortString.getShortStringCache();
-        Cache<ByteBuffer, AMQShortString> cache = CacheBuilder.newBuilder().maximumSize(1).build();
+        final Cache<ByteBuffer, AMQShortString> original = AMQShortString.getShortStringCache();
+        final Cache<ByteBuffer, AMQShortString> cache = CacheBuilder.newBuilder().maximumSize(1).build();
         AMQShortString.setShortStringCache(cache);
         try
         {
-            AMQShortString string = AMQShortString.createAMQShortString("hello");
-            QpidByteBuffer qpidByteBuffer = QpidByteBuffer.allocate(2 * (string.length() + 1));
+            final AMQShortString string = AMQShortString.createAMQShortString("hello");
+            final QpidByteBuffer qpidByteBuffer = QpidByteBuffer.allocate(2 * (string.length() + 1));
             string.writeToBuffer(qpidByteBuffer);
             string.writeToBuffer(qpidByteBuffer);
 
             qpidByteBuffer.flip();
 
-            AMQShortString str1 = AMQShortString.readAMQShortString(qpidByteBuffer);
-            AMQShortString str2 = AMQShortString.readAMQShortString(qpidByteBuffer);
+            final AMQShortString str1 = AMQShortString.readAMQShortString(qpidByteBuffer);
+            final AMQShortString str2 = AMQShortString.readAMQShortString(qpidByteBuffer);
 
             assertEquals(str1, str2);
             assertSame(str1, str2);
@@ -180,20 +168,11 @@ public class AMQShortStringTest extends UnitTestBase
      * A helper method to generate a string with given length containing given
      * character
      *
-     * @param ch
-     *            char to build string with
-     * @param length
-     *            target string length
+     * @param length target string length
      * @return string
      */
-    private String buildString(char ch, int length)
+    private String buildString(int length)
     {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length; i++)
-        {
-            sb.append(ch);
-        }
-        return sb.toString();
+        return String.valueOf('a').repeat(Math.max(0, length));
     }
-
 }

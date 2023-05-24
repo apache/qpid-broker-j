@@ -44,13 +44,13 @@ import org.apache.qpid.test.utils.UnitTestBase;
 /**
  * Tests that reference counting works correctly with AMQMessage and the message store
  */
-public class ReferenceCountingTest extends UnitTestBase
+@SuppressWarnings({"rawtypes", "unchecked"})
+class ReferenceCountingTest extends UnitTestBase
 {
     private TestMemoryMessageStore _store;
 
-
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         _store = new TestMemoryMessageStore();
     }
@@ -59,21 +59,21 @@ public class ReferenceCountingTest extends UnitTestBase
      * Check that when the reference count is decremented the message removes itself from the store
      */
     @Test
-    public void testMessageGetsRemoved()
+    void messageGetsRemoved()
     {
-        ContentHeaderBody chb = createPersistentContentHeader();
+        final ContentHeaderBody chb = createPersistentContentHeader();
 
-        MessagePublishInfo info = new MessagePublishInfo(null, false, false, null);
+        final MessagePublishInfo info = new MessagePublishInfo(null, false, false, null);
 
         final MessageMetaData mmd = new MessageMetaData(info, chb);
 
-        StoredMessage storedMessage = _store.addMessage(mmd).allContentAdded();
-        Transaction txn = _store.newTransaction();
+        final StoredMessage storedMessage = _store.addMessage(mmd).allContentAdded();
+        final Transaction txn = _store.newTransaction();
         txn.enqueueMessage(createTransactionLogResource("dummyQ"), createEnqueueableMessage(storedMessage));
         txn.commitTran();
-        AMQMessage message = new AMQMessage(storedMessage);
+        final AMQMessage message = new AMQMessage(storedMessage);
 
-        MessageReference ref = message.newReference();
+        final MessageReference ref = message.newReference();
 
         assertEquals(1, (long) getStoreMessageCount());
 
@@ -84,40 +84,37 @@ public class ReferenceCountingTest extends UnitTestBase
 
     private int getStoreMessageCount()
     {
-        MessageCounter counter = new MessageCounter();
+        final MessageCounter counter = new MessageCounter();
         _store.newMessageStoreReader().visitMessages(counter);
         return counter.getCount();
     }
 
     private ContentHeaderBody createPersistentContentHeader()
     {
-        BasicContentHeaderProperties bchp = new BasicContentHeaderProperties();
-        bchp.setDeliveryMode((byte)2);
-        ContentHeaderBody chb = new ContentHeaderBody(bchp);
-        return chb;
+        final BasicContentHeaderProperties bchp = new BasicContentHeaderProperties();
+        bchp.setDeliveryMode((byte) 2);
+        return new ContentHeaderBody(bchp);
     }
 
     @Test
-    public void testMessageRemains()
+    void testMessageRemains()
     {
-
-        MessagePublishInfo info = new MessagePublishInfo(null, false, false, null);
+        final MessagePublishInfo info = new MessagePublishInfo(null, false, false, null);
 
         final ContentHeaderBody chb = createPersistentContentHeader();
 
         final MessageMetaData mmd = new MessageMetaData(info, chb);
 
-        StoredMessage storedMessage = _store.addMessage(mmd).allContentAdded();
-        Transaction txn = _store.newTransaction();
+        final StoredMessage storedMessage = _store.addMessage(mmd).allContentAdded();
+        final Transaction txn = _store.newTransaction();
         txn.enqueueMessage(createTransactionLogResource("dummyQ"), createEnqueueableMessage(storedMessage));
         txn.commitTran();
-        AMQMessage message = new AMQMessage(storedMessage);
+        final AMQMessage message = new AMQMessage(storedMessage);
 
-
-        MessageReference ref = message.newReference();
+        final MessageReference ref = message.newReference();
 
         assertEquals(1, (long) getStoreMessageCount());
-        MessageReference ref2 = message.newReference();
+        final MessageReference ref2 = message.newReference();
         ref.release();
         assertEquals(1, (long) getStoreMessageCount());
     }

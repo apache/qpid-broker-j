@@ -21,26 +21,17 @@ package org.apache.qpid.server.protocol.v0_8;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class Pre0_10CreditManagerTest extends UnitTestBase
+class Pre0_10CreditManagerTest extends UnitTestBase
 {
     private Pre0_10CreditManager _creditManager;
 
-    @BeforeEach
-    public void setUp() throws Exception
-    {
-        ProtocolEngine protocolEngine = mock(ProtocolEngine.class);
-    }
-
     @Test
-    public void testBasicMessageCredit()
+    void basicMessageCredit()
     {
         _creditManager = new Pre0_10CreditManager(0, 0, 100L, 10L);
         _creditManager.setCreditLimits(0, 2);
@@ -56,7 +47,7 @@ public class Pre0_10CreditManagerTest extends UnitTestBase
     }
 
     @Test
-    public void testBytesLimitDoesNotPreventLargeMessage()
+    void bytesLimitDoesNotPreventLargeMessage()
     {
         _creditManager = new Pre0_10CreditManager(0, 0, 100L, 10L);
         _creditManager.setCreditLimits(10, 0);
@@ -67,7 +58,7 @@ public class Pre0_10CreditManagerTest extends UnitTestBase
     }
 
     @Test
-    public void testUseCreditWithNegativeMessageCredit()
+    void useCreditWithNegativeMessageCredit()
     {
         _creditManager = new Pre0_10CreditManager(0, 0, 100L, 10L);
         _creditManager.setCreditLimits(0, 3);
@@ -86,7 +77,7 @@ public class Pre0_10CreditManagerTest extends UnitTestBase
     }
 
     @Test
-    public void testUseCreditWithNegativeBytesCredit()
+    void useCreditWithNegativeBytesCredit()
     {
         _creditManager = new Pre0_10CreditManager(0, 0, 100L, 10L);
         _creditManager.setCreditLimits(3, 0);
@@ -105,7 +96,7 @@ public class Pre0_10CreditManagerTest extends UnitTestBase
     }
 
     @Test
-    public void testCreditAccountingWhileMessageLimitNotSet()
+    void creditAccountingWhileMessageLimitNotSet()
     {
         _creditManager = new Pre0_10CreditManager(0, 0, 100L, 10L);
         assertTrue(_creditManager.useCreditForMessage(37), "Creditmanager should be able to useCredit");

@@ -32,22 +32,24 @@ import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class MessageMetaDataFactoryTest extends UnitTestBase
+class MessageMetaDataFactoryTest extends UnitTestBase
 {
     private static final String CONTENT_TYPE = "content/type";
+
     private final long _arrivalTime = System.currentTimeMillis();
     private final AMQShortString _routingKey = AMQShortString.valueOf("routingkey");
     private final AMQShortString _exchange = AMQShortString.valueOf("exch");
+
     private MessageMetaData _mmd;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
         _mmd = createTestMessageMetaData();
     }
 
     @AfterEach
-    public void tearDown() throws Exception
+    void tearDown()
     {
         if (_mmd != null)
         {
@@ -56,14 +58,14 @@ public class MessageMetaDataFactoryTest extends UnitTestBase
     }
 
     @Test
-    public void testUnmarshalFromSingleBuffer()
+    void unmarshalFromSingleBuffer()
     {
-        try(QpidByteBuffer qpidByteBuffer = QpidByteBuffer.allocateDirect(_mmd.getStorableSize()))
+        try (final QpidByteBuffer qpidByteBuffer = QpidByteBuffer.allocateDirect(_mmd.getStorableSize()))
         {
             _mmd.writeToBuffer(qpidByteBuffer);
             qpidByteBuffer.flip();
 
-            MessageMetaData recreated = MessageMetaData.FACTORY.createMetaData(qpidByteBuffer);
+            final MessageMetaData recreated = MessageMetaData.FACTORY.createMetaData(qpidByteBuffer);
 
             assertEquals(_arrivalTime, recreated.getArrivalTime(), "Unexpected arrival time");
             assertEquals(_routingKey, recreated.getMessagePublishInfo().getRoutingKey(), "Unexpected routing key");

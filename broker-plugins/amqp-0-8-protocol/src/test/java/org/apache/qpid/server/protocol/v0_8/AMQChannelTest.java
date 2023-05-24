@@ -34,7 +34,6 @@ import static org.mockito.Mockito.when;
 
 import java.security.AccessControlException;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.Set;
 
 import javax.security.auth.Subject;
@@ -69,7 +68,8 @@ import org.apache.qpid.server.store.StoredMemoryMessage;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class AMQChannelTest extends UnitTestBase
+@SuppressWarnings({"rawtypes", "unchecked"})
+class AMQChannelTest extends UnitTestBase
 {
     public static final AMQShortString ROUTING_KEY = AMQShortString.valueOf("routingKey");
 
@@ -79,12 +79,11 @@ public class AMQChannelTest extends UnitTestBase
     private MessageDestination _messageDestination;
 
     @BeforeEach
-    public void setUp() throws Exception
+    void setUp() throws Exception
     {
+        final TaskExecutor taskExecutor = mock(TaskExecutor.class);
 
-        TaskExecutor taskExecutor = mock(TaskExecutor.class);
-
-        Broker<?> broker = mock(Broker.class);
+        final Broker<?> broker = mock(Broker.class);
         when(broker.getEventLogger()).thenReturn(mock(EventLogger.class));
         when(broker.getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT)).thenReturn(1L);
 
@@ -97,16 +96,16 @@ public class AMQChannelTest extends UnitTestBase
         when(_virtualHost.getPrincipal()).thenReturn(mock(Principal.class));
         when(_virtualHost.getEventLogger()).thenReturn(mock(EventLogger.class));
 
-        AmqpPort<?> port = mock(AmqpPort.class);
+        final AmqpPort<?> port = mock(AmqpPort.class);
         when(port.getChildExecutor()).thenReturn(taskExecutor);
         when(port.getModel()).thenReturn(BrokerModel.getInstance());
         when(port.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(1);
 
-        AuthenticatedPrincipal authenticatedPrincipal = new AuthenticatedPrincipal(new UsernamePrincipal("user", null));
-        Set<Principal> authenticatedUser = Collections.singleton(authenticatedPrincipal);
-        Subject authenticatedSubject = new Subject(true, authenticatedUser, Collections.<Principal>emptySet(), Collections.<Principal>emptySet());
+        final AuthenticatedPrincipal authenticatedPrincipal = new AuthenticatedPrincipal(new UsernamePrincipal("user", null));
+        final Set<Principal> authenticatedUser = Set.of(authenticatedPrincipal);
+        final Subject authenticatedSubject = new Subject(true, authenticatedUser, Set.of(), Set.of());
 
-        ProtocolOutputConverter protocolOutputConverter = mock(ProtocolOutputConverter.class);
+        final ProtocolOutputConverter protocolOutputConverter = mock(ProtocolOutputConverter.class);
 
         _amqConnection = mock(AMQPConnection_0_8.class);
         when(_amqConnection.getSubject()).thenReturn(authenticatedSubject);
@@ -132,75 +131,72 @@ public class AMQChannelTest extends UnitTestBase
     }
 
     @Test
-    public void testReceiveExchangeDeleteWhenIfUsedIsSetAndExchangeHasBindings()
+    void receiveExchangeDeleteWhenIfUsedIsSetAndExchangeHasBindings()
     {
-        String testExchangeName = getTestName();
-        Exchange<?> exchange = mock(Exchange.class);
+        final String testExchangeName = getTestName();
+        final Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(true);
         doReturn(exchange).when(_virtualHost).getAttainedMessageDestination(eq(testExchangeName), anyBoolean());
 
-        AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
+        final AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
 
         channel.receiveExchangeDelete(AMQShortString.valueOf(testExchangeName), true, false);
 
-        verify(_amqConnection).closeChannelAndWriteFrame(eq(channel),
-                                                         eq(ErrorCodes.IN_USE),
-                                                         eq("Exchange has bindings"));
+        verify(_amqConnection).closeChannelAndWriteFrame(channel, ErrorCodes.IN_USE, "Exchange has bindings");
     }
 
     @Test
-    public void testReceiveExchangeDeleteWhenIfUsedIsSetAndExchangeHasNoBinding()
+    void receiveExchangeDeleteWhenIfUsedIsSetAndExchangeHasNoBinding()
     {
-        Exchange<?> exchange = mock(Exchange.class);
+        final Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(false);
         doReturn(exchange).when(_virtualHost).getAttainedMessageDestination(eq(getTestName()), anyBoolean());
 
-        AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
+        final AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
         channel.receiveExchangeDelete(AMQShortString.valueOf(getTestName()), true, false);
 
         verify(exchange).delete();
     }
 
     @Test
-    public void testOversizedMessageClosesChannel()
+    void oversizedMessageClosesChannel()
     {
         when(_virtualHost.getDefaultDestination()).thenReturn(mock(MessageDestination.class));
 
-        long maximumMessageSize = 1024L;
+        final long maximumMessageSize = 1024L;
         when(_amqConnection.getMaxMessageSize()).thenReturn(maximumMessageSize);
-        AMQChannel channel = new AMQChannel(_amqConnection, 1, _virtualHost.getMessageStore());
+        final AMQChannel channel = new AMQChannel(_amqConnection, 1, _virtualHost.getMessageStore());
 
-        BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
+        final BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
         channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, AMQShortString.EMPTY_STRING, false, false);
         channel.receiveMessageHeader(properties, maximumMessageSize + 1);
 
-        verify(_amqConnection).closeChannelAndWriteFrame(eq(channel),
-                                                         eq(ErrorCodes.MESSAGE_TOO_LARGE),
-                                                         eq("Message size of 1025 greater than allowed maximum of 1024"));
+        verify(_amqConnection).closeChannelAndWriteFrame(channel,
+                                                         ErrorCodes.MESSAGE_TOO_LARGE,
+                                                         "Message size of 1025 greater than allowed maximum of 1024");
 
     }
 
     @Test
-    public void testPublishContentHeaderWhenMessageAuthorizationFails()
+    void publishContentHeaderWhenMessageAuthorizationFails()
     {
         final String impostorId = "impostor";
-        doThrow(new AccessControlException("fail")).when(_amqConnection).checkAuthorizedMessagePrincipal(eq(impostorId));
+        doThrow(new AccessControlException("fail")).when(_amqConnection).checkAuthorizedMessagePrincipal(impostorId);
         when(_virtualHost.getDefaultDestination()).thenReturn(mock(MessageDestination.class));
         when(_virtualHost.getMessageStore()).thenReturn(new NullMessageStore()
         {
             @Override
             public <T extends StorableMessageMetaData> MessageHandle<T> addMessage(final T metaData)
             {
-                MessageHandle messageHandle = new StoredMemoryMessage(1, metaData);
-                return messageHandle;
+                return (MessageHandle) new StoredMemoryMessage(1, metaData);
             }
         });
 
 
-        int channelId = 1;
-        AMQChannel channel = new AMQChannel(_amqConnection, channelId, _virtualHost.getMessageStore());
+        final int channelId = 1;
+        final AMQChannel channel = new AMQChannel(_amqConnection, channelId, _virtualHost.getMessageStore());
 
-        BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
+        final BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
         properties.setUserId(impostorId);
         channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, AMQShortString.EMPTY_STRING, false, false);
         channel.receiveMessageHeader(properties, 0);
@@ -210,7 +206,7 @@ public class AMQChannelTest extends UnitTestBase
     }
 
     @Test
-    public void testPublishContentHeaderWhenMessageAuthorizationSucceeds()
+    void publishContentHeaderWhenMessageAuthorizationSucceeds()
     {
         when(_virtualHost.getDefaultDestination()).thenReturn(_messageDestination);
         when(_virtualHost.getMessageStore()).thenReturn(new NullMessageStore()
@@ -218,25 +214,22 @@ public class AMQChannelTest extends UnitTestBase
             @Override
             public <T extends StorableMessageMetaData> MessageHandle<T> addMessage(final T metaData)
             {
-                MessageHandle messageHandle = new StoredMemoryMessage(1, metaData);
-                return messageHandle;
+                return (MessageHandle) new StoredMemoryMessage(1, metaData);
             }
         });
         final ArgumentCaptor<ServerMessage> messageCaptor = ArgumentCaptor.forClass(ServerMessage.class);
         doAnswer(invocation ->
         {
-            ServerMessage message = messageCaptor.getValue();
+            final ServerMessage message = messageCaptor.getValue();
             return new RoutingResult(message);
         }).when(_messageDestination).route(messageCaptor.capture(), eq(ROUTING_KEY.toString()), any(InstanceProperties.class));
-        AMQChannel channel = new AMQChannel(_amqConnection, 1, _virtualHost.getMessageStore());
+        final AMQChannel channel = new AMQChannel(_amqConnection, 1, _virtualHost.getMessageStore());
 
-        BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
+        final BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
         properties.setUserId(_amqConnection.getAuthorizedPrincipal().getName());
         channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, ROUTING_KEY, false, false);
         channel.receiveMessageHeader(properties, 0);
 
-        verify(_messageDestination).route((ServerMessage) any(),
-                                         eq(ROUTING_KEY.toString()),
-                                         any(InstanceProperties.class));
+        verify(_messageDestination).route((ServerMessage) any(), eq(ROUTING_KEY.toString()), any(InstanceProperties.class));
     }
 }
