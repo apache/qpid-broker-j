@@ -32,7 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.store.LinkStoreTestCase;
 import org.apache.qpid.server.store.jdbc.JDBCContainer;
 import org.apache.qpid.server.store.jdbc.JDBCDetails;
 
-public class JDBCLinkStoreTest extends LinkStoreTestCase
+class JDBCLinkStoreTest extends LinkStoreTestCase
 {
     @Override
     protected LinkStore createLinkStore()
@@ -42,7 +42,7 @@ public class JDBCLinkStoreTest extends LinkStoreTestCase
         when(details.getTimestampType()).thenReturn("timestamp");
         when(details.isUseBytesMethodsForBlob()).thenReturn(false);
 
-        JDBCContainer jdbcContainer = mock(JDBCContainer.class);
+        final JDBCContainer jdbcContainer = mock(JDBCContainer.class);
         when(jdbcContainer.getJDBCDetails()).thenReturn(details);
         when(jdbcContainer.getTableNamePrefix()).thenReturn("testTablePrefix");
         when(jdbcContainer.getConnection()).thenAnswer(invocation -> DriverManager.getConnection(getUrl() + ";create=true"));
@@ -53,34 +53,17 @@ public class JDBCLinkStoreTest extends LinkStoreTestCase
     @Override
     protected void deleteLinkStore()
     {
-        Connection connection = null;
-        try
+        try (final Connection connection = DriverManager.getConnection(getUrl()))
         {
-            connection = DriverManager.getConnection(getUrl());
+            // called to check connection status for SQLException to be thrown
+            connection.isClosed();
         }
         catch (SQLException e)
         {
-            if (e.getSQLState().equalsIgnoreCase("08006"))
-            {
-                //expected and represents a clean shutdown of this database only, do nothing.
-            }
-            else
+            // SQLState 08006 expected and represents a clean shutdown of this database only, do nothing
+            if (!"08006".equalsIgnoreCase(e.getSQLState()))
             {
                 throw new RuntimeException(e);
-            }
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                try
-                {
-                    connection.close();
-                }
-                catch (SQLException e)
-                {
-                    throw new RuntimeException(e);
-                }
             }
         }
     }
