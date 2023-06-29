@@ -39,23 +39,23 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
-import com.google.common.io.Files;
-
 import com.sleepycat.je.CacheMode;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.apache.qpid.server.protocol.v1_0.store.LinkStore;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreTestCase;
 import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
 import org.apache.qpid.server.store.berkeleydb.StandardEnvironmentConfiguration;
 import org.apache.qpid.server.store.berkeleydb.StandardEnvironmentFacade;
-import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.test.utils.VirtualHostNodeStoreType;
 
-public class BDBLinkStoreTest extends LinkStoreTestCase
+class BDBLinkStoreTest extends LinkStoreTestCase
 {
     private StandardEnvironmentFacade _facade;
+
+    @TempDir
     private File _storeFolder;
 
     @Override
@@ -70,28 +70,25 @@ public class BDBLinkStoreTest extends LinkStoreTestCase
     @Override
     protected LinkStore createLinkStore()
     {
-        _storeFolder = Files.createTempDir();
-        StandardEnvironmentConfiguration configuration = mock(StandardEnvironmentConfiguration.class);
+        final StandardEnvironmentConfiguration configuration = mock(StandardEnvironmentConfiguration.class);
         when(configuration.getName()).thenReturn("test");
         when(configuration.getStorePath()).thenReturn(_storeFolder.getAbsolutePath());
         when(configuration.getCacheMode()).thenReturn(CacheMode.DEFAULT);
         when(configuration.getParameters()).thenReturn(Collections.emptyMap());
         when(configuration.getFacadeParameter(eq(Integer.class),
-                                              eq(LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME),
-                                              anyInt())).thenReturn(0);
-        when(configuration.getFacadeParameter(eq(Map.class),
-                                              any(),
-                                              eq(JUL_LOGGER_LEVEL_OVERRIDE),
-                                              any())).thenReturn(Collections.emptyMap());
+                eq(LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME),
+                anyInt())).thenReturn(0);
+        when(configuration.getFacadeParameter(eq(Map.class), any(), eq(JUL_LOGGER_LEVEL_OVERRIDE), any()))
+                .thenReturn(Collections.emptyMap());
         when(configuration.getFacadeParameter(eq(Integer.class),
-                                    eq(QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD),
-                                    anyInt())).thenReturn(DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD);
+                eq(QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD),
+                anyInt())).thenReturn(DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD);
         when(configuration.getFacadeParameter(eq(Long.class),
-                                    eq(QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT),
-                                    anyLong())).thenReturn(DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT);
+                eq(QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT),
+                anyLong())).thenReturn(DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT);
        _facade = new StandardEnvironmentFacade(configuration);
 
-        BDBEnvironmentContainer<?> environmentContainer = mock(BDBEnvironmentContainer.class);
+        final BDBEnvironmentContainer<?> environmentContainer = mock(BDBEnvironmentContainer.class);
         when(environmentContainer.getEnvironmentFacade()).thenReturn(_facade);
         return new BDBLinkStore(environmentContainer);
     }
@@ -102,10 +99,6 @@ public class BDBLinkStoreTest extends LinkStoreTestCase
         if (_facade != null)
         {
             _facade.close();
-        }
-        if (_storeFolder != null)
-        {
-            FileUtils.delete(_storeFolder, true);
         }
     }
 }
