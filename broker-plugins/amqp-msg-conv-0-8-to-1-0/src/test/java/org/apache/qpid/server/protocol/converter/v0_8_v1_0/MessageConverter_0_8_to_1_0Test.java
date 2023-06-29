@@ -33,15 +33,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.google.common.collect.Lists;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -70,14 +70,15 @@ import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.typedmessage.TypedBytesContentWriter;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
+@SuppressWarnings({"unchecked"})
+class MessageConverter_0_8_to_1_0Test extends UnitTestBase
 {
     private final MessageConverter_0_8_to_1_0 _converter = new MessageConverter_0_8_to_1_0();
     private final AMQPDescribedTypeRegistry _typeRegistry = AMQPDescribedTypeRegistry.newInstance()
-                                                                                     .registerTransportLayer()
-                                                                                     .registerMessagingLayer()
-                                                                                     .registerTransactionLayer()
-                                                                                     .registerSecurityLayer();
+            .registerTransportLayer()
+            .registerMessagingLayer()
+            .registerTransactionLayer()
+            .registerSecurityLayer();
 
     private final StoredMessage<MessageMetaData> _handle = mock(StoredMessage.class);
 
@@ -87,7 +88,7 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
     private final BasicContentHeaderProperties _basicContentHeaderProperties = mock(BasicContentHeaderProperties.class);
 
     @BeforeAll
-    public void setUp() throws Exception
+    void setUp()
     {
         when(_handle.getMetaData()).thenReturn(_metaData);
         when(_metaData.getMessageHeader()).thenReturn(_header);
@@ -96,214 +97,137 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
         when(_contentHeaderBody.getProperties()).thenReturn(_basicContentHeaderProperties);
     }
 
-    @Test
-    public void testConvertStringMessageBody() throws Exception
+    @CsvSource(
     {
-        doTestTextMessage("helloworld", "text/plain");
+            "helloworld,text/plain", "null,text/plain", "<helloworld></helloworld>,text/xml", "null,text/xml",
+            "null,application/xml", "foo,text/foobar", "<helloworld></helloworld>,application/xml",
+            "<!DOCTYPE name []>,application/xml-dtd", "<helloworld></helloworld>,application/foo+xml",
+            "[],application/json", "[],application/foo+json", "var foo,application/javascript",
+            "var foo,application/ecmascript"
+    })
+    @ParameterizedTest
+    void convertStringMessage(final String originalContent, final String mimeType) throws Exception
+    {
+        doTestTextMessage(originalContent, mimeType);
     }
 
     @Test
-    public void testConvertEmptyStringMessageBody() throws Exception
-    {
-        doTestTextMessage(null, "text/plain");
-    }
-
-    @Test
-    public void testConvertStringXmlMessageBody() throws Exception
-    {
-        doTestTextMessage("<helloworld></helloworld>", "text/xml");
-    }
-
-    @Test
-    public void testConvertEmptyStringXmlMessageBody() throws Exception
-    {
-        doTestTextMessage(null, "text/xml");
-    }
-
-    @Test
-    public void testConvertEmptyStringApplicationXmlMessageBody() throws Exception
-    {
-        doTestTextMessage(null, "application/xml");
-    }
-
-    @Test
-    public void testConvertStringWithContentTypeText() throws Exception
-    {
-        doTestTextMessage("foo","text/foobar");
-    }
-
-    @Test
-    public void testConvertStringWithContentTypeApplicationXml() throws Exception
-    {
-        doTestTextMessage("<helloworld></helloworld>","application/xml");
-    }
-
-    @Test
-    public void testConvertStringWithContentTypeApplicationXmlDtd() throws Exception
-    {
-        doTestTextMessage("<!DOCTYPE name []>","application/xml-dtd");
-    }
-
-    @Test
-    public void testConvertStringWithContentTypeApplicationFooXml() throws Exception
-    {
-        doTestTextMessage("<helloworld></helloworld>","application/foo+xml");
-    }
-
-    @Test
-    public void testConvertStringWithContentTypeApplicationJson() throws Exception
-    {
-        doTestTextMessage("[]","application/json");
-    }
-
-    @Test
-    public void testConvertStringWithContentTypeApplicationFooJson() throws Exception
-    {
-        doTestTextMessage("[]","application/foo+json");
-    }
-
-    @Test
-    public void testConvertStringWithContentTypeApplicationJavascript() throws Exception
-    {
-        doTestTextMessage("var foo","application/javascript");
-    }
-
-    @Test
-    public void testConvertStringWithContentTypeApplicationEcmascript() throws Exception
-    {
-        doTestTextMessage("var foo","application/ecmascript");
-    }
-
-    @Test
-    public void testConvertBytesMessageBody() throws Exception
+    void convertBytesMessageBody() throws Exception
     {
         doTestBytesMessage("helloworld".getBytes(), "application/octet-stream");
     }
 
     @Test
-    public void testConvertBytesMessageBodyNoContentType() throws Exception
+    void convertBytesMessageBodyNoContentType() throws Exception
     {
         final byte[] messageContent = "helloworld".getBytes();
-        doTest(messageContent,
-               null,
-               DataSection.class,
-               messageContent,
-               null,
-               null);
+        doTest(messageContent, null, DataSection.class, messageContent, null, null);
     }
 
     @Test
-    public void testConvertBytesMessageBodyUnknownContentType() throws Exception
+    void convertBytesMessageBodyUnknownContentType() throws Exception
     {
         final byte[] messageContent = "helloworld".getBytes();
-        doTest(messageContent,
-               "my/bytes",
-               DataSection.class,
-               messageContent,
-               Symbol.valueOf("my/bytes"),
-               null);
+        doTest(messageContent, "my/bytes", DataSection.class, messageContent, Symbol.valueOf("my/bytes"), null);
     }
 
-
     @Test
-    public void testConvertEmptyBytesMessageBody() throws Exception
+    void convertEmptyBytesMessageBody() throws Exception
     {
         doTestBytesMessage(new byte[0], "application/octet-stream");
     }
 
     @Test
-    public void testConvertJmsStreamMessageBody() throws Exception
+    void convertJmsStreamMessageBody() throws Exception
     {
-        final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D);
+        final List<Object> expected = List.of("apple", 43, 31.42D);
         final byte[] messageBytes = getJmsStreamMessageBytes(expected);
-
         final String mimeType = "jms/stream-message";
+
         doTestStreamMessage(messageBytes, mimeType, expected, JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
     }
 
     @Test
-    public void testConvertJmsStreamMessageEmptyBody() throws Exception
+    void convertJmsStreamMessageEmptyBody() throws Exception
     {
-        final List<Object> expected = Collections.emptyList();
+        final List<Object> expected = List.of();
 
         doTestStreamMessage(null, "jms/stream-message", expected, JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
     }
 
     @Test
-    public void testConvertAmqpListMessageBody() throws Exception
+    void convertAmqpListMessageBody() throws Exception
     {
-        final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D);
+        final List<Object> expected = List.of("apple", 43, 31.42D);
         final byte[] messageBytes = new ListToAmqpListConverter().toMimeContent(expected);
-
         final String mimeType = "amqp/list";
+
         doTestStreamMessage(messageBytes, mimeType, expected, JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
     }
 
     @Test
-    public void testConvertAmqpListMessageBodyWithNonJmsContent() throws Exception
+    void convertAmqpListMessageBodyWithNonJmsContent() throws Exception
     {
-        final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D, Lists.newArrayList("nonJMSList"));
+        final List<Object> expected = List.of("apple", 43, 31.42D, List.of("nonJMSList"));
         final byte[] messageBytes = new ListToAmqpListConverter().toMimeContent(expected);
-
         final String mimeType = "amqp/list";
+
         doTestStreamMessage(messageBytes, mimeType, expected, null);
     }
 
     @Test
-    public void testConvertJmsMapMessageBody() throws Exception
+    void convertJmsMapMessageBody() throws Exception
     {
-        final Map<String, Object> expected = Collections.singletonMap("key", "value");
+        final Map<String, Object> expected = Map.of("key", "value");
         final byte[] messageBytes = getJmsMapMessageBytes(expected);
 
         doTestMapMessage(messageBytes, "jms/map-message", expected, JmsMessageTypeAnnotation.MAP_MESSAGE.getType());
     }
 
     @Test
-    public void testConvertJmsMapMessageEmptyBody() throws Exception
+    void convertJmsMapMessageEmptyBody() throws Exception
     {
-        final Map<String, Object> expected = Collections.emptyMap();
+        final Map<String, Object> expected = Map.of();
 
         doTestMapMessage(null, "jms/map-message", expected, JmsMessageTypeAnnotation.MAP_MESSAGE.getType());
     }
 
     @Test
-    public void testConvertAmqpMapMessageBody() throws Exception
+    void convertAmqpMapMessageBody() throws Exception
     {
-        final Map<String, Object> expected = Collections.singletonMap("key", "value");
+        final Map<String, Object> expected = Map.of("key", "value");
         final byte[] messageBytes = new MapToAmqpMapConverter().toMimeContent(expected);
 
         doTestMapMessage(messageBytes, "amqp/map", expected, JmsMessageTypeAnnotation.MAP_MESSAGE.getType());
     }
 
     @Test
-    public void testConvertAmqpMapMessageBodyWithNonJmsContent() throws Exception
+    void convertAmqpMapMessageBodyWithNonJmsContent() throws Exception
     {
-        final Map<String, Object> expected = Collections.singletonMap("key", Collections.singletonList("nonJmsList"));
+        final Map<String, Object> expected = Map.of("key", List.of("nonJmsList"));
         final byte[] messageBytes = new MapToAmqpMapConverter().toMimeContent(expected);
 
         doTestMapMessage(messageBytes, "amqp/map", expected, null);
     }
 
     @Test
-    public void testConvertObjectStreamMessageBody() throws Exception
+    void convertObjectStreamMessageBody() throws Exception
     {
         final byte[] messageBytes = getObjectStreamMessageBytes(UUID.randomUUID());
-        final byte[] expectedBytes = messageBytes;
 
-        doTestObjectMessage(messageBytes, "application/java-object-stream", expectedBytes);
+        doTestObjectMessage(messageBytes, "application/java-object-stream", messageBytes);
     }
 
     @Test
-    public void testConvertObjectStream2MessageBody() throws Exception
+    void convertObjectStream2MessageBody() throws Exception
     {
         final byte[] messageBytes = getObjectStreamMessageBytes(UUID.randomUUID());
-        final byte[] expectedBytes = messageBytes;
 
-        doTestObjectMessage(messageBytes, "application/x-java-serialized-object", expectedBytes);
+        doTestObjectMessage(messageBytes, "application/x-java-serialized-object", messageBytes);
     }
 
     @Test
-    public void testConvertEmptyObjectStreamMessageBody() throws Exception
+    void convertEmptyObjectStreamMessageBody() throws Exception
     {
         final byte[] messageBytes = null;
         final byte[] expectedBytes = getObjectStreamMessageBytes(messageBytes);
@@ -313,50 +237,49 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
     }
 
     @Test
-    public void testConvertEmptyMessageWithoutContentType() throws Exception
+    void convertEmptyMessageWithoutContentType() throws Exception
     {
         doTest(null, null, AmqpValueSection.class, null, null, JmsMessageTypeAnnotation.MESSAGE.getType());
     }
 
     @Test
-    public void testConvertEmptyMessageWithUnknownContentType() throws Exception
+    void convertEmptyMessageWithUnknownContentType() throws Exception
     {
         doTest(null, "foo/bar", DataSection.class, new byte[0], Symbol.valueOf("foo/bar"), null);
     }
 
     @Test
-    public void testConvertMessageWithoutContentType() throws Exception
+    void convertMessageWithoutContentType() throws Exception
     {
         final byte[] expectedContent = "someContent".getBytes(UTF_8);
         doTest(expectedContent, null, DataSection.class, expectedContent, null, null);
     }
 
-
     private byte[] getObjectStreamMessageBytes(final Serializable o) throws Exception
     {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(bos))
+        try (final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             final ObjectOutputStream oos = new ObjectOutputStream(bos))
         {
             oos.writeObject(o);
             return bos.toByteArray();
         }
     }
 
-    private byte[] getJmsStreamMessageBytes(List<Object> objects) throws Exception
+    private byte[] getJmsStreamMessageBytes(final List<Object> objects) throws Exception
     {
-        TypedBytesContentWriter writer = new TypedBytesContentWriter();
-        for (Object o : objects)
+        final TypedBytesContentWriter writer = new TypedBytesContentWriter();
+        for (final Object o : objects)
         {
             writer.writeObject(o);
         }
         return getBytes(writer);
     }
 
-    private byte[] getJmsMapMessageBytes(Map<String, Object> map) throws Exception
+    private byte[] getJmsMapMessageBytes(final Map<String, Object> map) throws Exception
     {
-        TypedBytesContentWriter writer = new TypedBytesContentWriter();
+        final TypedBytesContentWriter writer = new TypedBytesContentWriter();
         writer.writeIntImpl(map.size());
-        for (Map.Entry<String, Object> entry : map.entrySet())
+        for (final Map.Entry<String, Object> entry : map.entrySet())
         {
             writer.writeNullTerminatedStringImpl(entry.getKey());
             writer.writeObject(entry.getValue());
@@ -366,7 +289,7 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
 
     private byte[] getBytes(final TypedBytesContentWriter writer)
     {
-        ByteBuffer buf = writer.getData();
+        final ByteBuffer buf = writer.getData();
         final byte[] expected = new byte[buf.remaining()];
         buf.get(expected);
         return expected;
@@ -376,7 +299,7 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
                                                                            final int expectedNumberOfSections)
             throws Exception
     {
-        SectionDecoder sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
+        final SectionDecoder sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
         final List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(content);
         assertEquals(expectedNumberOfSections, (long) sections.size(), "Unexpected number of sections");
         return sections;
@@ -407,20 +330,19 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
         final ArgumentCaptor<Integer> offsetCaptor = ArgumentCaptor.forClass(Integer.class);
         final ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
 
-        when(_handle.getContent(offsetCaptor.capture(),
-                                sizeCaptor.capture())).then(invocation -> combined.view(offsetCaptor.getValue(),
-                                                                                        sizeCaptor.getValue()));
+        when(_handle.getContent(offsetCaptor.capture(), sizeCaptor.capture()))
+                .then(invocation -> combined.view(offsetCaptor.getValue(), sizeCaptor.getValue()));
     }
 
     private Byte getJmsMessageTypeAnnotation(final Message_1_0 convertedMessage)
     {
-        MessageAnnotationsSection messageAnnotationsSection = convertedMessage.getMessageAnnotationsSection();
+        final MessageAnnotationsSection messageAnnotationsSection = convertedMessage.getMessageAnnotationsSection();
         if (messageAnnotationsSection != null)
         {
-            Map<Symbol, Object> messageAnnotations = messageAnnotationsSection.getValue();
+            final Map<Symbol, Object> messageAnnotations = messageAnnotationsSection.getValue();
             if (messageAnnotations != null)
             {
-                Object annotation = messageAnnotations.get(Symbol.valueOf("x-opt-jms-msg-type"));
+                final Object annotation = messageAnnotations.get(Symbol.valueOf("x-opt-jms-msg-type"));
                 if (annotation instanceof Byte)
                 {
                     return ((Byte) annotation);
@@ -433,7 +355,7 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
     private void doTestTextMessage(final String originalContent, final String mimeType) throws Exception
     {
         final byte[] contentBytes = originalContent == null ? null : originalContent.getBytes(UTF_8);
-        String expectedContent = originalContent == null ? "" : originalContent;
+        final String expectedContent = originalContent == null ? "" : originalContent;
         doTest(contentBytes,
                mimeType,
                AmqpValueSection.class,
@@ -441,7 +363,6 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
                Symbol.valueOf(mimeType),
                JmsMessageTypeAnnotation.TEXT_MESSAGE.getType());
     }
-
 
     private void doTestMapMessage(final byte[] messageBytes,
                                   final String mimeType,
@@ -471,8 +392,7 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
 
     private void doTestObjectMessage(final byte[] messageBytes,
                                      final String mimeType,
-                                     final byte[] expectedBytes)
-            throws Exception
+                                     final byte[] expectedBytes) throws Exception
     {
         doTest(messageBytes,
                mimeType,
@@ -493,8 +413,8 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
         final Message_1_0 convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
-        List<EncodingRetainingSection<?>> sections = getEncodingRetainingSections(content, 1);
-        EncodingRetainingSection<?> encodingRetainingSection = sections.get(0);
+        final List<EncodingRetainingSection<?>> sections = getEncodingRetainingSections(content, 1);
+        final EncodingRetainingSection<?> encodingRetainingSection = sections.get(0);
         assertEquals(expectedBodySection, encodingRetainingSection.getClass(), "Unexpected section type");
 
         if (expectedContent instanceof byte[])
@@ -507,7 +427,7 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
             assertEquals(expectedContent, encodingRetainingSection.getValue(), "Unexpected content");
         }
 
-        Symbol contentType = getContentType(convertedMessage);
+        final Symbol contentType = getContentType(convertedMessage);
         if (expectedContentType == null)
         {
             assertNull(contentType, "Content type should be null");
@@ -517,7 +437,7 @@ public class MessageConverter_0_8_to_1_0Test extends UnitTestBase
             assertEquals(expectedContentType, contentType, "Unexpected content type");
         }
 
-        Byte jmsMessageTypeAnnotation = getJmsMessageTypeAnnotation(convertedMessage);
+        final Byte jmsMessageTypeAnnotation = getJmsMessageTypeAnnotation(convertedMessage);
         if (expectedJmsTypeAnnotation == null)
         {
             assertNull(jmsMessageTypeAnnotation, "Unexpected annotation 'x-opt-jms-msg-type'");

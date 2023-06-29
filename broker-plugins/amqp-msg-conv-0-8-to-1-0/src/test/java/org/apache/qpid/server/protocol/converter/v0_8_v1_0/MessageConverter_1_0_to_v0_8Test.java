@@ -24,7 +24,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,6 +43,8 @@ import com.google.common.io.ByteStreams;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -76,51 +77,49 @@ import org.apache.qpid.server.typedmessage.mimecontentconverter.ListToJmsStreamM
 import org.apache.qpid.server.typedmessage.mimecontentconverter.MapToJmsMapMessage;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
+@SuppressWarnings({"rawtypes", "unchecked"})
+class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
 {
     private static final MessageAnnotations MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 0));
+            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 0));
     private static final MessageAnnotations OBJECT_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 1));
+            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 1));
     private static final MessageAnnotations MAP_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 2));
+            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 2));
     private static final MessageAnnotations BYTE_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 3));
+            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 3));
     private static final MessageAnnotations STREAM_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 4));
+            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 4));
     private static final MessageAnnotations TEXT_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 5));
+            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 5));
+    private static final String OCTET_STREAM = "application/octet-stream";
+    private static final String OBJECT_STREAM = "application/java-object-stream";
     private MessageConverter_1_0_to_v0_8 _converter;
 
     @BeforeAll
-    public void setUp()
+    void setUp()
     {
         _converter = new MessageConverter_1_0_to_v0_8();
     }
 
     @Test
-    public void testAmqpValueWithNullWithTextMessageAnnotation()
+    void amqpValueWithNullWithTextMessageAnnotation()
     {
-        final Object expected = null;
-        final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage =
+        final AmqpValue amqpValue = new AmqpValue(null);
+        final Message_1_0 sourceMessage =
                 createTestMessage(TEXT_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
-
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("text/plain", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         assertEquals(0, (long) convertedMessage.getMessageMetaData().getContentSize(), "Unexpected content size");
-
     }
 
     @Test
-    public void testAmqpValueWithNullWithMessageAnnotation()
+    void amqpValueWithNullWithMessageAnnotation()
     {
-        final Object expected = null;
-        final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage =
+        final AmqpValue amqpValue = new AmqpValue(null);
+        final Message_1_0 sourceMessage =
                 createTestMessage(MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
-
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
@@ -128,58 +127,49 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithNullWithObjectMessageAnnotation() throws Exception
+    void amqpValueWithNullWithObjectMessageAnnotation() throws Exception
     {
-        final Object expected = null;
-        final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(OBJECT_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
-
+        final AmqpValue amqpValue = new AmqpValue(null);
+        final Message_1_0 sourceMessage = createTestMessage(OBJECT_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
-        assertEquals("application/java-object-stream", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
+        assertEquals(OBJECT_STREAM, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         assertArrayEquals(getObjectBytes(null), getBytes(content), "Unexpected content size");
     }
 
     @Test
-    public void testAmqpValueWithNullWithMapMessageAnnotation() throws Exception
+    void amqpValueWithNullWithMapMessageAnnotation() throws Exception
     {
-        final Object expected = null;
-        final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(MAP_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
-
+        final AmqpValue amqpValue = new AmqpValue(null);
+        final Message_1_0 sourceMessage =
+                createTestMessage(MAP_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("jms/map-message", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        assertArrayEquals(new MapToJmsMapMessage().toMimeContent(Collections.emptyMap()), getBytes(content),
+        assertArrayEquals(new MapToJmsMapMessage().toMimeContent(Map.of()), getBytes(content),
                 "Unexpected content size");
     }
 
     @Test
-    public void testAmqpValueWithNullWithBytesMessageAnnotation()
+    void amqpValueWithNullWithBytesMessageAnnotation()
     {
-        final Object expected = null;
-        final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(BYTE_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
-
+        final AmqpValue amqpValue = new AmqpValue(null);
+        final Message_1_0 sourceMessage =
+                createTestMessage(BYTE_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("application/octet-stream", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
+        assertEquals(OCTET_STREAM, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         assertEquals(0, (long) convertedMessage.getMessageMetaData().getContentSize(), "Unexpected content size");
     }
 
     @Test
-    public void testAmqpValueWithNullWithStreamMessageAnnotation()
+    void amqpValueWithNullWithStreamMessageAnnotation()
     {
-        final Object expected = null;
-        final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(STREAM_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
-
+        final AmqpValue amqpValue = new AmqpValue(null);
+        final Message_1_0 sourceMessage =
+                createTestMessage(STREAM_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("jms/stream-message", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
@@ -187,15 +177,12 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithNullWithUnknownMessageAnnotation()
+    void amqpValueWithNullWithUnknownMessageAnnotation()
     {
-        final Object expected = null;
-        final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage =
-                createTestMessage(new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"),
-                                                                                  (byte) 11)),
+        final AmqpValue amqpValue = new AmqpValue(null);
+        final Message_1_0 sourceMessage =
+                createTestMessage(new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 11)),
                                   amqpValue.createEncodingRetainingSection());
-
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
@@ -203,65 +190,52 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithNullWithContentTypeApplicationOctetStream()
+    void amqpValueWithNullWithContentTypeApplicationOctetStream()
     {
-        Properties properties = new Properties();
-        properties.setContentType(Symbol.valueOf("application/octet-stream"));
-        final Object expected = null;
-        final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
-
+        final Properties properties = new Properties();
+        properties.setContentType(Symbol.valueOf(OCTET_STREAM));
+        final AmqpValue amqpValue = new AmqpValue(null);
+        final Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("application/octet-stream", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
+        assertEquals(OCTET_STREAM, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         assertEquals(0, (long) convertedMessage.getMessageMetaData().getContentSize(), "Unexpected content size");
     }
 
     @Test
-    public void testAmqpValueWithNullWithObjectMessageContentType() throws Exception
+    void amqpValueWithNullWithObjectMessageContentType() throws Exception
     {
         final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf("application/x-java-serialized-object"));
-        final Object expected = null;
-        final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
-
+        final AmqpValue amqpValue = new AmqpValue(null);
+        final Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("application/java-object-stream", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
-
+        assertEquals(OBJECT_STREAM, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         assertEquals(getObjectBytes(null).length, (long) convertedMessage.getMessageMetaData().getContentSize(),
                 "Unexpected content size");
     }
 
     @Test
-    public void testAmqpValueWithNullWithJmsMapContentType() throws Exception
+    void amqpValueWithNullWithJmsMapContentType() throws Exception
     {
         final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf("jms/map-message"));
-        final Object expected = null;
-        final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
-
+        final AmqpValue amqpValue = new AmqpValue(null);
+        final Message_1_0 sourceMessage = createTestMessage(properties, amqpValue.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("jms/map-message", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-
-        assertArrayEquals(new MapToJmsMapMessage().toMimeContent(Collections.emptyMap()), getBytes(content),
+        assertArrayEquals(new MapToJmsMapMessage().toMimeContent(Map.of()), getBytes(content),
                 "Unexpected content size");
     }
 
     @Test
-    public void testAmqpValueWithNull()
+    void amqpValueWithNull()
     {
-        final Object expected = null;
-        final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
-
+        final AmqpValue amqpValue = new AmqpValue(null);
+        final Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
@@ -269,50 +243,46 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithString() throws Exception
+    void amqpValueWithString() throws Exception
     {
         final String expected = "testContent";
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("text/plain", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertEquals(expected, new String(getBytes(content), UTF_8), "Unexpected content");
     }
 
     @Test
-    public void testAmqpValueWithStringWithTextMessageAnnotation() throws Exception
+    void amqpValueWithStringWithTextMessageAnnotation() throws Exception
     {
         final String expected = "testContent";
         final AmqpValue amqpValue = new AmqpValue(expected);
-        Message_1_0 sourceMessage =
+        final Message_1_0 sourceMessage =
                 createTestMessage(TEXT_MESSAGE_MESSAGE_ANNOTATION, amqpValue.createEncodingRetainingSection());
-
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("text/plain", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertEquals(expected, new String(getBytes(content), UTF_8), "Unexpected content");
     }
 
     @Test
-    public void testAmqpValueWithMap() throws Exception
+    void amqpValueWithMap() throws Exception
     {
         final Map<String, Object> originalMap = new LinkedHashMap<>();
         originalMap.put("binaryEntry", new Binary(new byte[]{0x00, (byte) 0xFF}));
         originalMap.put("intEntry", 42);
         originalMap.put("nullEntry", null);
         final AmqpValue amqpValue = new AmqpValue(originalMap);
-        Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final Map<String, Object> convertedMap = new JmsMapMessageToMap().toObject(getBytes(content));
 
         assertEquals("jms/map-message", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
-
-        Map<String, Object> convertedMap = new JmsMapMessageToMap().toObject(getBytes(content));
         assertEquals(originalMap.size(), (long) convertedMap.size(), "Unexpected size");
         assertArrayEquals(((Binary) originalMap.get("binaryEntry")).getArray(), (byte[]) convertedMap.get("binaryEntry"),
                 "Unexpected binary entry");
@@ -321,20 +291,16 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithMapContainingMap() throws Exception
+    void amqpValueWithMapContainingMap() throws Exception
     {
-        final Map<String, Object> originalMap =
-                Collections.singletonMap("testMap", Collections.singletonMap("innerKey", "testValue"));
-
+        final Map<String, Object> originalMap = Map.of("testMap", Map.of("innerKey", "testValue"));
         final AmqpValue amqpValue = new AmqpValue(originalMap);
-        Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final Map<String, Object> convertedMap = new AmqpMapToMapConverter().toObject(getBytes(content));
 
         assertEquals("amqp/map", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
-
-        Map<String, Object> convertedMap = new AmqpMapToMapConverter().toObject(getBytes(content));
         assertEquals(originalMap.size(), (long) convertedMap.size(), "Unexpected size");
         assertEquals(new HashMap((Map<String, Object>) originalMap.get("testMap")),
                 new HashMap((Map<String, Object>) convertedMap.get("testMap")),
@@ -342,39 +308,30 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithMapContainingNonFieldTableCompliantEntries()
+    void amqpValueWithMapContainingNonFieldTableCompliantEntries()
     {
-        final AmqpValue amqpValue = new AmqpValue(Collections.<Object, Object>singletonMap(13, 42));
-        Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
+        final AmqpValue amqpValue = new AmqpValue(Map.of(13, 42));
+        final Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
 
-        try
-        {
-            _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-            fail("expected exception not thrown.");
-        }
-        catch (MessageConversionException e)
-        {
-            // pass
-        }
+        assertThrows(MessageConversionException.class,
+                () -> _converter.convert(sourceMessage, mock(NamedAddressSpace.class)),
+                "Expected exception not thrown");
     }
 
     @Test
-    public void testAmqpValueWithList() throws Exception
+    void amqpValueWithList() throws Exception
     {
         final List<Object> originalList = new ArrayList<>();
         originalList.add(new Binary(new byte[]{0x00, (byte) 0xFF}));
         originalList.add(42);
         originalList.add(null);
         final AmqpValue amqpValue = new AmqpValue(originalList);
-        Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
-        assertEquals("jms/stream-message", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final List<Object> convertedList = new JmsStreamMessageToList().toObject(getBytes(content));
 
-        List<Object> convertedList = new JmsStreamMessageToList().toObject(getBytes(content));
+        assertEquals("jms/stream-message", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         assertEquals(originalList.size(), (long) convertedList.size(), "Unexpected size");
         assertArrayEquals(((Binary) originalList.get(0)).getArray(), (byte[]) convertedList.get(0), "Unexpected binary item");
         assertEquals(originalList.get(1), convertedList.get(1), "Unexpected int item");
@@ -382,18 +339,16 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithListContainingMap() throws Exception
+    void amqpValueWithListContainingMap() throws Exception
     {
-        final List<Object> originalList = Collections.singletonList(Collections.singletonMap("testKey", "testValue"));
+        final List<Object> originalList = List.of(Map.of("testKey", "testValue"));
         final AmqpValue amqpValue = new AmqpValue(originalList);
-        Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final List<Object> convertedList = new AmqpListToListConverter().toObject(getBytes(content));
 
         assertEquals("amqp/list", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
-
-        List<Object> convertedList = new AmqpListToListConverter().toObject(getBytes(content));
         assertEquals(originalList.size(), (long) convertedList.size(), "Unexpected size");
         assertEquals(new HashMap<String, Object>((Map) originalList.get(0)),
                 new HashMap<String, Object>((Map) convertedList.get(0)),
@@ -401,71 +356,56 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testAmqpValueWithListContainingUnsupportedType()
+    void amqpValueWithListContainingUnsupportedType()
     {
-        final List<Object> originalList = Collections.singletonList(new Source());
+        final List<Object> originalList = List.of(new Source());
         final AmqpValue amqpValue = new AmqpValue(originalList);
-        Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
 
-        try
-        {
-            _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-            fail("expected exception not thrown.");
-        }
-        catch (MessageConversionException e)
-        {
-            // pass
-        }
+        assertThrows(MessageConversionException.class,
+                () -> _converter.convert(sourceMessage, mock(NamedAddressSpace.class)),
+                "Expected exception not thrown");
     }
 
     @Test
-    public void testAmqpValueWithUnsupportedType()
+    void amqpValueWithUnsupportedType()
     {
         final Integer originalValue = 42;
         final AmqpValue amqpValue = new AmqpValue(originalValue);
-        Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage = createTestMessage(amqpValue.createEncodingRetainingSection());
 
-        try
-        {
-            _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-            fail("expected exception not thrown.");
-        }
-        catch (MessageConversionException e)
-        {
-            // pass
-        }
+        assertThrows(MessageConversionException.class,
+                () -> _converter.convert(sourceMessage, mock(NamedAddressSpace.class)),
+                "Expected exception not thrown");
     }
 
     @Test
-    public void testAmqpSequenceWithSimpleTypes() throws Exception
+    void amqpSequenceWithSimpleTypes() throws Exception
     {
         final List<Integer> expected = new ArrayList<>();
         expected.add(37);
         expected.add(42);
         final AmqpSequence amqpSequence = new AmqpSequence(expected);
-        Message_1_0 sourceMessage = createTestMessage(amqpSequence.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(amqpSequence.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("jms/stream-message", convertedMessage.getMessageHeader().getMimeType(),
                 "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertEquals(expected, new JmsStreamMessageToList().toObject(getBytes(content)), "Unexpected content");
     }
 
     @Test
-    public void testAmqpSequenceWithMap() throws Exception
+    void amqpSequenceWithMap() throws Exception
     {
-        final List<Object> originalList = Collections.singletonList(Collections.singletonMap("testKey", "testValue"));
+        final List<Object> originalList = List.of(Map.of("testKey", "testValue"));
         final AmqpSequence amqpSequence = new AmqpSequence(originalList);
-        Message_1_0 sourceMessage = createTestMessage(amqpSequence.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(amqpSequence.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+        final List<Object> convertedList = new AmqpListToListConverter().toObject(getBytes(content));
 
         assertEquals("amqp/list", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
-
-        List<Object> convertedList = new AmqpListToListConverter().toObject(getBytes(content));
         assertEquals(originalList.size(), (long) convertedList.size(), "Unexpected size");
         assertEquals(new HashMap<String, Object>((Map) originalList.get(0)),
                 new HashMap<String, Object>((Map) convertedList.get(0)),
@@ -473,347 +413,272 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testAmqpSequenceWithUnsupportedType()
+    void amqpSequenceWithUnsupportedType()
     {
-        final List<Object> originalList = Collections.singletonList(new Source());
+        final List<Object> originalList = List.of(new Source());
         final AmqpSequence amqpSequence = new AmqpSequence(originalList);
-        Message_1_0 sourceMessage = createTestMessage(amqpSequence.createEncodingRetainingSection());
+        final Message_1_0 sourceMessage = createTestMessage(amqpSequence.createEncodingRetainingSection());
 
-        try
-        {
-            _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-            fail("expected exception not thrown.");
-        }
-        catch (MessageConversionException e)
-        {
-            // pass
-        }
+        assertThrows(MessageConversionException.class,
+                () -> _converter.convert(sourceMessage, mock(NamedAddressSpace.class)),
+                "Expected exception not thrown");
     }
 
     @Test
-    public void testDataWithMessageAnnotation() throws Exception
+    void dataWithMessageAnnotation() throws Exception
     {
-        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), MESSAGE_MESSAGE_ANNOTATION, "application/octet-stream");
+        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), MESSAGE_MESSAGE_ANNOTATION, OCTET_STREAM);
     }
 
     @Test
-    public void testDataWithObjectMessageAnnotation() throws Exception
+    void dataWithObjectMessageAnnotation() throws Exception
     {
-        byte[] bytes = "helloworld".getBytes(UTF_8);
+        final byte[] bytes = "helloworld".getBytes(UTF_8);
         final byte[] expected = getObjectBytes(bytes);
-        doTestDataWithAnnotation(expected, OBJECT_MESSAGE_MESSAGE_ANNOTATION, "application/java-object-stream");
+        doTestDataWithAnnotation(expected, OBJECT_MESSAGE_MESSAGE_ANNOTATION, OBJECT_STREAM);
     }
 
     @Test
-    public void testDataWithMapMessageAnnotation() throws Exception
+    void dataWithMapMessageAnnotation() throws Exception
     {
-        doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
-                                 MAP_MESSAGE_MESSAGE_ANNOTATION,
-                                 "application/octet-stream");
+        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), MAP_MESSAGE_MESSAGE_ANNOTATION, OCTET_STREAM);
     }
 
     @Test
-    public void testDataWithMapMessageAnnotationAndContentTypeJmsMapMessage() throws Exception
+    void dataWithMapMessageAnnotationAndContentTypeJmsMapMessage() throws Exception
     {
-        Map<String, Object> originalMap = Collections.singletonMap("testKey", "testValue");
-        byte[] data = new MapToJmsMapMessage().toMimeContent(originalMap);
-        String expectedMimeType = "jms/map-message";
+        final Map<String, Object> originalMap = Map.of("testKey", "testValue");
+        final byte[] data = new MapToJmsMapMessage().toMimeContent(originalMap);
+        final String expectedMimeType = "jms/map-message";
         final Data value = new Data(new Binary(data));
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf(expectedMimeType));
-        Message_1_0 sourceMessage = createTestMessage(properties,
-                                                      MAP_MESSAGE_MESSAGE_ANNOTATION,
-                                                      value.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage =
+                createTestMessage(properties, MAP_MESSAGE_MESSAGE_ANNOTATION, value.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals(expectedMimeType, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals(data, getBytes(content), "Unexpected content");
     }
 
     @Test
-    public void testDataWithMapMessageAnnotationAndContentTypeAmqpMap() throws Exception
+    void dataWithMapMessageAnnotationAndContentTypeAmqpMap() throws Exception
     {
-        Map<String, Object> originalMap = Collections.singletonMap("testKey", "testValue");
-        byte[] data = new MapToAmqpMapConverter().toMimeContent(originalMap);
-        String expectedMimeType = "amqp/map";
+        final Map<String, Object> originalMap = Map.of("testKey", "testValue");
+        final byte[] data = new MapToAmqpMapConverter().toMimeContent(originalMap);
+        final String expectedMimeType = "amqp/map";
         final Data value = new Data(new Binary(data));
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf(expectedMimeType));
-        Message_1_0 sourceMessage = createTestMessage(properties,
-                                                      MAP_MESSAGE_MESSAGE_ANNOTATION,
-                                                      value.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage =
+                createTestMessage(properties, MAP_MESSAGE_MESSAGE_ANNOTATION, value.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals(expectedMimeType, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals(data, getBytes(content), "Unexpected content");
     }
 
     @Test
-    public void testDataWithBytesMessageAnnotation() throws Exception
+    void dataWithBytesMessageAnnotation() throws Exception
     {
-        doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
-                                 BYTE_MESSAGE_MESSAGE_ANNOTATION,
-                                 "application/octet-stream");
+        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), BYTE_MESSAGE_MESSAGE_ANNOTATION, OCTET_STREAM);
     }
 
     @Test
-    public void testDataWithStreamMessageAnnotation() throws Exception
+    void dataWithStreamMessageAnnotation() throws Exception
     {
-        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), STREAM_MESSAGE_MESSAGE_ANNOTATION,
-                                 "application/octet-stream");
+        doTestDataWithAnnotation("helloworld".getBytes(UTF_8), STREAM_MESSAGE_MESSAGE_ANNOTATION, OCTET_STREAM);
     }
 
     @Test
-    public void testDataWithStreamMessageAnnotationAndContentTypeJmsStreamMessage() throws Exception
+    void dataWithStreamMessageAnnotationAndContentTypeJmsStreamMessage() throws Exception
     {
-        List<Object> originalList = Collections.singletonList("testValue");
-        byte[] data = new ListToJmsStreamMessage().toMimeContent(originalList);
-        String expectedMimeType = "jms/stream-message";
+        final List<Object> originalList = List.of("testValue");
+        final byte[] data = new ListToJmsStreamMessage().toMimeContent(originalList);
+        final String expectedMimeType = "jms/stream-message";
         final Data value = new Data(new Binary(data));
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf(expectedMimeType));
-        Message_1_0 sourceMessage = createTestMessage(properties,
-                                                      STREAM_MESSAGE_MESSAGE_ANNOTATION,
-                                                      value.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage =
+                createTestMessage(properties, STREAM_MESSAGE_MESSAGE_ANNOTATION, value.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals(expectedMimeType, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals(data, getBytes(content), "Unexpected content");
     }
 
     @Test
-    public void testDataWithStreamMessageAnnotationAndContentTypeAmqpList() throws Exception
+    void dataWithStreamMessageAnnotationAndContentTypeAmqpList() throws Exception
     {
-        List<Object> originalList = Collections.singletonList("testValue");
-        byte[] data = new ListToAmqpListConverter().toMimeContent(originalList);
-        String expectedMimeType = "amqp/list";
+        final List<Object> originalList = List.of("testValue");
+        final byte[] data = new ListToAmqpListConverter().toMimeContent(originalList);
+        final String expectedMimeType = "amqp/list";
         final Data value = new Data(new Binary(data));
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf(expectedMimeType));
-        Message_1_0 sourceMessage = createTestMessage(properties,
-                                                      STREAM_MESSAGE_MESSAGE_ANNOTATION,
-                                                      value.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage =
+                createTestMessage(properties, STREAM_MESSAGE_MESSAGE_ANNOTATION, value.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals(expectedMimeType, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals(data, getBytes(content), "Unexpected content");
     }
 
     @Test
-    public void testDataWithTextMessageAnnotation() throws Exception
+    void dataWithTextMessageAnnotation() throws Exception
     {
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8), TEXT_MESSAGE_MESSAGE_ANNOTATION, "text/plain");
     }
 
     @Test
-    public void testDataWithUnsupportedMessageAnnotation() throws Exception
+    void dataWithUnsupportedMessageAnnotation() throws Exception
     {
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
-                                 new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"),
-                                                                                 (byte) 11)),
-                                 "application/octet-stream");
+                new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 11)),
+                OCTET_STREAM);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings =
+    {
+            "text/foobar", "application/xml", "application/xml-dtd", "application/foo+xml", "application/json",
+            "application/foo+json", "application/javascript", "application/ecmascript"
+    })
+    void dataWithContentTypes(final String contentType) throws Exception
+    {
+        doTestConvertOfDataSectionForTextualType(contentType);
     }
 
     @Test
-    public void testDataWithContentTypeText() throws Exception
+    void dataWithContentTypeAmqpMap() throws Exception
     {
-        doTestConvertOfDataSectionForTextualType("text/foobar");
-    }
-
-    @Test
-    public void testDataWithContentTypeApplicationXml() throws Exception
-    {
-        doTestConvertOfDataSectionForTextualType("application/xml");
-    }
-
-    @Test
-    public void testDataWithContentTypeApplicationXmlDtd() throws Exception
-    {
-        doTestConvertOfDataSectionForTextualType("application/xml-dtd");
-    }
-
-    @Test
-    public void testDataWithContentTypeApplicationFooXml() throws Exception
-    {
-        doTestConvertOfDataSectionForTextualType("application/foo+xml");
-    }
-
-    @Test
-    public void testDataWithContentTypeApplicationJson() throws Exception
-    {
-        doTestConvertOfDataSectionForTextualType("application/json");
-    }
-
-    @Test
-    public void testDataWithContentTypeApplicationFooJson() throws Exception
-    {
-        doTestConvertOfDataSectionForTextualType("application/foo+json");
-    }
-
-    @Test
-    public void testDataWithContentTypeApplicationJavascript() throws Exception
-    {
-        doTestConvertOfDataSectionForTextualType("application/javascript");
-    }
-
-    @Test
-    public void testDataWithContentTypeApplicationEcmascript() throws Exception
-    {
-        doTestConvertOfDataSectionForTextualType("application/ecmascript");
-    }
-
-    @Test
-    public void testDataWithContentTypeAmqpMap() throws Exception
-    {
-        Map<String, Object> originalMap = Collections.singletonMap("testKey", "testValue");
-        byte[] bytes = new MapToAmqpMapConverter().toMimeContent(originalMap);
-
+        final Map<String, Object> originalMap = Map.of("testKey", "testValue");
+        final byte[] bytes = new MapToAmqpMapConverter().toMimeContent(originalMap);
         final Data value = new Data(new Binary(bytes));
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf("amqp/map"));
-        Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("amqp/map", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals(bytes, getBytes(content), "Unexpected content");
     }
 
     @Test
-    public void testDataWithContentTypeJmsMapMessage() throws Exception
+    void dataWithContentTypeJmsMapMessage() throws Exception
     {
-        Map<String, Object> originalMap = Collections.singletonMap("testKey", "testValue");
-        byte[] bytes = new MapToJmsMapMessage().toMimeContent(originalMap);
-
+        final Map<String, Object> originalMap = Map.of("testKey", "testValue");
+        final byte[] bytes = new MapToJmsMapMessage().toMimeContent(originalMap);
         final Data value = new Data(new Binary(bytes));
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf("jms/map-message"));
-        Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("jms/map-message", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals(bytes, getBytes(content), "Unexpected content");
     }
 
     @Test
-    public void testDataWithContentTypeAmqpList() throws Exception
+    void dataWithContentTypeAmqpList() throws Exception
     {
-        List<Object> originalMap = Collections.singletonList("testValue");
-        byte[] bytes = new ListToAmqpListConverter().toMimeContent(originalMap);
-
+        final List<Object> originalMap = List.of("testValue");
+        final byte[] bytes = new ListToAmqpListConverter().toMimeContent(originalMap);
         final Data value = new Data(new Binary(bytes));
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf("amqp/list"));
-        Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("amqp/list", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals(bytes, getBytes(content), "Unexpected content");
     }
 
     @Test
-    public void testDataWithContentTypeJmsStreamMessage() throws Exception
+    void dataWithContentTypeJmsStreamMessage() throws Exception
     {
-        List<Object> originalMap = Collections.singletonList("testValue");
-        byte[] bytes = new ListToJmsStreamMessage().toMimeContent(originalMap);
-
+        final List<Object> originalMap = List.of("testValue");
+        final byte[] bytes = new ListToJmsStreamMessage().toMimeContent(originalMap);
         final Data value = new Data(new Binary(bytes));
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf("jms/stream-message"));
-        Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("jms/stream-message", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
         assertArrayEquals(bytes, getBytes(content), "Unexpected content");
     }
 
     @Test
-    public void testDataWithContentTypeJavaSerializedObject() throws Exception
+    void dataWithContentTypeJavaSerializedObject() throws Exception
     {
         final byte[] expected = getObjectBytes("helloworld".getBytes(UTF_8));
         final Data value = new Data(new Binary(expected));
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf("application/x-java-serialized-object"));
-        Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
-        assertEquals("application/java-object-stream", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+
+        assertEquals(OBJECT_STREAM, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         assertArrayEquals(expected, getBytes(content), "Unexpected content");
     }
 
-
     @Test
-    public void testDataWithContentTypeJavaObjectStream() throws Exception
+    void dataWithContentTypeJavaObjectStream() throws Exception
     {
         final byte[] expected = getObjectBytes("helloworld".getBytes(UTF_8));
         final Data value = new Data(new Binary(expected));
-        Properties properties = new Properties();
-        properties.setContentType(Symbol.valueOf("application/java-object-stream"));
-        Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
-
+        final Properties properties = new Properties();
+        properties.setContentType(Symbol.valueOf(OBJECT_STREAM));
+        final Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
-        assertEquals("application/java-object-stream", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+
+        assertEquals(OBJECT_STREAM, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         assertArrayEquals(expected, getBytes(content), "Unexpected content");
     }
 
     @Test
-    public void testDataWithContentTypeOther() throws Exception
+    void dataWithContentTypeOther() throws Exception
     {
         final byte[] expected = "helloworld".getBytes(UTF_8);
         final Data value = new Data(new Binary(expected));
         final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf("application/bin"));
-        Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
-        assertEquals("application/octet-stream", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+
+        assertEquals(OCTET_STREAM, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         assertArrayEquals(expected, getBytes(content), "Unexpected content");
     }
 
     @Test
-    public void testData() throws Exception
+    void data() throws Exception
     {
         final byte[] expected = getObjectBytes("helloworld".getBytes(UTF_8));
         final Data value = new Data(new Binary(expected));
         final Message_1_0 sourceMessage = createTestMessage(value.createEncodingRetainingSection());
-
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
-        assertEquals("application/octet-stream", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
+
+        assertEquals(OCTET_STREAM, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         assertArrayEquals(expected, getBytes(content), "Unexpected content");
     }
 
     @Test
-    public void testNoBodyWithMessageAnnotation()
+    void noBodyWithMessageAnnotation()
     {
-        Message_1_0 sourceMessage = createTestMessage(MESSAGE_MESSAGE_ANNOTATION, null);
-
+        final Message_1_0 sourceMessage = createTestMessage(MESSAGE_MESSAGE_ANNOTATION, null);
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
@@ -821,65 +686,53 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testNoBodyWithObjectMessageAnnotation() throws Exception
+    void noBodyWithObjectMessageAnnotation() throws Exception
     {
-        Message_1_0 sourceMessage = createTestMessage(OBJECT_MESSAGE_MESSAGE_ANNOTATION, null);
-
+        final Message_1_0 sourceMessage = createTestMessage(OBJECT_MESSAGE_MESSAGE_ANNOTATION, null);
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
-        assertEquals("application/java-object-stream", convertedMessage.getMessageHeader().getMimeType(),
-            "Unexpected mime type");
+        assertEquals(OBJECT_STREAM, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         assertArrayEquals(getObjectBytes(null), getBytes(content), "Unexpected content size");
     }
 
     @Test
-    public void testNoBodyWithMapMessageAnnotation() throws Exception
+    void noBodyWithMapMessageAnnotation() throws Exception
     {
-        Message_1_0 sourceMessage = createTestMessage(MAP_MESSAGE_MESSAGE_ANNOTATION, null);
-
+        final Message_1_0 sourceMessage = createTestMessage(MAP_MESSAGE_MESSAGE_ANNOTATION, null);
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
         assertEquals("jms/map-message", convertedMessage.getMessageHeader().getMimeType(),
                 "Unexpected mime type");
-        assertArrayEquals(new MapToJmsMapMessage().toMimeContent(Collections.emptyMap()), getBytes(content),
+        assertArrayEquals(new MapToJmsMapMessage().toMimeContent(Map.of()), getBytes(content),
                 "Unexpected content size");
     }
 
     @Test
-    public void testNoBodyWithBytesMessageAnnotation()
+    void noBodyWithBytesMessageAnnotation()
     {
-        Message_1_0 sourceMessage = createTestMessage(BYTE_MESSAGE_MESSAGE_ANNOTATION, null);
-
+        final Message_1_0 sourceMessage = createTestMessage(BYTE_MESSAGE_MESSAGE_ANNOTATION, null);
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("application/octet-stream", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
-        assertEquals(0, (long) convertedMessage.getMessageMetaData().getContentSize(),
-                "Unexpected content size");
+        assertEquals(OCTET_STREAM, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertEquals(0, (long) convertedMessage.getMessageMetaData().getContentSize(), "Unexpected content size");
     }
 
     @Test
-    public void testNoBodyWithStreamMessageAnnotation()
+    void noBodyWithStreamMessageAnnotation()
     {
-        Message_1_0 sourceMessage = createTestMessage(STREAM_MESSAGE_MESSAGE_ANNOTATION, null);
-
+        final Message_1_0 sourceMessage = createTestMessage(STREAM_MESSAGE_MESSAGE_ANNOTATION, null);
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("jms/stream-message", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
-        assertEquals(0, (long) convertedMessage.getMessageMetaData().getContentSize(),
-                "Unexpected content size");
+        assertEquals("jms/stream-message", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertEquals(0, (long) convertedMessage.getMessageMetaData().getContentSize(), "Unexpected content size");
     }
 
     @Test
-    public void testNoBodyWithTextMessageAnnotation()
+    void noBodyWithTextMessageAnnotation()
     {
-        Message_1_0 sourceMessage = createTestMessage(TEXT_MESSAGE_MESSAGE_ANNOTATION, null);
-
+        final Message_1_0 sourceMessage = createTestMessage(TEXT_MESSAGE_MESSAGE_ANNOTATION, null);
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertEquals("text/plain", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
@@ -887,24 +740,11 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testNoBodyWithUnknownMessageAnnotation()
+    void noBodyWithUnknownMessageAnnotation()
     {
-        Message_1_0 sourceMessage =
-                createTestMessage(new MessageAnnotations(Collections.singletonMap(Symbol.valueOf("x-opt-jms-msg-type"),
+        final Message_1_0 sourceMessage =
+                createTestMessage(new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"),
                                                                                   (byte) 11)), null);
-
-        final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
-        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        assertEquals(0, (long) convertedMessage.getMessageMetaData().getContentSize(),
-                "Unexpected content size");
-    }
-
-    @Test
-    public void testNoBody()
-    {
-        final Message_1_0 sourceMessage = createTestMessage(null);
-
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
         assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
@@ -912,65 +752,62 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     }
 
     @Test
-    public void testNoBodyWithContentTypeApplicationOctetStream()
+    void noBody()
     {
-        Properties properties = new Properties();
-        properties.setContentType(Symbol.valueOf("application/octet-stream"));
-        final Message_1_0 sourceMessage = createTestMessage(properties, null);
-
+        final Message_1_0 sourceMessage = createTestMessage(null);
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("application/octet-stream", convertedMessage.getMessageHeader() .getMimeType(),
-                "Unexpected mime type");
-        assertEquals(0, (long) convertedMessage.getMessageMetaData().getContentSize(),
-                "Unexpected content size");
+        assertNull(convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertEquals(0, (long) convertedMessage.getMessageMetaData().getContentSize(), "Unexpected content size");
     }
 
     @Test
-    public void testNoBodyWithObjectMessageContentType() throws Exception
+    void noBodyWithContentTypeApplicationOctetStream()
+    {
+        final Properties properties = new Properties();
+        properties.setContentType(Symbol.valueOf(OCTET_STREAM));
+        final Message_1_0 sourceMessage = createTestMessage(properties, null);
+        final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+
+        assertEquals(OCTET_STREAM, convertedMessage.getMessageHeader() .getMimeType(), "Unexpected mime type");
+        assertEquals(0, (long) convertedMessage.getMessageMetaData().getContentSize(), "Unexpected content size");
+    }
+
+    @Test
+    void noBodyWithObjectMessageContentType() throws Exception
     {
         final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf("application/x-java-serialized-object"));
         final Message_1_0 sourceMessage = createTestMessage(properties, null);
-
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("application/java-object-stream", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
-
+        assertEquals(OBJECT_STREAM, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         assertEquals(getObjectBytes(null).length, (long) convertedMessage.getMessageMetaData().getContentSize(),
                 "Unexpected content size");
     }
 
     @Test
-    public void testNoBodyWithJmsMapContentType() throws Exception
+    void noBodyWithJmsMapContentType() throws Exception
     {
         final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf("jms/map-message"));
         final Message_1_0 sourceMessage = createTestMessage(properties, null);
-
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
-        assertEquals("jms/map-message", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
-
-        assertArrayEquals(new MapToJmsMapMessage().toMimeContent(Collections.emptyMap()), getBytes(content),
-                "Unexpected content size");
+        assertEquals("jms/map-message", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
+        assertArrayEquals(new MapToJmsMapMessage().toMimeContent(Map.of()), getBytes(content), "Unexpected content size");
     }
 
     @Test
-    public void testMessageAnnotationTakesPrecedenceOverContentType() throws Exception
+    void messageAnnotationTakesPrecedenceOverContentType() throws Exception
     {
         final Properties properties = new Properties();
-        properties.setContentType(Symbol.valueOf("application/octet-stream"));
+        properties.setContentType(Symbol.valueOf(OCTET_STREAM));
         final Message_1_0 sourceMessage = createTestMessage(OBJECT_MESSAGE_MESSAGE_ANNOTATION, null);
-
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
-        assertEquals("application/java-object-stream", convertedMessage.getMessageHeader().getMimeType(),
-                "Unexpected mime type");
+        assertEquals(OBJECT_STREAM, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
         assertEquals(getObjectBytes(null).length, (long) convertedMessage.getMessageMetaData().getContentSize(),
                 "Unexpected content size");
     }
@@ -981,20 +818,18 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
         final Data value = new Data(new Binary(expected.getBytes(UTF_8)));
         final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf(contentType));
-        Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(properties, value.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
-
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
-        assertEquals(expected, new String(getBytes(content), UTF_8), "Unexpected content");
 
+        assertEquals(expected, new String(getBytes(content), UTF_8), "Unexpected content");
         assertEquals("text/plain", convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
     }
 
     private byte[] getBytes(final QpidByteBuffer content) throws Exception
     {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             InputStream contentInputStream = content.asInputStream())
+        try (final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             final InputStream contentInputStream = content.asInputStream())
         {
             ByteStreams.copy(contentInputStream, bos);
             content.dispose();
@@ -1010,10 +845,10 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     private Message_1_0 createTestMessage(final Properties properties, final EncodingRetainingSection section)
     {
         return createTestMessage(new Header(),
-                                 new DeliveryAnnotations(Collections.emptyMap()),
-                                 new MessageAnnotations(Collections.emptyMap()),
+                                 new DeliveryAnnotations(Map.of()),
+                                 new MessageAnnotations(Map.of()),
                                  properties,
-                                 new ApplicationProperties(Collections.emptyMap()),
+                                 new ApplicationProperties(Map.of()),
                                  0,
                                  section);
     }
@@ -1023,10 +858,10 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
                                           final EncodingRetainingSection section)
     {
         return createTestMessage(new Header(),
-                                 new DeliveryAnnotations(Collections.emptyMap()),
+                                 new DeliveryAnnotations(Map.of()),
                                  messageAnnotations,
                                  properties,
-                                 new ApplicationProperties(Collections.emptyMap()),
+                                 new ApplicationProperties(Map.of()),
                                  0,
                                  section);
     }
@@ -1035,10 +870,10 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
                                           final EncodingRetainingSection section)
     {
         return createTestMessage(new Header(),
-                                 new DeliveryAnnotations(Collections.emptyMap()),
+                                 new DeliveryAnnotations(Map.of()),
                                  messageAnnotations,
                                  new Properties(),
-                                 new ApplicationProperties(Collections.emptyMap()),
+                                 new ApplicationProperties(Map.of()),
                                  0,
                                  section);
     }
@@ -1052,12 +887,12 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
                                           final EncodingRetainingSection section)
     {
         final StoredMessage<MessageMetaData_1_0> storedMessage = mock(StoredMessage.class);
-        MessageMetaData_1_0 metaData = new MessageMetaData_1_0(header.createEncodingRetainingSection(),
+        final MessageMetaData_1_0 metaData = new MessageMetaData_1_0(header.createEncodingRetainingSection(),
                                                                deliveryAnnotations.createEncodingRetainingSection(),
                                                                messageAnnotations.createEncodingRetainingSection(),
                                                                properties.createEncodingRetainingSection(),
                                                                applicationProperties.createEncodingRetainingSection(),
-                                                               new Footer(Collections.emptyMap()).createEncodingRetainingSection(),
+                                                               new Footer(Map.of()).createEncodingRetainingSection(),
                                                                arrivalTime,
                                                                0);
         when(storedMessage.getMetaData()).thenReturn(metaData);
@@ -1070,9 +905,8 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
             final ArgumentCaptor<Integer> offsetCaptor = ArgumentCaptor.forClass(Integer.class);
             final ArgumentCaptor<Integer> sizeCaptor = ArgumentCaptor.forClass(Integer.class);
 
-            when(storedMessage.getContent(offsetCaptor.capture(),
-                                          sizeCaptor.capture())).then(invocation -> combined.view(offsetCaptor.getValue(),
-                                                                                                  sizeCaptor.getValue()));
+            when(storedMessage.getContent(offsetCaptor.capture(), sizeCaptor.capture()))
+                    .then(invocation -> combined.view(offsetCaptor.getValue(), sizeCaptor.getValue()));
         }
         else
         {
@@ -1084,8 +918,8 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
     private byte[] getObjectBytes(final Object object) throws IOException
     {
         final byte[] expected;
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(baos))
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             final ObjectOutputStream oos = new ObjectOutputStream(baos))
         {
             oos.writeObject(object);
             expected = baos.toByteArray();
@@ -1098,12 +932,11 @@ public class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
                                           final String expectedMimeType) throws Exception
     {
         final Data value = new Data(new Binary(data));
-        Message_1_0 sourceMessage = createTestMessage(messageAnnotations, value.createEncodingRetainingSection());
-
+        final Message_1_0 sourceMessage = createTestMessage(messageAnnotations, value.createEncodingRetainingSection());
         final AMQMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final QpidByteBuffer content = convertedMessage.getContent();
 
         assertEquals(expectedMimeType, convertedMessage.getMessageHeader().getMimeType(), "Unexpected mime type");
-        final QpidByteBuffer content = convertedMessage.getContent();
         assertArrayEquals(data, getBytes(content), "Unexpected content");
     }
 }
