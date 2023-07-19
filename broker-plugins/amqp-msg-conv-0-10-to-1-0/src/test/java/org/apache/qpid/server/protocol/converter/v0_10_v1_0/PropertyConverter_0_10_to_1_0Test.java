@@ -26,13 +26,13 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -56,510 +56,436 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class PropertyConverter_0_10_to_1_0Test extends UnitTestBase
+@SuppressWarnings({"unchecked"})
+class PropertyConverter_0_10_to_1_0Test extends UnitTestBase
 {
     private NamedAddressSpace _namedAddressSpace;
     private MessageConverter_0_10_to_1_0 _messageConverter;
 
     @BeforeAll
-    public void setUp()
+    void setUp()
     {
         _namedAddressSpace = mock(NamedAddressSpace.class);
         _messageConverter = new MessageConverter_0_10_to_1_0();
     }
 
     @Test
-    public void testContentTypeConversion()
+    void contentTypeConversion()
     {
-        String contentType = "test-content-type";
-
+        final String contentType = "test-content-type";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setContentType(contentType);
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals(contentType, properties.getContentType().toString(), "Unexpected content type");
     }
 
-
     @Test
-    public void testContentTypeJavaObjectStreamConversion()
+    void contentTypeJavaObjectStreamConversion()
     {
+        final String contentType = "application/x-java-serialized-object";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setContentType("application/java-object-stream");
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
-        assertEquals("application/x-java-serialized-object", properties.getContentType().toString(),
-                "Unexpected content type");
-
+        assertEquals(contentType, properties.getContentType().toString(), "Unexpected content type");
     }
 
     @Test
-    public void testContentEncodingConversion()
+    void contentEncodingConversion()
     {
-        String contentEncoding = "my-test-encoding";
+        final String contentEncoding = "my-test-encoding";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setContentEncoding(contentEncoding);
-        MessageTransferMessage message =
+        final MessageTransferMessage message =
                 createTestMessage(new DeliveryProperties(), messageProperties, new byte[]{(byte) 1}, 0);
-
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
-        assertEquals(contentEncoding, properties.getContentEncoding().toString(),
-                "Unexpected content encoding");
+        assertEquals(contentEncoding, properties.getContentEncoding().toString(), "Unexpected content encoding");
     }
 
     @Test
-    public void testHeaderConversion()
+    void headerConversion()
     {
-        Map<String, Object> headers = new HashMap<>();
-        headers.put("testProperty1", "testProperty1Value");
-        headers.put("intProperty", 1);
+        final Map<String, Object> headers = Map.of("testProperty1", "testProperty1Value", "intProperty", 1);
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setApplicationHeaders(headers);
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
 
-        Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
         assertEquals(headers, new HashMap<>(applicationProperties), "Unexpected applicationProperties");
     }
 
     @Test
-    public void testHeaderConversionWhenQpidSubjectIsPresent()
+    void headerConversionWhenQpidSubjectIsPresent()
     {
-        String testSubject = "testSubject";
-        Map<String, Object> headers = new HashMap<>();
-        headers.put("testProperty1", "testProperty1Value");
-        headers.put("qpid.subject", testSubject);
+        final String testSubject = "testSubject";
+        final Map<String, Object> headers = Map.of("testProperty1", "testProperty1Value", "qpid.subject", testSubject);
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setApplicationHeaders(headers);
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
+        final Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals(testSubject, properties.getSubject(), "Unexpected subject");
-        Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
-        assertFalse(applicationProperties.containsKey("qpid.subject"),
-                "Unexpected subject in application properties");
-
+        assertFalse(applicationProperties.containsKey("qpid.subject"), "Unexpected subject in application properties");
     }
 
-
     @Test
-    public void testPersistentDeliveryModeConversion()
+    void persistentDeliveryModeConversion()
     {
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
-        MessageTransferMessage message = createTestMessage(deliveryProperties);
-
+        final MessageTransferMessage message = createTestMessage(deliveryProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Header header = convertedMessage.getHeaderSection().getValue();
 
-        Header header = convertedMessage.getHeaderSection().getValue();
         assertTrue(header.getDurable(), "Unexpected durable header");
     }
 
     @Test
-    public void testNonPersistentDeliveryModeConversion()
+    void nonPersistentDeliveryModeConversion()
     {
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setDeliveryMode(MessageDeliveryMode.NON_PERSISTENT);
-        MessageTransferMessage message = createTestMessage(deliveryProperties);
-
+        final MessageTransferMessage message = createTestMessage(deliveryProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Header header = convertedMessage.getHeaderSection().getValue();
 
-        Header header = convertedMessage.getHeaderSection().getValue();
         assertFalse(header.getDurable(), "Unexpected durable header");
     }
 
     @Test
-    public void testPriorityConversion()
+    void priorityConversion()
     {
         final byte priority = 5;
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setPriority(MessageDeliveryPriority.get(priority));
-        MessageTransferMessage message = createTestMessage(deliveryProperties);
-
+        final MessageTransferMessage message = createTestMessage(deliveryProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Header header = convertedMessage.getHeaderSection().getValue();
 
-        Header header = convertedMessage.getHeaderSection().getValue();
         assertEquals(priority, (long) header.getPriority().byteValue(), "Unexpected priority");
     }
 
     @Test
-    public void testCorrelationIdConversion()
+    void correlationIdConversion()
     {
         final String correlationId = "testCorrelationId";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setCorrelationId(correlationId.getBytes(UTF_8));
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals(correlationId, properties.getCorrelationId(), "Unexpected correlationId");
     }
 
     @Test
-    public void testBinaryCorrelationIdConversion()
+    void binaryCorrelationIdConversion()
     {
         final byte[] correlationId = new byte[]{0x00, (byte) 0xff, (byte) 0xc3};
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setCorrelationId(correlationId);
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
-
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
         final boolean condition = properties.getCorrelationId() instanceof Binary;
+
         assertTrue(condition, String.format("Unexpected correlationId type. expected 'Binary' actual '%s'",
                 properties.getCorrelationId().getClass().getSimpleName()));
-        assertArrayEquals(correlationId, ((Binary) properties.getCorrelationId()).getArray(),
-                "Unexpected correlationId");
+        assertArrayEquals(correlationId, ((Binary) properties.getCorrelationId()).getArray(), "Unexpected correlationId");
     }
 
     @Test
-    public void testReplyToConversionWhenExchangeAndRoutingKeySpecified()
+    void replyToConversionWhenExchangeAndRoutingKeySpecified()
     {
         final String exchangeName = "amq.direct";
         final String routingKey = "test_routing_key";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setReplyTo(new ReplyTo(exchangeName, routingKey));
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals("amq.direct/test_routing_key", properties.getReplyTo(), "Unexpected reply-to");
     }
 
     @Test
-    public void testReplyToConversionWhenExchangeSpecified()
+    void replyToConversionWhenExchangeSpecified()
     {
         final String exchangeName = "amq.direct";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setReplyTo(new ReplyTo(exchangeName, null));
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals(exchangeName, properties.getReplyTo(), "Unexpected reply-to");
     }
 
     @Test
-    public void testReplyToConversionWhenRoutingKeySpecified()
+    void replyToConversionWhenRoutingKeySpecified()
     {
         final String routingKey = "test_routing_key";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setReplyTo(new ReplyTo(null, routingKey));
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals(routingKey, properties.getReplyTo(), "Unexpected reply-to");
     }
 
     @Test
-    public void testReplyToConversionWhenExchangeIsEmptyStringAndRoutingKeySpecified()
+    void replyToConversionWhenExchangeIsEmptyStringAndRoutingKeySpecified()
     {
         final String routingKey = "test_routing_key";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setReplyTo(new ReplyTo("", routingKey));
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals("test_routing_key", properties.getReplyTo(), "Unexpected reply-to");
     }
 
     @Test
-    public void testReplyToConversionWhenExchangeAndRoutingKeyAreNull()
+    void replyToConversionWhenExchangeAndRoutingKeyAreNull()
     {
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setReplyTo(new ReplyTo(null, null));
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertNull(properties.getReplyTo(), "Unexpected reply-to");
     }
 
     @Test
-    public void testExpirationConversion()
+    void expirationConversion()
     {
-        long timestamp = System.currentTimeMillis();
-        int ttl = 100000;
+        final long timestamp = System.currentTimeMillis();
+        final int ttl = 100000;
         final long expiration = timestamp + ttl;
-
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setExpiration(expiration);
-        MessageTransferMessage message =
+        final MessageTransferMessage message =
                 createTestMessage(deliveryProperties, new MessageProperties(), null, timestamp);
-
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
+        final Header header = convertedMessage.getHeaderSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertNull(properties.getAbsoluteExpiryTime(), "Unexpected expiration");
-
-        Header header = convertedMessage.getHeaderSection().getValue();
         assertEquals(ttl, (long) header.getTtl().intValue(), "Unexpected TTL");
     }
 
     @Test
-    public void testTTLConversion()
+    void TTLConversion()
     {
-        long timestamp = System.currentTimeMillis();
-        int ttl = 100000;
-
+        final long timestamp = System.currentTimeMillis();
+        final int ttl = 100000;
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setTtl(ttl);
-        MessageTransferMessage message =
+        final MessageTransferMessage message =
                 createTestMessage(deliveryProperties, new MessageProperties(), null, timestamp);
-
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Header header = convertedMessage.getHeaderSection().getValue();
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Header header = convertedMessage.getHeaderSection().getValue();
         assertEquals(ttl, header.getTtl().longValue(), "Unexpected TTL");
-
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertNull(properties.getAbsoluteExpiryTime(), "Unexpected expiration");
     }
 
     @Test
-    public void testMessageIdConversion()
+    void messageIdConversion()
     {
-        UUID messageId = UUID.randomUUID();
+        final UUID messageId = UUID.randomUUID();
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setMessageId(messageId);
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals(messageId, properties.getMessageId(), "Unexpected messageId");
     }
 
     @Test
-    public void testTimestampConversion()
+    void timestampConversion()
     {
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         final long timestamp = System.currentTimeMillis() - 1000;
         deliveryProperties.setTimestamp(timestamp);
-        MessageTransferMessage message = createTestMessage(deliveryProperties);
+        final MessageTransferMessage message = createTestMessage(deliveryProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals(timestamp, properties.getCreationTime().getTime(), "Unexpected creation timestamp");
     }
 
     @Test
-    public void testArrivalTimeConversion()
+    void arrivalTimeConversion()
     {
         final long timestamp = System.currentTimeMillis() - 1000;
-        MessageTransferMessage message =
+        final MessageTransferMessage message =
                 createTestMessage(new DeliveryProperties(), new MessageProperties(), null, timestamp);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals(timestamp, properties.getCreationTime().getTime(), "Unexpected creation timestamp");
     }
 
     @Test
-    public void testJmsTypeConversion()
+    void jmsTypeConversion()
     {
         final String type = "test-type";
-        final Map<String, Object> headers = Collections.singletonMap("x-jms-type", type);
+        final Map<String, Object> headers = Map.of("x-jms-type", type);
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setApplicationHeaders(headers);
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
+        final Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals(type, properties.getSubject(), "Unexpected subject");
-        Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
-        assertFalse(applicationProperties.containsKey("x-jms-type"),
-                "Unexpected x-jms-type in application properties");
+        assertFalse(applicationProperties.containsKey("x-jms-type"), "Unexpected x-jms-type in application properties");
     }
 
     @Test
-    public void testQpidSubjectTakesPrecedenceOverJmsType()
+    void qpidSubjectTakesPrecedenceOverJmsType()
     {
         final String jmsType = "test-jms-type";
         final String qpidSubjectType = "test-qpid-type";
-        final Map<String, Object> headers = new HashMap<>();
-        headers.put("x-jms-type", jmsType);
-        headers.put("qpid.subject", qpidSubjectType);
+        final Map<String, Object> headers = Map.of("x-jms-type", jmsType, "qpid.subject", qpidSubjectType);
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setApplicationHeaders(headers);
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
+        final Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals(qpidSubjectType, properties.getSubject(), "Unexpected subject");
-        Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
         assertTrue(applicationProperties.isEmpty(), "Unexpected entries in application properties");
     }
 
     @Test
-    public void testUserIdConversion()
+    void userIdConversion()
     {
         final String userId = "test-userId";
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setUserId(userId.getBytes());
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
         assertEquals(userId, new String(properties.getUserId().getArray(), UTF_8), "Unexpected user-id");
     }
 
     @Test
-    public void testHeaderJMSXGroupIdConversion()
+    void headerJMSXGroupIdConversion()
     {
-        String testGroupId = "testGroupId";
-        Map<String, Object> headers = Collections.singletonMap("JMSXGroupID", testGroupId);
+        final String testGroupId = "testGroupId";
+        final Map<String, Object> headers = Map.of("JMSXGroupID", testGroupId);
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setApplicationHeaders(headers);
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
-
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
+        final Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
 
         assertEquals(testGroupId, properties.getGroupId(), "Unexpected group-id");
-
-        Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
-        assertFalse(applicationProperties.containsKey("JMSXGroupID"),
-                "Unexpected JMSXGroupID in application properties");
+        assertFalse(applicationProperties.containsKey("JMSXGroupID"), "Unexpected JMSXGroupID in application properties");
     }
 
     @Test
-    public void testHeaderJMSXGroupSeqConversion()
+    void headerJMSXGroupSeqConversion()
     {
-        int testGroupSequenceNumber = 1;
-        Map<String, Object> headers = Collections.singletonMap("JMSXGroupSeq", testGroupSequenceNumber);
+        final int testGroupSequenceNumber = 1;
+        final Map<String, Object> headers = Map.of("JMSXGroupSeq", testGroupSequenceNumber);
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setApplicationHeaders(headers);
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
+        final Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
 
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
-
-        assertEquals(testGroupSequenceNumber, (long) properties.getGroupSequence().intValue(),
-                "Unexpected group-sequence");
-
-
-        Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
-        assertFalse(applicationProperties.containsKey("JMSXGroupSeq"),
-                "Unexpected JMSXGroupSeq in application properties");
+        assertEquals(testGroupSequenceNumber, (long) properties.getGroupSequence().intValue(), "Unexpected group-sequence");
+        assertFalse(applicationProperties.containsKey("JMSXGroupSeq"), "Unexpected JMSXGroupSeq in application properties");
     }
 
     @Test
-    public void testHeaderJMSXGroupSeqConversionWhenWrongType()
+    void headerJMSXGroupSeqConversionWhenWrongType()
     {
-        short testGroupSequenceNumber = (short) 1;
-        Map<String, Object> headers = Collections.singletonMap("JMSXGroupSeq", testGroupSequenceNumber);
+        final short testGroupSequenceNumber = (short) 1;
+        final Map<String, Object> headers = Map.of("JMSXGroupSeq", testGroupSequenceNumber);
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setApplicationHeaders(headers);
-        MessageTransferMessage message = createTestMessage(messageProperties);
-
+        final MessageTransferMessage message = createTestMessage(messageProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
-
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
+        final Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
 
         assertNull(properties.getGroupSequence(), "Unexpected group-sequence");
-
-        Map<String, Object> applicationProperties = convertedMessage.getApplicationPropertiesSection().getValue();
-
-        assertTrue(applicationProperties.containsKey("JMSXGroupSeq"),
-                "JMSXGroupSeq was removed from application properties");
+        assertTrue(applicationProperties.containsKey("JMSXGroupSeq"), "JMSXGroupSeq was removed from application properties");
     }
 
     @Test
-    public void testHeaderWithMapValueConversionFails()
+    void headerWithMapValueConversionFails()
     {
-        Map<String, Object> headers = Collections.singletonMap("mapHeader", Collections.emptyMap());
+        final Map<String, Object> headers = Map.of("mapHeader", Map.of());
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setApplicationHeaders(headers);
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
-        try
-        {
-            _messageConverter.convert(message, _namedAddressSpace);
-            fail("Exception is expected");
-        }
-        catch (MessageConversionException e)
-        {
-            // pass
-        }
+        assertThrows(MessageConversionException.class,
+                () -> _messageConverter.convert(message, _namedAddressSpace),
+                "Exception is expected");
     }
 
     @Test
-    public void testHeaderWithListValueConversionFails()
+    void headerWithListValueConversionFails()
     {
-        Map<String, Object> headers = Collections.singletonMap("listHeader", Collections.emptyList());
+        final Map<String, Object> headers = Map.of("listHeader", List.of());
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setApplicationHeaders(headers);
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
-        try
-        {
-            _messageConverter.convert(message, _namedAddressSpace);
-            fail("Exception is expected");
-        }
-        catch (MessageConversionException e)
-        {
-            // pass
-        }
+        assertThrows(MessageConversionException.class,
+                () -> _messageConverter.convert(message, _namedAddressSpace),
+                "Exception is expected");
     }
 
     @Test
-    public void testHeaderWithArrayValueConversionFails()
+    void headerWithArrayValueConversionFails()
     {
-        Map<String, Object> headers = Collections.singletonMap("listHeader", new int[]{1});
+        final Map<String, Object> headers = Map.of("listHeader", new int[]{1});
         final MessageProperties messageProperties = new MessageProperties();
         messageProperties.setApplicationHeaders(headers);
-        MessageTransferMessage message = createTestMessage(messageProperties);
+        final MessageTransferMessage message = createTestMessage(messageProperties);
 
-        try
-        {
-            _messageConverter.convert(message, _namedAddressSpace);
-            fail("Exception is expected");
-        }
-        catch (MessageConversionException e)
-        {
-            // pass
-        }
+        assertThrows(MessageConversionException.class,
+                () -> _messageConverter.convert(message, _namedAddressSpace),
+                "Exception is expected");
     }
 
     @Test
-    public void testExchangeRoutingKeyConversion()
+    void exchangeRoutingKeyConversion()
     {
         final String testExchange = "testExchange";
         final String testRoutingKey = "testRoutingKey";
         final DeliveryProperties deliveryProperties = new DeliveryProperties();
         deliveryProperties.setExchange(testExchange);
         deliveryProperties.setRoutingKey(testRoutingKey);
-        MessageTransferMessage message = createTestMessage(deliveryProperties);
-
+        final MessageTransferMessage message = createTestMessage(deliveryProperties);
         final Message_1_0 convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
-
-        Properties properties = convertedMessage.getPropertiesSection().getValue();
+        final Properties properties = convertedMessage.getPropertiesSection().getValue();
 
         assertEquals(testExchange + "/" + testRoutingKey, properties.getTo(), "Unexpected to");
     }
@@ -579,11 +505,10 @@ public class PropertyConverter_0_10_to_1_0Test extends UnitTestBase
                                                      final byte[] content,
                                                      final long arrivalTime)
     {
-        int bodySize = content == null ? 0 : content.length;
+        final int bodySize = content == null ? 0 : content.length;
         final org.apache.qpid.server.protocol.v0_10.transport.Header header =
                 new org.apache.qpid.server.protocol.v0_10.transport.Header(deliveryProperties, messageProperties);
         final MessageMetaData_0_10 metaData = new MessageMetaData_0_10(header, bodySize, arrivalTime);
-
         final StoredMessage<MessageMetaData_0_10> storedMessage = mock(StoredMessage.class);
         when(storedMessage.getMetaData()).thenReturn(metaData);
 
