@@ -35,8 +35,8 @@ public interface SimpleLDAPAuthenticationManager<X extends SimpleLDAPAuthenticat
         extends CachingAuthenticationProvider<X>,
                 UsernamePasswordAuthenticationProvider<X>
 {
-    String CLASS_DESCRIPTION = "Authentication provider that delegates authentication decisions to a Directory"
-                               + " supporting the LDAP protocol.";
+    String CLASS_DESCRIPTION = "Authentication provider that delegates authentication decisions to a Directory" +
+            " supporting the LDAP protocol.";
 
     String PROVIDER_TYPE = "SimpleLDAP";
     String PROVIDER_URL = "providerUrl";
@@ -67,6 +67,9 @@ public interface SimpleLDAPAuthenticationManager<X extends SimpleLDAPAuthenticat
 
     @ManagedAttribute( description = "Bind without search")
     boolean isBindWithoutSearch();
+
+    @ManagedAttribute( description = "Use full LDAP name as a principal name", defaultValue = "true")
+    boolean isUseFullLDAPName();
 
     @ManagedContextDefault( name = "ldap.context.factory")
     String DEFAULT_LDAP_CONTEXT_FACTORY = "com.sun.jndi.ldap.LdapCtxFactory";

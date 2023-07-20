@@ -160,9 +160,24 @@
                            data-dojo-props=" name: 'bindWithoutSearch' " />
                 </div>
             </div>
+
             <div data-dojo-type="dijit/Tooltip"
                  data-dojo-props="connectId: ['addAuthenticationProvider.simpleldap.bindWithoutSearch'],
                                                   label: 'If selected, the provider will not search the directory'">
+            </div>
+
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Use Full LDAP Name:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" class="useFullLDAPName" id="addAuthenticationProvider.simpleldap.useFullLDAPName".
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props=" name: 'useFullLDAPName' " />
+                </div>
+            </div>
+
+            <div data-dojo-type="dijit/Tooltip"
+                 data-dojo-props="connectId: ['addAuthenticationProvider.simpleldap.useFullLDAPName'],
+                                                  label: 'If selected, full LDAP name will be used as a principal name'">
             </div>
         </fieldset>
     </div>
