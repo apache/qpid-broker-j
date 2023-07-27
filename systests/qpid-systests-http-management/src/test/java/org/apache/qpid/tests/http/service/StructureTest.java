@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -108,7 +107,7 @@ public class StructureTest extends HttpTestBase
         String queueName = getTestName() + "Queue";
         helper.submitRequest(String.format("queue/%s/%s/%s", nodeName, hostName, queueName),
                              "PUT",
-                             Collections.singletonMap("name", queueName));
+                             Map.of("name", queueName));
 
         structure = helper.getJsonAsMap("/service/structure");
 

@@ -37,10 +37,11 @@ import java.net.InetAddress;
 import java.security.KeyStore;
 import java.util.ArrayDeque;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -209,16 +210,13 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
             helper.setTls(tls);
             assertThat(helper.submitRequest("broker", "GET"), is(equalTo(SC_OK)));
 
-            configHelper.submitRequest("plugin/httpManagement", "POST",
-                                       Collections.<String, Object>singletonMap(authEnabledAttrName, Boolean.FALSE), SC_OK);
+            configHelper.submitRequest("plugin/httpManagement", "POST", Map.of(authEnabledAttrName, Boolean.FALSE), SC_OK);
 
             assertThat(helper.submitRequest("broker", "GET"), is(equalTo(SC_UNAUTHORIZED)));
         }
         finally
         {
-            configHelper.submitRequest("plugin/httpManagement", "POST",
-                                       Collections.<String, Object>singletonMap(authEnabledAttrName, Boolean.TRUE), SC_OK);
-
+            configHelper.submitRequest("plugin/httpManagement", "POST", Map.of(authEnabledAttrName, Boolean.TRUE), SC_OK);
         }
     }
 
@@ -252,7 +250,8 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
 
         final Map<String, Object> truststoreAttr = new HashMap<>();
         truststoreAttr.put(ManagedPeerCertificateTrustStore.TYPE, ManagedPeerCertificateTrustStore.TYPE_NAME);
-        truststoreAttr.put(ManagedPeerCertificateTrustStore.STORED_CERTIFICATES, Collections.singletonList(Base64.getEncoder().encodeToString(clientCertificate)));
+        truststoreAttr.put(ManagedPeerCertificateTrustStore.STORED_CERTIFICATES,
+                List.of(Base64.getEncoder().encodeToString(clientCertificate)));
 
 
         getHelper().submitRequest("truststore/mytruststore","PUT", truststoreAttr, SC_CREATED);
@@ -262,11 +261,11 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
         portAttr.put(Port.TYPE, "HTTP");
         portAttr.put(Port.PORT, 0);
         portAttr.put(Port.AUTHENTICATION_PROVIDER, "myexternal");
-        portAttr.put(Port.PROTOCOLS, Collections.singleton(Protocol.HTTP));
-        portAttr.put(Port.TRANSPORTS, Collections.singleton(Transport.SSL));
+        portAttr.put(Port.PROTOCOLS, Set.of(Protocol.HTTP));
+        portAttr.put(Port.TRANSPORTS, Set.of(Transport.SSL));
         portAttr.put(Port.NEED_CLIENT_AUTH, true);
         portAttr.put(Port.KEY_STORE, "mykeystore");
-        portAttr.put(Port.TRUST_STORES, Collections.singletonList("mytruststore"));
+        portAttr.put(Port.TRUST_STORES, List.of("mytruststore"));
 
         getHelper().submitRequest("port/myport","PUT", portAttr, SC_CREATED);
         deleteActions.add(object -> getHelper().submitRequest("port/myport", "DELETE", SC_OK));
@@ -299,8 +298,8 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
         portAttr.put(Port.TYPE, "HTTP");
         portAttr.put(Port.PORT, 0);
         portAttr.put(Port.AUTHENTICATION_PROVIDER, "myanon");
-        portAttr.put(Port.PROTOCOLS, Collections.singleton(Protocol.HTTP));
-        portAttr.put(Port.TRANSPORTS, Collections.singleton(Transport.TCP));
+        portAttr.put(Port.PROTOCOLS, Set.of(Protocol.HTTP));
+        portAttr.put(Port.TRANSPORTS, Set.of(Transport.TCP));
 
         getHelper().submitRequest("port/myport","PUT", portAttr, SC_CREATED);
         deleteActions.add(object -> getHelper().submitRequest("port/myport", "DELETE", SC_OK));

@@ -19,7 +19,6 @@
  */
 package org.apache.qpid.tests.http.endtoend.statistics;
 
-import static java.util.Collections.singletonMap;
 import static jakarta.servlet.http.HttpServletResponse.SC_CREATED;
 import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static org.hamcrest.CoreMatchers.is;
@@ -30,7 +29,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,10 +75,10 @@ public class StatisticsReportingTest extends HttpTestBase
             // Enable Virtual Host Statistics Reporting
             final Map<String, Object> arguments = new HashMap<>();
             arguments.put(QueueManagingVirtualHost.STATISTICS_REPORTING_PERIOD, STATISTICS_REPORTING_PERIOD_IN_SEC);
-            Map<String, String> context = singletonMap("qpid.queue.statisticsReportPattern",
-                                                       "${ancestor:virtualhost:name}/${ancestor:queue:name}: "
-                                                       + "queueDepthMessages=${queueDepthMessages}, "
-                                                       + "queueDepthBytes=${queueDepthBytes:byteunit}");
+            Map<String, String> context = Map.of("qpid.queue.statisticsReportPattern",
+                    "${ancestor:virtualhost:name}/${ancestor:queue:name}: " +
+                    "queueDepthMessages=${queueDepthMessages}, " +
+                    "queueDepthBytes=${queueDepthBytes:byteunit}");
             arguments.put(ConfiguredObject.CONTEXT, context);
 
             getHelper().submitRequest("virtualhost", "POST", arguments, SC_OK);
@@ -109,11 +107,11 @@ public class StatisticsReportingTest extends HttpTestBase
 
 
             // Override the statistic report for queue2 only
-            Map<String, String> queue2Context = singletonMap("qpid.queue.statisticsReportPattern",
-                                                             "${ancestor:virtualhost:name}/${ancestor:queue:name}: "
-                                                             + "oldestMessageAge=${oldestMessageAge:duration}");
+            Map<String, String> queue2Context = Map.of("qpid.queue.statisticsReportPattern",
+                    "${ancestor:virtualhost:name}/${ancestor:queue:name}: " +
+                    "oldestMessageAge=${oldestMessageAge:duration}");
 
-            getHelper().submitRequest(String.format("queue/%s", QUEUE2_NAME), "POST", singletonMap(ConfiguredObject.CONTEXT, queue2Context), SC_OK);
+            getHelper().submitRequest(String.format("queue/%s", QUEUE2_NAME), "POST", Map.of(ConfiguredObject.CONTEXT, queue2Context), SC_OK);
 
             assertThat("Post-enqueue queue2 statistics report not found",
                        countLogFileMatches(hostLogDownloadUrl, String.format("%s/%s: oldestMessageAge=PT",
@@ -147,10 +145,10 @@ public class StatisticsReportingTest extends HttpTestBase
             // Enable Virtual Host Statistics Reporting
             final Map<String, Object> arguments = new HashMap<>();
             arguments.put(QueueManagingVirtualHost.STATISTICS_REPORTING_PERIOD, STATISTICS_REPORTING_PERIOD_IN_SEC);
-            Map<String, String> context = singletonMap("qpid.connection.statisticsReportPattern",
-                                                                   "${ancestor:connection:principal}: "
-                                                                   + "messagesIn=${messagesIn}, "
-                                                                   + "lastIoTime=${lastIoTime:datetime}");
+            Map<String, String> context = Map.of("qpid.connection.statisticsReportPattern",
+                    "${ancestor:connection:principal}: " +
+                    "messagesIn=${messagesIn}, " +
+                    "lastIoTime=${lastIoTime:datetime}");
             arguments.put(ConfiguredObject.CONTEXT, context);
 
             getHelper().submitRequest("virtualhost", "POST", arguments, SC_OK);
@@ -173,7 +171,7 @@ public class StatisticsReportingTest extends HttpTestBase
         finally
         {
             brokerHelper.submitRequest("broker/removeContextVariable", "POST",
-                                       singletonMap("name", "qpid.connection.statisticsReportPattern"), SC_OK);
+                                       Map.of("name", "qpid.connection.statisticsReportPattern"), SC_OK);
             conn.close();
         }
     }
@@ -193,7 +191,7 @@ public class StatisticsReportingTest extends HttpTestBase
             args1.put("value", "messagesIn=${messagesIn}");
             getHelper().submitRequest("broker/setContextVariable", "POST", args1, SC_OK);
 
-            final Map<String, Object> attrs = Collections.singletonMap(Broker.STATISTICS_REPORTING_PERIOD, STATISTICS_REPORTING_PERIOD_IN_SEC);
+            final Map<String, Object> attrs = Map.of(Broker.STATISTICS_REPORTING_PERIOD, STATISTICS_REPORTING_PERIOD_IN_SEC);
             getHelper().submitRequest("broker", "POST", attrs, SC_OK);
 
             getBrokerAdmin().createQueue(QUEUE1_NAME);
@@ -213,9 +211,9 @@ public class StatisticsReportingTest extends HttpTestBase
         finally
         {
             getHelper().submitRequest("broker/removeContextVariable", "POST",
-                                       singletonMap("name", "qpid.broker.statisticsReportPattern"), SC_OK);
+                                      Map.of("name", "qpid.broker.statisticsReportPattern"), SC_OK);
             getHelper().submitRequest("broker/removeContextVariable", "POST",
-                                       singletonMap("name", Broker.STATISTICS_REPORTING_PERIOD), SC_OK);
+                                      Map.of("name", Broker.STATISTICS_REPORTING_PERIOD), SC_OK);
             getHelper().submitRequest("brokerlogger/statslogger", "DELETE", SC_OK);
             conn.close();
         }

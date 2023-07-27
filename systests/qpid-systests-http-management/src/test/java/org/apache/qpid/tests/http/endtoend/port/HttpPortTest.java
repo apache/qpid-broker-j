@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -109,8 +108,7 @@ public class HttpPortTest extends HttpTestBase
 
     private void createAnonymousAuthenticationProvider(final String providerName) throws IOException
     {
-        Map<String, Object> data = Collections.singletonMap(ConfiguredObject.TYPE,
-                                                            AnonymousAuthenticationManager.PROVIDER_TYPE);
+        Map<String, Object> data = Map.of(ConfiguredObject.TYPE, AnonymousAuthenticationManager.PROVIDER_TYPE);
         getHelper().submitRequest("authenticationprovider/" + providerName,
                                   "PUT",
                                   data,

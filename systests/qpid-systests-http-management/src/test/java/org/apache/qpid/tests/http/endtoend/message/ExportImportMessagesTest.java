@@ -26,7 +26,6 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -79,7 +78,7 @@ public class ExportImportMessagesTest extends HttpTestBase
 
         changeVirtualHostState("STOPPED");
 
-        Map<String, Object> importArgs = Collections.singletonMap("source", extractedBytesAsDataUrl);
+        Map<String, Object> importArgs = Map.of("source", extractedBytesAsDataUrl);
         getHelper().postJson("virtualhost/importMessageStore", importArgs, new TypeReference<Void>() {}, SC_OK);
 
         changeVirtualHostState("ACTIVE");
@@ -88,7 +87,7 @@ public class ExportImportMessagesTest extends HttpTestBase
 
     private void changeVirtualHostState(final String desiredState) throws Exception
     {
-        Map<String, Object> attributes = Collections.singletonMap(VirtualHost.DESIRED_STATE, desiredState);
+        Map<String, Object> attributes = Map.of(VirtualHost.DESIRED_STATE, desiredState);
         getHelper().submitRequest("virtualhost", "POST", attributes, SC_OK);
     }
 
