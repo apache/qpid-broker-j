@@ -33,7 +33,7 @@ import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnec
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.in;
 
-import java.util.Collections;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -56,7 +56,7 @@ public class RefuseConnectionPolicyTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             final Open responseOpen = interaction.openContainerId("testContainerId")
                                                  .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                                                 .openProperties(Collections.singletonMap(
+                                                 .openProperties(Map.of(
                                                          SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                          REFUSE_CONNECTION))
                                                  .negotiateOpen()
@@ -82,8 +82,7 @@ public class RefuseConnectionPolicyTest extends BrokerAdminUsingTestBase
             final Interaction interaction1 = transport1.newInteraction();
             interaction1.openContainerId("testContainerId")
                         .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                        .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                                 REFUSE_CONNECTION))
+                        .openProperties(Map.of(SOLE_CONNECTION_ENFORCEMENT_POLICY, REFUSE_CONNECTION))
                         .negotiateOpen();
 
             final Open responseOpen = interaction1.getLatestResponse(Open.class);
@@ -95,7 +94,7 @@ public class RefuseConnectionPolicyTest extends BrokerAdminUsingTestBase
                 final Interaction interaction2 = transport2.newInteraction();
                 final Open responseOpen2 = interaction2.openContainerId("testContainerId")
                                                        .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                                                       .openProperties(Collections.singletonMap(
+                                                       .openProperties(Map.of(
                                                                SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                REFUSE_CONNECTION))
                                                        .negotiateOpen()
@@ -127,7 +126,7 @@ public class RefuseConnectionPolicyTest extends BrokerAdminUsingTestBase
                 final Interaction interaction2 = transport2.newInteraction();
                 final Open responseOpen2 = interaction2.openContainerId("testContainerId")
                                                        .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                                                       .openProperties(Collections.singletonMap(
+                                                       .openProperties(Map.of(
                                                                SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                                REFUSE_CONNECTION))
                                                        .negotiateOpen()
@@ -147,7 +146,7 @@ public class RefuseConnectionPolicyTest extends BrokerAdminUsingTestBase
             final Interaction interaction1 = transport1.newInteraction();
             final Open responseOpen = interaction1.openContainerId("testContainerId")
                                                   .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                                                  .openProperties(Collections.singletonMap(
+                                                  .openProperties(Map.of(
                                                           SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                           REFUSE_CONNECTION.getValue()))
                                                   .negotiateOpen()

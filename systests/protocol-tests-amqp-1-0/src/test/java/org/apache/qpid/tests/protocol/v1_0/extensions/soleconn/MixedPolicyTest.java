@@ -28,7 +28,7 @@ import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnec
 import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeEnforcementPolicyRefuse;
 import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assumeSoleConnectionCapability;
 
-import java.util.Collections;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -49,8 +49,7 @@ public class MixedPolicyTest extends BrokerAdminUsingTestBase
             final Interaction interaction1 = transport1.newInteraction();
             interaction1.openContainerId("testContainerId")
                         .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                        .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                                 CLOSE_EXISTING))
+                        .openProperties(Map.of(SOLE_CONNECTION_ENFORCEMENT_POLICY, CLOSE_EXISTING))
                         .negotiateOpen();
 
             Open responseOpen = interaction1.getLatestResponse(Open.class);
@@ -62,8 +61,7 @@ public class MixedPolicyTest extends BrokerAdminUsingTestBase
                 final Interaction interaction2 = transport2.newInteraction();
                 interaction2.openContainerId("testContainerId")
                             .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                            .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                                     REFUSE_CONNECTION))
+                            .openProperties(Map.of(SOLE_CONNECTION_ENFORCEMENT_POLICY, REFUSE_CONNECTION))
                             .sendOpen().sync();
 
                 interaction1.consumeResponse(Close.class);
@@ -75,8 +73,7 @@ public class MixedPolicyTest extends BrokerAdminUsingTestBase
                     final Interaction interaction3 = transport3.newInteraction();
                     interaction3.openContainerId("testContainerId")
                                 .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                                .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                                         CLOSE_EXISTING))
+                                .openProperties(Map.of(SOLE_CONNECTION_ENFORCEMENT_POLICY, CLOSE_EXISTING))
                                 .negotiateOpen()
                                 .consumeResponse(Close.class);
                 }
@@ -92,8 +89,7 @@ public class MixedPolicyTest extends BrokerAdminUsingTestBase
             final Interaction interaction1 = transport1.newInteraction();
             interaction1.openContainerId("testContainerId")
                         .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                        .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                                 REFUSE_CONNECTION))
+                        .openProperties(Map.of(SOLE_CONNECTION_ENFORCEMENT_POLICY, REFUSE_CONNECTION))
                         .negotiateOpen();
 
             final Open responseOpen = interaction1.getLatestResponse(Open.class);
@@ -105,8 +101,7 @@ public class MixedPolicyTest extends BrokerAdminUsingTestBase
                 final Interaction interaction2 = transport2.newInteraction();
                 interaction2.openContainerId("testContainerId")
                             .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                            .openProperties(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT_POLICY,
-                                                                     CLOSE_EXISTING))
+                            .openProperties(Map.of(SOLE_CONNECTION_ENFORCEMENT_POLICY, CLOSE_EXISTING))
                             .negotiateOpen()
                             .consumeResponse(Close.class);
             }
