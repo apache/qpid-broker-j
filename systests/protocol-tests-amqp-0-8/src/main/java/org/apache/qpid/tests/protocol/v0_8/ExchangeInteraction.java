@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -92,7 +91,7 @@ public class ExchangeInteraction
 
     public ExchangeInteraction declareArguments(final Map<String,Object> args)
     {
-        _declareArguments = args == null ? Collections.emptyMap() : new HashMap<>(args);
+        _declareArguments = args == null ? Map.of() : new HashMap<>(args);
         return this;
     }
 

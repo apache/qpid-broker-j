@@ -24,7 +24,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Collections;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -56,7 +56,7 @@ public class QueueDeclareInvalidOptionBehaviourTest extends BrokerAdminUsingTest
                                                      .consumeResponse(ChannelOpenOkBody.class)
                                                      .queue()
                                                      .declareName(TEST_QUEUE)
-                                                     .declareArguments(Collections.singletonMap("foo", "bar"))
+                                                     .declareArguments(Map.of("foo", "bar"))
                                                      .declare()
                                                      .consumeResponse()
                                                      .getLatestResponse(QueueDeclareOkBody.class);

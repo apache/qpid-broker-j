@@ -24,7 +24,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,8 +52,8 @@ public class LargeHeadersTest extends BrokerAdminUsingTestBase
         getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
     }
 
-    @Test
     /** Tests boundary case where headers exactly fill the content header frame */
+    @Test
     public void headersFillContentHeaderFrame() throws Exception
     {
 
@@ -69,7 +68,7 @@ public class LargeHeadersTest extends BrokerAdminUsingTestBase
             final String headerName = "test";
             final int headerValueSize = (int) (connTune.getFrameMax() - calculateContentHeaderFramingOverhead(headerName));
             final String headerValue = generateLongString(headerValueSize);
-            final Map<String, Object> messageHeaders = Collections.singletonMap(headerName, headerValue);
+            final Map<String, Object> messageHeaders = Map.of(headerName, headerValue);
 
             interaction.connection().tuneOk()
                        .connection().open()
@@ -108,7 +107,7 @@ public class LargeHeadersTest extends BrokerAdminUsingTestBase
     private String generateLongString(final int count)
     {
         String pattern = "abcde";
-        String str = String.join("", Collections.nCopies(count / pattern.length(), pattern)) + pattern.substring(0, count % pattern.length());
+        String str = pattern.repeat(count / pattern.length()) + pattern.substring(0, count % pattern.length());
         assertThat(str.length(), is(equalTo(count)));
         return str;
     }

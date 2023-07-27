@@ -21,7 +21,7 @@ package org.apache.qpid.tests.protocol.v0_8.extension.exchange;
 
 import static org.apache.qpid.tests.utils.BrokerAdmin.KIND_BROKER_J;
 
-import java.util.Collections;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -51,7 +51,7 @@ public class ExchangeDeclareInvalidOptionBehaviourTest extends BrokerAdminUsingT
                        .consumeResponse(ChannelOpenOkBody.class)
                        .exchange()
                        .declareName(TEST_EXCHANGE)
-                       .declareArguments(Collections.singletonMap("foo", "bar"))
+                       .declareArguments(Map.of("foo", "bar"))
                        .declare()
                        .consumeResponse(ExchangeDeclareOkBody.class);
         }
