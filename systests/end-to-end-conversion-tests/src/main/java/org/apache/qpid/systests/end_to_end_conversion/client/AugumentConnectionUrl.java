@@ -20,7 +20,6 @@
 
 package org.apache.qpid.systests.end_to_end_conversion.client;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,6 +36,6 @@ public class AugumentConnectionUrl implements ClientInstruction
 
     public Map<String, String> getConnectionUrlConfig()
     {
-        return Collections.unmodifiableMap(_connectionUrlConfig);
+        return Map.copyOf(_connectionUrlConfig);
     }
 }

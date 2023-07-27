@@ -26,7 +26,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -61,10 +60,10 @@ public class ClasspathQuery
         _classpathCache = CacheBuilder.newBuilder()
                                       .maximumSize(8)
                                       .recordStats()
-                                      .build(new CacheLoader<Collection<String>, List<File>>()
+                                      .build(new CacheLoader<>()
                                       {
                                           @Override
-                                          public List<File> load(final Collection<String> key) throws Exception
+                                          public List<File> load(final Collection<String> key)
                                           {
                                               return doBuildClassPath(key);
                                           }
@@ -88,7 +87,7 @@ public class ClasspathQuery
 
     private static List<File> doBuildClassPath(final Collection<String> gavs)
     {
-        return Collections.unmodifiableList(new ArrayList<>(getJarFiles(gavs)));
+        return List.copyOf(new ArrayList<>(getJarFiles(gavs)));
     }
 
     private static Set<File> getJarFiles(final Collection<String> gavs)
