@@ -38,7 +38,7 @@ public class InputHandler extends ChannelInboundHandlerAdapter
 
     private ByteBuffer _inputBuffer = ByteBuffer.allocate(0);
 
-    InputHandler(final BlockingQueue<Response<?>> queue, InputDecoder inputDecoder)
+    InputHandler(final BlockingQueue<Response<?>> queue, final InputDecoder inputDecoder)
     {
         _responseQueue = queue;
         _inputDecoder = inputDecoder;
@@ -47,15 +47,15 @@ public class InputHandler extends ChannelInboundHandlerAdapter
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception
     {
-        ByteBuf buf = (ByteBuf) msg;
-        ByteBuffer byteBuffer = ByteBuffer.allocate(buf.readableBytes());
+        final ByteBuf buf = (ByteBuf) msg;
+        final ByteBuffer byteBuffer = ByteBuffer.allocate(buf.readableBytes());
         byteBuffer.put(buf.nioBuffer());
         byteBuffer.flip();
         LOGGER.debug("Incoming {} byte(s)", byteBuffer.remaining());
 
         if (_inputBuffer.hasRemaining())
         {
-            ByteBuffer old = _inputBuffer;
+            final ByteBuffer old = _inputBuffer;
             _inputBuffer = ByteBuffer.allocate(_inputBuffer.remaining() + byteBuffer.remaining());
             _inputBuffer.put(old);
             _inputBuffer.put(byteBuffer);

@@ -28,9 +28,9 @@ import org.hamcrest.Matcher;
 
 public class Matchers
 {
-    public static Matcher<Response> protocolHeader(byte[] expectedHeader)
+    public static Matcher<Response> protocolHeader(final byte[] expectedHeader)
     {
-        return new BaseMatcher<Response>()
+        return new BaseMatcher<>()
         {
             @Override
             public void describeTo(final Description description)

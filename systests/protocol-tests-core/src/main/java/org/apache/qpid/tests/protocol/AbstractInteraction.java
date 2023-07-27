@@ -60,7 +60,7 @@ public abstract class AbstractInteraction<I extends AbstractInteraction<I>>
         acceptableResponseClasses.remove(null);
         if (_latestResponse != null)
         {
-            for (Class<?> acceptableResponseClass : acceptableResponseClasses)
+            for (final Class<?> acceptableResponseClass : acceptableResponseClasses)
             {
                 if (acceptableResponseClass.isAssignableFrom(_latestResponse.getBody().getClass()))
                 {
@@ -73,8 +73,7 @@ public abstract class AbstractInteraction<I extends AbstractInteraction<I>>
                                                       _latestResponse == null ? null : _latestResponse.getBody()));
     }
 
-    public <T> T consume(final Class<T> expected, final Class<?>... ignore)
-            throws Exception
+    public <T> T consume(final Class<T> expected, final Class<?>... ignore) throws Exception
     {
         final Class<?>[] expectedResponses = Arrays.copyOf(ignore, ignore.length + 1);
         expectedResponses[ignore.length] = expected;
@@ -82,7 +81,7 @@ public abstract class AbstractInteraction<I extends AbstractInteraction<I>>
         T completed = null;
         do
         {
-            Response<?> response = consumeResponse(expectedResponses).getLatestResponse();
+            final Response<?> response = consumeResponse(expectedResponses).getLatestResponse();
             if (expected.isAssignableFrom(response.getBody().getClass()))
             {
                 completed = (T) response.getBody();
