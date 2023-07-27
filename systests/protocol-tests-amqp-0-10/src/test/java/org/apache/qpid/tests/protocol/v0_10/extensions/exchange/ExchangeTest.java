@@ -26,7 +26,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Collections;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -56,7 +56,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                                                     .attachSession(SESSION_NAME)
                                                     .exchange()
                                                     .declareExchange("test")
-                                                    .declareArguments(Collections.singletonMap("unroutableMessageBehaviour", "REJECT"))
+                                                    .declareArguments(Map.of("unroutableMessageBehaviour", "REJECT"))
                                                     .declareType(ExchangeDefaults.DIRECT_EXCHANGE_CLASS)
                                                     .declareId(0)
                                                     .declare()
@@ -83,7 +83,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                        .declareExchange("test")
                        .declareType(ExchangeDefaults.DIRECT_EXCHANGE_CLASS)
                        .declareId(0)
-                       .declareArguments(Collections.singletonMap("foo", "bar"))
+                       .declareArguments(Map.of("foo", "bar"))
                        .declare()
                        .session()
                        .flushCompleted()

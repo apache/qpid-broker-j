@@ -27,7 +27,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v0_10.transport.ExecutionErrorCode;
