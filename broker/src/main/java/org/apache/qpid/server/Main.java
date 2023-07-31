@@ -461,40 +461,34 @@ public class Main
         
         if(handler == null)
         {
-            handler =
-                new Thread.UncaughtExceptionHandler()
+            handler = (thread, exception) ->
+            {
+                boolean continueOnError = Boolean.getBoolean("qpid.broker.exceptionHandler.continue");
+                try
                 {
-                    @Override
-                    public void uncaughtException(final Thread t, final Throwable e)
+                    System.err.println("########################################################################");
+                    System.err.println("#");
+                    System.err.print("# Unhandled Exception ");
+                    System.err.print(exception.toString());
+                    System.err.print(" in Thread ");
+                    System.err.println(thread.getName());
+                    System.err.println("#");
+                    System.err.println(continueOnError ? "# Forced to continue by JVM setting 'qpid.broker.exceptionHandler.continue'" : "# Exiting");
+                    System.err.println("#");
+                    System.err.println("########################################################################");
+                    exception.printStackTrace(System.err);
+
+                    Logger logger = LoggerFactory.getLogger("org.apache.qpid.server.Main");
+                    logger.error("Uncaught exception, " + (continueOnError ? "continuing." : "shutting down."), exception);
+                }
+                finally
+                {
+                    if (!continueOnError)
                     {
-                        boolean continueOnError = Boolean.getBoolean("qpid.broker.exceptionHandler.continue");
-                        try
-                        {
-                            System.err.println("########################################################################");
-                            System.err.println("#");
-                            System.err.print("# Unhandled Exception ");
-                            System.err.print(e.toString());
-                            System.err.print(" in Thread ");
-                            System.err.println(t.getName());
-                            System.err.println("#");
-                            System.err.println(continueOnError ? "# Forced to continue by JVM setting 'qpid.broker.exceptionHandler.continue'" : "# Exiting");
-                            System.err.println("#");
-                            System.err.println("########################################################################");
-                            e.printStackTrace(System.err);
-
-                            Logger logger = LoggerFactory.getLogger("org.apache.qpid.server.Main");
-                            logger.error("Uncaught exception, " + (continueOnError ? "continuing." : "shutting down."), e);
-                        }
-                        finally
-                        {
-                            if (!continueOnError)
-                            {
-                                Runtime.getRuntime().halt(1);
-                            }
-                        }
-
+                        Runtime.getRuntime().halt(1);
                     }
-                };
+                }
+            };
 
             Thread.setDefaultUncaughtExceptionHandler(handler);
         } 
