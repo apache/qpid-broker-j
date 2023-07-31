@@ -30,7 +30,6 @@ import java.security.AccessControlException;
 import java.security.AccessController;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -565,7 +564,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
 
                 return InternalMessage.createMapMessage(_addressSpace.getMessageStore(),
                                                         responseHeader,
-                                                        Collections.emptyMap());
+                                                        Map.of());
             }
             catch (IntegrityViolationException e)
             {
@@ -726,7 +725,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
                 {
 
                     ConfiguredObject parent =
-                            _configuredObjectFinder.findObjectParentsFromPath(Arrays.asList(getPathElements(path)), hierarchy, ConfiguredObjectTypeRegistry.getCategory(clazz));
+                            _configuredObjectFinder.findObjectParentsFromPath(List.of(getPathElements(path)), hierarchy, ConfiguredObjectTypeRegistry.getCategory(clazz));
                     if(parent == null)
                     {
                         return createFailureResponse(message, STATUS_CODE_NOT_FOUND, "The '"+OBJECT_PATH+"' "+path+" does not identify a valid parent");
@@ -920,7 +919,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         Collection<Class<? extends ConfiguredObject>> ancestorCategories = _model.getAncestorCategories(clazz);
         if(ancestorCategories.contains(_managedObject.getCategoryClass()))
         {
-            return findDescendantById(clazz, id, _managedObject.getCategoryClass(), Collections.singleton(_managedObject));
+            return findDescendantById(clazz, id, _managedObject.getCategoryClass(), Set.of(_managedObject));
         }
         else
         {
@@ -937,7 +936,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
                     Collection<? extends ConfiguredObject> associated =
                             (Collection<? extends ConfiguredObject>) operation
                                     .perform(_managedObject,
-                                             Collections.emptyMap());
+                                             Map.of());
                     ConfiguredObject<?> object = findDescendantById(clazz, id,
                                                                     entry.getKey(),
                                                                     associated);
@@ -959,7 +958,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
                         Collection<? extends ConfiguredObject> associated =
                                 (Collection<? extends ConfiguredObject>) operation
                                         .perform(_managedObject,
-                                                 Collections.emptyMap());
+                                                 Map.of());
                         ConfiguredObject<?> object = findDescendantById(clazz, id,
                                                                         entry.getKey(),
                                                                         associated);
@@ -1134,7 +1133,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         List<String> attributeNames;
         if(attributeNameObjects == null)
         {
-            attributeNames = Collections.emptyList();
+            attributeNames = List.of();
         }
         else
         {
@@ -1180,7 +1179,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
                 }
                 else
                 {
-                    objects = Collections.emptyList();
+                    objects = List.of();
                 }
             }
             else if(objects.size() + offset > 0)
@@ -1208,7 +1207,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
                 }
                 else
                 {
-                    objects = Collections.emptyList();
+                    objects = List.of();
                 }
             }
             else if(objects.size() + count > 0)
@@ -1348,7 +1347,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     private static <C extends ConfiguredObject<?>> Collection<ConfiguredObject<?>> getAssociatedChildren(final ConfiguredObjectOperation<C> op, final ConfiguredObject<?> managedObject)
     {
         @SuppressWarnings("unchecked")
-        final Collection<ConfiguredObject<?>> associated = (Collection<ConfiguredObject<?>>) op.perform((C)managedObject, Collections.emptyMap());
+        final Collection<ConfiguredObject<?>> associated = (Collection<ConfiguredObject<?>>) op.perform((C)managedObject, Map.of());
         return associated;
     }
 
@@ -1356,7 +1355,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     {
         Set<String> attrNameSet = new HashSet<>();
         List<String> attributeNames = new ArrayList<>();
-        for(String standardAttribute : Arrays.asList(IDENTITY_ATTRIBUTE, TYPE_ATTRIBUTE, QPID_TYPE, OBJECT_PATH))
+        for(String standardAttribute : List.of(IDENTITY_ATTRIBUTE, TYPE_ATTRIBUTE, QPID_TYPE, OBJECT_PATH))
         {
             attrNameSet.add(standardAttribute);
             attributeNames.add(standardAttribute);
@@ -1457,20 +1456,20 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
                                                       ConfiguredObjectTypeRegistry.getCategory(clazz);
                                               if(category == clazz)
                                               {
-                                                  return Collections.emptyList();
+                                                  return List.of();
                                               }
                                               else
                                               {
-                                                  return Collections.singletonList(getAmqpName(category));
+                                                  return List.of(getAmqpName(category));
                                               }
-                                          }, Collections.<String>emptyList());
+                                          }, List.of());
 
     }
 
     private Map<String,List<String>> performGetAttributes(final Map<String, Object> headers)
     {
-        return performManagementOperation(headers,
-                                          clazz -> new ArrayList<>(_model.getTypeRegistry().getAttributeNames(clazz)), Collections.<String>emptyList());
+        return performManagementOperation(headers, clazz ->
+                new ArrayList<>(_model.getTypeRegistry().getAttributeNames(clazz)), List.of());
 
     }
 

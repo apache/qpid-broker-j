@@ -23,7 +23,6 @@ package org.apache.qpid.server.management.amqp;
 import java.security.AccessControlException;
 import java.security.AccessController;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
@@ -186,7 +185,7 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
     @Override
     public Collection<? extends MessageInstanceConsumer> getConsumers()
     {
-        return _consumer == null ? Collections.<MessageInstanceConsumer>emptySet() : Collections.singleton(_consumer);
+        return _consumer == null ? Set.of() : Set.of(_consumer);
     }
 
     @Override
