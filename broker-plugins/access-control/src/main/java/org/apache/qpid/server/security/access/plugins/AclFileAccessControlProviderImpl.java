@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.security.access.plugins;
 
-import java.util.Collections;
 import java.util.Map;
 
 import org.apache.qpid.server.logging.messages.AccessControlMessages;
@@ -86,7 +85,7 @@ public class AclFileAccessControlProviderImpl
             recreateAccessController();
             LOGGER.debug("Calling changeAttributes to try to force update");
             // force the change listener to fire, causing the parent broker to update its cache
-            changeAttributes(Collections.<String,Object>emptyMap());
+            changeAttributes(Map.of());
             getEventLogger().message(AccessControlMessages.LOADED(StringUtil.elideDataUrl(getPath())));
 
         }
