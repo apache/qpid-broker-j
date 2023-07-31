@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.transport.websocket;
 
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
@@ -39,8 +38,7 @@ public class WebSocketTransportProviderFactory implements TransportProviderFacto
     @Override
     public Set<Set<Transport>> getSupportedTransports()
     {
-        return new HashSet<Set<Transport>>(Arrays.asList(EnumSet.of(Transport.WS),
-                                                         EnumSet.of(Transport.WSS)));
+        return new HashSet<>(Set.of(EnumSet.of(Transport.WS), EnumSet.of(Transport.WSS)));
     }
 
     @Override

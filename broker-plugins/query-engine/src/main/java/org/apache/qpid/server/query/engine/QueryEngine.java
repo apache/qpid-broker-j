@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.query.engine.cache.MaxSizeHashMap;
 import org.apache.qpid.server.query.engine.evaluator.QueryEvaluator;
 import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;

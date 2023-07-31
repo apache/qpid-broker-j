@@ -24,10 +24,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import io.prometheus.client.exporter.common.TextFormat;
 
@@ -63,7 +63,7 @@ public class PrometheusContentFactory implements ContentFactory
         final IncludeMetricPredicate metricIncludeFilter =
                 new IncludeMetricPredicate(includedMetricNames == null || includedMetricNames.length == 0
                                                    ? Collections.emptySet()
-                                                   : new HashSet<>(Arrays.asList(includedMetricNames)));
+                                                   : new HashSet<>(Set.of(includedMetricNames)));
         final QpidCollector qpidCollector = new QpidCollector(object,
                                                               new IncludeDisabledStatisticPredicate(includeDisabled),
                                                               metricIncludeFilter);

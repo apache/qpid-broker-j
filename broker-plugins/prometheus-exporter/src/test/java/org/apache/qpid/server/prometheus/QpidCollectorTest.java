@@ -29,11 +29,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.prometheus.client.Collector;
@@ -120,8 +119,8 @@ public class QpidCollectorTest extends UnitTestBase
                 QPID_TEST_ENGINE_TEMPERATURE_TOTAL);
         assertMetricFamilySamplesSize(engineMetricFamilySamples, 1);
         final Collector.MetricFamilySamples.Sample engineSample = engineMetricFamilySamples.samples.get(0);
-        assertThat(engineSample.labelNames, is(equalTo(Collections.singletonList("name"))));
-        assertThat(engineSample.labelValues, is(equalTo(Collections.singletonList(ELECTRIC_ENGINE_NAME))));
+        assertThat(engineSample.labelNames, is(equalTo(List.of("name"))));
+        assertThat(engineSample.labelValues, is(equalTo(List.of(ELECTRIC_ENGINE_NAME))));
         assertThat(engineSample.value, Matchers.closeTo(TestAbstractEngineImpl.TEST_TEMPERATURE, 0.01));
     }
 
@@ -149,8 +148,8 @@ public class QpidCollectorTest extends UnitTestBase
                 metricsMap.get(QPID_TEST_SENSOR_ALERT_COUNT);
         assertMetricFamilySamplesSize(sensorlMetricFamilySamples, 1);
         final Collector.MetricFamilySamples.Sample sensorSample = sensorlMetricFamilySamples.samples.get(0);
-        assertThat(sensorSample.labelNames, is(equalTo(Arrays.asList("name", "test_instrument_panel_name"))));
-        assertThat(sensorSample.labelValues, is(equalTo(Arrays.asList(SENSOR, INSTRUMENT_PANEL_NAME))));
+        assertThat(sensorSample.labelNames, is(equalTo(List.of("name", "test_instrument_panel_name"))));
+        assertThat(sensorSample.labelValues, is(equalTo(List.of(SENSOR, INSTRUMENT_PANEL_NAME))));
     }
 
     @Test
@@ -179,8 +178,8 @@ public class QpidCollectorTest extends UnitTestBase
         {
             final Collector.MetricFamilySamples.Sample sample =
                     findSampleByLabelValue(engineMetricFamilySamples, engineName);
-            assertThat(sample.labelNames, is(equalTo(Collections.singletonList("name"))));
-            assertThat(sample.labelValues, is(equalTo(Collections.singletonList(engineName))));
+            assertThat(sample.labelNames, is(equalTo(List.of("name"))));
+            assertThat(sample.labelValues, is(equalTo(List.of(engineName))));
             assertThat(sample.value, Matchers.closeTo(TestAbstractEngineImpl.TEST_TEMPERATURE, 0.01));
         }
     }
@@ -192,7 +191,7 @@ public class QpidCollectorTest extends UnitTestBase
 
         _qpidCollector = new QpidCollector(_root,
                                            new IncludeDisabledStatisticPredicate(true),
-                                           new IncludeMetricPredicate(Collections.singleton(QPID_TEST_CAR_AGE_COUNT)));
+                                           new IncludeMetricPredicate(Set.of(QPID_TEST_CAR_AGE_COUNT)));
         final List<Collector.MetricFamilySamples> metrics = _qpidCollector.collect();
 
         final String[] expectedFamilyNames = {QPID_TEST_CAR_AGE_COUNT};
@@ -203,8 +202,8 @@ public class QpidCollectorTest extends UnitTestBase
         final Collector.MetricFamilySamples engineMetricFamilySamples = metricsMap.get(QPID_TEST_CAR_AGE_COUNT);
         assertMetricFamilySamplesSize(engineMetricFamilySamples, 1);
         final Collector.MetricFamilySamples.Sample engineSample = engineMetricFamilySamples.samples.get(0);
-        assertThat(engineSample.labelNames, is(equalTo(Collections.emptyList())));
-        assertThat(engineSample.labelValues, is(equalTo(Collections.emptyList())));
+        assertThat(engineSample.labelNames, is(equalTo(List.of())));
+        assertThat(engineSample.labelValues, is(equalTo(List.of())));
         assertThat(engineSample.value, Matchers.closeTo(0.0, 0.01));
 
     }
