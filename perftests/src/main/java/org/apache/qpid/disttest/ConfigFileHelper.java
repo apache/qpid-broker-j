@@ -19,7 +19,6 @@
 package org.apache.qpid.disttest;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,19 +32,15 @@ public class ConfigFileHelper
      */
     public List<String> getTestConfigFiles(String testConfigPath)
     {
-        final List<String> testConfigFile = new ArrayList<String>();
+        final List<String> testConfigFile = new ArrayList<>();
         final File configFileOrDirectory = new File(testConfigPath);
 
         if (configFileOrDirectory.isDirectory())
         {
-            final String[] configFiles = configFileOrDirectory.list(new FilenameFilter()
+            final String[] configFiles = configFileOrDirectory.list((dir, name) ->
             {
-                @Override
-                public boolean accept(File dir, String name)
-                {
-                    boolean suffixOk = name.endsWith(".json") || name.endsWith(".js");
-                    return new File(dir, name).isFile() && suffixOk;
-                }
+                boolean suffixOk = name.endsWith(".json") || name.endsWith(".js");
+                return new File(dir, name).isFile() && suffixOk;
             });
 
             for (String configFile : configFiles)

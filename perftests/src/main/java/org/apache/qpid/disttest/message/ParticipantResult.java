@@ -62,14 +62,8 @@ public class ParticipantResult extends Response
     // summarizes results from participants using different session acknowledge modes.
     private int _acknowledgeMode = -1;
 
-    public static final Comparator<? super ParticipantResult> PARTICIPANT_NAME_COMPARATOR = new Comparator<ParticipantResult>()
-    {
-        @Override
-        public int compare(ParticipantResult participantResult1, ParticipantResult participantResult2)
-        {
-            return participantResult1.getParticipantName().compareTo(participantResult2.getParticipantName());
-        }
-    };
+    public static final Comparator<? super ParticipantResult> PARTICIPANT_NAME_COMPARATOR =
+            Comparator.comparing(ParticipantResult::getParticipantName);
 
     public ParticipantResult()
     {

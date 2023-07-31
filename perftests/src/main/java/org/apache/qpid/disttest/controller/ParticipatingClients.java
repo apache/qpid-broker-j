@@ -61,7 +61,7 @@ public class ParticipatingClients
     {
         BiMap<String, String> configuredToRegisteredNameMap = HashBiMap.create();
 
-        TreeSet<String> registeredClients = new TreeSet<String>(clientRegistry.getClients());
+        TreeSet<String> registeredClients = new TreeSet<>(clientRegistry.getClients());
         for (String configuredClientName : configuredClientNamesForTest)
         {
             String allocatedClientName = registeredClients.pollFirst();

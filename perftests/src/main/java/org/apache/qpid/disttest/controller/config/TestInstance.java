@@ -51,7 +51,7 @@ public class TestInstance
     public List<CommandForClient> createCommands()
     {
         List<CommandForClient> commands = _testConfig.createCommands();
-        List<CommandForClient> newCommands = new ArrayList<CommandForClient>(commands.size());
+        List<CommandForClient> newCommands = new ArrayList<>(commands.size());
 
         double ratePerProducer = calculateRatePerProducer(_producerRate, commands);
         for (CommandForClient commandForClient : commands)

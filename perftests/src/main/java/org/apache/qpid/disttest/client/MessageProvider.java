@@ -23,7 +23,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
@@ -56,7 +55,7 @@ public class MessageProvider
     public MessageProvider(Map<String, PropertyValue> messageProperties)
     {
         _messageProperties = messageProperties;
-        _payloads = new ConcurrentHashMap<Integer, Future<String>>();
+        _payloads = new ConcurrentHashMap<>();
     }
 
     public Message nextMessage(Session session, CreateProducerCommand command) throws JMSException
@@ -183,16 +182,12 @@ public class MessageProvider
 
     protected String getMessagePayload(final CreateProducerCommand command)
     {
-        FutureTask<String> createTextFuture = new FutureTask<String>(new Callable<String>()
+        FutureTask<String> createTextFuture = new FutureTask<>(() ->
         {
-            @Override
-            public String call() throws Exception
-            {
-                final int messageSize = command.getMessageSize();
-                char[] chars = new char[messageSize];
-                Arrays.fill(chars, 'a');
-                return new String(chars);
-            }
+            final int messageSize = command.getMessageSize();
+            char[] chars = new char[messageSize];
+            Arrays.fill(chars, 'a');
+            return new String(chars);
         });
 
         Future<String> future = _payloads.putIfAbsent(command.getMessageSize(), createTextFuture);

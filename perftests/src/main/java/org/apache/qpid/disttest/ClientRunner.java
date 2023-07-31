@@ -82,16 +82,12 @@ public class ClientRunner extends AbstractRunner
         {
             final Client client = new Client(new ClientJmsDelegate(context));
 
-            Thread clientThread = new Thread(new Runnable()
+            Thread clientThread = new Thread(() ->
             {
-                @Override
-                public void run()
-                {
-                    LOGGER.info("Starting client {}", client.getClientName());
-                    client.start();
-                    client.waitUntilStopped();
-                    LOGGER.info("Stopped client {}", client.getClientName());
-                }
+                LOGGER.info("Starting client {}", client.getClientName());
+                client.start();
+                client.waitUntilStopped();
+                LOGGER.info("Stopped client {}", client.getClientName());
             });
             clientThread.start();
             return clientThread;

@@ -29,7 +29,7 @@ public class SeriesStatistics
     private long _maxValue;
     private double _mean;
     private double _standardDeviation;
-    private Collection<Long> _series = new CopyOnWriteArrayList<Long>();
+    private Collection<Long> _series = new CopyOnWriteArrayList<>();
 
     public SeriesStatistics()
     {

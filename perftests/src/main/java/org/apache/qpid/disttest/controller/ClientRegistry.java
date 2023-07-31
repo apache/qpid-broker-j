@@ -32,7 +32,7 @@ public class ClientRegistry
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientRegistry.class);
 
-    private final Set<String> _registeredClientNames = new ConcurrentSkipListSet<String>();
+    private final Set<String> _registeredClientNames = new ConcurrentSkipListSet<>();
 
     private final Object _lock = new Object();
 
