@@ -127,14 +127,12 @@ public final class MessageResumeResult extends Struct {
     @Override
     public Map<String,Object> getFields()
     {
-        Map<String,Object> result = new LinkedHashMap<String,Object>();
+        Map<String,Object> result = new LinkedHashMap<>();
 
         if ((packing_flags & 256) != 0)
         {
             result.put("offset", getOffset());
         }
-
-
         return result;
     }
 
@@ -143,5 +141,4 @@ public final class MessageResumeResult extends Struct {
     {
         throw new UnsupportedOperationException();
     }
-
 }

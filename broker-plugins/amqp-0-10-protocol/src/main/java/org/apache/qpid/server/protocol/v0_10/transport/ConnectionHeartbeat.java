@@ -106,12 +106,7 @@ public final class ConnectionHeartbeat extends Method {
     @Override
     public Map<String,Object> getFields()
     {
-        Map<String,Object> result = new LinkedHashMap<String,Object>();
 
-
-
-        return result;
+        return new LinkedHashMap<>();
     }
-
-
 }

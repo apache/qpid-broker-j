@@ -145,16 +145,12 @@ public final class MessageStop extends Method {
     @Override
     public Map<String,Object> getFields()
     {
-        Map<String,Object> result = new LinkedHashMap<String,Object>();
+        Map<String,Object> result = new LinkedHashMap<>();
 
         if ((packing_flags & 256) != 0)
         {
             result.put("destination", getDestination());
         }
-
-
         return result;
     }
-
-
 }

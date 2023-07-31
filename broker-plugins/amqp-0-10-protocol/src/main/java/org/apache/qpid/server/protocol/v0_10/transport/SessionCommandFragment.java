@@ -128,12 +128,9 @@ public final class SessionCommandFragment extends Struct {
     @Override
     public Map<String,Object> getFields()
     {
-        Map<String,Object> result = new LinkedHashMap<String,Object>();
-
+        Map<String,Object> result = new LinkedHashMap<>();
         result.put("commandId", getCommandId());
         result.put("byteRanges", getByteRanges());
-
-
         return result;
     }
 
@@ -142,5 +139,4 @@ public final class SessionCommandFragment extends Struct {
     {
         throw new UnsupportedOperationException();
     }
-
 }

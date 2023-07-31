@@ -25,7 +25,6 @@ import static org.apache.qpid.server.util.Serial.max;
 import static org.apache.qpid.server.util.Serial.min;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -202,13 +201,13 @@ public abstract class Range implements RangeSet
         @Override
         public List<Range> subtract(Range range)
         {
-            if(range.includes(point))
+            if (range.includes(point))
             {
-                return Collections.emptyList();
+                return List.of();
             }
             else
             {
-                return Collections.singletonList((Range) this);
+                return List.of(this);
             }
         }
 
@@ -280,7 +279,7 @@ public abstract class Range implements RangeSet
         @Override
         public List<Range> subtract(Range range)
         {
-            List<Range> result = new ArrayList<Range>();
+            List<Range> result = new ArrayList<>();
 
             if (includes(range.getLower()) && le(lower, range.getLower() - 1))
             {

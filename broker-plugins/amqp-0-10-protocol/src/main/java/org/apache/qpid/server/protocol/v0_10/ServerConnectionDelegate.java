@@ -261,7 +261,7 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
                 }
                 else
                 {
-                    sconn.invoke(new ConnectionRedirect(redirectHost, new ArrayList<Object>()));
+                    sconn.invoke(new ConnectionRedirect(redirectHost, new ArrayList<>()));
                 }
                 return;
             }

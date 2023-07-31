@@ -290,7 +290,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
                 {
                     if(otherProps == null)
                     {
-                        otherProps = new ArrayList<Struct>();
+                        otherProps = new ArrayList<>();
 
                     }
                     otherProps.add(struct);
