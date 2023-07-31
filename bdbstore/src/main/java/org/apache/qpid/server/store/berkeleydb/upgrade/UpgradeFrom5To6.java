@@ -26,9 +26,7 @@ import static org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeInteraction
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,13 +67,11 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(UpgradeFrom5To6.class);
 
-    private static final Set<String> DEFAULT_EXCHANGES_SET =
-            new HashSet<String>(Arrays.asList(
-                    ExchangeDefaults.DEFAULT_EXCHANGE_NAME,
-                    ExchangeDefaults.FANOUT_EXCHANGE_NAME,
-                    ExchangeDefaults.HEADERS_EXCHANGE_NAME,
-                    ExchangeDefaults.TOPIC_EXCHANGE_NAME,
-                    ExchangeDefaults.DIRECT_EXCHANGE_NAME));
+    private static final Set<String> DEFAULT_EXCHANGES_SET = Set.of(ExchangeDefaults.DEFAULT_EXCHANGE_NAME,
+            ExchangeDefaults.FANOUT_EXCHANGE_NAME,
+            ExchangeDefaults.HEADERS_EXCHANGE_NAME,
+            ExchangeDefaults.TOPIC_EXCHANGE_NAME,
+            ExchangeDefaults.DIRECT_EXCHANGE_NAME);
 
     private static final String ARGUMENTS = "arguments";
 
@@ -172,28 +168,23 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
         LOGGER.info("Message Contents");
         if (environment.getDatabaseNames().contains(OLD_CONTENT_DB_NAME))
         {
-            DatabaseRunnable contentOperation = new DatabaseRunnable()
+            DatabaseRunnable contentOperation = (oldContentDatabase, newContentDatabase, contentTransaction) ->
             {
-                @Override
-                public void run(final Database oldContentDatabase, final Database newContentDatabase,
-                        Transaction contentTransaction)
+                CursorOperation metaDataDatabaseOperation = new CursorOperation()
                 {
-                    CursorOperation metaDataDatabaseOperation = new CursorOperation()
-                    {
 
-                        @Override
-                        public void processEntry(Database metadataDatabase, Database notUsed,
-                                Transaction metaDataTransaction, DatabaseEntry key, DatabaseEntry value)
-                        {
-                            long messageId = LongBinding.entryToLong(key);
-                            upgradeMessage(messageId, oldContentDatabase, newContentDatabase, handler, metaDataTransaction,
-                                    metadataDatabase);
-                        }
-                    };
-                    new DatabaseTemplate(environment, OLD_META_DATA_DB_NAME, contentTransaction)
-                            .run(metaDataDatabaseOperation);
-                    LOGGER.info(metaDataDatabaseOperation.getRowCount() + " Message Content Entries");
-                }
+                    @Override
+                    public void processEntry(Database metadataDatabase, Database notUsed,
+                            Transaction metaDataTransaction, DatabaseEntry key, DatabaseEntry value)
+                    {
+                        long messageId = LongBinding.entryToLong(key);
+                        upgradeMessage(messageId, oldContentDatabase, newContentDatabase, handler, metaDataTransaction,
+                                metadataDatabase);
+                    }
+                };
+                new DatabaseTemplate(environment, OLD_META_DATA_DB_NAME, contentTransaction)
+                        .run(metaDataDatabaseOperation);
+                LOGGER.info(metaDataDatabaseOperation.getRowCount() + " Message Content Entries");
             };
             new DatabaseTemplate(environment, OLD_CONTENT_DB_NAME, NEW_CONTENT_DB_NAME, transaction).run(contentOperation);
             environment.removeDatabase(transaction, OLD_CONTENT_DB_NAME);
@@ -275,7 +266,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
      */
     private SortedMap<Integer, byte[]> getMessageData(final long messageId, final Database oldDatabase)
     {
-        TreeMap<Integer, byte[]> data = new TreeMap<Integer, byte[]>();
+        TreeMap<Integer, byte[]> data = new TreeMap<>();
 
         Cursor cursor = oldDatabase.openCursor(null, CursorConfig.READ_COMMITTED);
         try
@@ -438,7 +429,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
 
     private List<String> upgradeExchanges(Environment environment, Transaction transaction, final String virtualHostName)
     {
-        final List<String> exchangeNames = new ArrayList<String>();
+        final List<String> exchangeNames = new ArrayList<>();
         LOGGER.info("Exchanges");
         if (environment.getDatabaseNames().contains(OLD_EXCHANGE_DB_NAME))
         {
@@ -475,7 +466,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
 
     private List<String> upgradeQueues(Environment environment, Transaction transaction, final String virtualHostName)
     {
-        final List<String> queueNames = new ArrayList<String>();
+        final List<String> queueNames = new ArrayList<>();
         LOGGER.info("Queues");
         if (environment.getDatabaseNames().contains(OLD_QUEUE_DB_NAME))
         {
@@ -532,7 +523,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             String owner, boolean exclusive, FieldTable arguments)
     {
 
-        Map<String, Object> attributesMap = new HashMap<String, Object>();
+        Map<String, Object> attributesMap = new HashMap<>();
         attributesMap.put(Queue.NAME, queueName);
         attributesMap.put(Queue.EXCLUSIVE, exclusive);
 
@@ -569,7 +560,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     private UpgradeConfiguredObjectRecord createExchangeConfiguredObjectRecord(String exchangeName, String exchangeType,
             boolean autoDelete)
     {
-        Map<String, Object> attributesMap = new HashMap<String, Object>();
+        Map<String, Object> attributesMap = new HashMap<>();
         attributesMap.put(Exchange.NAME, exchangeName);
         attributesMap.put(Exchange.TYPE, exchangeType);
         attributesMap.put(Exchange.LIFETIME_POLICY, autoDelete ? "AUTO_DELETE"
@@ -582,7 +573,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     private UpgradeConfiguredObjectRecord createBindingConfiguredObjectRecord(String exchangeName, String queueName,
             String routingKey, FieldTable arguments, String virtualHostName)
     {
-        Map<String, Object> attributesMap = new HashMap<String, Object>();
+        Map<String, Object> attributesMap = new HashMap<>();
         attributesMap.put("name", routingKey);
         attributesMap.put("exchange", UUIDGenerator.generateExchangeUUID(exchangeName, virtualHostName));
         attributesMap.put("queue", UUIDGenerator.generateQueueUUID(queueName, virtualHostName));

@@ -25,14 +25,6 @@ public interface UpgradeInteractionHandler
     UpgradeInteractionResponse requireResponse(String question, UpgradeInteractionResponse defaultResponse,
                                                UpgradeInteractionResponse... possibleResponses);
 
-    public static final UpgradeInteractionHandler DEFAULT_HANDLER = new UpgradeInteractionHandler()
-    {
-        @Override
-        public UpgradeInteractionResponse requireResponse(final String question,
-                                                          final UpgradeInteractionResponse defaultResponse,
-                                                          final UpgradeInteractionResponse... possibleResponses)
-        {
-            return defaultResponse;
-        }
-    };
+    public static final UpgradeInteractionHandler DEFAULT_HANDLER =
+            (question, defaultResponse, possibleResponses) -> defaultResponse;
 }

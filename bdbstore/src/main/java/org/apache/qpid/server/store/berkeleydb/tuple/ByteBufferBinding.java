@@ -32,15 +32,7 @@ public class ByteBufferBinding extends TupleBinding<QpidByteBuffer>
 {
     private static final int COPY_BUFFER_SIZE = 8192;
 
-    private static final ThreadLocal<byte[]> COPY_BUFFER = new ThreadLocal<byte[]>()
-                                                            {
-
-                                                                @Override
-                                                                protected byte[] initialValue()
-                                                                {
-                                                                    return new byte[COPY_BUFFER_SIZE];
-                                                                }
-                                                            };
+    private static final ThreadLocal<byte[]> COPY_BUFFER = ThreadLocal.withInitial(() -> new byte[COPY_BUFFER_SIZE]);
 
     private static final ByteBufferBinding INSTANCE = new ByteBufferBinding();
 

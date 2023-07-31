@@ -35,7 +35,7 @@ public class StringMapBinding extends TupleBinding<Map<String,String>>
     public Map<String, String> entryToObject(final TupleInput tupleInput)
     {
         int entries = tupleInput.readInt();
-        Map<String,String> map = new HashMap<String,String>(entries);
+        Map<String,String> map = new HashMap<>(entries);
         for(int i = 0; i < entries; i++)
         {
             map.put(tupleInput.readString(), tupleInput.readString());

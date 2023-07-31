@@ -39,20 +39,14 @@ public abstract class CursorOperation implements DatabaseRunnable
     public void run(final Database sourceDatabase, final Database targetDatabase, final Transaction transaction)
     {
         _rowCount = sourceDatabase.count();
-        _template = new CursorTemplate(sourceDatabase, transaction, new DatabaseEntryCallback()
+        _template = new CursorTemplate(sourceDatabase, transaction, (database, transaction1, key, value) ->
         {
-            @Override
-            public void processEntry(final Database database, final Transaction transaction, final DatabaseEntry key,
-                    final DatabaseEntry value)
+            _processedRowCount++;
+            CursorOperation.this.processEntry(database, targetDatabase, transaction1, key, value);
+            if (getProcessedCount() % 1000 == 0)
             {
-                _processedRowCount++;
-                CursorOperation.this.processEntry(database, targetDatabase, transaction, key, value);
-                if (getProcessedCount() % 1000 == 0)
-                {
-                    LOGGER.info("Processed " + getProcessedCount() + " records of " + getRowCount() + ".");
-                }
+                LOGGER.info("Processed " + getProcessedCount() + " records of " + getRowCount() + ".");
             }
-
         });
         _template.processEntries();
     }

@@ -194,7 +194,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     public static final ReplicaAckPolicy REPLICA_REPLICA_ACKNOWLEDGMENT_POLICY = ReplicaAckPolicy.SIMPLE_MAJORITY;
 
     @SuppressWarnings("serial")
-    private static final Map<String, String> REPCONFIG_DEFAULTS = Collections.unmodifiableMap(new HashMap<String, String>()
+    private static final Map<String, String> REPCONFIG_DEFAULTS = Collections.unmodifiableMap(new HashMap<>()
     {{
         /**
          * Parameter decreased as the 24h default may lead very large log files for most users.
@@ -222,13 +222,13 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
          * is scheduled to become default after JE 5.1.
          */
         put(ReplicationConfig.PROTOCOL_OLD_STRING_ENCODING, Boolean.FALSE.toString());
-         /**
-          * Allow Replica to proceed with transactions regardless of the state of a Replica
-          * At the moment we do not read or write databases on Replicas.
-          * Setting consistency policy to NoConsistencyRequiredPolicy
-          * would allow to create transaction on Replica immediately.
-          * Any followed write operation would fail with ReplicaWriteException.
-          */
+        /**
+         * Allow Replica to proceed with transactions regardless of the state of a Replica
+         * At the moment we do not read or write databases on Replicas.
+         * Setting consistency policy to NoConsistencyRequiredPolicy
+         * would allow to create transaction on Replica immediately.
+         * Any followed write operation would fail with ReplicaWriteException.
+         */
         put(ReplicationConfig.CONSISTENCY_POLICY, NoConsistencyRequiredPolicy.NAME);
     }});
 
@@ -263,16 +263,16 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
      * transfer master operation.
      */
     private final ScheduledThreadPoolExecutor _groupChangeExecutor;
-    private final AtomicReference<State> _state = new AtomicReference<State>(State.OPENING);
-    private final ConcurrentMap<String, ReplicationNode> _remoteReplicationNodes = new ConcurrentHashMap<String, ReplicationNode>();
-    private final AtomicReference<ReplicationGroupListener> _replicationGroupListener = new AtomicReference<ReplicationGroupListener>();
-    private final AtomicReference<StateChangeListener> _stateChangeListener = new AtomicReference<StateChangeListener>();
+    private final AtomicReference<State> _state = new AtomicReference<>(State.OPENING);
+    private final ConcurrentMap<String, ReplicationNode> _remoteReplicationNodes = new ConcurrentHashMap<>();
+    private final AtomicReference<ReplicationGroupListener> _replicationGroupListener = new AtomicReference<>();
+    private final AtomicReference<StateChangeListener> _stateChangeListener = new AtomicReference<>();
     private final Durability _defaultDurability;
     private final ConcurrentMap<String, Database> _cachedDatabases = new ConcurrentHashMap<>();
     private final ConcurrentMap<DatabaseEntry, Sequence> _cachedSequences = new ConcurrentHashMap<>();
     private final AtomicReference<ReplicatedEnvironment> _environment = new AtomicReference<>();
 
-    private final Set<String> _permittedNodes = new CopyOnWriteArraySet<String>();
+    private final Set<String> _permittedNodes = new CopyOnWriteArraySet<>();
     private volatile Durability _realMessageStoreDurability = null;
     private volatile Durability _messageStoreDurability;
     private volatile CoalescingCommiter _coalescingCommiter = null;
@@ -339,22 +339,19 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         boolean success = false;
         try
         {
-            createEnvironment(true, new Runnable(){
-                @Override
-                public void run()
+            createEnvironment(true, () ->
+            {
+                populateExistingRemoteReplicationNodes();
+                int numberOfRemoteNodes = _remoteReplicationNodes.size();
+                if (numberOfRemoteNodes > 0)
                 {
-                    populateExistingRemoteReplicationNodes();
-                    int numberOfRemoteNodes = _remoteReplicationNodes.size();
-                    if (numberOfRemoteNodes > 0)
-                    {
-                        int newPoolSize = numberOfRemoteNodes
-                                          + 1 /* for this node */
-                                          + 1 /* for coordination */;
-                        _groupChangeExecutor.setCorePoolSize(newPoolSize);
-                        LOGGER.debug("Setting group change executor core pool size to {}", newPoolSize);
-                    }
-                    _groupChangeExecutor.submit(new RemoteNodeStateLearner());
+                    int newPoolSize = numberOfRemoteNodes
+                                      + 1 /* for this node */
+                                      + 1 /* for coordination */;
+                    _groupChangeExecutor.setCorePoolSize(newPoolSize);
+                    LOGGER.debug("Setting group change executor core pool size to {}", newPoolSize);
                 }
+                _groupChangeExecutor.submit(new RemoteNodeStateLearner());
             });
             success = true;
         }
@@ -592,65 +589,57 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             // Tell the virtualhostnode that we are no longer attached to the group.  It will close the virtualhost,
             // closing the connections, housekeeping etc meaning all transactions are finished before we
             // restart the environment.
-            _stateChangeExecutor.submit(new Callable<Void>()
+            _stateChangeExecutor.submit(() ->
             {
-                @Override
-                public Void call() throws Exception
+                StateChangeListener listener = _stateChangeListener.get();
+                if (listener != null && _state.get() == State.RESTARTING)
                 {
-                    StateChangeListener listener = _stateChangeListener.get();
-                    if (listener != null && _state.get() == State.RESTARTING)
+                    try
                     {
-                        try
-                        {
-                            StateChangeEvent detached = new StateChangeEvent(ReplicatedEnvironment.State.DETACHED, NameIdPair.NULL);
-                            listener.stateChange(detached);
-                        }
-                        catch (Throwable t)
-                        {
-                            handleUncaughtExceptionInExecutorService(t);
-                        }
+                        StateChangeEvent detached = new StateChangeEvent(ReplicatedEnvironment.State.DETACHED, NameIdPair.NULL);
+                        listener.stateChange(detached);
                     }
-
-                    return null;
+                    catch (Throwable t)
+                    {
+                        handleUncaughtExceptionInExecutorService(t);
+                    }
                 }
-            }).addListener(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    int attemptNumber = 1;
-                    boolean restarted = false;
-                    Exception lastException = null;
-                    while(_state.get() == State.RESTARTING && attemptNumber <= _environmentRestartRetryLimit)
-                    {
-                        try
-                        {
-                            restartEnvironment();
-                            restarted = true;
-                            break;
-                        }
-                        catch(EnvironmentFailureException e)
-                        {
-                            LOGGER.warn("Failure whilst trying to restart environment (attempt number "
-                                    + "{} of {})", attemptNumber, _environmentRestartRetryLimit, e);
-                            lastException = e;
-                        }
-                        catch (Exception e)
-                        {
-                            LOGGER.error("Fatal failure whilst trying to restart environment", e);
-                            lastException = e;
-                            break;
-                        }
-                        attemptNumber++;
-                    }
 
-                    if (!restarted)
+                return null;
+            }).addListener(() ->
+            {
+                int attemptNumber = 1;
+                boolean restarted = false;
+                Exception lastException = null;
+                while(_state.get() == State.RESTARTING && attemptNumber <= _environmentRestartRetryLimit)
+                {
+                    try
                     {
-                        LOGGER.error("Failed to restart environment.");
-                        if (lastException != null)
-                        {
-                            handleUncaughtExceptionInExecutorService(lastException);
-                        }
+                        restartEnvironment();
+                        restarted = true;
+                        break;
+                    }
+                    catch(EnvironmentFailureException e)
+                    {
+                        LOGGER.warn("Failure whilst trying to restart environment (attempt number "
+                                + "{} of {})", attemptNumber, _environmentRestartRetryLimit, e);
+                        lastException = e;
+                    }
+                    catch (Exception e)
+                    {
+                        LOGGER.error("Fatal failure whilst trying to restart environment", e);
+                        lastException = e;
+                        break;
+                    }
+                    attemptNumber++;
+                }
+
+                if (!restarted)
+                {
+                    LOGGER.error("Failed to restart environment.");
+                    if (lastException != null)
+                    {
+                        handleUncaughtExceptionInExecutorService(lastException);
                     }
                 }
             }, _environmentJobExecutor);
@@ -773,19 +762,15 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
         if (_state.get() != State.CLOSING && _state.get() != State.CLOSED)
         {
-            _stateChangeExecutor.submit(new Runnable()
+            _stateChangeExecutor.submit(() ->
             {
-                @Override
-                public void run()
+                try
                 {
-                    try
-                    {
-                        stateChanged(stateChangeEvent);
-                    }
-                    catch (Throwable e)
-                    {
-                        handleUncaughtExceptionInExecutorService(e);
-                    }
+                    stateChanged(stateChangeEvent);
+                }
+                catch (Throwable e)
+                {
+                    handleUncaughtExceptionInExecutorService(e);
                 }
             });
         }
@@ -831,14 +816,10 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     {
         LOGGER.debug("Submitting a job to set cache size on {} to {}", _prettyGroupNodeName, cacheSize);
 
-        Callable<Void> task = new Callable<Void>()
+        Callable<Void> task = () ->
         {
-            @Override
-            public Void call()
-            {
-                setCacheSizeInternal(cacheSize);
-                return null;
-            }
+            setCacheSizeInternal(cacheSize);
+            return null;
         };
         submitEnvironmentTask(1, task, "setting cache size");
     }
@@ -848,14 +829,10 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     {
         LOGGER.debug("Submitting a job to set update mutable config on {}", _prettyGroupNodeName);
 
-        Callable<Void> task = new Callable<Void>()
+        Callable<Void> task = () ->
         {
-            @Override
-            public Void call()
-            {
-                EnvironmentUtils.updateMutableConfig(getEnvironment(), PARAMS_SET_BY_DEFAULT, true, object);
-                return null;
-            }
+            EnvironmentUtils.updateMutableConfig(getEnvironment(), PARAMS_SET_BY_DEFAULT, true, object);
+            return null;
         };
         submitEnvironmentTask(5, task, "updating mutable config");
 
@@ -868,14 +845,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         LOGGER.debug("Submitting a job to clean log files on {} ", _prettyGroupNodeName);
         int timeout = 5;
 
-        Callable<Integer> task = new Callable<Integer>()
-        {
-            @Override
-            public Integer call()
-            {
-                return getEnvironment().cleanLog();
-            }
-        };
+        Callable<Integer> task = () -> getEnvironment().cleanLog();
 
 
         Integer fileCount = submitEnvironmentTask(timeout, task, "cleaning log files");
@@ -888,16 +858,12 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         LOGGER.debug("Submitting a job to perform checkpoint on {} ", _prettyGroupNodeName);
         int timeout = 5;
 
-        Callable<Void> task = new Callable<Void>()
+        Callable<Void> task = () ->
         {
-            @Override
-            public Void call()
-            {
-                CheckpointConfig checkpointConfig = new CheckpointConfig();
-                checkpointConfig.setForce(force);
-                getEnvironment().checkpoint(checkpointConfig);
-                return null;
-            }
+            CheckpointConfig checkpointConfig = new CheckpointConfig();
+            checkpointConfig.setForce(force);
+            getEnvironment().checkpoint(checkpointConfig);
+            return null;
         };
 
         submitEnvironmentTask(timeout, task, "perform checkpoint");
@@ -909,15 +875,8 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         LOGGER.debug("Submitting a job to get environment statistics on {} ", _prettyGroupNodeName);
         int timeout = 5;
 
-        Callable<Map<String,Map<String,Object>>> task = new Callable<Map<String,Map<String,Object>>>()
-        {
-            @Override
-            public Map<String,Map<String,Object>> call()
-            {
-                return EnvironmentUtils.getEnvironmentStatistics(getEnvironment(), reset);
-
-            }
-        };
+        Callable<Map<String,Map<String,Object>>> task = () ->
+                EnvironmentUtils.getEnvironmentStatistics(getEnvironment(), reset);
 
         return submitEnvironmentTask(timeout, task, "get environment statistics");
     }
@@ -928,14 +887,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         LOGGER.debug("Submitting a job to get transaction statistics on {} ", _prettyGroupNodeName);
         int timeout = 5;
 
-        Callable<Map<String,Object>> task = new Callable<Map<String,Object>>()
-        {
-            @Override
-            public Map<String,Object> call()
-            {
-                return EnvironmentUtils.getTransactionStatistics(getEnvironment(), reset);
-            }
-        };
+        Callable<Map<String,Object>> task = () -> EnvironmentUtils.getTransactionStatistics(getEnvironment(), reset);
 
         return submitEnvironmentTask(timeout, task, "get transaction statistics");
     }
@@ -946,15 +898,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         LOGGER.debug("Submitting a job to get database statistics for {} on {} ", database, _prettyGroupNodeName);
         int timeout = 5;
 
-        Callable<Map<String,Object>> task = new Callable<Map<String,Object>>()
-        {
-            @Override
-            public Map<String, Object> call()
-            {
-
-                return EnvironmentUtils.getDatabaseStatistics(getEnvironment(), database, reset);
-            }
-        };
+        Callable<Map<String,Object>> task = () -> EnvironmentUtils.getDatabaseStatistics(getEnvironment(), database, reset);
 
         return submitEnvironmentTask(timeout, task, "get database statistics for '" + database + "'");
 
@@ -1255,30 +1199,26 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         // Transfer master contacts the group (using GroupAdmin) to request the mastership change.
         // It needs to be done asynchronously but not on the _environmentJobExecutor, as there is
         // no point delaying transfer master because we are restarting.
-        return _groupChangeExecutor.submit(new Callable<Void>()
+        return _groupChangeExecutor.submit(() ->
         {
-            @Override
-            public Void call() throws Exception
+            try
             {
-                try
+                ReplicationGroupAdmin admin = createReplicationGroupAdmin();
+                String newMaster = admin.transferMaster(Collections.singleton(nodeName),
+                                                        _masterTransferTimeout, TimeUnit.MILLISECONDS, true);
+                if (LOGGER.isDebugEnabled())
                 {
-                    ReplicationGroupAdmin admin = createReplicationGroupAdmin();
-                    String newMaster = admin.transferMaster(Collections.singleton(nodeName),
-                                                            _masterTransferTimeout, TimeUnit.MILLISECONDS, true);
-                    if (LOGGER.isDebugEnabled())
-                    {
-                        LOGGER.debug("The mastership has been transferred to " + newMaster);
-                    }
+                    LOGGER.debug("The mastership has been transferred to " + newMaster);
                 }
-                catch (RuntimeException e)
-                {
-                    String message = "Exception on transferring the mastership to " + _prettyGroupNodeName
-                            + " Master transfer timeout : " + _masterTransferTimeout;
-                    LOGGER.warn(message, e);
-                    throw handleDatabaseException(message, e);
-                }
-                return null;
             }
+            catch (RuntimeException e)
+            {
+                String message = "Exception on transferring the mastership to " + _prettyGroupNodeName
+                        + " Master transfer timeout : " + _masterTransferTimeout;
+                LOGGER.warn(message, e);
+                throw handleDatabaseException(message, e);
+            }
+            return null;
         });
     }
 
@@ -1331,7 +1271,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     private ReplicationGroupAdmin createReplicationGroupAdmin()
     {
-        final Set<InetSocketAddress> helpers = new HashSet<InetSocketAddress>();
+        final Set<InetSocketAddress> helpers = new HashSet<>();
         final ReplicationConfig repConfig = getEnvironment().getRepConfig();
 
         helpers.addAll(repConfig.getHelperSockets());
@@ -1616,14 +1556,10 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     private void createEnvironmentInSeparateThread(final File environmentPathFile, final EnvironmentConfig envConfig,
                                                    final ReplicationConfig replicationConfig, final Runnable postCreationAction)
     {
-        Future<Void> environmentFuture = _environmentJobExecutor.submit(new Callable<Void>()
+        Future<Void> environmentFuture = _environmentJobExecutor.submit(() ->
         {
-            @Override
-            public Void call() throws Exception
-            {
-                createEnvironment(environmentPathFile, envConfig, replicationConfig, postCreationAction);
-                return null;
-            }
+            createEnvironment(environmentPathFile, envConfig, replicationConfig, postCreationAction);
+            return null;
         });
 
         final long setUpTimeOutMillis = extractEnvSetupTimeoutMillis(replicationConfig);
@@ -1835,7 +1771,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         try
         {
             Map<String, Object> settings = objectMapper.readValue(applicationState, Map.class);
-            return new HashSet<String>((Collection<String>)settings.get(PERMITTED_NODE_LIST));
+            return new HashSet<>((Collection<String>) settings.get(PERMITTED_NODE_LIST));
         }
         catch (Exception e)
         {
@@ -1846,25 +1782,15 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     public static Collection<String> connectToHelperNodeAndCheckPermittedHosts(final String nodeName, final String hostPort, final String groupName, final String helperNodeName, final String helperHostPort, final int dbPingSocketTimeout)
     {
         ExecutorService executor = null;
-        Future<Collection<String>> future = null;
+        Future<Collection<String>> future;
         try
         {
             executor = Executors.newSingleThreadExecutor(new DaemonThreadFactory(String.format(
                             "PermittedHostsCheck-%s-%s",
                             groupName,
                             nodeName)));
-            future = executor.submit(new Callable<Collection<String>>()
-            {
-                @Override
-                public Collection<String> call() throws Exception
-                {
-                    return getPermittedHostsFromHelper(nodeName,
-                                                       groupName,
-                                                       helperNodeName,
-                                                       helperHostPort,
-                                                       dbPingSocketTimeout);
-                }
-            });
+            future = executor.submit(() ->
+                    getPermittedHostsFromHelper(nodeName, groupName, helperNodeName, helperHostPort, dbPingSocketTimeout));
 
             try
             {
@@ -2017,7 +1943,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     private byte[] permittedNodeListToBytes(Set<String> permittedNodeList)
     {
-        HashMap<String, Object> data = new HashMap<String, Object>();
+        HashMap<String, Object> data = new HashMap<>();
         data.put(PERMITTED_NODE_LIST, permittedNodeList);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectMapper objectMapper = new ObjectMapper();
@@ -2075,16 +2001,12 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     private void onException(final Exception e)
     {
-        _groupChangeExecutor.submit(new Runnable()
+        _groupChangeExecutor.submit(() ->
         {
-            @Override
-            public void run()
+            ReplicationGroupListener listener = _replicationGroupListener.get();
+            if (listener != null)
             {
-                ReplicationGroupListener listener = _replicationGroupListener.get();
-                if (listener != null)
-                {
-                    listener.onException(e);
-                }
+                listener.onException(e);
             }
         });
     }
@@ -2264,31 +2186,27 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
         private Map<ReplicationNode, NodeState> discoverNodeStates(Collection<ReplicationNode> electableNodes)
         {
-            final Map<ReplicationNode, NodeState> nodeStates = new HashMap<ReplicationNode, NodeState>();
-            Map<ReplicationNode, Future<Void>> futureMap = new HashMap<ReplicationNode, Future<Void>>();
+            final Map<ReplicationNode, NodeState> nodeStates = new HashMap<>();
+            Map<ReplicationNode, Future<Void>> futureMap = new HashMap<>();
 
             for (final ReplicationNode node : electableNodes)
             {
                 nodeStates.put(node, null);
 
-                Future<Void> future = _groupChangeExecutor.submit(new Callable<Void>()
+                Future<Void> future = _groupChangeExecutor.submit(() ->
                 {
-                    @Override
-                    public Void call()
+                    NodeState nodeStateObject = null;
+                    try
                     {
-                        NodeState nodeStateObject = null;
-                        try
-                        {
-                            nodeStateObject = getRemoteNodeState(_configuration.getGroupName(), node, _dbPingSocketTimeout);
-                        }
-                        catch (IOException | ServiceConnectFailedException | com.sleepycat.je.rep.utilint.BinaryProtocol.ProtocolException e )
-                        {
-                            // Cannot discover node states. The node state should be treated as UNKNOWN
-                        }
-
-                        nodeStates.put(node, nodeStateObject);
-                        return null;
+                        nodeStateObject = getRemoteNodeState(_configuration.getGroupName(), node, _dbPingSocketTimeout);
                     }
+                    catch (IOException | ServiceConnectFailedException | BinaryProtocol.ProtocolException e )
+                    {
+                        // Cannot discover node states. The node state should be treated as UNKNOWN
+                    }
+
+                    nodeStates.put(node, nodeStateObject);
+                    return null;
                 });
                 futureMap.put(node, future);
             }

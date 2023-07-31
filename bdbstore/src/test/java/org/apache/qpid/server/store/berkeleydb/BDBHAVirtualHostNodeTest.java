@@ -513,14 +513,14 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         _helper.awaitRemoteNodes(node1, 2);
 
         // Create new "proposed" permitted nodes list with a current node missing
-        List<String> amendedPermittedNodes = new ArrayList<String>();
+        List<String> amendedPermittedNodes = new ArrayList<>();
         amendedPermittedNodes.add(node1Address);
         amendedPermittedNodes.add(node2Address);
 
         // Try to update the permitted nodes attributes using the new list
         try
         {
-            node1.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, amendedPermittedNodes));
+            node1.setAttributes(Collections.singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, amendedPermittedNodes));
             fail("Operation to remove current group node from permitted nodes should have failed");
         }
         catch(IllegalArgumentException e)
@@ -561,7 +561,7 @@ public class BDBHAVirtualHostNodeTest extends UnitTestBase
         _helper.awaitRemoteNodes(node1, 2);
 
         // Create new "proposed" permitted nodes list for update
-        List<String> amendedPermittedNodes = new ArrayList<String>();
+        List<String> amendedPermittedNodes = new ArrayList<>();
         amendedPermittedNodes.add(node1Address);
         amendedPermittedNodes.add(node2Address);
         amendedPermittedNodes.add(node3Address);

@@ -84,15 +84,10 @@ public class DatabaseTemplate
 
     private DatabaseCallable<Void> runnableToCallable(final DatabaseRunnable databaseRunnable)
     {
-        return new DatabaseCallable<Void>()
+        return (sourceDatabase, targetDatabase, transaction) ->
         {
-
-            @Override
-            public Void call(Database sourceDatabase, Database targetDatabase, Transaction transaction)
-            {
-                databaseRunnable.run(sourceDatabase, targetDatabase, transaction);
-                return null;
-            }
+            databaseRunnable.run(sourceDatabase, targetDatabase, transaction);
+            return null;
         };
     }
 

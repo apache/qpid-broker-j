@@ -168,7 +168,7 @@ public class BDBStoreUpgradeTestPreparer
 
         session = connection.createSession(true,  Session.SESSION_TRANSACTED);
         // Create a priority queue on broker
-        final Map<String,Object> priorityQueueArguments = new HashMap<String, Object>();
+        final Map<String,Object> priorityQueueArguments = new HashMap<>();
         priorityQueueArguments.put(QueueArgumentsConverter.X_QPID_PRIORITIES,10);
         Queue priorityQueue = createAndBindQueueOnBroker(session, PRIORITY_QUEUE_NAME, priorityQueueArguments);
         MessageProducer priorityQueueProducer = session.createProducer(priorityQueue);
@@ -184,7 +184,7 @@ public class BDBStoreUpgradeTestPreparer
         priorityQueueProducer.close();
 
         // Create a queue that has a DLQ
-        final Map<String,Object> queueWithDLQArguments = new HashMap<String, Object>();
+        final Map<String,Object> queueWithDLQArguments = new HashMap<>();
         queueWithDLQArguments.put("x-qpid-dlq-enabled", true);
         queueWithDLQArguments.put("x-qpid-maximum-delivery-count", 2);
         createAndBindQueueOnBroker(session, QUEUE_WITH_DLQ_NAME, queueWithDLQArguments);

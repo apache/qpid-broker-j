@@ -22,7 +22,7 @@ package org.apache.qpid.server.store.berkeleydb.upgrade;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -57,22 +57,22 @@ import com.sleepycat.je.Transaction;
 
 public class UpgradeFrom7To8 extends AbstractStoreUpgrade
 {
-    private static final TypeReference<HashMap<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<HashMap<String,Object>>(){};
+    private static final TypeReference<HashMap<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>()
+    {
+    };
 
-    private static final DatabaseEntry MESSAGE_METADATA_SEQ_KEY = new DatabaseEntry("MESSAGE_METADATA_SEQ_KEY".getBytes(Charset.forName("UTF-8")));
+    private static final DatabaseEntry MESSAGE_METADATA_SEQ_KEY =
+            new DatabaseEntry("MESSAGE_METADATA_SEQ_KEY".getBytes(StandardCharsets.UTF_8));
 
     private static final SequenceConfig MESSAGE_METADATA_SEQ_CONFIG = SequenceConfig.DEFAULT.
                 setAllowCreate(true).
                 setWrap(true).
                 setCacheSize(100000);
 
-    private final Map<String, String> _defaultExchanges = new HashMap<String, String>()
-    {{
-        put("amq.direct", "direct");
-        put("amq.topic", "topic");
-        put("amq.fanout", "fanout");
-        put("amq.match", "headers");
-    }};
+    private final Map<String, String> _defaultExchanges = Map.of("amq.direct", "direct",
+            "amq.topic", "topic",
+            "amq.fanout", "fanout",
+            "amq.match", "headers");
 
     @Override
     public void performUpgrade(Environment environment, UpgradeInteractionHandler handler, ConfiguredObject<?> parent)
@@ -103,7 +103,7 @@ public class UpgradeFrom7To8 extends AbstractStoreUpgrade
         configVersionDb.close();
 
         String virtualHostName = parent.getName();
-        Map<String, Object> virtualHostAttributes = new HashMap<String, Object>();
+        Map<String, Object> virtualHostAttributes = new HashMap<>();
         virtualHostAttributes.put("modelVersion", stringifiedConfigVersion);
         virtualHostAttributes.put("name", virtualHostName);
         UUID virtualHostId = UUIDGenerator.generateVhostUUID(virtualHostName);
@@ -202,7 +202,7 @@ public class UpgradeFrom7To8 extends AbstractStoreUpgrade
         for (Map.Entry<String, String> defaultExchangeEntry : _defaultExchanges.entrySet())
         {
             UUID id = UUIDGenerator.generateExchangeUUID(defaultExchangeEntry.getKey(), virtualHostName);
-            Map<String, Object> exchangeAttributes = new HashMap<String, Object>();
+            Map<String, Object> exchangeAttributes = new HashMap<>();
             exchangeAttributes.put("name", defaultExchangeEntry.getKey());
             exchangeAttributes.put("type", defaultExchangeEntry.getValue());
             exchangeAttributes.put("lifetimePolicy", "PERMANENT");
