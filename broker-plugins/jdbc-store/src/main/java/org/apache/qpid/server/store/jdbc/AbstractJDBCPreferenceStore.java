@@ -142,14 +142,7 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
                 throw new IllegalStateException("PreferenceStore is not opened");
             }
 
-            performSafeTransaction(new BaseAction<Connection, Exception>()
-            {
-                @Override
-                public void performAction(final Connection connection) throws Exception
-                {
-                    updateOrCreateInternal(connection, preferenceRecords);
-                }
-            });
+            performSafeTransaction(connection -> updateOrCreateInternal(connection, preferenceRecords));
         }
         finally
         {
@@ -176,32 +169,28 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
                 throw new IllegalStateException("PreferenceStore is not opened");
             }
 
-            performSafeTransaction(new BaseAction<Connection, Exception>()
+            performSafeTransaction(connection ->
             {
-                @Override
-                public void performAction(final Connection connection) throws Exception
+                for (UUID id : preferenceRecordsToRemove)
                 {
-                    for (UUID id : preferenceRecordsToRemove)
+                    try (PreparedStatement deleteStatement = connection.prepareStatement(String.format(
+                            DELETE_FROM_PREFERENCES,
+                            getPreferencesTableName())))
                     {
-                        try (PreparedStatement deleteStatement = connection.prepareStatement(String.format(
-                                DELETE_FROM_PREFERENCES,
-                                getPreferencesTableName())))
+                        deleteStatement.setString(1, id.toString());
+                        int deletedCount = deleteStatement.executeUpdate();
+                        if (deletedCount == 1)
                         {
-                            deleteStatement.setString(1, id.toString());
-                            int deletedCount = deleteStatement.executeUpdate();
-                            if (deletedCount == 1)
-                            {
-                                getLogger().debug(String.format(
-                                        "Failed to delete preference with id %s : no such record",
-                                        id));
-                            }
+                            getLogger().debug(String.format(
+                                    "Failed to delete preference with id %s : no such record",
+                                    id));
                         }
                     }
-                    updateOrCreateInternal(connection, preferenceRecordsToAdd);
-                    if (preCommitAction != null)
-                    {
-                        preCommitAction.performAction(connection);
-                    }
+                }
+                updateOrCreateInternal(connection, preferenceRecordsToAdd);
+                if (preCommitAction != null)
+                {
+                    preCommitAction.performAction(connection);
                 }
             });
         }

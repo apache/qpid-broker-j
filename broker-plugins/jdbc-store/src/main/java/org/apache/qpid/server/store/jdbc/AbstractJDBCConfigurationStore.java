@@ -175,7 +175,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
     private Collection<ConfiguredObjectRecordImpl> doVisitAllConfiguredObjectRecords(ConfiguredObjectRecordHandler handler) throws SQLException
     {
-        Map<UUID, ConfiguredObjectRecordImpl> configuredObjects = new HashMap<UUID, ConfiguredObjectRecordImpl>();
+        Map<UUID, ConfiguredObjectRecordImpl> configuredObjects = new HashMap<>();
         final ObjectMapper objectMapper = new ObjectMapper();
         try (Connection conn = newAutoCommitConnection())
         {
@@ -416,15 +416,10 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
     private void upgradeFromV7(ConfiguredObject<?> parent) throws SQLException
     {
-        @SuppressWarnings("serial")
-        Map<String, String> defaultExchanges = new HashMap<String, String>()
-        {{
-            put("amq.direct", "direct");
-            put("amq.topic", "topic");
-            put("amq.fanout", "fanout");
-            put("amq.match", "headers");
-        }};
-
+        Map<String, String> defaultExchanges = Map.of("amq.direct", "direct",
+                "amq.topic", "topic",
+                "amq.fanout", "fanout",
+                "amq.match", "headers");
         Connection connection = newConnection();
         try
         {
@@ -443,7 +438,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                 stringifiedConfigVersion = "0." + configVersion;
             }
 
-            Map<String, Object> virtualHostAttributes = new HashMap<String, Object>();
+            Map<String, Object> virtualHostAttributes = new HashMap<>();
             virtualHostAttributes.put("modelVersion", stringifiedConfigVersion);
             virtualHostAttributes.put("name", virtualHostName);
 
@@ -452,8 +447,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
             getLogger().debug("Upgrader created VirtualHost configuration entry with config version {}", stringifiedConfigVersion);
 
-            Map<UUID,Map<String,Object>> bindingsToUpdate = new HashMap<UUID, Map<String, Object>>();
-            List<UUID> others = new ArrayList<UUID>();
+            Map<UUID,Map<String,Object>> bindingsToUpdate = new HashMap<>();
+            List<UUID> others = new ArrayList<>();
             final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
 
             PreparedStatement stmt = connection.prepareStatement("SELECT id, object_type, attributes FROM " + getConfiguredObjectsTableName());
@@ -527,11 +522,11 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             for (Map.Entry<String, String> defaultExchangeEntry : defaultExchanges.entrySet())
             {
                 UUID id = UUIDGenerator.generateExchangeUUID(defaultExchangeEntry.getKey(), virtualHostName);
-                Map<String, Object> exchangeAttributes = new HashMap<String, Object>();
+                Map<String, Object> exchangeAttributes = new HashMap<>();
                 exchangeAttributes.put("name", defaultExchangeEntry.getKey());
                 exchangeAttributes.put("type", defaultExchangeEntry.getValue());
                 exchangeAttributes.put("lifetimePolicy", "PERMANENT");
-                Map<String, UUID> parents = Collections.singletonMap("VirtualHost", virtualHostRecord.getId());
+                Map<String, UUID> parents = Map.of("VirtualHost", virtualHostRecord.getId());
                 ConfiguredObjectRecord exchangeRecord = new org.apache.qpid.server.store.ConfiguredObjectRecordImpl(id, "Exchange", exchangeAttributes, parents);
                 insertConfiguredObject(exchangeRecord, connection);
             }
@@ -845,7 +840,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
     {
         assertState(OPEN);
 
-        Collection<UUID> removed = new ArrayList<UUID>(objects.length);
+        Collection<UUID> removed = new ArrayList<>(objects.length);
         try
         {
 

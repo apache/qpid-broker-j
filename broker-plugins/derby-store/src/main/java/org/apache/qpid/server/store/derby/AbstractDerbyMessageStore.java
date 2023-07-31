@@ -286,8 +286,8 @@ public abstract class AbstractDerbyMessageStore extends AbstractJDBCMessageStore
             stmt = conn.prepareStatement(tableQuery);
             ResultSet rs = null;
 
-            List<String> schemas = new ArrayList<String>();
-            List<String> tables = new ArrayList<String>();
+            List<String> schemas = new ArrayList<>();
+            List<String> tables = new ArrayList<>();
 
             try
             {

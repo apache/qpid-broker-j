@@ -26,7 +26,6 @@ import org.apache.qpid.server.protocol.v1_0.store.LinkStore;
 import org.apache.qpid.server.protocol.v1_0.store.LinkStoreFactory;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
-import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
 
 @PluggableService
 public class BDBLinkStoreFactory implements LinkStoreFactory
