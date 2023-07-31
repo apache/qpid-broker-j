@@ -22,14 +22,13 @@ package org.apache.qpid.server.protocol.v0_8;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
-import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
@@ -186,10 +185,10 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
                 final MessageInstance messageInstance = association.getMessageInstance();
                 if (messageInstance != null && messageInstance.makeAcquisitionUnstealable(association.getConsumer()))
                 {
-                    return Collections.singleton(association);
+                    return Set.of(association);
                 }
             }
-            return Collections.emptySet();
+            return Set.of();
         }
     }
 

@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.io.IOException;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
@@ -93,25 +92,21 @@ public class BrokerDecoder extends ServerDecoder
             {
                 try
                 {
-                    return AccessController.doPrivileged(new PrivilegedExceptionAction<Integer>()
+                    return AccessController.doPrivileged((PrivilegedExceptionAction<Integer>) () ->
                     {
-                        @Override
-                        public Integer run() throws IOException, AMQFrameDecodingException
+                        int required1;
+                        while (true)
                         {
-                            int required;
-                            while (true)
+                            processInput(buf);
+
+                            required1 = decodable(buf);
+                            if (required1 != 0 || buf.getUnsignedShort(buf.position() + 1) != channelId)
                             {
-                                processInput(buf);
-
-                                required = decodable(buf);
-                                if (required != 0 || buf.getUnsignedShort(buf.position() + 1) != channelId)
-                                {
-                                    break;
-                                }
+                                break;
                             }
-
-                            return required;
                         }
+
+                        return required1;
                     }, channel.getAccessControllerContext());
                 }
                 catch (PrivilegedActionException e)

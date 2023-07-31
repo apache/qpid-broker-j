@@ -449,22 +449,24 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
         _unacknowledgedCount.decrementAndGet();
     }
 
-    private final StateChangeListener<MessageInstance, EntryState> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, EntryState>()
-    {
-        @Override
-        public void stateChanged(MessageInstance entry, EntryState oldState, EntryState newState)
-        {
-            if (isConsumerAcquiredStateForThis(oldState) && !isConsumerAcquiredStateForThis(newState))
+    private final StateChangeListener<MessageInstance, EntryState> _unacknowledgedMessageListener =
+            new StateChangeListener<>()
             {
-                removeUnacknowledgedMessage(entry);
-                entry.removeStateChangeListener(this);
-            }
-        }
+                @Override
+                public void stateChanged(MessageInstance entry, EntryState oldState, EntryState newState)
+                {
+                    if (isConsumerAcquiredStateForThis(oldState) && !isConsumerAcquiredStateForThis(newState))
+                    {
+                        removeUnacknowledgedMessage(entry);
+                        entry.removeStateChangeListener(this);
+                    }
+                }
 
-        private boolean isConsumerAcquiredStateForThis(EntryState state)
-        {
-            return state instanceof MessageInstance.ConsumerAcquiredState
-                   && ((MessageInstance.ConsumerAcquiredState) state).getConsumer().getTarget() == ConsumerTarget_0_8.this;
-        }
-    };
+                private boolean isConsumerAcquiredStateForThis(EntryState state)
+                {
+                    return state instanceof MessageInstance.ConsumerAcquiredState
+                           && ((MessageInstance.ConsumerAcquiredState) state).getConsumer().getTarget()
+                              == ConsumerTarget_0_8.this;
+                }
+            };
 }

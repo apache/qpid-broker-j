@@ -32,7 +32,7 @@ public class IncomingMessage
 {
 
     private final MessagePublishInfo _messagePublishInfo;
-    private final List<ContentBody> _contentChunks = new ArrayList<ContentBody>();
+    private final List<ContentBody> _contentChunks = new ArrayList<>();
 
     private ContentHeaderBody _contentHeaderBody;
     private MessageDestination _messageDestination;

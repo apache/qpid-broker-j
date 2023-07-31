@@ -143,8 +143,7 @@ public class ProtocolVersion  implements Comparable
     }
 
     private static final SortedSet<ProtocolVersion> _supportedVersions;
-    private static final Map<String, ProtocolVersion> _nameToVersionMap =
-                             new HashMap<String, ProtocolVersion>();
+    private static final Map<String, ProtocolVersion> _nameToVersionMap = new HashMap<>();
     private static final ProtocolVersion _defaultVersion;
 
     public static final ProtocolVersion v0_10 = new ProtocolVersion((byte)0,(byte)10);
@@ -153,11 +152,11 @@ public class ProtocolVersion  implements Comparable
     public static final ProtocolVersion v0_91 = new ProtocolVersion((byte)0,(byte)91);
     public static final ProtocolVersion v0_8 = new ProtocolVersion((byte)8,(byte)0);
 
-    private static final Map<ProtocolVersion, ProtocolVersion> INSTANCES = new ConcurrentHashMap<ProtocolVersion,ProtocolVersion>();
+    private static final Map<ProtocolVersion, ProtocolVersion> INSTANCES = new ConcurrentHashMap<>();
 
     static
     {
-        SortedSet<ProtocolVersion> versions = new TreeSet<ProtocolVersion>();
+        SortedSet<ProtocolVersion> versions = new TreeSet<>();
 
         versions.add(v0_10);
         _nameToVersionMap.put("0-10", v0_10);
