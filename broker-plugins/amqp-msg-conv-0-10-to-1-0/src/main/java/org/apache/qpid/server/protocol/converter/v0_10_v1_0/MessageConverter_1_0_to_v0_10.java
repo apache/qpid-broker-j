@@ -110,7 +110,7 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
                                                                           convertedContent.length);
         final int metadataSize = messageMetaData_0_10.getStorableSize();
 
-        return new StoredMessage<MessageMetaData_0_10>()
+        return new StoredMessage<>()
         {
             @Override
             public MessageMetaData_0_10 getMetaData()

@@ -354,8 +354,8 @@ class MessageConverter_1_0_to_v0_10Test extends UnitTestBase
 
         final List<Object> convertedList = new AmqpListToListConverter().toObject(getBytes(content));
         assertEquals(originalList.size(), (long) convertedList.size(), "Unexpected size");
-        assertEquals(new HashMap<String, Object>((Map) originalList.get(0)),
-                new HashMap<String, Object>((Map) convertedList.get(0)),
+        assertEquals(new HashMap<>((Map) originalList.get(0)),
+                new HashMap<>((Map) convertedList.get(0)),
                 "Unexpected map item");
     }
 
@@ -410,8 +410,8 @@ class MessageConverter_1_0_to_v0_10Test extends UnitTestBase
 
         final List<Object> convertedList = new AmqpListToListConverter().toObject(getBytes(content));
         assertEquals(originalList.size(), (long) convertedList.size(), "Unexpected size");
-        assertEquals(new HashMap<String, Object>((Map) originalList.get(0)),
-                new HashMap<String, Object>((Map) convertedList.get(0)),
+        assertEquals(new HashMap<>((Map) originalList.get(0)),
+                new HashMap<>((Map) convertedList.get(0)),
                 "Unexpected map item");
     }
 
