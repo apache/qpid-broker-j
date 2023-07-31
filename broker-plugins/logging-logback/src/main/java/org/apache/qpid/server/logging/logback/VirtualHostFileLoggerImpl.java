@@ -140,7 +140,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     @Override
     public List<LogFileDetails> getLogFiles()
     {
-        return _rolloverWatcher == null ? Collections.<LogFileDetails>emptyList() : _rolloverWatcher.getLogFileDetails();
+        return _rolloverWatcher == null ? Collections.emptyList() : _rolloverWatcher.getLogFileDetails();
     }
 
     @Override

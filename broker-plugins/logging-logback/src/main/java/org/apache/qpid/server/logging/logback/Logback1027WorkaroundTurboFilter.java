@@ -62,7 +62,7 @@ public class Logback1027WorkaroundTurboFilter extends TurboFilter
 
         if (seen == null)
         {
-            seen = Collections.newSetFromMap(new IdentityHashMap<Throwable, Boolean>());
+            seen = Collections.newSetFromMap(new IdentityHashMap<>());
         }
 
         if (!seen.add(t))
@@ -75,7 +75,7 @@ public class Logback1027WorkaroundTurboFilter extends TurboFilter
             int allSuppressedLength = allSuppressed.length;
             if (allSuppressedLength > 0)
             {
-                Set<Throwable> seenCopy = Collections.newSetFromMap(new IdentityHashMap<Throwable, Boolean>(seen.size()));
+                Set<Throwable> seenCopy = Collections.newSetFromMap(new IdentityHashMap<>(seen.size()));
                 seenCopy.addAll(seen);
                 for (int i = 0; i < allSuppressedLength; ++i)
                 {

@@ -65,7 +65,7 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
     {
         if(loggerName == null || "".equals(loggerName) || Logger.ROOT_LOGGER_NAME.equals(loggerName))
         {
-            return new Filter<ILoggingEvent>()
+            return new Filter<>()
             {
                 @Override
                 public FilterReply decide(final ILoggingEvent event)
@@ -77,7 +77,7 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
         else if(loggerName.endsWith(".*"))
         {
             final String prefixName = loggerName.substring(0,loggerName.length()-2);
-            return new Filter<ILoggingEvent>()
+            return new Filter<>()
             {
                 @Override
                 public FilterReply decide(final ILoggingEvent event)
@@ -92,7 +92,7 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
         }
         else
         {
-            return new Filter<ILoggingEvent>()
+            return new Filter<>()
             {
                 @Override
                 public FilterReply decide(final ILoggingEvent event)

@@ -23,7 +23,6 @@ package org.apache.qpid.server.logging.logback;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -43,14 +42,8 @@ import org.apache.qpid.server.logging.ZippedContent;
 public class RolloverWatcher implements RollingPolicyDecorator.RolloverListener
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(RolloverWatcher.class);
-    private static final Comparator<LogFileDetails> LAST_MODIFIED_COMPARATOR = new Comparator<LogFileDetails>()
-    {
-        @Override
-        public int compare(final LogFileDetails o1, final LogFileDetails o2)
-        {
-            return Long.compare(o2.getLastModified(), o1.getLastModified());
-        }
-    };
+    private static final Comparator<LogFileDetails> LAST_MODIFIED_COMPARATOR = (o1, o2) ->
+            Long.compare(o2.getLastModified(), o1.getLastModified());
     private final Path _activeFilePath;
     private volatile Collection<String> _rolledFiles;
     private volatile Path _baseFolder;
@@ -58,13 +51,13 @@ public class RolloverWatcher implements RollingPolicyDecorator.RolloverListener
     public RolloverWatcher(final String activeFileName)
     {
         _activeFilePath = new File(activeFileName).toPath();
-        _rolledFiles = Collections.emptyList();
+        _rolledFiles = List.of();
     }
 
     @Override
     public void onRollover(Path baseFolder, String[] relativeFileNames)
     {
-        _rolledFiles = Collections.unmodifiableCollection(Arrays.asList(relativeFileNames));
+        _rolledFiles = List.of(relativeFileNames);
         _baseFolder = baseFolder;
     }
 
