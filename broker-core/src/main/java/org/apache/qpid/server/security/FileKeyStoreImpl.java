@@ -83,7 +83,7 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
     @ManagedAttributeField
     private String _password;
 
-    private volatile Map<String, Certificate> _certificates = Collections.emptyMap();
+    private volatile Map<String, Certificate> _certificates = Map.of();
 
     static
     {
@@ -406,7 +406,7 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
     {
         if (_certificates.isEmpty())
         {
-            return Collections.emptyList();
+            return List.of();
         }
         return _certificates.entrySet().stream()
                 .filter(entry -> entry.getValue() instanceof X509Certificate)

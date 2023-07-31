@@ -28,25 +28,22 @@ public interface CommonAccessControlProvider<X> extends Comparable<X>
 {
     String PRIORITY = "priority";
 
-    Comparator<? super CommonAccessControlProvider> ACCESS_CONTROL_PROVIDER_COMPARATOR = new Comparator<CommonAccessControlProvider>()
-    {
-        @Override
-        public int compare(final CommonAccessControlProvider o1, final CommonAccessControlProvider o2)
-        {
-            if(o1.getPriority() < o2.getPriority())
+    Comparator<? super CommonAccessControlProvider> ACCESS_CONTROL_PROVIDER_COMPARATOR =
+            (Comparator<CommonAccessControlProvider>) (o1, o2) ->
             {
-                return -1;
-            }
-            else if (o1.getPriority() > o2.getPriority())
-            {
-                return 1;
-            }
-            else
-            {
-                return o1.getName().compareTo(o2.getName());
-            }
-        }
-    };
+                if(o1.getPriority() < o2.getPriority())
+                {
+                    return -1;
+                }
+                else if (o1.getPriority() > o2.getPriority())
+                {
+                    return 1;
+                }
+                else
+                {
+                    return o1.getName().compareTo(o2.getName());
+                }
+            };
 
     String getName();
     int getPriority();

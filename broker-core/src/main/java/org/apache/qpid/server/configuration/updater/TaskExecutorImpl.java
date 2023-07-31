@@ -310,22 +310,18 @@ public class TaskExecutorImpl implements TaskExecutor
         @Override
         public T call() throws Exception
         {
-            T result =  Subject.doAs(_contextSubject, new PrivilegedAction<T>()
+            T result =  Subject.doAs(_contextSubject, (PrivilegedAction<T>) () ->
+            {
+                try
                 {
-                    @Override
-                    public T run()
-                    {
-                        try
-                        {
-                            return _userTask.execute();
-                        }
-                        catch(Throwable t)
-                        {
-                            _throwable.set(t);
-                        }
-                        return null;
-                    }
-                });
+                    return _userTask.execute();
+                }
+                catch(Throwable t)
+                {
+                    _throwable.set(t);
+                }
+                return null;
+            });
             Throwable t = _throwable.get();
             if (t != null)
             {
@@ -402,22 +398,11 @@ public class TaskExecutorImpl implements TaskExecutor
             else
             {
                 final Subject subject = getContextSubject();
-                _executor.execute(new Runnable()
+                _executor.execute(() -> Subject.doAs(subject, (PrivilegedAction<Void>) () ->
                 {
-                    @Override
-                    public void run()
-                    {
-                        Subject.doAs(subject, new PrivilegedAction<Void>()
-                        {
-                            @Override
-                            public Void run()
-                            {
-                                command.run();
-                                return null;
-                            }
-                        });
-                    }
-                });
+                    command.run();
+                    return null;
+                }));
             }
 
         }

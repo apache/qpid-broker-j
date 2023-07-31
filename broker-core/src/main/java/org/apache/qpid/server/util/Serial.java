@@ -34,14 +34,7 @@ public class Serial
     {
     }
 
-    public static final Comparator<Integer> COMPARATOR = new Comparator<Integer>()
-    {
-        @Override
-        public int compare(Integer s1, Integer s2)
-        {
-            return Serial.compare(s1, s2);
-        }
-    };
+    public static final Comparator<Integer> COMPARATOR = Serial::compare;
 
     /**
      * Compares two numbers using serial arithmetic.
@@ -53,37 +46,37 @@ public class Serial
      * first argument is less than, equal to, or greater than the
      * second
      */
-    public static final int compare(int s1, int s2)
+    public static int compare(int s1, int s2)
     {
         return s1 - s2;
     }
 
-    public static final boolean lt(int s1, int s2)
+    public static boolean lt(int s1, int s2)
     {
         return compare(s1, s2) < 0;
     }
 
-    public static final boolean le(int s1, int s2)
+    public static boolean le(int s1, int s2)
     {
         return compare(s1, s2) <= 0;
     }
 
-    public static final boolean gt(int s1, int s2)
+    public static boolean gt(int s1, int s2)
     {
         return compare(s1, s2) > 0;
     }
 
-    public static final boolean ge(int s1, int s2)
+    public static boolean ge(int s1, int s2)
     {
         return compare(s1, s2) >= 0;
     }
 
-    public static final boolean eq(int s1, int s2)
+    public static boolean eq(int s1, int s2)
     {
         return s1 == s2;
     }
 
-    public static final int min(int s1, int s2)
+    public static int min(int s1, int s2)
     {
         if (lt(s1, s2))
         {
@@ -95,7 +88,7 @@ public class Serial
         }
     }
 
-    public static final int max(int s1, int s2)
+    public static int max(int s1, int s2)
     {
         if (gt(s1, s2))
         {

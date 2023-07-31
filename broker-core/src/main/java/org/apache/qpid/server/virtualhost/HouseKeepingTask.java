@@ -53,21 +53,17 @@ public abstract class HouseKeepingTask implements Runnable
 
         try
         {
-            AccessController.doPrivileged(new PrivilegedAction<Object>()
+            AccessController.doPrivileged((PrivilegedAction<Object>) () ->
             {
-                @Override
-                public Object run()
+                try
                 {
-                    try
-                    {
-                        execute();
-                    }
-                    catch (ConnectionScopedRuntimeException e)
-                    {
-                        LOGGER.warn("Execution of housekeeping task failed", e);
-                    }
-                    return null;
+                    execute();
                 }
+                catch (ConnectionScopedRuntimeException e)
+                {
+                    LOGGER.warn("Execution of housekeeping task failed", e);
+                }
+                return null;
             }, _accessControlContext);
         }
         finally

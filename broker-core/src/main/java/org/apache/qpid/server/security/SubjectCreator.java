@@ -128,7 +128,7 @@ public class SubjectCreator
 
     Set<Principal> getGroupPrincipals(Principal userPrincipal)
     {
-        Set<Principal> principals = new HashSet<Principal>();
+        Set<Principal> principals = new HashSet<>();
         for (GroupProvider groupProvider : _groupProviders)
         {
             Set<Principal> groups = groupProvider.getGroupPrincipalsForUser(userPrincipal);

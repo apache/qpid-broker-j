@@ -329,11 +329,11 @@ public class InjectedAttributeTest extends UnitTestBase
 
         final ConfiguredObjectOperation foundOperation = allOperations.get("fly");
 
-        Object result = foundOperation.perform(testCar, Collections.<String, Object>singletonMap("height", 0));
+        Object result = foundOperation.perform(testCar, Map.of("height", 0));
 
         assertEquals(Boolean.TRUE, result, "Car should be able to fly at 0m");
 
-        result = foundOperation.perform(testCar, Collections.<String, Object>singletonMap("height", 5000));
+        result = foundOperation.perform(testCar, Map.of("height", 5000));
 
         assertEquals(Boolean.FALSE, result, "Car should not be able to fly at 5000m");
     }
@@ -344,8 +344,7 @@ public class InjectedAttributeTest extends UnitTestBase
     {
         final Method method = InjectedAttributeTest.class.getDeclaredMethod("saySomething", TestCar.class, String.class, Integer.TYPE);
         final OperationParameter[] params = new OperationParameter[1];
-        params[0] = new OperationParameterFromInjection("count", Integer.TYPE, Integer.TYPE, "", "", new String[0],
-                                                        false);
+        params[0] = new OperationParameterFromInjection("count", Integer.TYPE, Integer.TYPE, "", "", new String[0], false);
         final ConfiguredObjectInjectedOperation<?> hello =
                 new ConfiguredObjectInjectedOperation<TestCar<?>>("sayHello", "", true,
                                                                   false,
@@ -368,13 +367,13 @@ public class InjectedAttributeTest extends UnitTestBase
         final ConfiguredObjectOperation helloOperation = allOperations.get("sayHello");
         final ConfiguredObjectOperation goodbyeOperation = allOperations.get("sayGoodbye");
 
-        Object result = helloOperation.perform(testCar, Collections.<String, Object>singletonMap("count", 3));
+        Object result = helloOperation.perform(testCar, Map.of("count", 3));
 
         assertEquals(Arrays.asList("Hello", "Hello", "Hello"), result, "Car should say 'Hello' 3 times");
 
-        result = goodbyeOperation.perform(testCar, Collections.<String, Object>singletonMap("count", 1));
+        result = goodbyeOperation.perform(testCar, Map.of("count", 1));
 
-        assertEquals(Collections.singletonList("Goodbye"), result, "Car say 'Goodbye' once");
+        assertEquals(List.of("Goodbye"), result, "Car say 'Goodbye' once");
     }
 
     @Test

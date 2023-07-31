@@ -36,26 +36,19 @@ public interface InstanceProperties
 
     public Object getProperty(Property prop);
 
-    InstanceProperties EMPTY = new InstanceProperties()
-        {
-            @Override
-            public Object getProperty(final Property prop)
-            {
-                return null;
-            }
-        };
+    InstanceProperties EMPTY = prop -> null;
 
     class Factory
     {
         public static InstanceProperties fromMap(Map<Property, Object> map)
         {
-            final Map<Property,Object> props = new EnumMap<Property,Object>(map);
+            final Map<Property,Object> props = new EnumMap<>(map);
             return new MapInstanceProperties(props);
         }
 
         public static Map<Property, Object> asMap(InstanceProperties props)
         {
-            EnumMap<Property, Object> map = new EnumMap<Property,Object>(Property.class);
+            EnumMap<Property, Object> map = new EnumMap<>(Property.class);
 
             for(Property prop : Property.values())
             {

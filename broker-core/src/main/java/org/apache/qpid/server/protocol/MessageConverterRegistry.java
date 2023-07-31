@@ -30,8 +30,7 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 public class MessageConverterRegistry
 {
     private static final Map<Class<? extends ServerMessage>, Map<Class<? extends ServerMessage>, MessageConverter>>
-            CONVERTERS =
-            new HashMap<Class<? extends ServerMessage>, Map<Class<? extends ServerMessage>, MessageConverter>>();
+            CONVERTERS = new HashMap<>();
 
     static
     {
@@ -41,7 +40,7 @@ public class MessageConverterRegistry
             Map<Class<? extends ServerMessage>, MessageConverter> map = CONVERTERS.get(converter.getInputClass());
             if(map == null)
             {
-                map = new HashMap<Class<? extends ServerMessage>, MessageConverter>();
+                map = new HashMap<>();
                 CONVERTERS.put(converter.getInputClass(), map);
             }
             map.put(converter.getOutputClass(),converter);

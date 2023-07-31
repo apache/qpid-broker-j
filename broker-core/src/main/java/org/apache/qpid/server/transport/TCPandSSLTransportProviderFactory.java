@@ -20,9 +20,7 @@
  */
 package org.apache.qpid.server.transport;
 
-import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.qpid.server.model.Transport;
@@ -38,9 +36,7 @@ public class TCPandSSLTransportProviderFactory implements TransportProviderFacto
     @Override
     public Set<Set<Transport>> getSupportedTransports()
     {
-        return new HashSet<Set<Transport>>(Arrays.asList(EnumSet.of(Transport.TCP),
-                                                         EnumSet.of(Transport.SSL),
-                                                         EnumSet.of(Transport.TCP,Transport.SSL)));
+        return Set.of(EnumSet.of(Transport.TCP), EnumSet.of(Transport.SSL), EnumSet.of(Transport.TCP, Transport.SSL));
     }
 
     @Override

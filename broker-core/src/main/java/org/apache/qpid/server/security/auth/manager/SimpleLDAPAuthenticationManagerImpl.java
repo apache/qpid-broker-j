@@ -20,7 +20,6 @@
 package org.apache.qpid.server.security.auth.manager;
 
 import static java.util.Collections.disjoint;
-import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 
 import java.security.GeneralSecurityException;
@@ -342,7 +341,7 @@ public class SimpleLDAPAuthenticationManagerImpl
     @Override
     public List<String> getMechanisms()
     {
-        return singletonList(PlainNegotiator.MECHANISM);
+        return List.of(PlainNegotiator.MECHANISM);
     }
 
     /**
@@ -441,7 +440,7 @@ public class SimpleLDAPAuthenticationManagerImpl
         {
             ctx = createInitialDirContext(env, gssapiIdentity);
 
-            Set<Principal> groups = Collections.emptySet();
+            Set<Principal> groups = Set.of();
             if (isGroupSearchRequired())
             {
                 if (!providerAuthUrl.equals(getProviderUrl()))

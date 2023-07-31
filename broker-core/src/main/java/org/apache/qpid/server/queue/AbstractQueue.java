@@ -160,15 +160,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractQueue.class);
 
-    private static final QueueNotificationListener NULL_NOTIFICATION_LISTENER = new QueueNotificationListener()
+    private static final QueueNotificationListener NULL_NOTIFICATION_LISTENER = (notification, queue, notificationMsg) ->
     {
-        @Override
-        public void notifyClients(final NotificationCheck notification,
-                                  final Queue queue,
-                                  final String notificationMsg)
-        {
 
-        }
     };
 
     private static final String UTF8 = StandardCharsets.UTF_8.name();
@@ -302,7 +296,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private volatile int _liveConsumers;
 
     private boolean _closing;
-    private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
+    private Map<String, String> _mimeTypeToFileExtension = Map.of();
     private AdvanceConsumersTask _queueHouseKeepingTask;
     private volatile int _bindingCount;
     private volatile RejectPolicyHandler _rejectPolicyHandler;
@@ -333,22 +327,20 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         if (isDurable() && (getLifetimePolicy()  == LifetimePolicy.DELETE_ON_CONNECTION_CLOSE ||
                 getLifetimePolicy() == LifetimePolicy.DELETE_ON_SESSION_END))
         {
-            Subject.doAs(getSubjectWithAddedSystemRights(),
-                         (PrivilegedAction<Object>) () -> {
-                             setAttributes(Collections.<String, Object>singletonMap(AbstractConfiguredObject.DURABLE,
-                                                                                    false));
-                             return null;
-                         });
+            Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () ->
+            {
+                setAttributes(Map.of(AbstractConfiguredObject.DURABLE,  false));
+                return null;
+            });
         }
 
-        if(!isDurable() && getMessageDurability() != MessageDurability.NEVER)
+        if (!isDurable() && getMessageDurability() != MessageDurability.NEVER)
         {
-            Subject.doAs(getSubjectWithAddedSystemRights(),
-                         (PrivilegedAction<Object>) () -> {
-                             setAttributes(Collections.<String, Object>singletonMap(Queue.MESSAGE_DURABILITY,
-                                                                                    MessageDurability.NEVER));
-                             return null;
-                         });
+            Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () ->
+            {
+                setAttributes(Map.of(Queue.MESSAGE_DURABILITY, MessageDurability.NEVER));
+                return null;
+            });
         }
 
         validateOrCreateAlternateBinding(this, true);
@@ -379,7 +371,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private Set<SessionPrincipal> getSessionPrincipals()
     {
         Subject activeSubject = Subject.getSubject(AccessController.getContext());
-        return activeSubject == null ? Collections.emptySet() : activeSubject.getPrincipals(SessionPrincipal.class);
+        return activeSubject == null ? Set.of() : activeSubject.getPrincipals(SessionPrincipal.class);
     }
 
     @Override
@@ -555,14 +547,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         final List<String> filterArguments = filterValue.values().iterator().next();
                         // check the arguments are valid
                         filterFactory.newInstance(filterArguments);
-                        _defaultFiltersMap.put(name, new Callable<MessageFilter>()
-                        {
-                            @Override
-                            public MessageFilter call()
-                            {
-                                return filterFactory.newInstance(filterArguments);
-                            }
-                        });
+                        _defaultFiltersMap.put(name, () -> filterFactory.newInstance(filterArguments));
                     }
                     else
                     {
@@ -580,14 +565,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         if (isHoldOnPublishEnabled())
         {
-            _holdMethods.add(new HoldMethod()
-            {
-                @Override
-                public boolean isHeld(final MessageReference<?> messageReference, final long evaluationTime)
-                {
-                    return messageReference.getMessage().getMessageHeader().getNotValidBefore() >= evaluationTime;
-                }
-            });
+            _holdMethods.add((messageReference, evaluationTime) ->
+                    messageReference.getMessage().getMessageHeader().getNotValidBefore() >= evaluationTime);
         }
 
         if (getAlternateBinding() != null)
@@ -2096,7 +2075,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                                          input -> null,
                                                                          MoreExecutors.directExecutor());
 
-            Futures.addCallback(dischargingFuture, new FutureCallback<Void>()
+            Futures.addCallback(dischargingFuture, new FutureCallback<>()
             {
                 @Override
                 public void onSuccess(final Void result)
@@ -3375,7 +3354,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         if (clazz == org.apache.qpid.server.model.Consumer.class)
         {
             return _queueConsumerManager == null
-                    ? Collections.<C>emptySet()
+                    ? Set.of()
                     : (Collection<C>) Lists.newArrayList(_queueConsumerManager.getAllIterator());
         }
         else return super.getChildren(clazz);

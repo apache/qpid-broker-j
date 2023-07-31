@@ -21,7 +21,6 @@ package org.apache.qpid.server.store.preferences;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -91,7 +90,7 @@ public class PreferencesRecoverer
         if (!corruptedRecords.isEmpty())
         {
             LOGGER.warn("Removing unrecoverable corrupted preferences: {}", corruptedRecords);
-            preferencesStore.replace(corruptedRecords, Collections.<PreferenceRecord>emptySet());
+            preferencesStore.replace(corruptedRecords, Set.of());
         }
     }
 

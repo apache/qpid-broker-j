@@ -51,7 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
@@ -130,7 +129,6 @@ import org.apache.qpid.server.model.VirtualHostAccessControlProvider;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.plugin.ConnectionValidator;
@@ -144,12 +142,10 @@ import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.CompoundAccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SubjectFixedResultAccessControl;
-import org.apache.qpid.server.security.SubjectFixedResultAccessControl.ResultCalculator;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
 import org.apache.qpid.server.stats.StatisticsReportingTask;
-import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.Event;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -158,7 +154,6 @@ import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.VirtualHostStoreUpgraderAndRecoverer;
-import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
@@ -187,7 +182,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private static final int HOUSEKEEPING_SHUTDOWN_TIMEOUT = 5;
 
     private final Collection<ConnectionValidator> _connectionValidators = new ArrayList<>();
-    private final Set<AMQPConnection<?>> _connections = newSetFromMap(new ConcurrentHashMap<AMQPConnection<?>, Boolean>());
+    private final Set<AMQPConnection<?>> _connections = newSetFromMap(new ConcurrentHashMap<>());
     private final AccessControlContext _housekeepingJobContext;
     private final AccessControlContext _fileSystemSpaceCheckerJobContext;
     private final AtomicBoolean _acceptsConnections = new AtomicBoolean(false);
@@ -205,9 +200,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final AtomicLong _maximumMessageSize = new AtomicLong();
     private final AtomicBoolean _blocked = new AtomicBoolean();
     private final Map<String, MessageDestination> _systemNodeDestinations =
-            Collections.synchronizedMap(new HashMap<String,MessageDestination>());
+            Collections.synchronizedMap(new HashMap<>());
     private final Map<String, MessageSource> _systemNodeSources =
-            Collections.synchronizedMap(new HashMap<String,MessageSource>());
+            Collections.synchronizedMap(new HashMap<>());
     private final EventLogger _eventLogger;
     private final VirtualHostNode<?> _virtualHostNode;
     private final AtomicLong _targetSize = new AtomicLong(100 * 1024 * 1024);
@@ -216,14 +211,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final ConfigurationChangeListener _accessControlProviderListener = new AccessControlProviderListener();
     private final AccessControl _accessControl;
     private final AtomicBoolean _directMemoryExceedsTargetReported = new AtomicBoolean();
-    private final AccessControl _systemUserAllowed = new SubjectFixedResultAccessControl(new ResultCalculator()
-    {
-        @Override
-        public Result getResult(final Subject subject)
-        {
-            return isSystemSubject(subject) ? Result.ALLOWED : Result.DEFER;
-        }
-    }, Result.DEFER);
+    private final AccessControl _systemUserAllowed =
+            new SubjectFixedResultAccessControl(subject -> isSystemSubject(subject) ? Result.ALLOWED : Result.DEFER, Result.DEFER);
     private final VirtualHostConnectionLimiter _connectionLimiter;
     private final MessageDestination _defaultDestination;
     private final FileSystemSpaceChecker _fileSystemSpaceChecker;
@@ -309,9 +298,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
         else
         {
-            _accessControl =  new CompoundAccessControl(
-                    Collections.<AccessControl<?>>emptyList(), Result.DEFER
-            );
+            _accessControl =  new CompoundAccessControl(List.of(), Result.DEFER);
         }
 
         _defaultDestination = new DefaultDestination(this, _accessControl);
@@ -726,13 +713,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             ListenableFuture<Void> addStandardExchange(String name, String type)
             {
 
-                Map<String, Object> attributes = new HashMap<String, Object>();
+                Map<String, Object> attributes = new HashMap<>();
                 attributes.put(Exchange.NAME, name);
                 attributes.put(Exchange.TYPE, type);
                 attributes.put(Exchange.ID, UUIDGenerator.generateExchangeUUID(name, getName()));
                 final ListenableFuture<Exchange<?>> future = addExchangeAsync(attributes);
                 final SettableFuture<Void> returnVal = SettableFuture.create();
-                addFutureCallback(future, new FutureCallback<Exchange<?>>()
+                addFutureCallback(future, new FutureCallback<>()
                 {
                     @Override
                     public void onSuccess(final Exchange<?> result)
@@ -849,30 +836,23 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         InternalMessage internalMessage = InternalMessage.createMessage(getMessageStore(), header, body, message.isPersistent(), address);
         AutoCommitTransaction txn = new AutoCommitTransaction(getMessageStore());
-        final InstanceProperties instanceProperties =
-                new InstanceProperties()
-                {
-                    @Override
-                    public Object getProperty(final Property prop)
-                    {
-                        switch (prop)
-                        {
-                            case EXPIRATION:
-                                Date expiration = message.getExpiration();
-                                return expiration == null ? 0 : expiration.getTime();
-                            case IMMEDIATE:
-                                return false;
-                            case PERSISTENT:
-                                return message.isPersistent();
-                            case MANDATORY:
-                                return false;
-                            case REDELIVERED:
-                                return false;
-                            default:
-                                return null;
-                        }
-                    }
-                };
+        final InstanceProperties instanceProperties = prop ->
+        {
+            switch (prop)
+            {
+                case EXPIRATION:
+                    Date expiration = message.getExpiration();
+                    return expiration == null ? 0 : expiration.getTime();
+                case IMMEDIATE:
+                case MANDATORY:
+                case REDELIVERED:
+                    return false;
+                case PERSISTENT:
+                    return message.isPersistent();
+                default:
+                    return null;
+            }
+        };
         final RoutingResult<InternalMessage> result =
                 destination.route(internalMessage, address, instanceProperties);
         return result.send(txn, null);
@@ -955,15 +935,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     try
                     {
                         final Map<UUID, String> queueMap = new HashMap<>();
-                        getDurableConfigurationStore().reload(new ConfiguredObjectRecordHandler()
+                        getDurableConfigurationStore().reload(record ->
                         {
-                            @Override
-                            public void handle(final ConfiguredObjectRecord record)
+                            if(record.getType().equals(Queue.class.getSimpleName()))
                             {
-                                if(record.getType().equals(Queue.class.getSimpleName()))
-                                {
-                                    queueMap.put(record.getId(), (String) record.getAttributes().get(ConfiguredObject.NAME));
-                                }
+                                queueMap.put(record.getId(), (String) record.getAttributes().get(ConfiguredObject.NAME));
                             }
                         });
                         MessageStoreSerializer serializer = new QpidServiceLoader().getInstancesByType(MessageStoreSerializer.class).get(MessageStoreSerializer.LATEST);
@@ -1065,16 +1041,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                             _messageStore.openMessageStore(AbstractVirtualHost.this);
                             checkMessageStoreEmpty();
                             final Map<String, UUID> queueMap = new HashMap<>();
-                            getDurableConfigurationStore().reload(new ConfiguredObjectRecordHandler()
+                            getDurableConfigurationStore().reload(record ->
                             {
-                                @Override
-                                public void handle(final ConfiguredObjectRecord record)
+                                if (record.getType().equals(Queue.class.getSimpleName()))
                                 {
-                                    if (record.getType().equals(Queue.class.getSimpleName()))
-                                    {
-                                        queueMap.put((String) record.getAttributes().get(ConfiguredObject.NAME),
-                                                     record.getId());
-                                    }
+                                    queueMap.put((String) record.getAttributes().get(ConfiguredObject.NAME),
+                                                 record.getId());
                                 }
                             });
 
@@ -1356,18 +1328,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     try
                     {
 
-                        final T node =  Subject.doAs(getSubjectWithAddedSystemRights(),
-                                                     new PrivilegedAction<T>()
-                                                     {
-                                                         @Override
-                                                         public T run()
-                                                         {
-                                                             return (T) doSync(createChildAsync(childClass,
-                                                                                                attributes));
-
-                                                         }
-                                                     }
-                                                    );
+                        final T node =  Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<T>) () ->
+                                (T) doSync(createChildAsync(childClass, attributes)));
 
                         if (node != null)
                         {
@@ -1579,12 +1541,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                     returnVal.set(result);
                                 }
 
-                                @Override
-                                public void onFailure(final Throwable t)
-                                {
-                                    returnVal.setException(t);
-                                }
-                            }, getTaskExecutor());
+                              @Override
+                              public void onFailure(final Throwable t)
+                              {
+                                  returnVal.setException(t);
+                              }
+                          }, getTaskExecutor());
         return returnVal;
 
     }
@@ -2126,7 +2088,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         private Map<String, Object> getHeaders()
         {
-            return _message.getHeaders() == null ? Collections.<String, Object>emptyMap() : _message.getHeaders();
+            return _message.getHeaders() == null ? Map.of() : _message.getHeaders();
         }
     }
 
@@ -2311,15 +2273,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     }
                 };
 
-                boolean acquired = messageInstance.acquireOrSteal(new Runnable()
-                                                                    {
-                                                                        @Override
-                                                                        public void run()
-                                                                        {
-                                                                            ServerTransaction txn = new AutoCommitTransaction(store);
-                                                                            txn.dequeue(messageInstance.getEnqueueRecord(), deleteAction);
-                                                                        }
-                                                                    });
+                boolean acquired = messageInstance.acquireOrSteal(() ->
+                {
+                    ServerTransaction txn1 = new AutoCommitTransaction(store);
+                    txn1.dequeue(messageInstance.getEnqueueRecord(), deleteAction);
+                });
                 if(acquired)
                 {
                     txn.dequeue(messageInstance.getEnqueueRecord(), deleteAction);
@@ -2487,31 +2445,20 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     protected ListenableFuture<Void> doStop()
     {
         final List<VirtualHostLogger> loggers = new ArrayList<>(getChildren(VirtualHostLogger.class));
-        return doAfter(closeConnections(), new Callable<ListenableFuture<Void>>()
-                                            {
-                                                @Override
-                                                public ListenableFuture<Void> call() throws Exception
-                                                {
-                                                    return closeChildren();
-                                                }
-                                            }).then(new Runnable()
+        return doAfter(closeConnections(), () -> closeChildren()).then(() ->
         {
-            @Override
-            public void run()
+            shutdownHouseKeeping();
+            closeNetworkConnectionScheduler();
+            if (_linkRegistry != null)
             {
-                shutdownHouseKeeping();
-                closeNetworkConnectionScheduler();
-                if (_linkRegistry != null)
-                {
-                    _linkRegistry.close();
-                }
-                closeMessageStore();
-                stopPreferenceTaskExecutor();
-                closePreferenceStore();
-                setState(State.STOPPED);
-                stopLogging(loggers);
-                closeConnectionLimiter();
+                _linkRegistry.close();
             }
+            closeMessageStore();
+            stopPreferenceTaskExecutor();
+            closePreferenceStore();
+            setState(State.STOPPED);
+            stopLogging(loggers);
+            closeConnectionLimiter();
         });
     }
 
@@ -2522,7 +2469,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             throw new IllegalStateException("Cannot create user preferences in not fully initialized virtual host");
         }
-        return new UserPreferencesImpl(_preferenceTaskExecutor, object, _preferenceStore, Collections.<Preference>emptySet());
+        return new UserPreferencesImpl(_preferenceTaskExecutor, object, _preferenceStore, Set.of());
     }
 
     private void stopPreferenceTaskExecutor()
@@ -2724,14 +2671,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         if (_createDefaultExchanges)
         {
-            return doAfter(createDefaultExchanges(), new Runnable()
+            return doAfter(createDefaultExchanges(), () ->
             {
-                @Override
-                public void run()
-                {
-                    _createDefaultExchanges = false;
-                    postCreateDefaultExchangeTasks();
-                }
+                _createDefaultExchanges = false;
+                postCreateDefaultExchangeTasks();
             });
         }
         else
@@ -2755,14 +2698,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         // propagate any exception thrown during recovery into HouseKeepingTaskExecutor to handle them accordingly
         // TODO if message recovery fails we ought to be transitioning the VH into ERROR and releasing the thread-pools etc.
         final ListenableFuture<Void> recoveryResult = _messageStoreRecoverer.recover(this);
-        recoveryResult.addListener(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                Futures.getUnchecked(recoveryResult);
-            }
-        }, _houseKeepingTaskExecutor);
+        recoveryResult.addListener(() -> Futures.getUnchecked(recoveryResult), _houseKeepingTaskExecutor);
 
         State finalState = State.ERRORED;
         try
@@ -2809,7 +2745,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         final SettableFuture<Void> returnVal = SettableFuture.create();
         try
         {
-            addFutureCallback(doRestart(),new FutureCallback<Void>()
+            addFutureCallback(doRestart(), new FutureCallback<>()
                               {
                                   @Override
                                   public void onSuccess(final Void result)
@@ -2820,7 +2756,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                   @Override
                                   public void onFailure(final Throwable t)
                                   {
-                                      doAfterAlways(onRestartFailure(), ()-> returnVal.setException(t));
+                                      doAfterAlways(onRestartFailure(), () -> returnVal.setException(t));
                                   }
                               }, getTaskExecutor()
                              );
@@ -2855,7 +2791,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                 final ListenableFuture<Void> childOpenFuture = child.openAsync();
                                 childOpenFutures.add(childOpenFuture);
 
-                                addFutureCallback(childOpenFuture, new FutureCallback<Void>()
+                                addFutureCallback(childOpenFuture, new FutureCallback<>()
                                 {
                                     @Override
                                     public void onSuccess(final Void result)
@@ -2866,10 +2802,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                     public void onFailure(final Throwable t)
                                     {
                                         LOGGER.error("Exception occurred while opening {} : {}",
-                                                      child.getClass().getSimpleName(), child.getName(), t);
+                                                     child.getClass().getSimpleName(), child.getName(), t);
                                         onRestartFailure();
                                     }
-
                                 }, getTaskExecutor());
                             });
             return null;
@@ -3244,7 +3179,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     Map<String, Object> actualArguments = publishingLink.getArguments();
 
 
-                    if (new HashMap<>(expectedArguments == null ? Collections.emptyMap() : expectedArguments).equals(new HashMap<>(actualArguments == null? Collections.emptyMap() : actualArguments)))
+                    if (new HashMap<>(expectedArguments == null ? Map.of() : expectedArguments).equals(new HashMap<>(actualArguments == null ? Map.of() : actualArguments)))
                     {
                         theSameBindingFound = true;
                     }

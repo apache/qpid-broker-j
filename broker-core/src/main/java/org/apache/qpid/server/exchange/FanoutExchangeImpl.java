@@ -62,8 +62,8 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
 
         BindingSet()
         {
-            _unfilteredDestinations = Collections.emptyMap();
-            _filteredDestinations = Collections.emptyMap();
+            _unfilteredDestinations = Map.of();
+            _filteredDestinations = Map.of();
         }
 
         BindingSet addBinding(final BindingIdentifier binding, final Map<String, Object> arguments)

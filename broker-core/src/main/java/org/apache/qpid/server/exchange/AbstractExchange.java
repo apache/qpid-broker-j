@@ -108,8 +108,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     private final AtomicBoolean _closed = new AtomicBoolean();
 
-    private final Set<DestinationReferrer> _referrers =
-            Collections.newSetFromMap(new ConcurrentHashMap<DestinationReferrer, Boolean>());
+    private final Set<DestinationReferrer> _referrers = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private final QueueManagingVirtualHost<?> _virtualHost;
 
@@ -229,7 +228,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 if (messageDestination != null)
                 {
                     Map<String, Object> arguments =
-                            b.getArguments() == null ? Collections.emptyMap() : b.getArguments();
+                            b.getArguments() == null ? Map.of() : b.getArguments();
                     try
                     {
                         onBind(new BindingIdentifier(b.getBindingKey(), messageDestination), arguments);
@@ -716,7 +715,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
         if (arguments == null)
         {
-            arguments = Collections.emptyMap();
+            arguments = Map.of();
         }
 
         Binding newBinding = new BindingImpl(bindingKey, destination, arguments);
@@ -797,7 +796,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         }
         else
         {
-            durableBindings = Collections.emptyList();
+            durableBindings = List.of();
         }
         return durableBindings;
     }

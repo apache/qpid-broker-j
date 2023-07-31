@@ -47,15 +47,7 @@ import org.apache.qpid.server.security.auth.sasl.AbstractSaslServerNegotiator;
 
 public class AbstractCramMd5Negotiator extends AbstractSaslServerNegotiator implements SaslNegotiator
 {
-    protected static final PasswordTransformer PLAIN_PASSWORD_TRANSFORMER =
-            new PasswordTransformer()
-            {
-                @Override
-                public char[] transform(final char[] passwordData)
-                {
-                    return passwordData;
-                }
-            };
+    protected static final PasswordTransformer PLAIN_PASSWORD_TRANSFORMER = passwordData -> passwordData;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractCramMd5Negotiator.class);
 

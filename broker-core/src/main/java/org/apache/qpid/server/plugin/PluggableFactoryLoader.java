@@ -32,7 +32,7 @@ public class PluggableFactoryLoader<T extends Pluggable>
 
     public PluggableFactoryLoader(Class<T> factoryClass)
     {
-        Map<String, T> fm = new HashMap<String, T>();
+        Map<String, T> fm = new HashMap<>();
         QpidServiceLoader qpidServiceLoader = new QpidServiceLoader();
         Iterable<T> factories = qpidServiceLoader.atLeastOneInstanceOf(factoryClass);
         for (T factory : factories)
@@ -47,7 +47,7 @@ public class PluggableFactoryLoader<T extends Pluggable>
             fm.put(descriptiveType, factory);
         }
         _factoriesMap = Collections.unmodifiableMap(fm);
-        _types = Collections.unmodifiableSortedSet(new TreeSet<String>(_factoriesMap.keySet()));
+        _types = Collections.unmodifiableSortedSet(new TreeSet<>(_factoriesMap.keySet()));
     }
 
     public T get(String type)

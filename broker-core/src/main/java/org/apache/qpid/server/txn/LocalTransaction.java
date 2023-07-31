@@ -429,24 +429,19 @@ public class LocalTransaction implements ServerTransaction
 
         if(_transaction != null)
         {
+            Runnable action = () ->
+            {
+                try
+                {
+                    doPostTransactionActions();
+                    deferred.run();
+                }
+                finally
+                {
+                    resetDetails();
+                }
 
-            Runnable action = new Runnable()
-                                {
-                                    @Override
-                                    public void run()
-                                    {
-                                        try
-                                        {
-                                            doPostTransactionActions();
-                                            deferred.run();
-                                        }
-                                        finally
-                                        {
-                                            resetDetails();
-                                        }
-
-                                    }
-                                };
+            };
             _asyncTran = _transaction.commitTranAsync(action);
 
         }

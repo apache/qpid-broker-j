@@ -146,10 +146,10 @@ public class TopicParser
         if(wildCards == 0)
         {
             TopicMatcherDFAState[] states = new TopicMatcherDFAState[wordList.size()+1];
-            states[states.length-1] = new TopicMatcherDFAState(Collections.emptyMap(), Collections.singleton(result));
+            states[states.length-1] = new TopicMatcherDFAState(Map.of(), Collections.singleton(result));
             for(int i = states.length-2; i >= 0; i--)
             {
-                states[i] = new TopicMatcherDFAState(Collections.singletonMap(wordList.get(i),states[i+1]),Collections.emptySet());
+                states[i] = new TopicMatcherDFAState(Collections.singletonMap(wordList.get(i),states[i+1]), Set.of());
 
             }
             return states[0];
@@ -266,7 +266,7 @@ public class TopicParser
             }
             else
             {
-                results = Collections.emptySet();
+                results = Set.of();
             }
 
             dfaStateMaps[i] = new HashMap<>();

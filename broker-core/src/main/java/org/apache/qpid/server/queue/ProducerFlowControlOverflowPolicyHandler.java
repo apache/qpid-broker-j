@@ -63,7 +63,7 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
         private final EventLogger _eventLogger;
         private final AtomicBoolean _overfullReported = new AtomicBoolean(false);
         private final Set<AMQPSession<?, ?>> _blockedSessions =
-                Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?, ?>, Boolean>());
+                Collections.newSetFromMap(new ConcurrentHashMap<>());
         private volatile double _queueFlowResumeLimit;
         private boolean _checkCapacity;
 

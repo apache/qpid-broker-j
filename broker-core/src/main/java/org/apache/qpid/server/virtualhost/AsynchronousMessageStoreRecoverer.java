@@ -55,14 +55,12 @@ import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
-import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.server.transport.util.Functions;
 import org.apache.qpid.server.txn.DtxBranch;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.txn.Xid;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
@@ -200,22 +198,18 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 entry.setValue(null); // free up any memory associated with the reference object
             }
             final List<StoredMessage<?>> messagesToDelete = new ArrayList<>();
-            getStoreReader().visitMessages(new MessageHandler()
+            getStoreReader().visitMessages(storedMessage ->
             {
-                @Override
-                public boolean handle(final StoredMessage<?> storedMessage)
+                long messageNumber = storedMessage.getMessageNumber();
+                if ( _continueRecovery.get() && messageNumber < _maxMessageId)
                 {
-                    long messageNumber = storedMessage.getMessageNumber();
-                    if ( _continueRecovery.get() && messageNumber < _maxMessageId)
+                    if (!_recoveredMessages.containsKey(messageNumber))
                     {
-                        if (!_recoveredMessages.containsKey(messageNumber))
-                        {
-                            messagesToDelete.add(storedMessage);
-                        }
-                        return true;
+                        messagesToDelete.add(storedMessage);
                     }
-                    return false;
+                    return true;
                 }
+                return false;
             });
             int unusedMessageCounter = 0;
             for(StoredMessage<?> storedMessage : messagesToDelete)
@@ -317,14 +311,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
                             final MessageEnqueueRecord[] records = new MessageEnqueueRecord[1];
 
-                            branch.enqueue(queue, message, new Action<MessageEnqueueRecord>()
-                            {
-                                @Override
-                                public void performAction(final MessageEnqueueRecord record)
-                                {
-                                    records[0] = record;
-                                }
-                            });
+                            branch.enqueue(queue, message, record1 -> records[0] = record1);
                             branch.addPostTransactionAction(new ServerTransaction.Action()
                             {
                                 @Override

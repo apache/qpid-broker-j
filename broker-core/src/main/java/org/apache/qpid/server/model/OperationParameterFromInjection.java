@@ -49,7 +49,7 @@ public class OperationParameterFromInjection implements OperationParameter
         _defaultValue = defaultValue;
         _description = description;
         _mandatory = mandatory;
-        _validValues = validValues == null ? Collections.<String>emptyList() : Collections.unmodifiableList(Arrays.asList(validValues));
+        _validValues = validValues == null ? List.of() : Collections.unmodifiableList(Arrays.asList(validValues));
     }
 
     @Override

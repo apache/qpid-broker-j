@@ -93,7 +93,7 @@ abstract class AbstractConfigurationStoreUpgraderAndRecoverer
 
     void applyRecursively(final ConfiguredObject<?> object, final RecursiveAction<ConfiguredObject<?>> action)
     {
-        applyRecursively(object, action, new HashSet<ConfiguredObject<?>>());
+        applyRecursively(object, action, new HashSet<>());
     }
 
     private void applyRecursively(final ConfiguredObject<?> object,

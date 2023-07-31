@@ -26,14 +26,7 @@ import org.apache.qpid.server.store.MessageEnqueueRecord;
 public class StandardQueueEntryList extends OrderedQueueEntryList
 {
 
-    private static final HeadCreator HEAD_CREATOR = new HeadCreator()
-    {
-        @Override
-        public StandardQueueEntry createHead(final QueueEntryList list)
-        {
-            return new StandardQueueEntry((StandardQueueEntryList) list);
-        }
-    };
+    private static final HeadCreator HEAD_CREATOR = list -> new StandardQueueEntry((StandardQueueEntryList) list);
 
     public StandardQueueEntryList(final StandardQueue<?> queue, QueueStatistics queueStatistics)
     {

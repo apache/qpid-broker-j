@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
@@ -266,7 +267,7 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
         }
         else
         {
-            return _validValues == null ? Collections.<String>emptySet() : Arrays.asList(_validValues);
+            return _validValues == null ? Set.of() : Arrays.asList(_validValues);
         }
     }
 

@@ -311,14 +311,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     public ListenableFuture<Void> doOnIOThreadAsync(final Runnable task)
     {
         final ListenableFuture<Void> future = getAMQPConnection().doOnIOThreadAsync(task);
-        return doAfter(MoreExecutors.directExecutor(), future, new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                getAMQPConnection().notifyWork(AbstractAMQPSession.this);
-            }
-        });
+        return doAfter(MoreExecutors.directExecutor(), future, () -> getAMQPConnection().notifyWork(AbstractAMQPSession.this));
     }
 
     @Override

@@ -390,7 +390,7 @@ public class FileUtils
             throws IOException
     {
 
-        List<String> results = new LinkedList<String>();
+        List<String> results = new LinkedList<>();
 
         BufferedReader reader = new BufferedReader(new FileReader(file));
         try

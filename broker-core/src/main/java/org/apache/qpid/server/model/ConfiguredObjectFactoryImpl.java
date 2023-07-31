@@ -36,10 +36,9 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class ConfiguredObjectFactoryImpl implements ConfiguredObjectFactory
 {
-    private final Map<String, String> _defaultTypes = new HashMap<String, String>();
-    private final Map<String, Map<String, ConfiguredObjectTypeFactory>> _allFactories =
-            new HashMap<String, Map<String, ConfiguredObjectTypeFactory>>();
-    private final Map<String, Collection<String>> _supportedTypes = new HashMap<String, Collection<String>>();
+    private final Map<String, String> _defaultTypes = new HashMap<>();
+    private final Map<String, Map<String, ConfiguredObjectTypeFactory>> _allFactories = new HashMap<>();
+    private final Map<String, Collection<String>> _supportedTypes = new HashMap<>();
 
     private final Model _model;
 
@@ -58,9 +57,9 @@ public class ConfiguredObjectFactoryImpl implements ConfiguredObjectFactory
             Map<String, ConfiguredObjectTypeFactory> categoryFactories = _allFactories.get(categoryName);
             if (categoryFactories == null)
             {
-                categoryFactories = new HashMap<String, ConfiguredObjectTypeFactory>();
+                categoryFactories = new HashMap<>();
                 _allFactories.put(categoryName, categoryFactories);
-                _supportedTypes.put(categoryName, new ArrayList<String>());
+                _supportedTypes.put(categoryName, new ArrayList<>());
                 ManagedObject annotation = categoryClass.getAnnotation(ManagedObject.class);
                 if (annotation != null && !"".equals(annotation.defaultType()))
                 {

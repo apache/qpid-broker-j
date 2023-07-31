@@ -96,19 +96,17 @@ public final class SystemConfigBootstrapModel extends Model
     @Override
     public Collection<Class<? extends ConfiguredObject>> getChildTypes(Class<? extends ConfiguredObject> parent)
     {
-        return Collections.<Class<? extends ConfiguredObject>>emptyList();
+        return Collections.emptyList();
     }
 
     @Override
     public Collection<Class<? extends ConfiguredObject>> getSupportedCategories()
     {
-        return Collections.unmodifiableSet(Collections.<Class<? extends ConfiguredObject>>singleton(SystemConfig.class));
+        return Collections.singleton(SystemConfig.class);
     }
 
     private void setRootCategory(final Class<? extends ConfiguredObject> rootCategory)
     {
         _rootCategory = rootCategory;
     }
-
-
 }

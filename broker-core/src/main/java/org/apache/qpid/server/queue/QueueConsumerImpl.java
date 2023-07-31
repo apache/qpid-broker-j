@@ -141,7 +141,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
                                                           EnumSet<ConsumerOption> optionSet,
                                                           Integer priority)
     {
-        Map<String,Object> attributes = new HashMap<String, Object>();
+        Map<String,Object> attributes = new HashMap<>();
         attributes.put(ID, UUID.randomUUID());
         String name = session.getAMQPConnection().getConnectionId()
                       + "|"

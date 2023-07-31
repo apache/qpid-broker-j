@@ -43,7 +43,7 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
         return LogicExpression.createOR(createLessThan(value, left), createGreaterThan(value, right));
     }
 
-    private static final HashSet<Character> REGEXP_CONTROL_CHARS = new HashSet<Character>();
+    private static final HashSet<Character> REGEXP_CONTROL_CHARS = new HashSet<>();
 
     static
     {
@@ -241,20 +241,20 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
         checkLessThanOperand(left);
         checkLessThanOperand(right);
 
-        return new ComparisonExpression<E>(left, right)
+        return new ComparisonExpression<>(left, right)
+        {
+            @Override
+            protected boolean asBoolean(int answer)
             {
-                @Override
-                protected boolean asBoolean(int answer)
-                {
-                    return answer > 0;
-                }
+                return answer > 0;
+            }
 
-                @Override
-                public String getExpressionSymbol()
-                {
-                    return ">";
-                }
-            };
+            @Override
+            public String getExpressionSymbol()
+            {
+                return ">";
+            }
+        };
     }
 
     public static <E> BooleanExpression<E> createGreaterThanEqual(final Expression<E> left, final Expression<E> right)
@@ -262,20 +262,20 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
         checkLessThanOperand(left);
         checkLessThanOperand(right);
 
-        return new ComparisonExpression<E>(left, right)
+        return new ComparisonExpression<>(left, right)
+        {
+            @Override
+            protected boolean asBoolean(int answer)
             {
-                @Override
-                protected boolean asBoolean(int answer)
-                {
-                    return answer >= 0;
-                }
+                return answer >= 0;
+            }
 
-                @Override
-                public String getExpressionSymbol()
-                {
-                    return ">=";
-                }
-            };
+            @Override
+            public String getExpressionSymbol()
+            {
+                return ">=";
+            }
+        };
     }
 
     public static <E> BooleanExpression<E> createLessThan(final Expression<E> left, final Expression<E> right)
@@ -283,22 +283,21 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
         checkLessThanOperand(left);
         checkLessThanOperand(right);
 
-        return new ComparisonExpression<E>(left, right)
+        return new ComparisonExpression<>(left, right)
+        {
+
+            @Override
+            protected boolean asBoolean(int answer)
             {
+                return answer < 0;
+            }
 
-                @Override
-                protected boolean asBoolean(int answer)
-                {
-                    return answer < 0;
-                }
-
-                @Override
-                public String getExpressionSymbol()
-                {
-                    return "<";
-                }
-
-            };
+            @Override
+            public String getExpressionSymbol()
+            {
+                return "<";
+            }
+        };
     }
 
     public static <E> BooleanExpression<E> createLessThanEqual(final Expression<E> left, final Expression<E> right)
@@ -306,21 +305,21 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
         checkLessThanOperand(left);
         checkLessThanOperand(right);
 
-        return new ComparisonExpression<E>(left, right)
+        return new ComparisonExpression<>(left, right)
+        {
+
+            @Override
+            protected boolean asBoolean(int answer)
             {
+                return answer <= 0;
+            }
 
-                @Override
-                protected boolean asBoolean(int answer)
-                {
-                    return answer <= 0;
-                }
-
-                @Override
-                public String getExpressionSymbol()
-                {
-                    return "<=";
-                }
-            };
+            @Override
+            public String getExpressionSymbol()
+            {
+                return "<=";
+            }
+        };
     }
 
     /**

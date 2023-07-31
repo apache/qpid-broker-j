@@ -46,7 +46,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -103,27 +102,14 @@ public class ConfiguredObjectTypeRegistry
     }
 
 
-    private static final Comparator<ConfiguredObjectAttributeOrStatistic<?, ?>> OBJECT_NAME_COMPARATOR =
-            new Comparator<ConfiguredObjectAttributeOrStatistic<?, ?>>()
-            {
-                @Override
-                public int compare(final ConfiguredObjectAttributeOrStatistic<?, ?> left,
-                                   final ConfiguredObjectAttributeOrStatistic<?, ?> right)
-                {
-                    String leftName = left.getName();
-                    String rightName = right.getName();
-                    return compareAttributeNames(leftName, rightName);
-                }
-            };
-
-    private static final Comparator<String> NAME_COMPARATOR = new Comparator<String>()
+    private static final Comparator<ConfiguredObjectAttributeOrStatistic<?, ?>> OBJECT_NAME_COMPARATOR =(left, right) ->
     {
-        @Override
-        public int compare(final String left, final String right)
-        {
-            return compareAttributeNames(left, right);
-        }
+        String leftName = left.getName();
+        String rightName = right.getName();
+        return compareAttributeNames(leftName, rightName);
     };
+
+    private static final Comparator<String> NAME_COMPARATOR = ConfiguredObjectTypeRegistry::compareAttributeNames;
 
     private static int compareAttributeNames(final String leftName, final String rightName)
     {
@@ -172,49 +158,49 @@ public class ConfiguredObjectTypeRegistry
 
 
     private final Map<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectAttribute<?, ?>>> _allAttributes =
-            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectAttribute<?, ?>>>());
+            Collections.synchronizedMap(new HashMap<>());
 
     private final Map<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectStatistic<?, ?>>> _allStatistics =
-            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectStatistic<?, ?>>>());
+            Collections.synchronizedMap(new HashMap<>());
 
     private final Map<Class<? extends ConfiguredObject>, Map<String, ConfiguredObjectAttribute<?, ?>>>
             _allAttributeTypes =
-            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Map<String, ConfiguredObjectAttribute<?, ?>>>());
+            Collections.synchronizedMap(new HashMap<>());
 
     private final Map<Class<? extends ConfiguredObject>, Map<String, AutomatedField>> _allAutomatedFields =
-            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Map<String, AutomatedField>>());
+            Collections.synchronizedMap(new HashMap<>());
 
     private final Map<String, String> _defaultContext =
-            Collections.synchronizedMap(new HashMap<String, String>());
+            Collections.synchronizedMap(new HashMap<>());
 
     private final Map<String, ManagedContextDefault> _contextDefinitions =
-            Collections.synchronizedMap(new HashMap<String, ManagedContextDefault>());
+            Collections.synchronizedMap(new HashMap<>());
     private final Map<Class<? extends ConfiguredObject>, Set<String>> _contextUses =
-            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Set<String>>());
+            Collections.synchronizedMap(new HashMap<>());
 
     private final Map<Class<? extends ConfiguredObject>, Set<Class<? extends ConfiguredObject>>> _knownTypes =
-            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Set<Class<? extends ConfiguredObject>>>());
+            Collections.synchronizedMap(new HashMap<>());
 
     private final Map<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectAttribute<?, ?>>>
             _typeSpecificAttributes =
-            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectAttribute<?, ?>>>());
+            Collections.synchronizedMap(new HashMap<>());
 
     private final Map<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectStatistic<?, ?>>>
             _typeSpecificStatistics =
-            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectStatistic<?, ?>>>());
+            Collections.synchronizedMap(new HashMap<>());
 
     private final Map<Class<? extends ConfiguredObject>, Map<State, Map<State, Method>>> _stateChangeMethods =
-            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Map<State, Map<State, Method>>>());
+            Collections.synchronizedMap(new HashMap<>());
 
     private final Map<Class<? extends ConfiguredObject>, Set<Class<? extends ManagedInterface>>> _allManagedInterfaces =
-            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Set<Class<? extends ManagedInterface>>>());
+            Collections.synchronizedMap(new HashMap<>());
 
     private final Map<Class<? extends ConfiguredObject>, Set<ConfiguredObjectOperation<?>>> _allOperations =
-            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Set<ConfiguredObjectOperation<?>>>());
+            Collections.synchronizedMap(new HashMap<>());
 
 
     private final Map<Class<? extends ConfiguredObject>, Map<String, Collection<String>>> _validChildTypes =
-            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Map<String, Collection<String>>>());
+            Collections.synchronizedMap(new HashMap<>());
 
     private final ConfiguredObjectFactory _objectFactory;
     private final Iterable<ConfiguredObjectAttributeInjector> _attributeInjectors;
@@ -270,7 +256,7 @@ public class ConfiguredObjectTypeRegistry
         }
         for (Class<? extends ConfiguredObject> categoryClass : categories)
         {
-            _knownTypes.put(categoryClass, new HashSet<Class<? extends ConfiguredObject>>());
+            _knownTypes.put(categoryClass, new HashSet<>());
         }
 
         for (Class<? extends ConfiguredObject> typeClass : types)
@@ -295,8 +281,8 @@ public class ConfiguredObjectTypeRegistry
             if (typesForCategory.isEmpty())
             {
                 typesForCategory.add(categoryClass);
-                _typeSpecificAttributes.put(categoryClass, Collections.emptySet());
-                _typeSpecificStatistics.put(categoryClass, Collections.emptySet());
+                _typeSpecificAttributes.put(categoryClass, Set.of());
+                _typeSpecificStatistics.put(categoryClass, Set.of());
             }
             else
             {
@@ -601,9 +587,7 @@ public class ConfiguredObjectTypeRegistry
             throw new IllegalArgumentException("Cannot locate ManagedObject information for " + clazz.getName());
         }
         Collection<ConfiguredObjectAttribute<?, ?>> typeAttrs = _typeSpecificAttributes.get(typeClass);
-        return Collections.unmodifiableCollection(typeAttrs == null
-                                                          ? Collections.<ConfiguredObjectAttribute<?, ?>>emptySet()
-                                                          : typeAttrs);
+        return Collections.unmodifiableCollection(typeAttrs == null ? Set.of() : typeAttrs);
     }
 
     public Collection<ConfiguredObjectStatistic<?, ?>> getTypeSpecificStatistics(final Class<? extends ConfiguredObject> clazz)
@@ -614,9 +598,7 @@ public class ConfiguredObjectTypeRegistry
             throw new IllegalArgumentException("Cannot locate ManagedObject information for " + clazz.getName());
         }
         Collection<ConfiguredObjectStatistic<?, ?>> typeAttrs = _typeSpecificStatistics.get(typeClass);
-        return Collections.unmodifiableCollection(typeAttrs == null
-                                                          ? Collections.emptySet()
-                                                          : typeAttrs);
+        return Collections.unmodifiableCollection(typeAttrs == null ? Set.of() : typeAttrs);
     }
 
     public static String getType(final Class<? extends ConfiguredObject> clazz)
@@ -730,14 +712,7 @@ public class ConfiguredObjectTypeRegistry
             {
                 return;
             }
-            doWithAllParents(clazz, new Action<Class<? extends ConfiguredObject>>()
-            {
-                @Override
-                public void performAction(final Class<? extends ConfiguredObject> parent)
-                {
-                    process(parent);
-                }
-            });
+            doWithAllParents(clazz, this::process);
 
             final SortedSet<ConfiguredObjectAttribute<?, ?>> attributeSet = new TreeSet<>(OBJECT_NAME_COMPARATOR);
             final SortedSet<ConfiguredObjectStatistic<?, ?>> statisticSet = new TreeSet<>(OBJECT_NAME_COMPARATOR);
@@ -751,20 +726,8 @@ public class ConfiguredObjectTypeRegistry
             _allOperations.put(clazz, operationsSet);
             _contextUses.put(clazz, contextSet);
 
-            doWithAllParents(clazz, new Action<Class<? extends ConfiguredObject>>()
-            {
-                @Override
-                public void performAction(final Class<? extends ConfiguredObject> parent)
-                {
-                    initialiseWithParentAttributes(attributeSet,
-                                                   statisticSet,
-                                                   managedInterfaces,
-                                                   operationsSet,
-                                                   contextSet,
-                                                   parent);
-
-                }
-            });
+            doWithAllParents(clazz, parent ->
+                    initialiseWithParentAttributes(attributeSet, statisticSet, managedInterfaces, operationsSet, contextSet, parent));
 
             processMethods(clazz, attributeSet, statisticSet, operationsSet);
 
@@ -995,7 +958,7 @@ public class ConfiguredObjectTypeRegistry
     private <X extends ConfiguredObject> void processAttributesTypesAndFields(final Class<X> clazz)
     {
         Map<String, ConfiguredObjectAttribute<?, ?>> attrMap = new TreeMap<>(NAME_COMPARATOR);
-        Map<String, AutomatedField> fieldMap = new HashMap<String, AutomatedField>();
+        Map<String, AutomatedField> fieldMap = new HashMap<>();
 
 
         Collection<ConfiguredObjectAttribute<?, ?>> attrCol = _allAttributes.get(clazz);
@@ -1087,14 +1050,7 @@ public class ConfiguredObjectTypeRegistry
 
         addStateTransitions(clazz, map);
 
-        doWithAllParents(clazz, new Action<Class<? extends ConfiguredObject>>()
-        {
-            @Override
-            public void performAction(final Class<? extends ConfiguredObject> parent)
-            {
-                inheritTransitions(parent, map);
-            }
-        });
+        doWithAllParents(clazz, parent -> inheritTransitions(parent, map));
     }
 
     private void inheritTransitions(final Class<? extends ConfiguredObject> parent,
@@ -1116,7 +1072,7 @@ public class ConfiguredObjectTypeRegistry
             }
             else
             {
-                map.put(parentEntry.getKey(), new HashMap<State, Method>(parentEntry.getValue()));
+                map.put(parentEntry.getKey(), new HashMap<>(parentEntry.getValue()));
             }
         }
     }
@@ -1246,13 +1202,13 @@ public class ConfiguredObjectTypeRegistry
     {
         final Collection<ConfiguredObjectAttribute<? super X, ?>> attrs = getAttributes(clazz);
 
-        return new AbstractCollection<String>()
+        return new AbstractCollection<>()
         {
             @Override
             public Iterator<String> iterator()
             {
                 final Iterator<ConfiguredObjectAttribute<? super X, ?>> underlyingIterator = attrs.iterator();
-                return new Iterator<String>()
+                return new Iterator<>()
                 {
                     @Override
                     public boolean hasNext()
@@ -1349,7 +1305,7 @@ public class ConfiguredObjectTypeRegistry
         processClassIfNecessary(objectClass);
         Map<State, Map<State, Method>> map = _stateChangeMethods.get(objectClass);
 
-        return map != null ? Collections.unmodifiableMap(map) : Collections.<State, Map<State, Method>>emptyMap();
+        return map != null ? Collections.unmodifiableMap(map) : Map.of();
     }
 
     public Map<String, String> getDefaultContext()
@@ -1362,7 +1318,7 @@ public class ConfiguredObjectTypeRegistry
     {
         processClassIfNecessary(classObject);
         Set<Class<? extends ManagedInterface>> interfaces = _allManagedInterfaces.get(classObject);
-        return interfaces == null ? Collections.<Class<? extends ManagedInterface>>emptySet() : interfaces;
+        return interfaces == null ? Set.of() : interfaces;
     }
 
 

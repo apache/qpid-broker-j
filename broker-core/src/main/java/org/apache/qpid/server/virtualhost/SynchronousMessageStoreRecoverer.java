@@ -53,7 +53,6 @@ import org.apache.qpid.server.txn.DtxBranch;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.txn.Xid;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
@@ -316,14 +315,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                         final MessageReference<?> ref = message.newReference();
                         final MessageEnqueueRecord[] records = new MessageEnqueueRecord[1];
 
-                        branch.enqueue(queue, message, new Action<MessageEnqueueRecord>()
-                        {
-                            @Override
-                            public void performAction(final MessageEnqueueRecord record)
-                            {
-                                records[0] = record;
-                            }
-                        });
+                        branch.enqueue(queue, message, record1 -> records[0] = record1);
                         branch.addPostTransactionAction(new ServerTransaction.Action()
                         {
                             @Override

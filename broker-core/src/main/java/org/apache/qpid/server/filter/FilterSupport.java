@@ -37,7 +37,7 @@ import org.apache.qpid.server.queue.QueueConsumer;
 public class FilterSupport
 {
     private static final Map<String, WeakReference<JMSSelectorFilter>> _selectorCache =
-            Collections.synchronizedMap(new WeakHashMap<String, WeakReference<JMSSelectorFilter>>());
+            Collections.synchronizedMap(new WeakHashMap<>());
 
     static MessageFilter createJMSSelectorFilter(Map<String, Object> args) throws AMQInvalidArgumentException
     {
@@ -61,7 +61,7 @@ public class FilterSupport
             {
                 throw new AMQInvalidArgumentException("Cannot parse JMS selector \"" + selectorString + "\"", e);
             }
-            _selectorCache.put(selectorString, new WeakReference<JMSSelectorFilter>(selector));
+            _selectorCache.put(selectorString, new WeakReference<>(selector));
         }
         return selector;
     }

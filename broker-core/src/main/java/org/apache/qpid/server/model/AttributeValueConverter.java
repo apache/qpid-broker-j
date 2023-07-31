@@ -69,7 +69,7 @@ import org.apache.qpid.server.util.Strings;
 
 abstract class AttributeValueConverter<T>
 {
-    static final AttributeValueConverter<String> STRING_CONVERTER = new AttributeValueConverter<String>()
+    static final AttributeValueConverter<String> STRING_CONVERTER = new AttributeValueConverter<>()
     {
         @Override
         public String convert(final Object value, final ConfiguredObject object)
@@ -94,16 +94,16 @@ abstract class AttributeValueConverter<T>
                 .toFormatter()
                 .withChronology(IsoChronology.INSTANCE);
 
-    static final AttributeValueConverter<Object> OBJECT_CONVERTER = new AttributeValueConverter<Object>()
+    static final AttributeValueConverter<Object> OBJECT_CONVERTER = new AttributeValueConverter<>()
     {
         @Override
         public Object convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof String)
+            if (value instanceof String)
             {
                 return AbstractConfiguredObject.interpolate(object, (String) value);
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
@@ -113,20 +113,20 @@ abstract class AttributeValueConverter<T>
             }
         }
     };
-    static final AttributeValueConverter<UUID> UUID_CONVERTER = new AttributeValueConverter<UUID>()
+    static final AttributeValueConverter<UUID> UUID_CONVERTER = new AttributeValueConverter<>()
     {
         @Override
         public UUID convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof UUID)
+            if (value instanceof UUID)
             {
                 return (UUID) value;
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 return UUID.fromString(AbstractConfiguredObject.interpolate(object, (String) value));
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
@@ -137,20 +137,20 @@ abstract class AttributeValueConverter<T>
         }
     };
 
-    static final AttributeValueConverter<URI> URI_CONVERTER = new AttributeValueConverter<URI>()
+    static final AttributeValueConverter<URI> URI_CONVERTER = new AttributeValueConverter<>()
     {
         @Override
         URI convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof URI)
+            if (value instanceof URI)
             {
                 return (URI) value;
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 return URI.create(AbstractConfiguredObject.interpolate(object, (String) value));
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
@@ -161,25 +161,24 @@ abstract class AttributeValueConverter<T>
         }
     };
 
-    static final AttributeValueConverter<byte[]> BINARY_CONVERTER = new AttributeValueConverter<byte[]>()
+    static final AttributeValueConverter<byte[]> BINARY_CONVERTER = new AttributeValueConverter<>()
     {
         @Override
         byte[] convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof byte[])
+            if (value instanceof byte[])
             {
                 return (byte[]) value;
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 String interpolated = AbstractConfiguredObject.interpolate(object,
-                                                                          (String) value);
+                                                                           (String) value);
                 return Strings.decodeBase64(interpolated);
-
             }
             else
             {
@@ -190,18 +189,18 @@ abstract class AttributeValueConverter<T>
 
     public static final Pattern BASE64_PATTERN = Pattern.compile("^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$");
 
-    static final AttributeValueConverter<Certificate> CERTIFICATE_CONVERTER = new AttributeValueConverter<Certificate>()
+    static final AttributeValueConverter<Certificate> CERTIFICATE_CONVERTER = new AttributeValueConverter<>()
     {
         @Override
         public Certificate convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof Certificate)
+            if (value instanceof Certificate)
             {
                 return (Certificate) value;
             }
-            else if(value instanceof byte[])
+            else if (value instanceof byte[])
             {
-                try(ByteArrayInputStream is = new ByteArrayInputStream((byte[])value))
+                try (ByteArrayInputStream is = new ByteArrayInputStream((byte[]) value))
                 {
                     return SSLUtil.getCertificateFactory().generateCertificate(is);
                 }
@@ -210,7 +209,7 @@ abstract class AttributeValueConverter<T>
                     throw new IllegalArgumentException(e);
                 }
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 String strValue = AbstractConfiguredObject.interpolate(object, (String) value);
                 if (BASE64_PATTERN.matcher(strValue).matches())
@@ -223,7 +222,7 @@ abstract class AttributeValueConverter<T>
                     return convert(strValue.getBytes(StandardCharsets.UTF_8), object);
                 }
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
@@ -234,33 +233,34 @@ abstract class AttributeValueConverter<T>
         }
     };
 
-    static final AttributeValueConverter<Long> LONG_CONVERTER = new AttributeValueConverter<Long>()
+    static final AttributeValueConverter<Long> LONG_CONVERTER = new AttributeValueConverter<>()
     {
 
         @Override
         public Long convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof Long)
+            if (value instanceof Long)
             {
                 return (Long) value;
             }
-            else if(value instanceof Number)
+            else if (value instanceof Number)
             {
                 return ((Number) value).longValue();
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
                 try
                 {
                     return Long.valueOf(interpolated);
                 }
-                catch(NumberFormatException e)
+                catch (NumberFormatException e)
                 {
-                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "' to a long integer",e);
+                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "' to a long integer",
+                                                       e);
                 }
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
@@ -270,33 +270,33 @@ abstract class AttributeValueConverter<T>
             }
         }
     };
-    static final AttributeValueConverter<Integer> INT_CONVERTER = new AttributeValueConverter<Integer>()
+    static final AttributeValueConverter<Integer> INT_CONVERTER = new AttributeValueConverter<>()
     {
 
         @Override
         public Integer convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof Integer)
+            if (value instanceof Integer)
             {
                 return (Integer) value;
             }
-            else if(value instanceof Number)
+            else if (value instanceof Number)
             {
                 return ((Number) value).intValue();
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
                 try
                 {
                     return Integer.valueOf(interpolated);
                 }
-                catch(NumberFormatException e)
+                catch (NumberFormatException e)
                 {
-                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "' to an integer",e);
+                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "' to an integer", e);
                 }
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
@@ -306,33 +306,35 @@ abstract class AttributeValueConverter<T>
             }
         }
     };
-    static final AttributeValueConverter<Short> SHORT_CONVERTER = new AttributeValueConverter<Short>()
+    static final AttributeValueConverter<Short> SHORT_CONVERTER = new AttributeValueConverter<>()
     {
 
         @Override
         public Short convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof Short)
+            if (value instanceof Short)
             {
                 return (Short) value;
             }
-            else if(value instanceof Number)
+            else if (value instanceof Number)
             {
                 return ((Number) value).shortValue();
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
                 try
                 {
                     return Short.valueOf(interpolated);
                 }
-                catch(NumberFormatException e)
+                catch (NumberFormatException e)
                 {
-                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "' to a short integer",e);
+                    throw new IllegalArgumentException("Cannot convert string '"
+                                                       + interpolated
+                                                       + "' to a short integer", e);
                 }
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
@@ -343,33 +345,33 @@ abstract class AttributeValueConverter<T>
         }
     };
 
-    static final AttributeValueConverter<Double> DOUBLE_CONVERTER = new AttributeValueConverter<Double>()
+    static final AttributeValueConverter<Double> DOUBLE_CONVERTER = new AttributeValueConverter<>()
     {
 
         @Override
         public Double convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof Double)
+            if (value instanceof Double)
             {
                 return (Double) value;
             }
-            else if(value instanceof Number)
+            else if (value instanceof Number)
             {
                 return ((Number) value).doubleValue();
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
                 try
                 {
                     return Double.valueOf(interpolated);
                 }
-                catch(NumberFormatException e)
+                catch (NumberFormatException e)
                 {
-                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "' to a Double",e);
+                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "' to a Double", e);
                 }
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
@@ -380,21 +382,21 @@ abstract class AttributeValueConverter<T>
         }
     };
 
-    static final AttributeValueConverter<Boolean> BOOLEAN_CONVERTER = new AttributeValueConverter<Boolean>()
+    static final AttributeValueConverter<Boolean> BOOLEAN_CONVERTER = new AttributeValueConverter<>()
     {
 
         @Override
         public Boolean convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof Boolean)
+            if (value instanceof Boolean)
             {
                 return (Boolean) value;
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 return Boolean.valueOf(AbstractConfiguredObject.interpolate(object, (String) value));
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
@@ -404,24 +406,24 @@ abstract class AttributeValueConverter<T>
             }
         }
     };
-    static final AttributeValueConverter<List> LIST_CONVERTER = new AttributeValueConverter<List>()
+    static final AttributeValueConverter<List> LIST_CONVERTER = new AttributeValueConverter<>()
     {
         @Override
         public List convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof List)
+            if (value instanceof List)
             {
                 return Collections.unmodifiableList((List) value);
             }
-            else if(value instanceof Object[])
+            else if (value instanceof Object[])
             {
-                return convert(Arrays.asList((Object[]) value),object);
+                return convert(Arrays.asList((Object[]) value), object);
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 return Collections.unmodifiableList(convertFromJson((String) value, object, List.class));
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
@@ -432,25 +434,25 @@ abstract class AttributeValueConverter<T>
         }
     };
 
-    static final AttributeValueConverter<Set> SET_CONVERTER = new AttributeValueConverter<Set>()
+    static final AttributeValueConverter<Set> SET_CONVERTER = new AttributeValueConverter<>()
     {
         @Override
         public Set convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof Set)
+            if (value instanceof Set)
             {
                 return Collections.unmodifiableSet((Set) value);
             }
 
-            else if(value instanceof Object[])
+            else if (value instanceof Object[])
             {
-                return convert(new HashSet(Arrays.asList((Object[])value)),object);
+                return convert(new HashSet(Arrays.asList((Object[]) value)), object);
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 return Collections.unmodifiableSet(convertFromJson((String) value, object, Set.class));
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
@@ -461,24 +463,24 @@ abstract class AttributeValueConverter<T>
         }
     };
     static final AttributeValueConverter<Collection>
-            COLLECTION_CONVERTER = new AttributeValueConverter<Collection>()
+            COLLECTION_CONVERTER = new AttributeValueConverter<>()
     {
         @Override
         public Collection convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof Collection)
+            if (value instanceof Collection)
             {
                 return Collections.unmodifiableCollection((Collection) value);
             }
-            else if(value instanceof Object[])
+            else if (value instanceof Object[])
             {
                 return convert(Arrays.asList((Object[]) value), object);
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 return Collections.unmodifiableCollection(convertFromJson((String) value, object, Collection.class));
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
@@ -489,29 +491,33 @@ abstract class AttributeValueConverter<T>
         }
     };
 
-    static final AttributeValueConverter<Map> MAP_CONVERTER = new AttributeValueConverter<Map>()
+    static final AttributeValueConverter<Map> MAP_CONVERTER = new AttributeValueConverter<>()
     {
         @Override
         public Map convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof Map)
+            if (value instanceof Map)
             {
-                Map<Object,Object> originalMap = (Map) value;
+                Map<Object, Object> originalMap = (Map) value;
                 Map resolvedMap = new LinkedHashMap(originalMap.size());
-                for(Map.Entry<Object,Object> entry : originalMap.entrySet())
+                for (Map.Entry<Object, Object> entry : originalMap.entrySet())
                 {
                     Object key = entry.getKey();
                     Object val = entry.getValue();
-                    resolvedMap.put(key instanceof String ? AbstractConfiguredObject.interpolate(object, (String) key) : key,
-                                    val instanceof String ? AbstractConfiguredObject.interpolate(object, (String) val) : val);
+                    resolvedMap.put(key instanceof String
+                                            ? AbstractConfiguredObject.interpolate(object, (String) key)
+                                            : key,
+                                    val instanceof String
+                                            ? AbstractConfiguredObject.interpolate(object, (String) val)
+                                            : val);
                 }
                 return Collections.unmodifiableMap(resolvedMap);
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 return Collections.unmodifiableMap(convertFromJson((String) value, object, Map.class));
             }
@@ -520,24 +526,23 @@ abstract class AttributeValueConverter<T>
                 throw new IllegalArgumentException("Cannot convert type " + value.getClass() + " to a Map");
             }
         }
-
     };
 
-    static final AttributeValueConverter<Date> DATE_CONVERTER = new AttributeValueConverter<Date>()
+    static final AttributeValueConverter<Date> DATE_CONVERTER = new AttributeValueConverter<>()
     {
 
         @Override
         public Date convert(final Object value, final ConfiguredObject object)
         {
-            if(value instanceof Date)
+            if (value instanceof Date)
             {
                 return (Date) value;
             }
-            else if(value instanceof Number)
+            else if (value instanceof Number)
             {
                 return new Date(((Number) value).longValue());
             }
-            else if(value instanceof String)
+            else if (value instanceof String)
             {
                 String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
 
@@ -545,12 +550,12 @@ abstract class AttributeValueConverter<T>
                 {
                     return new Date(Long.valueOf(interpolated));
                 }
-                catch(NumberFormatException e)
+                catch (NumberFormatException e)
                 {
                     try
                     {
                         return ISO_DATE_TIME_FORMAT.parse(interpolated)
-                                .query(this::convertToDate);
+                                                   .query(this::convertToDate);
                     }
                     catch (DateTimeParseException e1)
                     {
@@ -560,7 +565,7 @@ abstract class AttributeValueConverter<T>
                     }
                 }
             }
-            else if(value == null)
+            else if (value == null)
             {
                 return null;
             }
@@ -572,18 +577,16 @@ abstract class AttributeValueConverter<T>
 
         private Date convertToDate(TemporalAccessor t)
         {
-            if(!t.isSupported(ChronoField.INSTANT_SECONDS))
+            if (!t.isSupported(ChronoField.INSTANT_SECONDS))
             {
                 t = LocalDateTime.of(LocalDate.from(t), LocalTime.MIN).atOffset(ZoneOffset.UTC);
             }
             return new Date((t.getLong(ChronoField.INSTANT_SECONDS) * 1000L)
-                             + t.getLong(ChronoField.MILLI_OF_SECOND));
-
-
+                            + t.getLong(ChronoField.MILLI_OF_SECOND));
         }
     };
 
-    public static final AttributeValueConverter<Principal> PRINCIPAL_CONVERTER = new AttributeValueConverter<Principal>()
+    public static final AttributeValueConverter<Principal> PRINCIPAL_CONVERTER = new AttributeValueConverter<>()
     {
         @Override
         public Principal convert(final Object value, final ConfiguredObject object)
@@ -875,7 +878,7 @@ abstract class AttributeValueConverter<T>
                         // fall through to the non-JSON single object case
                     }
                 }
-                return "".equals(value) ? Collections.emptyList() : Collections.unmodifiableList(Collections.singletonList(_memberConverter.convert(value, object)));
+                return "".equals(value) ? List.of() : List.of(_memberConverter.convert(value, object));
             }
         }
     }
@@ -1258,7 +1261,7 @@ abstract class AttributeValueConverter<T>
                             String sourceMethodName = derivedMethodValue.split("#")[1].split("\\(")[0].trim();
                             Class<?> sourceMethodClass = Class.forName(className);
                             Method sourceMethod = sourceMethodClass.getMethod(sourceMethodName, klazz);
-                            _derivedValueMethod.put(method, new StaticMethodValueMethod<X>(sourceMethod));
+                            _derivedValueMethod.put(method, new StaticMethodValueMethod<>(sourceMethod));
 
                         }
                         catch (ClassNotFoundException | NoSuchMethodException e)
@@ -1271,8 +1274,8 @@ abstract class AttributeValueConverter<T>
                         try
                         {
                             final Method sourceMethod =
-                                    klazz.getMethod(derivedMethodValue.substring(1, derivedMethodValue.indexOf((int) '(')));
-                            _derivedValueMethod.put(method, new ObjectMethodValueMethod<X>(sourceMethod));
+                                    klazz.getMethod(derivedMethodValue.substring(1, derivedMethodValue.indexOf('(')));
+                            _derivedValueMethod.put(method, new ObjectMethodValueMethod<>(sourceMethod));
                         }
                         catch (NoSuchMethodException e)
                         {
@@ -1281,7 +1284,7 @@ abstract class AttributeValueConverter<T>
                     }
                     else
                     {
-                        _derivedValueMethod.put(method, new ConstantValueMethod<X>(derivedMethodValue));
+                        _derivedValueMethod.put(method, new ConstantValueMethod<>(derivedMethodValue));
                     }
                 }
 

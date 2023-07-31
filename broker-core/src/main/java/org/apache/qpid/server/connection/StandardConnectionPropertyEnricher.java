@@ -97,7 +97,7 @@ public class StandardConnectionPropertyEnricher implements ConnectionPropertyEnr
     private static List<String> getFeatures(Broker<?> broker)
     {
         String brokerDisabledFeatures = System.getProperty(Broker.PROPERTY_DISABLED_FEATURES);
-        final List<String> features = new ArrayList<String>();
+        final List<String> features = new ArrayList<>();
         if (brokerDisabledFeatures == null || !brokerDisabledFeatures.contains(ServerPropertyNames.FEATURE_QPID_JMS_SELECTOR))
         {
             features.add(ServerPropertyNames.FEATURE_QPID_JMS_SELECTOR);

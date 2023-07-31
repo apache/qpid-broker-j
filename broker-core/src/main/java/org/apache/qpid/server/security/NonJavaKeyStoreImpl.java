@@ -320,6 +320,6 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
     protected Collection<Certificate> getCertificates()
     {
         final Collection<Certificate> certificates = _certificates;
-        return certificates == null ? Collections.emptyList() : certificates;
+        return certificates == null ? List.of() : certificates;
     }
 }

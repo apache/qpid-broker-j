@@ -37,7 +37,7 @@ import org.apache.qpid.server.store.UnresolvedConfiguredObject;
 public abstract class AbstractUnresolvedObject<C extends ConfiguredObject<C>> implements UnresolvedConfiguredObject<C>
 {
     private final Class<C> _clazz;
-    private final Collection<ConfiguredObjectDependency<?>> _unresolvedObjects = new ArrayList<ConfiguredObjectDependency<?>>();
+    private final Collection<ConfiguredObjectDependency<?>> _unresolvedObjects = new ArrayList<>();
     private final ConfiguredObjectRecord _record;
     private final ConfiguredObject<?> _parent;
 

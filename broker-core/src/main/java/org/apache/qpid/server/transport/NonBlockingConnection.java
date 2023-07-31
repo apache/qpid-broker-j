@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.transport.network.TransportEncryption;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.SystemUtils;
 
@@ -95,15 +94,11 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         _port = port;
         _threadName = SelectorThread.IO_THREAD_NAME_PREFIX + _remoteSocketAddress.toString();
 
-        protocolEngine.setWorkListener(new Action<ProtocolEngine>()
+        protocolEngine.setWorkListener(object ->
         {
-            @Override
-            public void performAction(final ProtocolEngine object)
+            if(!_scheduled.get())
             {
-                if(!_scheduled.get())
-                {
-                    getScheduler().schedule(NonBlockingConnection.this);
-                }
+                getScheduler().schedule(NonBlockingConnection.this);
             }
         });
 

@@ -26,33 +26,24 @@ import org.apache.qpid.server.security.auth.sasl.PasswordSource;
 public class CramMd5HexNegotiator extends AbstractCramMd5Negotiator
 {
     public static final String MECHANISM = "CRAM-MD5-HEX";
-    private static final PasswordTransformer HEX_PASSWORD_TRANSFORMER =
-            new PasswordTransformer()
+    private static final PasswordTransformer HEX_PASSWORD_TRANSFORMER = password ->
+    {
+        StringBuilder sb = new StringBuilder();
+        for (char c : password)
+        {
+            //toHexString does not prepend 0 so we have to
+            if (((byte) c > -1) && (byte) c < 0x10)
             {
+                sb.append(0);
+            }
+            sb.append(Integer.toHexString(c & 0xFF));
+        }
 
-                @Override
-                public char[] transform(final char[] password)
-                {
-                    StringBuilder sb = new StringBuilder();
-                    for (char c : password)
-                    {
-                        //toHexString does not prepend 0 so we have to
-                        if (((byte) c > -1) && (byte) c < 0x10)
-                        {
-                            sb.append(0);
-                        }
-
-                        sb.append(Integer.toHexString(c & 0xFF));
-                    }
-
-                    //Extract the hex string as char[]
-                    char[] hex = new char[sb.length()];
-
-                    sb.getChars(0, sb.length(), hex, 0);
-
-                    return hex;
-                }
-            };
+        //Extract the hex string as char[]
+        char[] hex = new char[sb.length()];
+        sb.getChars(0, sb.length(), hex, 0);
+        return hex;
+    };
 
     public CramMd5HexNegotiator(final PasswordCredentialManagingAuthenticationProvider<?> authenticationProvider,
                                 final String localFQDN,

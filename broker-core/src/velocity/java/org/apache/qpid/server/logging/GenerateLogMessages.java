@@ -288,18 +288,18 @@ public class GenerateLogMessages
         Set<String> messageKeys = new TreeSet<>(messages.keySet());
 
         //Create the return map
-        HashMap<String, Object> messageTypeData = new HashMap<String, Object>();
+        HashMap<String, Object> messageTypeData = new HashMap<>();
         // Store the name to give to this Class <name>Messages.java
         messageTypeData.put("name", messsageName);
 
         // Prepare the list of log messages
-        List<HashMap> logMessageList = new LinkedList<HashMap>();
+        List<HashMap> logMessageList = new LinkedList<>();
         messageTypeData.put("list", logMessageList);
 
         //Process each of the properties
         for(String message : messageKeys)
         {
-            HashMap<String, Object> logEntryData = new HashMap<String, Object>();
+            HashMap<String, Object> logEntryData = new HashMap<>();
 
             // Process the log message if it matches the specified key e.g.'BRK_'
             if (!message.equals("package"))

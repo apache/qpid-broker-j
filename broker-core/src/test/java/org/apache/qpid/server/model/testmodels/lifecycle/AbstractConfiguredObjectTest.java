@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -72,7 +71,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         assertEquals(State.ERRORED, object.getState(), "Unexpected state");
 
         object.setThrowExceptionOnActivate(false);
-        object.setAttributes(Collections.<String, Object>singletonMap(Port.DESIRED_STATE, State.ACTIVE));
+        object.setAttributes(Map.of(Port.DESIRED_STATE, State.ACTIVE));
         assertEquals(State.ACTIVE, object.getState(), "Unexpected state");
     }
 
@@ -86,7 +85,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         assertEquals(State.ERRORED, object.getState(), "Unexpected state");
 
         object.setThrowExceptionOnOpen(false);
-        object.setAttributes(Collections.<String, Object>singletonMap(Port.DESIRED_STATE, State.ACTIVE));
+        object.setAttributes(Map.of(Port.DESIRED_STATE, State.ACTIVE));
         assertTrue(object.isOpened(), "Unexpected opened");
         assertEquals(State.ACTIVE, object.getState(), "Unexpected state");
     }
@@ -129,7 +128,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         assertFalse(object.isOpened(), "Unexpected opened");
         assertEquals(State.ERRORED, object.getState(), "Unexpected state");
 
-        object.setAttributes(Collections.<String, Object>singletonMap(Port.DESIRED_STATE, State.DELETED));
+        object.setAttributes(Map.of(Port.DESIRED_STATE, State.DELETED));
         assertFalse(object.isOpened(), "Unexpected opened");
         assertEquals(State.DELETED, object.getState(), "Unexpected state");
     }

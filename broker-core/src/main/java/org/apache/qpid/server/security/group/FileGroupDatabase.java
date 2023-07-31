@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
-import org.apache.qpid.server.util.BaseAction;
 import org.apache.qpid.server.util.FileHelper;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
@@ -293,16 +292,12 @@ public class FileGroupDatabase implements GroupDatabase
             propertiesFile.setProperty(group + ".users", userList);
         }
 
-        new FileHelper().writeFileSafely(new File(groupFile).toPath(), new BaseAction<File, IOException>()
+        new FileHelper().writeFileSafely(new File(groupFile).toPath(), file ->
         {
-            @Override
-            public void performAction(File file) throws IOException
+            String comment = "Written " + new Date();
+            try (FileOutputStream fileOutputStream = new FileOutputStream(file))
             {
-                String comment = "Written " + new Date();
-                try (FileOutputStream fileOutputStream = new FileOutputStream(file))
-                {
-                    propertiesFile.store(fileOutputStream, comment);
-                }
+                propertiesFile.store(fileOutputStream, comment);
             }
         });
     }

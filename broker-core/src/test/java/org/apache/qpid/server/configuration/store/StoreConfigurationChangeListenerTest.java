@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -80,7 +80,7 @@ public class StoreConfigurationChangeListenerTest extends UnitTestBase
         final VirtualHost child = mock(VirtualHost.class);
         when(child.getCategoryClass()).thenReturn(VirtualHost.class);
         final Model model = mock(Model.class);
-        when(model.getChildTypes(any(Class.class))).thenReturn(Collections.<Class<? extends ConfiguredObject>>emptyList());
+        when(model.getChildTypes(any(Class.class))).thenReturn(List.of());
         when(model.getParentType(eq(VirtualHost.class))).thenReturn((Class)Broker.class);
         when(child.getModel()).thenReturn(model);
         when(child.isDurable()).thenReturn(true);

@@ -73,7 +73,7 @@ abstract public class AbstractConfiguredObjectTypeFactory<X extends AbstractConf
         final SettableFuture<X> returnVal = SettableFuture.create();
         final X instance = createInstance(attributes, parent);
         final ListenableFuture<Void> createFuture = instance.createAsync();
-        AbstractConfiguredObject.addFutureCallback(createFuture, new FutureCallback<Void>()
+        AbstractConfiguredObject.addFutureCallback(createFuture, new FutureCallback<>()
         {
             @Override
             public void onSuccess(final Void result)
@@ -120,7 +120,7 @@ abstract public class AbstractConfiguredObjectTypeFactory<X extends AbstractConf
         @Override
         public X resolve()
         {
-            Map<String,Object> attributesWithId = new HashMap<String, Object>(getRecord().getAttributes());
+            Map<String,Object> attributesWithId = new HashMap<>(getRecord().getAttributes());
             attributesWithId.put(ConfiguredObject.ID, getRecord().getId());
             X instance = createInstance(attributesWithId, getParent());
             instance.registerWithParents();

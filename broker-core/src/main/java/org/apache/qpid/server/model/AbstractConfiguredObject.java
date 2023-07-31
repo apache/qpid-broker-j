@@ -106,30 +106,22 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractConfiguredObject.class);
 
-    private static final Map<Class, Object> SECURE_VALUES;
-
     public static final String SECURED_STRING_VALUE = "********";
 
-    static
-    {
-        Map<Class,Object> secureValues = new HashMap<Class, Object>();
-        secureValues.put(String.class, SECURED_STRING_VALUE);
-        secureValues.put(Integer.class, 0);
-        secureValues.put(Long.class, 0L);
-        secureValues.put(Byte.class, (byte)0);
-        secureValues.put(Short.class, (short)0);
-        secureValues.put(Double.class, (double)0);
-        secureValues.put(Float.class, (float)0);
-
-        SECURE_VALUES = Collections.unmodifiableMap(secureValues);
-    }
+    private static final Map<Class, Object> SECURE_VALUES = Map.of(String.class, SECURED_STRING_VALUE,
+            Integer.class, 0,
+            Long.class, 0L,
+            Byte.class, (byte) 0,
+            Short.class, (short) 0,
+            Double.class, (double) 0,
+            Float.class, (float) 0);
 
     private ConfigurationSecretEncrypter _encrypter;
     private AccessControl _parentAccessControl;
     private Principal _systemPrincipal;
     private UserPreferences _userPreferences;
 
-    private enum DynamicState { UNINIT, OPENED, CLOSED };
+    private enum DynamicState { UNINIT, OPENED, CLOSED }
 
     private static class DynamicStateWithFuture
     {
@@ -155,10 +147,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     private static final DynamicStateWithFuture UNINIT = new DynamicStateWithFuture(
             DynamicState.UNINIT,
-            Futures.<Void>immediateFuture(null));
+            Futures.immediateFuture(null));
     private static final DynamicStateWithFuture OPENED = new DynamicStateWithFuture(
             DynamicState.OPENED,
-            Futures.<Void>immediateFuture(null));
+            Futures.immediateFuture(null));
 
 
     private final AtomicReference<DynamicStateWithFuture> _dynamicState = new AtomicReference<>(UNINIT);
@@ -411,9 +403,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
         for (Class<? extends ConfiguredObject> childClass : getModel().getChildTypes(getCategoryClass()))
         {
-            _children.put(childClass, new CopyOnWriteArrayList<ConfiguredObject<?>>());
-            _childrenById.put(childClass, new ConcurrentHashMap<UUID, ConfiguredObject<?>>());
-            _childrenByName.put(childClass, new ConcurrentHashMap<String, ConfiguredObject<?>>());
+            _children.put(childClass, new CopyOnWriteArrayList<>());
+            _childrenById.put(childClass, new ConcurrentHashMap<>());
+            _childrenByName.put(childClass, new ConcurrentHashMap<>());
         }
     }
 
@@ -424,7 +416,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     private Class<? extends ConfiguredObject> calculateBestFitInterface()
     {
-        Set<Class<? extends ConfiguredObject>> candidates = new HashSet<Class<? extends ConfiguredObject>>();
+        Set<Class<? extends ConfiguredObject>> candidates = new HashSet<>();
         findBestFitInterface(getClass(), candidates);
         switch(candidates.size())
         {
@@ -540,12 +532,12 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             }
             else
             {
-                valuesToCheck = Collections.emptySet();
+                valuesToCheck = Set.of();
             }
         }
         else
         {
-            valuesToCheck = Collections.emptySet();
+            valuesToCheck = Set.of();
         }
 
         Pattern pattern = Pattern.compile(attribute.validValuePattern());
@@ -633,7 +625,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             {
                 try
                 {
-                    addFutureCallback(task.execute(), new FutureCallback<T>()
+                    addFutureCallback(task.execute(), new FutureCallback<>()
                     {
                         @Override
                         public void onSuccess(final T result)
@@ -696,55 +688,47 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         final List<ListenableFuture<Void>> childCloseFutures = new ArrayList<>();
 
-        applyToChildren(new Action<ConfiguredObject<?>>()
+        applyToChildren(child ->
         {
-            @Override
-            public void performAction(final ConfiguredObject<?> child)
+            ListenableFuture<Void> childCloseFuture = child.closeAsync();
+            addFutureCallback(childCloseFuture, new FutureCallback<>()
             {
-                ListenableFuture<Void> childCloseFuture = child.closeAsync();
-                addFutureCallback(childCloseFuture, new FutureCallback<Void>()
+                @Override
+                public void onSuccess(final Void result)
                 {
-                    @Override
-                    public void onSuccess(final Void result)
-                    {
-                    }
+                }
 
-                    @Override
-                    public void onFailure(final Throwable t)
-                    {
-                        LOGGER.error("Exception occurred while closing {} : {}",
-                                     child.getClass().getSimpleName(), child.getName(), t);
-                    }
-                }, getTaskExecutor());
-                childCloseFutures.add(childCloseFuture);
-            }
+                @Override
+                public void onFailure(final Throwable t)
+                {
+                    LOGGER.error("Exception occurred while closing {} : {}",
+                                 child.getClass().getSimpleName(), child.getName(), t);
+                }
+            }, getTaskExecutor());
+            childCloseFutures.add(childCloseFuture);
         });
         ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(childCloseFutures);
-        return doAfter(combinedFuture, new Runnable()
+        return doAfter(combinedFuture, () ->
         {
-            @Override
-            public void run()
+            // TODO consider removing each child from the parent as each child close completes, rather
+            // than awaiting the completion of the combined future.  This would make it easy to give
+            // clearer debug that would highlight the children that have failed to closed.
+            for(Collection<ConfiguredObject<?>> childList : _children.values())
             {
-                // TODO consider removing each child from the parent as each child close completes, rather
-                // than awaiting the completion of the combined future.  This would make it easy to give
-                // clearer debug that would highlight the children that have failed to closed.
-                for(Collection<ConfiguredObject<?>> childList : _children.values())
-                {
-                    childList.clear();
-                }
-
-                for(Map<UUID,ConfiguredObject<?>> childIdMap : _childrenById.values())
-                {
-                    childIdMap.clear();
-                }
-
-                for(Map<String,ConfiguredObject<?>> childNameMap : _childrenByName.values())
-                {
-                    childNameMap.clear();
-                }
-
-                LOGGER.debug("All children closed {} : {}", AbstractConfiguredObject.this.getClass().getSimpleName(), getName());
+                childList.clear();
             }
+
+            for(Map<UUID,ConfiguredObject<?>> childIdMap : _childrenById.values())
+            {
+                childIdMap.clear();
+            }
+
+            for(Map<String,ConfiguredObject<?>> childNameMap : _childrenByName.values())
+            {
+                childNameMap.clear();
+            }
+
+            LOGGER.debug("All children closed {} : {}", AbstractConfiguredObject.this.getClass().getSimpleName(), getName());
         });
     }
 
@@ -772,34 +756,17 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     if(_dynamicState.compareAndSet(OPENED, desiredStateWithFuture))
                     {
                         final ChainedListenableFuture<Void> future =
-                                doAfter(beforeClose(), new Callable<ListenableFuture<Void>>()
-                                {
-                                    @Override
-                                    public ListenableFuture<Void> call() throws Exception
-                                    {
-                                        return closeChildren();
-                                    }
-                                }).then(new Callable<ListenableFuture<Void>>()
-                                {
-                                    @Override
-                                    public ListenableFuture<Void> call() throws Exception
-                                    {
-                                        return onClose();
-                                    }
-                                }).then(new Callable<ListenableFuture<Void>>()
-                                {
-                                    @Override
-                                    public ListenableFuture<Void> call() throws Exception
-                                    {
-                                        unregister(false);
-                                        LOGGER.debug("Closed "
-                                                     + AbstractConfiguredObject.this.getClass().getSimpleName()
-                                                     + " : "
-                                                     + getName());
-                                        return Futures.immediateFuture(null);
-                                    }
-                                });
-                        addFutureCallback(future, new FutureCallback<Void>()
+                                doAfter(beforeClose(), () -> closeChildren()).then(() -> onClose())
+                                        .then(() ->
+                                        {
+                                            unregister(false);
+                                            LOGGER.debug("Closed "
+                                                    + AbstractConfiguredObject.this.getClass().getSimpleName()
+                                                    + " : "
+                                                    + getName());
+                                            return Futures.immediateFuture(null);
+                                        });
+                        addFutureCallback(future, new FutureCallback<>()
                         {
                             @Override
                             public void onSuccess(final Void result)
@@ -1034,33 +1001,29 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         final List<ListenableFuture<Void>> childStateFutures = new ArrayList<>();
 
-        applyToChildren(new Action<ConfiguredObject<?>>()
+        applyToChildren(child ->
         {
-            @Override
-            public void performAction(final ConfiguredObject<?> child)
+            if (child instanceof AbstractConfiguredObject)
             {
-                if (child instanceof AbstractConfiguredObject)
+                AbstractConfiguredObject<?> abstractConfiguredChild = (AbstractConfiguredObject<?>) child;
+                if(abstractConfiguredChild._dynamicState.get().getDynamicState() == DynamicState.OPENED)
                 {
-                    AbstractConfiguredObject<?> abstractConfiguredChild = (AbstractConfiguredObject<?>) child;
-                    if(abstractConfiguredChild._dynamicState.get().getDynamicState() == DynamicState.OPENED)
-                    {
-                        final AbstractConfiguredObject configuredObject = abstractConfiguredChild;
-                        childStateFutures.add(configuredObject.doAttainState(exceptionHandler, postAction));
-                    }
+                    final AbstractConfiguredObject configuredObject = abstractConfiguredChild;
+                    childStateFutures.add(configuredObject.doAttainState(exceptionHandler, postAction));
                 }
-                else if(child instanceof AbstractConfiguredObjectProxy
-                    && ((AbstractConfiguredObjectProxy)child).getDynamicState() == DynamicState.OPENED)
-                {
-                    final AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
-                    childStateFutures.add(configuredObject.doAttainState(exceptionHandler));
-                }
+            }
+            else if(child instanceof AbstractConfiguredObjectProxy
+                && ((AbstractConfiguredObjectProxy)child).getDynamicState() == DynamicState.OPENED)
+            {
+                final AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
+                childStateFutures.add(configuredObject.doAttainState(exceptionHandler));
             }
         });
 
         ListenableFuture<List<Void>> combinedChildStateFuture = Futures.allAsList(childStateFutures);
 
         final SettableFuture<Void> returnVal = SettableFuture.create();
-        addFutureCallback(combinedChildStateFuture, new FutureCallback<List<Void>>()
+        addFutureCallback(combinedChildStateFuture, new FutureCallback<>()
         {
             @Override
             public void onSuccess(final List<Void> result)
@@ -1068,43 +1031,43 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 try
                 {
                     addFutureCallback(attainState(),
-                                        new FutureCallback<Void>()
-                                        {
-                                            @Override
-                                            public void onSuccess(final Void result1)
-                                            {
-                                                postAction.performAction(AbstractConfiguredObject.this);
-                                                returnVal.set(null);
-                                            }
+                                      new FutureCallback<>()
+                                      {
+                                          @Override
+                                          public void onSuccess(final Void result1)
+                                          {
+                                              postAction.performAction(AbstractConfiguredObject.this);
+                                              returnVal.set(null);
+                                          }
 
-                                            @Override
-                                            public void onFailure(final Throwable t)
-                                            {
-                                                try
-                                                {
-                                                    if (t instanceof RuntimeException)
-                                                    {
-                                                        try
-                                                        {
-                                                            exceptionHandler.handleException((RuntimeException) t,
-                                                                                             AbstractConfiguredObject.this);
-                                                            returnVal.set(null);
-                                                        }
-                                                        catch (RuntimeException r)
-                                                        {
-                                                            returnVal.setException(r);
-                                                        }
-                                                    }
-                                                }
-                                                finally
-                                                {
-                                                    if (!returnVal.isDone())
-                                                    {
-                                                        returnVal.setException(t);
-                                                    }
-                                                }
-                                            }
-                                        }, getTaskExecutor());
+                                          @Override
+                                          public void onFailure(final Throwable t)
+                                          {
+                                              try
+                                              {
+                                                  if (t instanceof RuntimeException)
+                                                  {
+                                                      try
+                                                      {
+                                                          exceptionHandler.handleException((RuntimeException) t,
+                                                                                           AbstractConfiguredObject.this);
+                                                          returnVal.set(null);
+                                                      }
+                                                      catch (RuntimeException r)
+                                                      {
+                                                          returnVal.setException(r);
+                                                      }
+                                                  }
+                                              }
+                                              finally
+                                              {
+                                                  if (!returnVal.isDone())
+                                                  {
+                                                      returnVal.setException(t);
+                                                  }
+                                              }
+                                          }
+                                      }, getTaskExecutor());
                 }
                 catch (RuntimeException e)
                 {
@@ -1137,31 +1100,27 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         {
             onOpen();
             notifyStateChanged(State.UNINITIALIZED, getState());
-            applyToChildren(new Action<ConfiguredObject<?>>()
+            applyToChildren(child ->
             {
-                @Override
-                public void performAction(final ConfiguredObject<?> child)
+                if (child.getState() != State.ERRORED)
                 {
-                    if (child.getState() != State.ERRORED)
-                    {
 
-                        try
+                    try
+                    {
+                        if(child instanceof AbstractConfiguredObject)
                         {
-                            if(child instanceof AbstractConfiguredObject)
-                            {
-                                AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
-                                configuredObject.doOpening(false, exceptionHandler);
-                            }
-                            else if(child instanceof AbstractConfiguredObjectProxy)
-                            {
-                                AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
-                                configuredObject.doOpening(false, exceptionHandler);
-                            }
+                            AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
+                            configuredObject.doOpening(false, exceptionHandler);
                         }
-                        catch (RuntimeException e)
+                        else if(child instanceof AbstractConfiguredObjectProxy)
                         {
-                            exceptionHandler.handleException(e, child);
+                            AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
+                            configuredObject.doOpening(false, exceptionHandler);
                         }
+                    }
+                    catch (RuntimeException e)
+                    {
+                        exceptionHandler.handleException(e, child);
                     }
                 }
             });
@@ -1174,30 +1133,26 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         if(skipCheck || _dynamicState.get().getDynamicState() != DynamicState.OPENED)
         {
-            applyToChildren(new Action<ConfiguredObject<?>>()
+            applyToChildren(child ->
             {
-                @Override
-                public void performAction(final ConfiguredObject<?> child)
+                if (child.getState() != State.ERRORED)
                 {
-                    if (child.getState() != State.ERRORED)
+                    try
                     {
-                        try
+                        if(child instanceof AbstractConfiguredObject)
                         {
-                            if(child instanceof AbstractConfiguredObject)
-                            {
-                                AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
-                                configuredObject.doValidation(false, exceptionHandler);
-                            }
-                            else if(child instanceof AbstractConfiguredObjectProxy)
-                            {
-                                AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
-                                configuredObject.doValidation(false, exceptionHandler);
-                            }
+                            AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
+                            configuredObject.doValidation(false, exceptionHandler);
                         }
-                        catch (RuntimeException e)
+                        else if(child instanceof AbstractConfiguredObjectProxy)
                         {
-                            exceptionHandler.handleException(e, child);
+                            AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
+                            configuredObject.doValidation(false, exceptionHandler);
                         }
+                    }
+                    catch (RuntimeException e)
+                    {
+                        exceptionHandler.handleException(e, child);
                     }
                 }
             });
@@ -1211,31 +1166,24 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         {
             onResolve();
             postResolve();
-            applyToChildren(new Action()
+            applyToChildren(child ->
             {
-                @Override
-                public void performAction(Object child)
+                try
                 {
-                        try
-                        {
-                            if (child instanceof AbstractConfiguredObject)
-                            {
-                                AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
-
-                                configuredObject.doResolution(false, exceptionHandler);
-                            }
-                            else if (child instanceof AbstractConfiguredObjectProxy)
-                            {
-                                AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
-
-                                configuredObject.doResolution(false, exceptionHandler);
-                            }
-                        }
-                        catch (RuntimeException e)
-                        {
-                            exceptionHandler.handleException(e, (ConfiguredObject)child);
-                        }
-
+                    if (child instanceof AbstractConfiguredObject)
+                    {
+                        AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
+                        configuredObject.doResolution(false, exceptionHandler);
+                    }
+                    else if (child instanceof AbstractConfiguredObjectProxy)
+                    {
+                        AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
+                        configuredObject.doResolution(false, exceptionHandler);
+                    }
+                }
+                catch (RuntimeException e)
+                {
+                    exceptionHandler.handleException(e, (ConfiguredObject)child);
                 }
             });
             postResolveChildren();
@@ -1272,30 +1220,26 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         if(skipCheck || _dynamicState.get().getDynamicState() != DynamicState.OPENED)
         {
             onCreate();
-            applyToChildren(new Action<ConfiguredObject<?>>()
+            applyToChildren(child ->
             {
-                @Override
-                public void performAction(final ConfiguredObject<?> child)
-                {
-                        try
+                    try
+                    {
+                        if (child instanceof AbstractConfiguredObject)
                         {
-                            if (child instanceof AbstractConfiguredObject)
-                            {
-                                AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
-                                configuredObject.doCreation(false, exceptionHandler);
-                            }
-                            else if(child instanceof AbstractConfiguredObjectProxy)
-                            {
-                                AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
-                                configuredObject.doCreation(false, exceptionHandler);
-                            }
+                            AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
+                            configuredObject.doCreation(false, exceptionHandler);
                         }
-                        catch (RuntimeException e)
+                        else if(child instanceof AbstractConfiguredObjectProxy)
                         {
-                            exceptionHandler.handleException(e, child);
+                            AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
+                            configuredObject.doCreation(false, exceptionHandler);
                         }
+                    }
+                    catch (RuntimeException e)
+                    {
+                        exceptionHandler.handleException(e, child);
+                    }
 
-                }
             });
         }
     }
@@ -1370,15 +1314,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected final void setEncrypter(final ConfigurationSecretEncrypter encrypter)
     {
         _encrypter = encrypter;
-        applyToChildren(new Action<ConfiguredObject<?>>()
+        applyToChildren(object ->
         {
-            @Override
-            public void performAction(final ConfiguredObject<?> object)
+            if(object instanceof AbstractConfiguredObject)
             {
-                if(object instanceof AbstractConfiguredObject)
-                {
-                    ((AbstractConfiguredObject)object).setEncrypter(encrypter);
-                }
+                ((AbstractConfiguredObject)object).setEncrypter(encrypter);
             }
         });
     }
@@ -1523,7 +1463,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 {
                     final SettableFuture<Void> stateTransitionResult = SettableFuture.create();
                     ListenableFuture<Void> stateTransitionFuture = (ListenableFuture<Void>) stateChangingMethod.invoke(this);
-                    addFutureCallback(stateTransitionFuture, new FutureCallback<Void>()
+                    addFutureCallback(stateTransitionFuture, new FutureCallback<>()
                     {
                         @Override
                         public void onSuccess(Void result)
@@ -1660,7 +1600,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public Map<String,String> getContext()
     {
-        return _context == null ? Collections.<String,String>emptyMap() : Collections.unmodifiableMap(_context);
+        return _context == null ? Map.of() : Collections.unmodifiableMap(_context);
     }
 
     @Override
@@ -1682,17 +1622,12 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 final State currentDesiredState = getDesiredState();
                 if(desiredState == currentDesiredState && desiredState != state)
                 {
-                    return doAfter(attainStateIfOpenedOrReopenFailed(), new Runnable()
+                    return doAfter(attainStateIfOpenedOrReopenFailed(), () ->
                     {
-                        @Override
-                        public void run()
+                        final State currentState = getState();
+                        if (currentState != state)
                         {
-                            final State currentState = getState();
-                            if (currentState != state)
-                            {
-                                notifyStateChanged(state, currentState);
-                            }
-
+                            notifyStateChanged(state, currentState);
                         }
                     });
                 }
@@ -1764,7 +1699,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         List<ConfigurationChangeListener> copy;
         synchronized (_changeListeners)
         {
-            copy = new ArrayList<ConfigurationChangeListener>(_changeListeners);
+            copy = new ArrayList<>(_changeListeners);
         }
         for(ConfigurationChangeListener listener : copy)
         {
@@ -1840,7 +1775,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
         synchronized (_changeListeners)
         {
-            List<ConfigurationChangeListener> copy = new ArrayList<ConfigurationChangeListener>(_changeListeners);
+            List<ConfigurationChangeListener> copy = new ArrayList<>(_changeListeners);
             for(ConfigurationChangeListener listener : copy)
             {
                 listener.attributeSet(this, attributeName, oldAttributeValue, newAttributeValue);
@@ -1887,7 +1822,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         synchronized (_attributes)
         {
-            return new HashMap<String, Object>(_attributes);
+            return new HashMap<>(_attributes);
         }
     }
 
@@ -1968,31 +1903,27 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             @Override
             public Map<String, Object> getAttributes()
             {
-                return Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Map<String, Object>>()
+                return Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Map<String, Object>>) () ->
                 {
-                    @Override
-                    public Map<String, Object> run()
+                    Map<String,Object> attributes = new LinkedHashMap<>();
+                    Map<String,Object> actualAttributes = getActualAttributes();
+                    for(ConfiguredObjectAttribute<?,?> attr : _attributeTypes.values())
                     {
-                        Map<String,Object> attributes = new LinkedHashMap<>();
-                        Map<String,Object> actualAttributes = getActualAttributes();
-                        for(ConfiguredObjectAttribute<?,?> attr : _attributeTypes.values())
+                        if (attr.isPersisted() && !ID.equals(attr.getName()))
                         {
-                            if (attr.isPersisted() && !ID.equals(attr.getName()))
+                            if(attr.isDerived())
                             {
-                                if(attr.isDerived())
-                                {
-                                    Object value = getAttribute(attr.getName());
-                                    attributes.put(attr.getName(), toRecordedForm(attr, value));
-                                }
-                                else if(actualAttributes.containsKey(attr.getName()))
-                                {
-                                    Object value = actualAttributes.get(attr.getName());
-                                    attributes.put(attr.getName(), toRecordedForm(attr, value));
-                                }
+                                Object value = getAttribute(attr.getName());
+                                attributes.put(attr.getName(), toRecordedForm(attr, value));
+                            }
+                            else if(actualAttributes.containsKey(attr.getName()))
+                            {
+                                Object value = actualAttributes.get(attr.getName());
+                                attributes.put(attr.getName(), toRecordedForm(attr, value));
                             }
                         }
-                        return attributes;
                     }
+                    return attributes;
                 });
             }
 
@@ -2083,20 +2014,14 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             private ListenableFuture<C> create()
             {
                 authoriseCreateChild(childClass, attributes);
-                return doAfter(addChildAsync(childClass, attributes),
-                                new CallableWithArgument<ListenableFuture<C>, C>()
-                                {
-
-                                    @Override
-                                    public ListenableFuture<C> call(final C child) throws Exception
-                                    {
-                                        if (child != null)
-                                        {
-                                            childAdded(child);
-                                        }
-                                        return Futures.immediateFuture(child);
-                                    }
-                                });
+                return doAfter(addChildAsync(childClass, attributes), child ->
+                {
+                    if (child != null)
+                    {
+                        childAdded(child);
+                    }
+                    return Futures.immediateFuture(child);
+                });
             }
 
             @Override
@@ -2242,7 +2167,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         try
         {
             result = deleteWithChecks();
-            addFutureCallback(result, new FutureCallback<Void>()
+            addFutureCallback(result, new FutureCallback<>()
             {
                 @Override
                 public void onSuccess(final Void result11)
@@ -2469,7 +2394,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
                                                                  return Futures.immediateFuture(null);
                                                                        });
-        addFutureCallback(future, new FutureCallback<Void>()
+        addFutureCallback(future, new FutureCallback<>()
         {
             @Override
             public void onSuccess(final Void result)
@@ -2516,14 +2441,14 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 childDeleteFuture = Futures.immediateFuture(null);
             }
 
-            addFutureCallback(childDeleteFuture, new FutureCallback<Void>()
+            addFutureCallback(childDeleteFuture, new FutureCallback<>()
             {
                 @Override
                 public void onSuccess(final Void result)
                 {
                     if (child instanceof AbstractConfiguredObject<?>)
                     {
-                        ((AbstractConfiguredObject)child).logDeleted(Outcome.SUCCESS);
+                        ((AbstractConfiguredObject) child).logDeleted(Outcome.SUCCESS);
                     }
                 }
 
@@ -2535,7 +2460,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
                     if (child instanceof AbstractConfiguredObject<?>)
                     {
-                        ((AbstractConfiguredObject)child).logDeleted(Outcome.FAILURE);
+                        ((AbstractConfiguredObject) child).logDeleted(Outcome.FAILURE);
                     }
                 }
             }, getTaskExecutor());
@@ -2708,8 +2633,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected static <V> ChainedListenableFuture<Void>  doAfter(Executor executor, ListenableFuture<V> first, final Runnable second)
     {
-        final ChainedSettableFuture<Void> returnVal = new ChainedSettableFuture<Void>(executor);
-        addFutureCallback(first, new FutureCallback<V>()
+        final ChainedSettableFuture<Void> returnVal = new ChainedSettableFuture<>(executor);
+        addFutureCallback(first, new FutureCallback<>()
         {
             @Override
             public void onSuccess(final V result)
@@ -2719,7 +2644,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     second.run();
                     returnVal.set(null);
                 }
-                catch(Throwable e)
+                catch (Throwable e)
                 {
                     returnVal.setException(e);
                 }
@@ -2800,8 +2725,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected static <V> ChainedListenableFuture<V> doAfter(final Executor executor, ListenableFuture<V> first, final Callable<ListenableFuture<V>> second)
     {
-        final ChainedSettableFuture<V> returnVal = new ChainedSettableFuture<V>(executor);
-        addFutureCallback(first, new FutureCallback<V>()
+        final ChainedSettableFuture<V> returnVal = new ChainedSettableFuture<>(executor);
+        addFutureCallback(first, new FutureCallback<>()
         {
             @Override
             public void onSuccess(final V result)
@@ -2809,7 +2734,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 try
                 {
                     final ListenableFuture<V> future = second.call();
-                    addFutureCallback(future, new FutureCallback<V>()
+                    addFutureCallback(future, new FutureCallback<>()
                     {
                         @Override
                         public void onSuccess(final V result)
@@ -2823,9 +2748,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                             returnVal.setException(t);
                         }
                     }, executor);
-
                 }
-                catch(Throwable e)
+                catch (Throwable e)
                 {
                     returnVal.setException(e);
                 }
@@ -2845,7 +2769,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected static <V,A> ChainedListenableFuture<V> doAfter(final Executor executor, ListenableFuture<A> first, final CallableWithArgument<ListenableFuture<V>,A> second)
     {
         final ChainedSettableFuture<V> returnVal = new ChainedSettableFuture<>(executor);
-        addFutureCallback(first, new FutureCallback<A>()
+        addFutureCallback(first, new FutureCallback<>()
         {
             @Override
             public void onSuccess(final A result)
@@ -2853,7 +2777,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 try
                 {
                     final ListenableFuture<V> future = second.call(result);
-                    addFutureCallback(future, new FutureCallback<V>()
+                    addFutureCallback(future, new FutureCallback<>()
                     {
                         @Override
                         public void onSuccess(final V result)
@@ -2867,7 +2791,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                             returnVal.setException(t);
                         }
                     }, executor);
-
                 }
                 catch (Throwable e)
                 {
@@ -2894,8 +2817,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                                      ListenableFuture<V> future,
                                                                      final Runnable after)
     {
-        final ChainedSettableFuture<Void> returnVal = new ChainedSettableFuture<Void>(executor);
-        addFutureCallback(future, new FutureCallback<V>()
+        final ChainedSettableFuture<Void> returnVal = new ChainedSettableFuture<>(executor);
+        addFutureCallback(future, new FutureCallback<>()
         {
             @Override
             public void onSuccess(final V result)
@@ -2933,33 +2856,25 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         final Subject subject = Subject.getSubject(AccessController.getContext());
 
-        Futures.addCallback(future, new FutureCallback<V>()
+        Futures.addCallback(future, new FutureCallback<>()
         {
             @Override
             public void onSuccess(final V result)
             {
-                Subject.doAs(subject, new PrivilegedAction<Void>()
+                Subject.doAs(subject, (PrivilegedAction<Void>) () ->
                 {
-                    @Override
-                    public Void run()
-                    {
-                        callback.onSuccess(result);
-                        return null;
-                    }
+                    callback.onSuccess(result);
+                    return null;
                 });
             }
 
             @Override
             public void onFailure(final Throwable t)
             {
-                Subject.doAs(subject, new PrivilegedAction<Void>()
+                Subject.doAs(subject, (PrivilegedAction<Void>) () ->
                 {
-                    @Override
-                    public Void run()
-                    {
-                        callback.onFailure(t);
-                        return null;
-                    }
+                    callback.onFailure(t);
+                    return null;
                 });
             }
         }, taskExecutor);
@@ -3042,19 +2957,15 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     public void forceUpdateAllSecureAttributes()
     {
-        applyToChildren(new Action<ConfiguredObject<?>>()
+        applyToChildren(object ->
         {
-            @Override
-            public void performAction(final ConfiguredObject<?> object)
+            if (object instanceof AbstractConfiguredObject)
             {
-                if (object instanceof AbstractConfiguredObject)
-                {
-                    ((AbstractConfiguredObject) object).forceUpdateAllSecureAttributes();
-                }
-                else if(object instanceof AbstractConfiguredObjectProxy)
-                {
-                    ((AbstractConfiguredObjectProxy) object).forceUpdateAllSecureAttributes();
-                }
+                ((AbstractConfiguredObject) object).forceUpdateAllSecureAttributes();
+            }
+            else if(object instanceof AbstractConfiguredObjectProxy)
+            {
+                ((AbstractConfiguredObjectProxy) object).forceUpdateAllSecureAttributes();
             }
         });
         doUpdateSecureAttributes();
@@ -3101,7 +3012,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         synchronized (_changeListeners)
         {
-            List<ConfigurationChangeListener> copy = new ArrayList<ConfigurationChangeListener>(_changeListeners);
+            List<ConfigurationChangeListener> copy = new ArrayList<>(_changeListeners);
             for(ConfigurationChangeListener listener : copy)
             {
                 listener.bulkChangeStart(this);
@@ -3113,7 +3024,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         synchronized (_changeListeners)
         {
-            List<ConfigurationChangeListener> copy = new ArrayList<ConfigurationChangeListener>(_changeListeners);
+            List<ConfigurationChangeListener> copy = new ArrayList<>(_changeListeners);
             for(ConfigurationChangeListener listener : copy)
             {
                 listener.bulkChangeEnd(this);
@@ -3241,13 +3152,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected final <C extends ConfiguredObject<?>> void authoriseCreateChild(Class<C> childClass, Map<String, Object> attributes) throws AccessControlException
     {
         ConfiguredObject<?> configuredObject = createProxyForAuthorisation(childClass, attributes, this);
-        authorise(configuredObject, null, Operation.CREATE, Collections.emptyMap());
+        authorise(configuredObject, null, Operation.CREATE, Map.of());
     }
 
     @Override
     public final void authorise(Operation operation) throws AccessControlException
     {
-        authorise(this, null, operation, Collections.emptyMap());
+        authorise(this, null, operation, Map.of());
     }
 
     @Override
@@ -3359,17 +3270,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected final AccessControlContext getSystemTaskControllerContext(String taskName, Principal principal)
     {
         final Subject subject = getSystemTaskSubject(taskName, principal);
-        return AccessController.doPrivileged
-                (new PrivilegedAction<AccessControlContext>()
-                {
-                    @Override
-                    public AccessControlContext run()
-                    {
-                        return new AccessControlContext
-                                (AccessController.getContext(),
-                                 new SubjectDomainCombiner(subject));
-                    }
-                }, null);
+        return AccessController.doPrivileged((PrivilegedAction<AccessControlContext>) () ->
+                new AccessControlContext(AccessController.getContext(), new SubjectDomainCombiner(subject)), null);
     }
 
     protected Subject getSystemTaskSubject(String taskName)
@@ -3397,10 +3299,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         Set<Principal> principalSet = new HashSet<>(Arrays.asList(principals));
         principalSet.add(getSystemPrincipal());
-        return new Subject(true,
-                           principalSet,
-                           Collections.emptySet(),
-                           Collections.emptySet());
+        return new Subject(true, principalSet, Set.of(), Set.of());
     }
 
     private int getAwaitAttainmentTimeout()
@@ -3486,7 +3385,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public Map<String, Object> getStatistics()
     {
-        return getStatistics(Collections.<String>emptyList());
+        return getStatistics(List.of());
     }
 
     @Override
@@ -3775,7 +3674,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
         else
         {
-            Map<String, String> inheritedContext = new HashMap<String, String>();
+            Map<String, String> inheritedContext = new HashMap<>();
             generateInheritedContext(object.getModel(), object, inheritedContext);
             return Strings.expand(value, false,
                                   JSON_SUBSTITUTION_RESOLVER,
@@ -3835,14 +3734,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
 
     private static final Strings.Resolver JSON_SUBSTITUTION_RESOLVER =
-            Strings.createSubstitutionResolver("json:",
-                                               new LinkedHashMap<String, String>()
-                                               {
-                                                   {
-                                                       put("\\","\\\\");
-                                                       put("\"","\\\"");
-                                                   }
-                                               });
+            Strings.createSubstitutionResolver("json:", Map.of("\\", "\\\\", "\"", "\\\""));
 
 
     private static class AttributeGettingHandler implements InvocationHandler

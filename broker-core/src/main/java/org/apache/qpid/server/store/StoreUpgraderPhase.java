@@ -38,7 +38,7 @@ public abstract class StoreUpgraderPhase extends NonNullUpgrader
 
     protected ConfiguredObjectRecord upgradeRootRecord(ConfiguredObjectRecord record)
     {
-        Map<String, Object> updatedAttributes = new HashMap<String, Object>(record.getAttributes());
+        Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
         updatedAttributes.put(_versionAttributeName, _toVersion);
         record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
         getUpdateMap().put(record.getId(), record);

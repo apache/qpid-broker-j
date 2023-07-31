@@ -27,11 +27,9 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.List;
 
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
@@ -123,33 +121,29 @@ public class ConnectionBuilder
 
             final SSLSocketFactory socketFactory = sslContext.getSocketFactory();
             httpsConnection.setSSLSocketFactory(socketFactory);
-            httpsConnection.setHostnameVerifier(new HostnameVerifier()
+            httpsConnection.setHostnameVerifier((hostname, sslSession) ->
             {
-                @Override
-                public boolean verify(final String hostname, final SSLSession sslSession)
+                try
                 {
-                    try
+                    final Certificate cert = sslSession.getPeerCertificates()[0];
+                    if (cert instanceof X509Certificate)
                     {
-                        final Certificate cert = sslSession.getPeerCertificates()[0];
-                        if (cert instanceof X509Certificate)
-                        {
-                            final X509Certificate x509Certificate = (X509Certificate) cert;
-                            SSLUtil.verifyHostname(hostname, x509Certificate);
-                            return true;
-                        }
-                        else
-                        {
-                            LOGGER.warn("Cannot verify peer's hostname as peer does not present a X509Certificate. "
-                                        + "Presented certificate : {}", cert);
-                        }
+                        final X509Certificate x509Certificate = (X509Certificate) cert;
+                        SSLUtil.verifyHostname(hostname, x509Certificate);
+                        return true;
                     }
-                    catch (SSLPeerUnverifiedException | TransportException e)
+                    else
                     {
-                        LOGGER.warn("Failed to verify peer's hostname (connecting to host {})", hostname, e);
+                        LOGGER.warn("Cannot verify peer's hostname as peer does not present a X509Certificate. "
+                                    + "Presented certificate : {}", cert);
                     }
-
-                    return false;
                 }
+                catch (SSLPeerUnverifiedException | TransportException e)
+                {
+                    LOGGER.warn("Failed to verify peer's hostname (connecting to host {})", hostname, e);
+                }
+
+                return false;
             });
         }
 

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.PatternSyntaxException;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +38,6 @@ import org.apache.qpid.server.plugin.ConnectionValidator;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
-
 
 @PluggableService
 public class ConnectionVersionValidator implements ConnectionValidator
@@ -61,7 +59,7 @@ public class ConnectionVersionValidator implements ConnectionValidator
         }
     }
 
-    private final Map<String, Set<List<String>>> _cachedLists = Collections.synchronizedMap(new HashMap<String, Set<List<String>>>());
+    private final Map<String, Set<List<String>>> _cachedLists = Collections.synchronizedMap(new HashMap<>());
 
     public ConnectionVersionValidator()
     {

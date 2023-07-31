@@ -49,30 +49,25 @@ abstract class QueueEntryTransaction implements QueueManagingVirtualHost.Transac
     {
         if(_limit != 0)
         {
-            _sourceQueue.visit(new QueueEntryVisitor()
+            _sourceQueue.visit(entry ->
             {
-
-                @Override
-                public boolean visit(final QueueEntry entry)
+                final ServerMessage message = entry.getMessage();
+                boolean stop = false;
+                if (message != null)
                 {
-                    final ServerMessage message = entry.getMessage();
-                    boolean stop = false;
-                    if (message != null)
+                    final long messageId = message.getMessageNumber();
+                    if ((_messageIds == null || _messageIds.remove(messageId))
+                        && (_filter == null || _filter.matches(entry.asFilterable())))
                     {
-                        final long messageId = message.getMessageNumber();
-                        if ((_messageIds == null || _messageIds.remove(messageId))
-                            && (_filter == null || _filter.matches(entry.asFilterable())))
+                        stop = updateEntry(entry, txn);
+                        _modifiedMessageIds.add(messageId);
+                        if (_limit > 0)
                         {
-                            stop = updateEntry(entry, txn);
-                            _modifiedMessageIds.add(messageId);
-                            if (_limit > 0)
-                            {
-                                _limit--;
-                            }
+                            _limit--;
                         }
                     }
-                    return stop || _limit == 0 || (_messageIds != null && _messageIds.isEmpty());
                 }
+                return stop || _limit == 0 || (_messageIds != null && _messageIds.isEmpty());
             });
         }
 

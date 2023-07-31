@@ -50,7 +50,7 @@ public abstract class OrderedQueueEntryList extends AbstractQueueEntryList
 
     private final AtomicLong _scavenges = new AtomicLong(0L);
     private final long _scavengeCount;
-    private final AtomicReference<QueueEntry> _unscavengedHWM = new AtomicReference<QueueEntry>();
+    private final AtomicReference<QueueEntry> _unscavengedHWM = new AtomicReference<>();
 
 
     public OrderedQueueEntryList(Queue<?> queue,

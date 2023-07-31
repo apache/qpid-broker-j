@@ -69,7 +69,7 @@ public class MultiVersionProtocolEngineFactory implements ProtocolEngineFactory
         _broker = broker;
         _supported = supportedVersions;
         _defaultSupportedReply = defaultSupportedReply;
-        final List<ProtocolEngineCreator> creators = new ArrayList<ProtocolEngineCreator>();
+        final List<ProtocolEngineCreator> creators = new ArrayList<>();
         for(ProtocolEngineCreator c : new QpidServiceLoader().instancesOf(ProtocolEngineCreator.class))
         {
             creators.add(c);

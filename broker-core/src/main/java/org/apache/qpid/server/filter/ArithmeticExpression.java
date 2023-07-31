@@ -37,127 +37,127 @@ public abstract class ArithmeticExpression<T> extends BinaryExpression<T>
 
     public static <E> Expression<E> createPlus(Expression<E> left, Expression<E> right)
     {
-        return new ArithmeticExpression<E>(left, right)
+        return new ArithmeticExpression<>(left, right)
+        {
+            @Override
+            protected Object evaluate(Object lvalue, Object rvalue)
             {
-                @Override
-                protected Object evaluate(Object lvalue, Object rvalue)
+                if (lvalue instanceof String)
                 {
-                    if (lvalue instanceof String)
-                    {
-                        String text = (String) lvalue;
-                        String answer = text + rvalue;
+                    String text = (String) lvalue;
+                    String answer = text + rvalue;
 
-                        return answer;
-                    }
-                    else if (lvalue instanceof Number)
-                    {
-                        return plus((Number) lvalue, asNumber(rvalue));
-                    }
-
-                    throw new SelectorParsingException("Cannot call plus operation on: " + lvalue + " and: " + rvalue);
+                    return answer;
+                }
+                else if (lvalue instanceof Number)
+                {
+                    return plus((Number) lvalue, asNumber(rvalue));
                 }
 
-                @Override
-                public String getExpressionSymbol()
-                {
-                    return "+";
-                }
-            };
+                throw new SelectorParsingException("Cannot call plus operation on: " + lvalue + " and: " + rvalue);
+            }
+
+            @Override
+            public String getExpressionSymbol()
+            {
+                return "+";
+            }
+        };
     }
 
     public static <E> Expression<E> createMinus(Expression<E> left, Expression<E> right)
     {
-        return new ArithmeticExpression<E>(left, right)
+        return new ArithmeticExpression<>(left, right)
+        {
+            @Override
+            protected Object evaluate(Object lvalue, Object rvalue)
             {
-                @Override
-                protected Object evaluate(Object lvalue, Object rvalue)
+                if (lvalue instanceof Number)
                 {
-                    if (lvalue instanceof Number)
-                    {
-                        return minus((Number) lvalue, asNumber(rvalue));
-                    }
-
-                    throw new SelectorParsingException("Cannot call minus operation on: " + lvalue + " and: " + rvalue);
+                    return minus((Number) lvalue, asNumber(rvalue));
                 }
 
-                @Override
-                public String getExpressionSymbol()
-                {
-                    return "-";
-                }
-            };
+                throw new SelectorParsingException("Cannot call minus operation on: " + lvalue + " and: " + rvalue);
+            }
+
+            @Override
+            public String getExpressionSymbol()
+            {
+                return "-";
+            }
+        };
     }
 
     public static <E> Expression<E> createMultiply(Expression<E> left, Expression<E> right)
     {
-        return new ArithmeticExpression<E>(left, right)
+        return new ArithmeticExpression<>(left, right)
+        {
+
+            @Override
+            protected Object evaluate(Object lvalue, Object rvalue)
             {
-
-                @Override
-                protected Object evaluate(Object lvalue, Object rvalue)
+                if (lvalue instanceof Number)
                 {
-                    if (lvalue instanceof Number)
-                    {
-                        return multiply((Number) lvalue, asNumber(rvalue));
-                    }
-
-                    throw new SelectorParsingException("Cannot call multiply operation on: " + lvalue + " and: " + rvalue);
+                    return multiply((Number) lvalue, asNumber(rvalue));
                 }
 
-                @Override
-                public String getExpressionSymbol()
-                {
-                    return "*";
-                }
-            };
+                throw new SelectorParsingException("Cannot call multiply operation on: " + lvalue + " and: " + rvalue);
+            }
+
+            @Override
+            public String getExpressionSymbol()
+            {
+                return "*";
+            }
+        };
     }
 
     public static <E> Expression<E> createDivide(Expression<E> left, Expression<E> right)
     {
-        return new ArithmeticExpression<E>(left, right)
+        return new ArithmeticExpression<>(left, right)
+        {
+
+            @Override
+            protected Object evaluate(Object lvalue, Object rvalue)
             {
-
-                @Override
-                protected Object evaluate(Object lvalue, Object rvalue)
+                if (lvalue instanceof Number)
                 {
-                    if (lvalue instanceof Number)
-                    {
-                        return divide((Number) lvalue, asNumber(rvalue));
-                    }
-
-                    throw new SelectorParsingException("Cannot call divide operation on: " + lvalue + " and: " + rvalue);
+                    return divide((Number) lvalue, asNumber(rvalue));
                 }
 
-                @Override
-                public String getExpressionSymbol()
-                {
-                    return "/";
-                }
-            };
+                throw new SelectorParsingException("Cannot call divide operation on: " + lvalue + " and: " + rvalue);
+            }
+
+            @Override
+            public String getExpressionSymbol()
+            {
+                return "/";
+            }
+        };
     }
 
     public static <E> Expression<E> createMod(Expression<E> left, Expression<E> right)
     {
-        return new ArithmeticExpression<E>(left, right)
+        return new ArithmeticExpression<>(left, right)
+        {
+
+            @Override
+            protected Object evaluate(Object lvalue, Object rvalue)
             {
-
-                @Override
-                protected Object evaluate(Object lvalue, Object rvalue)
+                if (lvalue instanceof Number)
                 {
-                    if (lvalue instanceof Number)
-                    {
-                        return mod((Number) lvalue, asNumber(rvalue));
-                    }
-
-                    throw new SelectorParsingException("Cannot call mod operation on: " + lvalue + " and: " + rvalue);
+                    return mod((Number) lvalue, asNumber(rvalue));
                 }
 
-                @Override
-                public String getExpressionSymbol()
-                {
-                    return "%";
-                }
-            };
+                throw new SelectorParsingException("Cannot call mod operation on: " + lvalue + " and: " + rvalue);
+            }
+
+            @Override
+            public String getExpressionSymbol()
+            {
+                return "%";
+            }
+        };
     }
 
     protected Number plus(Number left, Number right)

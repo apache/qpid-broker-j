@@ -25,7 +25,6 @@ import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.returnsC
 
 import java.security.PrivilegedAction;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -102,7 +101,7 @@ public class StatisticsReportingTask extends TimerTask
 
             @SuppressWarnings("unchecked")
             Collection<? extends ConfiguredObject<?>> associatedChildren =
-                    (Collection<? extends ConfiguredObject<?>>) configuredObjectOperation.perform(object, Collections.emptyMap());
+                    (Collection<? extends ConfiguredObject<?>>) configuredObjectOperation.perform(object, Map.of());
             if (associatedChildren != null && !associatedChildren.isEmpty())
             {
                 associatedChildren.forEach(this::processChild);

@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 public class EventManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(EventManager.class);
-    private final Map<Event, List<EventListener>> _listeners = new EnumMap<Event, List<EventListener>> (Event.class);
+    private final Map<Event, List<EventListener>> _listeners = new EnumMap<>(Event.class);
 
     public synchronized void addEventListener(EventListener listener, Event... events)
     {
@@ -39,7 +39,7 @@ public class EventManager
             List<EventListener> list = _listeners.get(event);
             if(list == null)
             {
-                list = new ArrayList<EventListener>();
+                list = new ArrayList<>();
                 _listeners.put(event,list);
             }
             list.add(listener);

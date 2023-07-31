@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -90,7 +89,7 @@ public class RedirectingVirtualHostNodeImpl
 
         final ListenableFuture<VirtualHost> virtualHostFuture = getObjectFactory().createAsync(VirtualHost.class, attributes, this);
 
-        addFutureCallback(virtualHostFuture, new FutureCallback<VirtualHost>()
+        addFutureCallback(virtualHostFuture, new FutureCallback<>()
         {
             @Override
             public void onSuccess(final VirtualHost virtualHost)
@@ -98,7 +97,6 @@ public class RedirectingVirtualHostNodeImpl
                 _virtualHost = (RedirectingVirtualHostImpl) virtualHost;
                 setState(State.ACTIVE);
                 resultFuture.set(null);
-
             }
 
             @Override
@@ -127,15 +125,11 @@ public class RedirectingVirtualHostNodeImpl
         final RedirectingVirtualHostImpl virtualHost = _virtualHost;
         if (virtualHost != null)
         {
-            return doAfter(virtualHost.closeAsync(), new Callable<ListenableFuture<Void>>()
+            return doAfter(virtualHost.closeAsync(), () ->
             {
-                @Override
-                public ListenableFuture<Void> call() throws Exception
-                {
-                    _virtualHost = null;
-                    setState(State.STOPPED);
-                    return future;
-                }
+                _virtualHost = null;
+                setState(State.STOPPED);
+                return future;
             });
         }
         else

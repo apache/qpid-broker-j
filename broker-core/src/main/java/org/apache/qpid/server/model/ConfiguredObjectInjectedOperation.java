@@ -66,7 +66,7 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject<?>> im
         _staticParams = staticParams == null ? new Object[0] : staticParams;
         _secureParam = secureParam;
 
-        _params = parameters == null ? Collections.<OperationParameter>emptyList() : Arrays.asList(parameters);
+        _params = parameters == null ? List.of() : Arrays.asList(parameters);
 
         Set<String> validNames = new LinkedHashSet<>();
         for(OperationParameter parameter : _params)

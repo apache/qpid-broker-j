@@ -19,8 +19,6 @@
 
 package org.apache.qpid.server.security.auth.manager;
 
-
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +54,7 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
     private static final String SCRAM_SHA1_MECHANISM = ScramSHA1AuthenticationManager.MECHANISM;
     private static final String SCRAM_SHA256_MECHANISM = ScramSHA256AuthenticationManager.MECHANISM;
 
-    private final Map<String, String> _users = Collections.synchronizedMap(new HashMap<String, String>());
+    private final Map<String, String> _users = Collections.synchronizedMap(new HashMap<>());
     private volatile ScramSaslServerSourceAdapter _scramSha1Adapter;
     private volatile ScramSaslServerSourceAdapter _scramSha256Adapter;
 
@@ -84,13 +82,13 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
 
     public void addUser(String username, String password)
     {
-        createUser(username, password, Collections.EMPTY_MAP);
+        createUser(username, password, Map.of());
     }
 
     @Override
     public List<String> getMechanisms()
     {
-        return Collections.unmodifiableList(Arrays.asList(PLAIN_MECHANISM, CRAM_MD5_MECHANISM, SCRAM_SHA1_MECHANISM, SCRAM_SHA256_MECHANISM));
+        return List.of(PLAIN_MECHANISM, CRAM_MD5_MECHANISM, SCRAM_SHA1_MECHANISM, SCRAM_SHA256_MECHANISM);
     }
 
     @Override
@@ -183,14 +181,10 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
 
     private PasswordSource getPasswordSource()
     {
-        return new PasswordSource()
+        return username ->
         {
-            @Override
-            public char[] getPassword(final String username)
-            {
-                String password = _users.get(username);
-                return password == null ? null : password.toCharArray();
-            }
+            String password = _users.get(username);
+            return password == null ? null : password.toCharArray();
         };
     }
 }

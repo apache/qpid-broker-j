@@ -42,7 +42,6 @@ import org.slf4j.Logger;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.sasl.PasswordSource;
-import org.apache.qpid.server.util.BaseAction;
 import org.apache.qpid.server.util.FileHelper;
 
 public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPrincipal> implements PrincipalDatabase
@@ -203,16 +202,8 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
 
     protected PasswordSource getPasswordSource()
     {
-        return new PasswordSource()
-        {
-            @Override
-            public char[] getPassword(final String username)
-            {
-                return lookupPassword(username);
-            }
-        };
+        return this::lookupPassword;
     }
-
 
     private void loadPasswordFile() throws IOException
     {
@@ -261,14 +252,7 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
         {
             _userUpdate.lock();
 
-            _fileHelper.writeFileSafely(_passwordFile.toPath(), new BaseAction<File,IOException>()
-            {
-                @Override
-                public void performAction(File file) throws IOException
-                {
-                    writeToFile(file);
-                }
-            });
+            _fileHelper.writeFileSafely(_passwordFile.toPath(), this::writeToFile);
         }
         finally
         {
@@ -352,7 +336,7 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
     @Override
     public List<Principal> getUsers()
     {
-        return new LinkedList<Principal>(_userMap.values());
+        return new LinkedList<>(_userMap.values());
     }
 
     @Override

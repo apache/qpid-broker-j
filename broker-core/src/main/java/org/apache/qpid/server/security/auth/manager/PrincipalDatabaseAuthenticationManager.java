@@ -69,7 +69,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     private static final Logger LOGGER = LoggerFactory.getLogger(PrincipalDatabaseAuthenticationManager.class);
 
 
-    private final Map<Principal, PrincipalAdapter> _userMap = new ConcurrentHashMap<Principal, PrincipalAdapter>();
+    private final Map<Principal, PrincipalAdapter> _userMap = new ConcurrentHashMap<>();
 
     private PrincipalDatabase _principalDatabase;
     @ManagedAttributeField
@@ -199,7 +199,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     public ListenableFuture<Void> activate()
     {
         final SettableFuture<Void> returnVal = SettableFuture.create();
-        final List<Principal> users = _principalDatabase == null ? Collections.<Principal>emptyList() : _principalDatabase.getUsers();
+        final List<Principal> users = _principalDatabase == null ? List.of() : _principalDatabase.getUsers();
         _userMap.clear();
         if(!users.isEmpty())
         {
@@ -207,17 +207,13 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
             {
                 final PrincipalAdapter principalAdapter = new PrincipalAdapter(user);
                 principalAdapter.registerWithParents();
-                principalAdapter.openAsync().addListener(new Runnable()
+                principalAdapter.openAsync().addListener(() ->
                 {
-                    @Override
-                    public void run()
+                    _userMap.put(user, principalAdapter);
+                    if (_userMap.size() == users.size())
                     {
-                        _userMap.put(user, principalAdapter);
-                        if (_userMap.size() == users.size())
-                        {
-                            setState(State.ACTIVE);
-                            returnVal.set(null);
-                        }
+                        setState(State.ACTIVE);
+                        returnVal.set(null);
                     }
                 }, getTaskExecutor());
 
@@ -295,11 +291,10 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     @Override
     public Map<String, Map<String, String>> getUsers()
     {
-
-        Map<String, Map<String,String>> users = new HashMap<String, Map<String, String>>();
+        Map<String, Map<String,String>> users = new HashMap<>();
         for(Principal principal : getPrincipalDatabase().getUsers())
         {
-            users.put(principal.getName(), Collections.<String, String>emptyMap());
+            users.put(principal.getName(), Map.of());
         }
         return users;
     }
@@ -418,7 +413,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         @Override
         public void setPassword(String password)
         {
-            setAttributes(Collections.<String, Object>singletonMap(PASSWORD, password));
+            setAttributes(Collections.singletonMap(PASSWORD, password));
         }
 
         @Override
@@ -474,7 +469,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
 
     private static Map<String, Object> createPrincipalAttributes(PrincipalDatabaseAuthenticationManager manager, final Principal user)
     {
-        final Map<String, Object> attributes = new HashMap<String, Object>();
+        final Map<String, Object> attributes = new HashMap<>();
         attributes.put(ID, UUID.randomUUID());
         attributes.put(NAME, user.getName());
         return attributes;
