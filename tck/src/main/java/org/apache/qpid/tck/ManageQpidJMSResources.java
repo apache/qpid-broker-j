@@ -23,7 +23,6 @@ package org.apache.qpid.tck;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -131,7 +130,7 @@ public class ManageQpidJMSResources
                 NodeType type = NodeType.valueOf(String.valueOf(resourceDef.get("nodeType")));
                 Map<String, Object> arguments =
                         resourceDef.containsKey("arguments") ? (Map<String, Object>) resourceDef.get("arguments")
-                                : Collections.<String, Object>emptyMap();
+                                : Map.of();
                 LOGGER.info("Creating {} type {}", name, type);
                 switch (type)
                 {
@@ -193,7 +192,7 @@ public class ManageQpidJMSResources
     {
         HttpPost post = new HttpPost(String.format(_queueApiClearQueueUrl, _virtualhostnode, _virtualhost, name));
 
-        management(post, Collections.emptyMap());
+        management(post, Map.of());
     }
 
     private void managementCreateExchange(final String name, final Map<String, Object> arguments) throws IOException
