@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -33,25 +31,15 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 public class AmqpValueWriter extends AbstractDescribedTypeWriter<AmqpValue>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x77);
+    private static final Factory<AmqpValue> FACTORY = AmqpValueWriter::new;
 
     private AmqpValueWriter(final Registry registry, final AmqpValue object)
     {
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static final Factory<AmqpValue> FACTORY = new Factory<AmqpValue>()
-    {
-
-        @Override
-        public ValueWriter<AmqpValue> newInstance(final Registry registry, final AmqpValue object)
-        {
-            return new AmqpValueWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(AmqpValue.class, FACTORY);
     }
-
 }

@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.security.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,9 +32,9 @@ import org.apache.qpid.server.protocol.v1_0.type.security.SaslMechanisms;
 public class SaslMechanismsWriter extends AbstractDescribedTypeWriter<SaslMechanisms>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x40);
+    private static final Factory<SaslMechanisms> FACTORY = SaslMechanismsWriter::new;
 
-    private SaslMechanismsWriter(final Registry registry,
-                                 final SaslMechanisms object)
+    private SaslMechanismsWriter(final Registry registry, final SaslMechanisms object)
     {
         super(DESCRIPTOR_WRITER, new Writer(registry, object));
 
@@ -97,19 +95,8 @@ public class SaslMechanismsWriter extends AbstractDescribedTypeWriter<SaslMechan
         }
     }
 
-    private static final Factory<SaslMechanisms> FACTORY = new Factory<SaslMechanisms>()
-    {
-
-        @Override
-        public ValueWriter<SaslMechanisms> newInstance(final Registry registry, final SaslMechanisms object)
-        {
-            return new SaslMechanismsWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(SaslMechanisms.class, FACTORY);
     }
-
 }

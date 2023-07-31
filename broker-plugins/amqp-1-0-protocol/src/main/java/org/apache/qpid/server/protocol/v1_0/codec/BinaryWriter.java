@@ -25,6 +25,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Binary;
 
 public class BinaryWriter extends SimpleVariableWidthWriter<Binary>
 {
+    private static final Factory<Binary> FACTORY = (registry, object) -> new BinaryWriter(object);
 
     public BinaryWriter(final Binary object)
     {
@@ -42,18 +43,6 @@ public class BinaryWriter extends SimpleVariableWidthWriter<Binary>
     {
         return (byte)0xa0;
     }
-
-
-    private static final Factory<Binary> FACTORY = new Factory<Binary>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<Binary> newInstance(final Registry registry,
-                                                                                       final Binary object)
-                                                {
-                                                    return new BinaryWriter(object);
-                                                }
-                                            };
 
     public static void register(Registry registry)
     {

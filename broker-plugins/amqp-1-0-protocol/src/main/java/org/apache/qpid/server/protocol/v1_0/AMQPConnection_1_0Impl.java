@@ -223,7 +223,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     private final AtomicBoolean _orderlyClose = new AtomicBoolean(false);
 
     private final Collection<Session_1_0>
-            _sessions = Collections.synchronizedCollection(new ArrayList<Session_1_0>());
+            _sessions = Collections.synchronizedCollection(new ArrayList<>());
 
     private final Object _reference = new Object();
 
@@ -231,7 +231,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             new ConcurrentLinkedQueue<>();
 
     private final Set<AMQPSession<?,?>> _sessionsWithWork =
-            Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?,?>, Boolean>());
+            Collections.newSetFromMap(new ConcurrentHashMap<>());
 
 
     // Multi session transactions
@@ -852,9 +852,9 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             _outgoingIdleTimeout = open.getIdleTimeOut().longValue();
         }
         final Map<Symbol, Object> remoteProperties = open.getProperties() == null
-                ? Collections.emptyMap()
+                ? Map.of()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(open.getProperties()));
-        _remoteDesiredCapabilities = open.getDesiredCapabilities() == null ? Collections.emptySet() : Sets.newHashSet(open.getDesiredCapabilities());
+        _remoteDesiredCapabilities = open.getDesiredCapabilities() == null ? Set.of() : Sets.newHashSet(open.getDesiredCapabilities());
         if (remoteProperties.containsKey(Symbol.valueOf("product")))
         {
             setClientProduct(remoteProperties.get(Symbol.valueOf("product")).toString());
@@ -980,7 +980,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             _properties.put(Symbol.valueOf("amqp:connection-establishment-failed"), true);
             final Error error = new Error(AmqpError.INVALID_FIELD,
                     String.format("Connection closed due to sole-connection-enforcement-policy '%s'", e.getPolicy()));
-            error.setInfo(Collections.singletonMap(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")));
+            error.setInfo(Map.of(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")));
             closeConnection(error);
             getEventLogger().message(ResourceLimitMessages.REJECTED(
                     "Opening", "connection", String.format("container '%s'", e.getContainerID()), e.getMessage()));
@@ -989,7 +989,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         {
             final Error error = new Error(AmqpError.RESOURCE_LOCKED,
                     String.format("Connection closed due to sole-connection-enforcement-policy '%s'", e.getPolicy()));
-            error.setInfo(Collections.singletonMap(Symbol.valueOf("sole-connection-enforcement"), true));
+            error.setInfo(Map.of(Symbol.valueOf("sole-connection-enforcement"), true));
 
             final EventLogger logger = getEventLogger();
             final List<ListenableFuture<Void>> rescheduleFutures = new ArrayList<>();
@@ -1688,7 +1688,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         Open open = new Open();
 
-        Map<String,Object> props = Collections.emptyMap();
+        Map<String,Object> props = Map.of();
         for(ConnectionPropertyEnricher enricher : getPort().getConnectionPropertyEnrichers())
         {
             props = enricher.addConnectionProperties(this, props);

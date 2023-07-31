@@ -25,6 +25,8 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public class BooleanWriter implements ValueWriter<Boolean>
 {
+    private static final Factory<Boolean> FACTORY = (registry, object) -> new BooleanWriter(object);
+
     private boolean _value;
 
     public BooleanWriter()
@@ -52,17 +54,6 @@ public class BooleanWriter implements ValueWriter<Boolean>
     {
         _value = value.booleanValue();
     }
-
-    private static final Factory<Boolean> FACTORY = new Factory<Boolean>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<Boolean> newInstance(final Registry registry,
-                                                                                        final Boolean object)
-                                                {
-                                                    return new BooleanWriter(object);
-                                                }
-                                            };
 
     public static void register(ValueWriter.Registry registry)
     {

@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transaction.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,6 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
 public class DischargeWriter extends AbstractDescribedTypeWriter<Discharge>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x32);
+    private static final Factory<Discharge> FACTORY = DischargeWriter::new;
 
     private DischargeWriter(final Registry registry, final Discharge object)
     {
@@ -106,19 +105,8 @@ public class DischargeWriter extends AbstractDescribedTypeWriter<Discharge>
         }
     }
 
-    private static final Factory<Discharge> FACTORY = new Factory<Discharge>()
-    {
-
-        @Override
-        public ValueWriter<Discharge> newInstance(final Registry registry, final Discharge object)
-        {
-            return new DischargeWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Discharge.class, FACTORY);
     }
-
 }

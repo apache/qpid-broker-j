@@ -24,7 +24,6 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 

@@ -23,8 +23,8 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 public class ShortWriter extends FixedTwoWriter<Short>
 {
-
     private static final byte FORMAT_CODE = (byte)0x61;
+    private static final Factory<Short> FACTORY = (registry, object) -> new ShortWriter(object);
 
     public ShortWriter()
     {
@@ -47,17 +47,6 @@ public class ShortWriter extends FixedTwoWriter<Short>
     {
         return FORMAT_CODE;
     }
-
-    private static final Factory<Short> FACTORY = new Factory<Short>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<Short> newInstance(final Registry registry,
-                                                                                      final Short object)
-                                                {
-                                                    return new ShortWriter(object);
-                                                }
-                                            };
 
     public static void register(ValueWriter.Registry registry)
     {

@@ -34,7 +34,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.Declared;
 public class DeclaredWriter extends AbstractDescribedTypeWriter<Declared>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x33);
-
+    private static final Factory<Declared> FACTORY = DeclaredWriter::new;
 
     private DeclaredWriter(final Registry registry, final Declared object)
     {
@@ -99,19 +99,8 @@ public class DeclaredWriter extends AbstractDescribedTypeWriter<Declared>
         }
     }
 
-    private static final Factory<Declared> FACTORY = new Factory<Declared>()
-    {
-
-        @Override
-        public ValueWriter<Declared> newInstance(final Registry registry, final Declared object)
-        {
-            return new DeclaredWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Declared.class, FACTORY);
     }
-
 }

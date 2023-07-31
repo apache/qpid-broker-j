@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 public class ByteArrayWriter extends SimpleVariableWidthWriter<byte[]>
 {
+    private static final Factory<byte[]> FACTORY = (registry, object) -> new ByteArrayWriter(object);
 
     public ByteArrayWriter(final byte[] object)
     {
@@ -41,20 +42,8 @@ public class ByteArrayWriter extends SimpleVariableWidthWriter<byte[]>
         return (byte)0xa0;
     }
 
-    private static final Factory<byte[]> FACTORY = new Factory<byte[]>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<byte[]> newInstance(final Registry registry,
-                                                                                       final byte[] object)
-                                                {
-                                                    return new ByteArrayWriter(object);
-                                                }
-                                            };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(byte[].class, FACTORY);
     }
-
 }

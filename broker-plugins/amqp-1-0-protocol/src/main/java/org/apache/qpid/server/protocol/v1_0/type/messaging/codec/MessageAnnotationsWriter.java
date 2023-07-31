@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -33,6 +31,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotations;
 public class MessageAnnotationsWriter extends AbstractDescribedTypeWriter<MessageAnnotations>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x72);
+    private static final Factory<MessageAnnotations> FACTORY = MessageAnnotationsWriter::new;
 
     public MessageAnnotationsWriter(final Registry registry,
                                     final MessageAnnotations object)
@@ -40,19 +39,8 @@ public class MessageAnnotationsWriter extends AbstractDescribedTypeWriter<Messag
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static final Factory<MessageAnnotations> FACTORY = new Factory<MessageAnnotations>()
-    {
-
-        @Override
-        public ValueWriter<MessageAnnotations> newInstance(final Registry registry, final MessageAnnotations object)
-        {
-            return new MessageAnnotationsWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(MessageAnnotations.class, FACTORY);
     }
-
 }

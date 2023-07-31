@@ -34,6 +34,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 public class ErrorWriter extends AbstractDescribedTypeWriter<Error>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x1D);
+    private static final Factory<Error> FACTORY = ErrorWriter::new;
 
     private ErrorWriter(final Registry registry, final Error object)
     {
@@ -111,16 +112,6 @@ public class ErrorWriter extends AbstractDescribedTypeWriter<Error>
             _field = 0;
         }
     }
-
-    private static final Factory<Error> FACTORY = new Factory<Error>()
-    {
-
-        @Override
-        public ValueWriter<Error> newInstance(final Registry registry, final Error object)
-        {
-            return new ErrorWriter(registry, object);
-        }
-    };
 
     public static void register(ValueWriter.Registry registry)
     {

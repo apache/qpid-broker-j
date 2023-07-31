@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,7 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 public class DispositionWriter extends AbstractDescribedTypeWriter<Disposition>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x15);
-
+    private static final Factory<Disposition> FACTORY = DispositionWriter::new;
 
     private DispositionWriter(final Registry registry, final Disposition object)
     {
@@ -140,19 +138,8 @@ public class DispositionWriter extends AbstractDescribedTypeWriter<Disposition>
         }
     }
 
-    private static final Factory<Disposition> FACTORY = new Factory<Disposition>()
-    {
-
-        @Override
-        public ValueWriter<Disposition> newInstance(final Registry registry, final Disposition object)
-        {
-            return new DispositionWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Disposition.class, FACTORY);
     }
-
 }

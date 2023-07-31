@@ -24,7 +24,7 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 public class FloatWriter extends FixedFourWriter<Float>
 {
     private static final byte FORMAT_CODE = (byte)0x72;
-
+    private static final Factory<Float> FACTORY = (registry, object) -> new FloatWriter(object);
 
     public FloatWriter(final Float object)
     {
@@ -36,17 +36,6 @@ public class FloatWriter extends FixedFourWriter<Float>
     {
         return FORMAT_CODE;
     }
-
-    private static final Factory<Float> FACTORY = new Factory<Float>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<Float> newInstance(final Registry registry,
-                                                                                      final Float object)
-                                                {
-                                                    return new FloatWriter(object);
-                                                }
-                                            };
 
     public static void register(ValueWriter.Registry registry)
     {

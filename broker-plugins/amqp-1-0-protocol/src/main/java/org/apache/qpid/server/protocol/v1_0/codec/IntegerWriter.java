@@ -26,23 +26,17 @@ public class IntegerWriter
     private static final byte EIGHT_BYTE_FORMAT_CODE = (byte)0x71;
     private static final byte ONE_BYTE_FORMAT_CODE = (byte) 0x54;
 
-    private static final ValueWriter.Factory<Integer> FACTORY = new ValueWriter.Factory<Integer>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<Integer> newInstance(final ValueWriter.Registry registry,
-                                                                                        final Integer i)
-                                                {
-                                                    if(i >= -128 && i <= 127)
-                                                    {
-                                                        return new IntegerFixedOneWriter(i);
-                                                    }
-                                                    else
-                                                    {
-                                                        return new IntegerFixedFourWriter(i);
-                                                    }
-                                                }
-                                            };
+    private static final ValueWriter.Factory<Integer> FACTORY = (registry, i) ->
+    {
+        if(i >= -128 && i <= 127)
+        {
+            return new IntegerFixedOneWriter(i);
+        }
+        else
+        {
+            return new IntegerFixedFourWriter(i);
+        }
+    };
 
     public static void register(ValueWriter.Registry registry)
     {

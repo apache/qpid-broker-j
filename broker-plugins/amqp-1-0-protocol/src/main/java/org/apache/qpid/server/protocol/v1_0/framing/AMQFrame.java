@@ -22,7 +22,6 @@
 package org.apache.qpid.server.protocol.v1_0.framing;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 
 public abstract class AMQFrame<T>
 {

@@ -68,6 +68,9 @@ public class ListWriter
 
     public static final ValueWriter<List> EMPTY_LIST_WRITER = new EmptyListValueWriter();
 
+    private static final ValueWriter.Factory<List> FACTORY =
+            (registry, object) -> object.isEmpty() ? EMPTY_LIST_WRITER : new NonEmptyListWriter(registry, object);
+
     public static class EmptyListValueWriter implements ValueWriter<List>
     {
 
@@ -84,21 +87,8 @@ public class ListWriter
         }
     }
 
-    private static final ValueWriter.Factory<List> FACTORY =
-            new ValueWriter.Factory<List>()
-            {
-
-                @Override
-                public ValueWriter<List> newInstance(final ValueWriter.Registry registry,
-                                                     final List object)
-                {
-                    return object.isEmpty() ? EMPTY_LIST_WRITER : new NonEmptyListWriter(registry, object);
-                }
-            };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(List.class, FACTORY);
     }
-
 }

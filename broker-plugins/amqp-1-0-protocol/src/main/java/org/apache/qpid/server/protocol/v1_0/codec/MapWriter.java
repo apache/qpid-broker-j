@@ -26,16 +26,7 @@ import java.util.Map;
 
 public class MapWriter extends AbstractMapWriter<Map>
 {
-    private static final Factory<Map> FACTORY = new Factory<Map>()
-    {
-
-        @Override
-        public ValueWriter<Map> newInstance(final Registry registry,
-                                            final Map object)
-        {
-            return new MapWriter(registry, object);
-        }
-    };
+    private static final Factory<Map> FACTORY = MapWriter::new;
 
     private final Map _map;
     private Object _value;

@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,6 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 public class OpenWriter extends AbstractDescribedTypeWriter<Open>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x10);
+    private static final Factory<Open> FACTORY = OpenWriter::new;
 
     private OpenWriter(final Registry registry, final Open object)
     {
@@ -170,19 +169,8 @@ public class OpenWriter extends AbstractDescribedTypeWriter<Open>
         }
     }
 
-    private static final Factory<Open> FACTORY = new Factory<Open>()
-    {
-
-        @Override
-        public ValueWriter<Open> newInstance(final Registry registry, final Open object)
-        {
-            return new OpenWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Open.class, FACTORY);
     }
-
 }

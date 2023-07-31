@@ -32,6 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 public class TransactionalStateWriter extends AbstractDescribedTypeWriter<TransactionalState>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x34);
+    private static final Factory<TransactionalState> FACTORY = TransactionalStateWriter::new;
 
     private TransactionalStateWriter(final Registry registry, final TransactionalState object)
     {
@@ -104,19 +105,8 @@ public class TransactionalStateWriter extends AbstractDescribedTypeWriter<Transa
         }
     }
 
-    private static final Factory<TransactionalState> FACTORY = new Factory<TransactionalState>()
-    {
-
-        @Override
-        public ValueWriter<TransactionalState> newInstance(final Registry registry, final TransactionalState object)
-        {
-            return new TransactionalStateWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(TransactionalState.class, FACTORY);
     }
-
 }

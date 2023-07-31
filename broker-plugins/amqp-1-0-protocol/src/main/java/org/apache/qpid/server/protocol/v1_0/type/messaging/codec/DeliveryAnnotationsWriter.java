@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -33,7 +31,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.DeliveryAnnotations;
 public class DeliveryAnnotationsWriter extends AbstractDescribedTypeWriter<DeliveryAnnotations>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x71);
-
+    private static final Factory<DeliveryAnnotations> FACTORY = DeliveryAnnotationsWriter::new;
 
     public DeliveryAnnotationsWriter(final Registry registry,
                                      final DeliveryAnnotations object)
@@ -41,19 +39,8 @@ public class DeliveryAnnotationsWriter extends AbstractDescribedTypeWriter<Deliv
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static final Factory<DeliveryAnnotations> FACTORY = new Factory<DeliveryAnnotations>()
-    {
-
-        @Override
-        public ValueWriter<DeliveryAnnotations> newInstance(final Registry registry, final DeliveryAnnotations object)
-        {
-            return new DeliveryAnnotationsWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(DeliveryAnnotations.class, FACTORY);
     }
-
 }

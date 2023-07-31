@@ -26,6 +26,7 @@ import java.util.Date;
 public class TimestampWriter extends FixedEightWriter<Date>
 {
     private static final byte FORMAT_CODE = (byte) 0x83;
+    private static final Factory<Date> FACTORY = (registry, object) -> new TimestampWriter(object);
 
     public TimestampWriter(final Date object)
     {
@@ -38,20 +39,8 @@ public class TimestampWriter extends FixedEightWriter<Date>
         return FORMAT_CODE;
     }
 
-    private static final Factory<Date> FACTORY = new Factory<Date>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<Date> newInstance(final Registry registry,
-                                                                                     final Date object)
-                                                {
-                                                    return new TimestampWriter(object);
-                                                }
-                                            };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Date.class, FACTORY);
     }
-
 }

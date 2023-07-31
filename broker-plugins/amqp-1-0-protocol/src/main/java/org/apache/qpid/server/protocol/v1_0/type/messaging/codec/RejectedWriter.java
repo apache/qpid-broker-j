@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,6 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 public class RejectedWriter extends AbstractDescribedTypeWriter<Rejected>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x25);
+    private static final Factory<Rejected> FACTORY = RejectedWriter::new;
 
     private RejectedWriter(final Registry registry, final Rejected object)
     {
@@ -98,19 +97,8 @@ public class RejectedWriter extends AbstractDescribedTypeWriter<Rejected>
         }
     }
 
-    private static final Factory<Rejected> FACTORY = new Factory<Rejected>()
-    {
-
-        @Override
-        public ValueWriter<Rejected> newInstance(final Registry registry, final Rejected object)
-        {
-            return new RejectedWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Rejected.class, FACTORY);
     }
-
 }

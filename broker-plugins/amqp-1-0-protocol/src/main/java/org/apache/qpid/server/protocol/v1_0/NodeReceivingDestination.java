@@ -23,7 +23,7 @@ package org.apache.qpid.server.protocol.v1_0;
 import static org.apache.qpid.server.protocol.v1_0.Session_1_0.DELAYED_DELIVERY;
 
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Map;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
@@ -87,30 +87,23 @@ public class NodeReceivingDestination implements ReceivingDestination
                      final SecurityToken securityToken) throws UnroutableMessageException
     {
         final String routingAddress = "".equals(_routingAddress) ? getRoutingAddress(message) : _routingAddress;
-        _destination.authorisePublish(securityToken, Collections.singletonMap("routingKey", routingAddress));
+        _destination.authorisePublish(securityToken, Map.of("routingKey", routingAddress));
 
-        final InstanceProperties instanceProperties =
-            new InstanceProperties()
+        final InstanceProperties instanceProperties = prop ->
+        {
+            switch(prop)
             {
-
-                @Override
-                public Object getProperty(final Property prop)
-                {
-                    switch(prop)
-                    {
-                        case MANDATORY:
-                            return false;
-                        case REDELIVERED:
-                            return false;
-                        case PERSISTENT:
-                            return message.isPersistent();
-                        case IMMEDIATE:
-                            return false;
-                        case EXPIRATION:
-                            return message.getExpiration();
-                    }
-                    return null;
-                }};
+                case MANDATORY:
+                case REDELIVERED:
+                case IMMEDIATE:
+                    return false;
+                case PERSISTENT:
+                    return message.isPersistent();
+                case EXPIRATION:
+                    return message.getExpiration();
+            }
+            return null;
+        };
 
         final RoutingResult<? extends ServerMessage<? extends StorableMessageMetaData>> result =
                 _destination.route(message, routingAddress, instanceProperties);

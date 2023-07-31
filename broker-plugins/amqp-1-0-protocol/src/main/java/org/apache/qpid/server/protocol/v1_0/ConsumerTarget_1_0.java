@@ -62,7 +62,6 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.txn.TransactionMonitor;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.StateChangeListener;
 
@@ -76,24 +75,28 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
     private Binary _transactionId;
     private final SendingLinkEndpoint _linkEndpoint;
 
-    private final StateChangeListener<MessageInstance, MessageInstance.EntryState> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, MessageInstance.EntryState>()
-    {
-        @Override
-        public void stateChanged(MessageInstance entry, MessageInstance.EntryState oldState, MessageInstance.EntryState newState)
-        {
-            if (isConsumerAcquiredStateForThis(oldState) && !isConsumerAcquiredStateForThis(newState))
+    private final StateChangeListener<MessageInstance, MessageInstance.EntryState> _unacknowledgedMessageListener =
+            new StateChangeListener<>()
             {
-                removeUnacknowledgedMessage(entry);
-                entry.removeStateChangeListener(this);
-            }
-        }
+                @Override
+                public void stateChanged(MessageInstance entry,
+                                         MessageInstance.EntryState oldState,
+                                         MessageInstance.EntryState newState)
+                {
+                    if (isConsumerAcquiredStateForThis(oldState) && !isConsumerAcquiredStateForThis(newState))
+                    {
+                        removeUnacknowledgedMessage(entry);
+                        entry.removeStateChangeListener(this);
+                    }
+                }
 
-        private boolean isConsumerAcquiredStateForThis(MessageInstance.EntryState state)
-        {
-            return state instanceof MessageInstance.ConsumerAcquiredState
-                   && ((MessageInstance.ConsumerAcquiredState) state).getConsumer().getTarget() == ConsumerTarget_1_0.this;
-        }
-    };
+                private boolean isConsumerAcquiredStateForThis(MessageInstance.EntryState state)
+                {
+                    return state instanceof MessageInstance.ConsumerAcquiredState
+                           && ((MessageInstance.ConsumerAcquiredState) state).getConsumer().getTarget()
+                              == ConsumerTarget_1_0.this;
+                }
+            };
 
     public ConsumerTarget_1_0(final SendingLinkEndpoint linkEndpoint, boolean acquires)
     {
@@ -648,17 +651,8 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
             int requeues = 0;
             if (_queueEntry.makeAcquisitionUnstealable(getConsumer()))
             {
-                requeues = _queueEntry.routeToAlternate(new Action<MessageInstance>()
-                {
-                    @Override
-                    public void performAction(final MessageInstance requeueEntry)
-                    {
-
-                        eventLogger.message(logSubject,
-                                            ChannelMessages.DEADLETTERMSG(message.getMessageNumber(),
-                                                                          requeueEntry.getOwningResource().getName()));
-                    }
-                }, null, null);
+                requeues = _queueEntry.routeToAlternate(requeueEntry ->
+                        eventLogger.message(logSubject, ChannelMessages.DEADLETTERMSG(message.getMessageNumber(), requeueEntry.getOwningResource().getName())), null, null);
             }
 
             if (requeues == 0)

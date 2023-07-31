@@ -33,25 +33,15 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 public class DataWriter extends AbstractDescribedTypeWriter<Data>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x75);
+    private static final Factory<Data> FACTORY = DataWriter::new;
 
     public DataWriter(final Registry registry, final Data object)
     {
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static final Factory<Data> FACTORY = new Factory<Data>()
-    {
-
-        @Override
-        public ValueWriter<Data> newInstance(final Registry registry, final Data object)
-        {
-            return new DataWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Data.class, FACTORY);
     }
-
 }

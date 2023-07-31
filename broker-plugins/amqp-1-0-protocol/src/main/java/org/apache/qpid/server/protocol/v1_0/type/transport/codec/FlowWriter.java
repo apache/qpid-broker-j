@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,6 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 public class FlowWriter extends AbstractDescribedTypeWriter<Flow>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x13);
+    private static final Factory<Flow> FACTORY = FlowWriter::new;
 
     private FlowWriter(final Registry registry, final Flow object)
     {
@@ -179,19 +178,8 @@ public class FlowWriter extends AbstractDescribedTypeWriter<Flow>
         }
     }
 
-    private static final Factory<Flow> FACTORY = new Factory<Flow>()
-    {
-
-        @Override
-        public ValueWriter<Flow> newInstance(final Registry registry, final Flow object)
-        {
-            return new FlowWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Flow.class, FACTORY);
     }
-
 }
