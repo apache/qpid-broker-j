@@ -30,9 +30,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -107,7 +105,7 @@ public class LatestManagementControllerAdapterTest extends UnitTestBase
     public void getCategoryHierarchy()
     {
         final Broker<?> object = BrokerTestHelper.createBrokerMock();
-        final Collection<String> expected = Arrays.asList("VirtualHostNode", "VirtualHost", "Queue");
+        final Collection<String> expected = List.of("VirtualHostNode", "VirtualHost", "Queue");
         assertThat(_adapter.getCategoryHierarchy(object, "Queue"), is(equalTo(expected)));
     }
 
@@ -118,15 +116,14 @@ public class LatestManagementControllerAdapterTest extends UnitTestBase
         final String queueName = "foo";
 
         final QueueManagingVirtualHost<?> virtualHost = createTestVirtualHost(hostName);
-        virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, queueName));
+        virtualHost.createChild(Queue.class, Map.of(Queue.NAME, queueName));
 
         final String nodeName = virtualHost.getParent().getName();
         final ManagementRequest request = mockManagementRequest(virtualHost.getBroker(),
                                                                 "GET",
                                                                 "queue",
-                                                                Arrays.asList(nodeName, hostName),
-                                                                Collections.singletonMap("name",
-                                                                                         Collections.singletonList("foo")));
+                                                                List.of(nodeName, hostName),
+                                                                Map.of("name", List.of("foo")));
 
         final ManagementResponse response = _adapter.handleGet(request);
         assertThat(response, is(notNullValue()));
@@ -155,9 +152,9 @@ public class LatestManagementControllerAdapterTest extends UnitTestBase
         final Broker root = virtualHost.getBroker();
 
         final ManagementRequest request =
-                mockManagementRequest(root, "PUT", "queue", Arrays.asList(nodeName, hostName), Collections.emptyMap());
+                mockManagementRequest(root, "PUT", "queue", List.of(nodeName, hostName), Map.of());
 
-        when(request.getBody(LinkedHashMap.class)).thenReturn(new LinkedHashMap<String, Object>(Collections.singletonMap(
+        when(request.getBody(LinkedHashMap.class)).thenReturn(new LinkedHashMap<String, Object>(Map.of(
                 "name",
                 queueName)));
         when(request.getRequestURL()).thenReturn("test");
@@ -183,11 +180,9 @@ public class LatestManagementControllerAdapterTest extends UnitTestBase
         final Broker root = virtualHost.getBroker();
 
         final ManagementRequest request =
-                mockManagementRequest(root, "POST", "queue", Arrays.asList(nodeName, hostName), Collections.emptyMap());
+                mockManagementRequest(root, "POST", "queue", List.of(nodeName, hostName), Map.of());
 
-        when(request.getBody(LinkedHashMap.class)).thenReturn(new LinkedHashMap<String, Object>(Collections.singletonMap(
-                "name",
-                queueName)));
+        when(request.getBody(LinkedHashMap.class)).thenReturn(new LinkedHashMap<String, Object>(Map.of("name", queueName)));
         when(request.getRequestURL()).thenReturn("test");
 
         final ManagementResponse response = _adapter.handlePut(request);
@@ -207,16 +202,15 @@ public class LatestManagementControllerAdapterTest extends UnitTestBase
         final String queueName = "foo";
 
         final QueueManagingVirtualHost<?> virtualHost = createTestVirtualHost(hostName);
-        virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, queueName));
+        virtualHost.createChild(Queue.class, Map.of(Queue.NAME, queueName));
         assertThat(virtualHost.getQueueCount(), is(equalTo(1L)));
 
         final String nodeName = virtualHost.getParent().getName();
         final ManagementRequest request = mockManagementRequest(virtualHost.getBroker(),
                                                                 "DELETE",
                                                                 "queue",
-                                                                Arrays.asList(nodeName, hostName),
-                                                                Collections.singletonMap("name",
-                                                                                         Collections.singletonList("foo")));
+                                                                List.of(nodeName, hostName),
+                                                                Map.of("name", List.of("foo")));
         final ManagementResponse response = _adapter.handleDelete(request);
         assertThat(response, is(notNullValue()));
         assertThat(response.getResponseCode(), is(equalTo(200)));
@@ -230,13 +224,12 @@ public class LatestManagementControllerAdapterTest extends UnitTestBase
         final String queueName = "foo";
 
         final QueueManagingVirtualHost<?> virtualHost = createTestVirtualHost(hostName);
-        virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, queueName));
+        virtualHost.createChild(Queue.class, Map.of(Queue.NAME, queueName));
 
         final String nodeName = virtualHost.getParent().getName();
 
-        final Object response = _adapter.get(virtualHost.getBroker(), "queue", Arrays.asList(nodeName, hostName),
-                                             Collections.singletonMap("name",
-                                                                      Collections.singletonList("foo")));
+        final Object response = _adapter.get(virtualHost.getBroker(), "queue", List.of(nodeName, hostName),
+                Map.of("name", List.of("foo")));
         assertThat(response, is(instanceOf(Collection.class)));
 
         final Collection data = (Collection) response;
@@ -259,17 +252,15 @@ public class LatestManagementControllerAdapterTest extends UnitTestBase
         final Broker root = virtualHost.getBroker();
 
         final ManagementRequest request =
-                mockManagementRequest(root, "POST", "queue", Arrays.asList(nodeName, hostName), Collections.emptyMap());
+                mockManagementRequest(root, "POST", "queue", List.of(nodeName, hostName), Map.of());
 
-        when(request.getBody(LinkedHashMap.class)).thenReturn(new LinkedHashMap<String, Object>(Collections.singletonMap(
-                "name",
-                queueName)));
+        when(request.getBody(LinkedHashMap.class)).thenReturn(new LinkedHashMap<String, Object>(Map.of("name", queueName)));
         when(request.getRequestURL()).thenReturn("test");
 
         final Object response = _adapter.createOrUpdate(virtualHost.getBroker(),
                                                         "queue",
-                                                        Arrays.asList(nodeName, hostName),
-                                                        Collections.singletonMap("name", queueName),
+                                                        List.of(nodeName, hostName),
+                                                        Map.of("name", queueName),
                                                         true);
         assertThat(response, is(instanceOf(LegacyConfiguredObject.class)));
 
@@ -284,15 +275,12 @@ public class LatestManagementControllerAdapterTest extends UnitTestBase
         final String queueName = "foo";
 
         final QueueManagingVirtualHost<?> virtualHost = createTestVirtualHost(hostName);
-        virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, queueName));
+        virtualHost.createChild(Queue.class, Map.of(Queue.NAME, queueName));
         assertThat(virtualHost.getQueueCount(), is(equalTo(1L)));
 
         final String nodeName = virtualHost.getParent().getName();
 
-        _adapter.delete(virtualHost.getBroker(),
-                        "queue",
-                        Arrays.asList(nodeName, hostName, queueName),
-                        Collections.emptyMap());
+        _adapter.delete(virtualHost.getBroker(), "queue", List.of(nodeName, hostName, queueName), Map.of());
 
         assertThat(virtualHost.getQueueCount(), is(equalTo(0L)));
     }
@@ -304,10 +292,10 @@ public class LatestManagementControllerAdapterTest extends UnitTestBase
         final String queueName = "foo";
 
         final QueueManagingVirtualHost<?> virtualHost = createTestVirtualHost(hostName);
-        Queue queue = virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, queueName));
+        Queue queue = virtualHost.createChild(Queue.class, Map.of(Queue.NAME, queueName));
         assertThat(virtualHost.getQueueCount(), is(equalTo(1L)));
 
-        List<String> path = Arrays.asList(virtualHost.getParent().getName(), hostName);
+        List<String> path = List.of(virtualHost.getParent().getName(), hostName);
 
         Map<String, Object> message = new HashMap<>();
         message.put("address", "foo");
@@ -318,7 +306,7 @@ public class LatestManagementControllerAdapterTest extends UnitTestBase
                                                          "virtualhost",
                                                          path,
                                                          "publishMessage",
-                                                         Collections.singletonMap("message", message),
+                                                         Map.of("message", message),
                                                          true,
                                                          true);
 
@@ -336,14 +324,10 @@ public class LatestManagementControllerAdapterTest extends UnitTestBase
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createTestVirtualHost(hostName);
         final String queueName = "foo";
-        virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, queueName));
+        virtualHost.createChild(Queue.class, Map.of(Queue.NAME, queueName));
         assertThat(virtualHost.getQueueCount(), is(equalTo(1L)));
 
-        final Object formatted = _adapter.formatConfiguredObject(virtualHost,
-                                                                    Collections.singletonMap("depth",
-                                                                                             Collections.singletonList(
-                                                                                                     "1")),
-                                                                    true);
+        final Object formatted = _adapter.formatConfiguredObject(virtualHost, Map.of("depth",List.of("1")), true);
         assertThat(formatted, is(notNullValue()));
         assertThat(formatted, is(instanceOf(Map.class)));
 
@@ -372,8 +356,8 @@ public class LatestManagementControllerAdapterTest extends UnitTestBase
         final QueueManagingVirtualHost<?> virtualHost = BrokerTestHelper.createVirtualHost(hostName, this);
         final Broker root = virtualHost.getBroker();
         final ConfiguredObject<?> virtualHostNode = virtualHost.getParent();
-        when(root.getChildren(VirtualHostNode.class)).thenReturn(Collections.singletonList(virtualHostNode));
-        when(virtualHostNode.getChildren(VirtualHost.class)).thenReturn(Collections.singletonList(virtualHost));
+        when(root.getChildren(VirtualHostNode.class)).thenReturn(List.of(virtualHostNode));
+        when(virtualHostNode.getChildren(VirtualHost.class)).thenReturn(List.of(virtualHost));
         when(virtualHostNode.getChildByName(VirtualHost.class, hostName)).thenReturn(virtualHost);
         return virtualHost;
     }

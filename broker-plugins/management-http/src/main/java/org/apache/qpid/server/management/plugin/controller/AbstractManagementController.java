@@ -24,7 +24,6 @@ import static org.apache.qpid.server.management.plugin.controller.ConverterHelpe
 import static org.apache.qpid.server.management.plugin.ManagementException.createBadRequestManagementException;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -164,7 +163,7 @@ public abstract class AbstractManagementController implements ManagementControll
                                           "POST".equalsIgnoreCase(request.getMethod()));
                 int responseCode = HttpServletResponse.SC_OK;
                 ResponseType responseType = ResponseType.EMPTY;
-                Map<String, String> headers = Collections.emptyMap();
+                Map<String, String> headers = Map.of();
                 if (response != null)
                 {
                     responseCode = HttpServletResponse.SC_CREATED;

@@ -27,7 +27,6 @@ import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.returnsC
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -368,9 +367,7 @@ public class LatestManagementControllerAdapter implements ManagementController
             }
             catch (RuntimeException e)
             {
-                throw ManagementException.toManagementException(e,
-                                                                getCategoryMapping(getCategory()),
-                                                                Collections.emptyList());
+                throw ManagementException.toManagementException(e, getCategoryMapping(getCategory()), List.of());
             }
             catch (Error e)
             {

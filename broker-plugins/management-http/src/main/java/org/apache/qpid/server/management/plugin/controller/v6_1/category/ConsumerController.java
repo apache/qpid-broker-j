@@ -24,7 +24,6 @@ import static org.apache.qpid.server.management.plugin.ManagementException.creat
 import static org.apache.qpid.server.management.plugin.ManagementException.createInternalServerErrorManagementException;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -102,7 +101,7 @@ public class ConsumerController implements CategoryController
         final Object queues = getNextVersionManagementController().get(root,
                                                                        "Queue",
                                                                        virtualHostPath,
-                                                                       Collections.emptyMap());
+                                                                       Map.of());
 
         Collection<LegacyConfiguredObject> consumers;
         if (queues instanceof LegacyConfiguredObject)
@@ -149,7 +148,7 @@ public class ConsumerController implements CategoryController
                                      Map<String, Object> parameters,
                                      boolean isPost, final boolean isSecure) throws ManagementException
     {
-        Object result = get( root, path, Collections.emptyMap());
+        Object result = get( root, path, Map.of());
         if (result instanceof Collection && ((Collection)result).size() == 1)
         {
             LegacyConfiguredObject  object = (LegacyConfiguredObject) ((Collection<?>)result).iterator().next();
@@ -229,7 +228,7 @@ public class ConsumerController implements CategoryController
                                      .collect(Collectors.toList());
             }
         }
-        return Collections.emptyList();
+        return List.of();
     }
 
     static class LegacyConsumer extends GenericLegacyConfiguredObject

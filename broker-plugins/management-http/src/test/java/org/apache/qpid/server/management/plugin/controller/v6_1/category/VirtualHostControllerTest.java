@@ -28,10 +28,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ public class VirtualHostControllerTest extends UnitTestBase
         when(legacyManagementController.getNextVersionManagementController()).thenReturn(
                 nextVersionManagementController);
         when(legacyManagementController.getVersion()).thenReturn("6.1");
-        _virtualHostController = new VirtualHostController(legacyManagementController, Collections.emptySet());
+        _virtualHostController = new VirtualHostController(legacyManagementController, Set.of());
     }
 
     @Test
@@ -85,7 +85,7 @@ public class VirtualHostControllerTest extends UnitTestBase
         attributes.put(LegacyConfiguredObject.CONTEXT, context);
 
         final ConfiguredObject<?> root = mock(ConfiguredObject.class);
-        final List<String> path = Collections.singletonList("test-vhn");
+        final List<String> path = List.of("test-vhn");
         Map<String, Object> converted = _virtualHostController.convertAttributesToNextVersion(root, path, attributes);
 
         assertThat(converted, is(notNullValue()));

@@ -29,10 +29,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +65,7 @@ public class GenericCategoryControllerTest extends UnitTestBase
                                                     _nextVersionManagementController,
                                                     TEST_CATEGORY,
                                                     DEFAULT_TYPE,
-                                                    Collections.singleton(_typeController))
+                                                    Set.of(_typeController))
         {
             @Override
             protected LegacyConfiguredObject convertNextVersionLegacyConfiguredObject(final LegacyConfiguredObject object)
@@ -104,9 +103,8 @@ public class GenericCategoryControllerTest extends UnitTestBase
     @Test
     public void get()
     {
-        final List<String> path = Arrays.asList("test1", "test2");
-        final Map<String, List<String>> parameters =
-                Collections.singletonMap("testParam", Collections.singletonList("testValue"));
+        final List<String> path = List.of("test1", "test2");
+        final Map<String, List<String>> parameters = Map.of("testParam", List.of("testValue"));
         final LegacyConfiguredObject result = mock(LegacyConfiguredObject.class);
         when(result.getAttribute(LegacyConfiguredObject.TYPE)).thenReturn(DEFAULT_TYPE);
         final LegacyConfiguredObject convertedResult = mock(LegacyConfiguredObject.class);
@@ -120,8 +118,8 @@ public class GenericCategoryControllerTest extends UnitTestBase
     @Test
     public void createOrUpdate()
     {
-        final List<String> path = Arrays.asList("test1", "test2");
-        final Map<String, Object> attributes = Collections.singletonMap("test", "testValue");
+        final List<String> path = List.of("test1", "test2");
+        final Map<String, Object> attributes = Map.of("test", "testValue");
         final LegacyConfiguredObject result = mock(LegacyConfiguredObject.class);
         final LegacyConfiguredObject convertedResult = mock(LegacyConfiguredObject.class);
         when(result.getAttribute(LegacyConfiguredObject.TYPE)).thenReturn(DEFAULT_TYPE);
@@ -139,9 +137,8 @@ public class GenericCategoryControllerTest extends UnitTestBase
     @Test
     public void delete()
     {
-        final List<String> path = Arrays.asList("test1", "test2");
-        final Map<String, List<String>> parameters =
-                Collections.singletonMap("testParam", Collections.singletonList("testValue"));
+        final List<String> path = List.of("test1", "test2");
+        final Map<String, List<String>> parameters = Map.of("testParam", List.of("testValue"));
 
         final int result = 1;
         when(_nextVersionManagementController.delete(_root, TEST_CATEGORY, path, parameters)).thenReturn(result);
@@ -153,9 +150,9 @@ public class GenericCategoryControllerTest extends UnitTestBase
     @Test
     public void invoke()
     {
-        final List<String> path = Arrays.asList("test1", "test2");
+        final List<String> path = List.of("test1", "test2");
         final String operationName = "testOperation";
-        final Map<String, Object> operationParameters = Collections.singletonMap("testParam", "testValue");
+        final Map<String, Object> operationParameters = Map.of("testParam", "testValue");
 
         final LegacyConfiguredObject result = mock(LegacyConfiguredObject.class);
         when(result.getAttribute(LegacyConfiguredObject.TYPE)).thenReturn(DEFAULT_TYPE);
@@ -163,7 +160,7 @@ public class GenericCategoryControllerTest extends UnitTestBase
         when(_nextVersionManagementController.get(eq(_root),
                                                   eq(TEST_CATEGORY),
                                                   eq(path),
-                                                  eq(Collections.emptyMap()))).thenReturn(result);
+                                                  eq(Map.of()))).thenReturn(result);
         when(_typeController.convertFromNextVersion(result)).thenReturn(convertedResult);
 
 
@@ -175,16 +172,15 @@ public class GenericCategoryControllerTest extends UnitTestBase
         assertThat(response, is(notNullValue()));
         assertThat(response.getResponseCode(), is(equalTo(200)));
         assertThat(response.getBody(), is(equalTo(operationValue)));
-        verify(_nextVersionManagementController).get(_root, TEST_CATEGORY, path, Collections.emptyMap());
+        verify(_nextVersionManagementController).get(_root, TEST_CATEGORY, path, Map.of());
         verify(convertedResult).invoke(operationName, operationParameters, true);
     }
 
     @Test
     public void getPreferences()
     {
-        final List<String> path = Arrays.asList("test1", "test2");
-        final Map<String, List<String>> parameters =
-                Collections.singletonMap("testParam", Collections.singletonList("testValue"));
+        final List<String> path = List.of("test1", "test2");
+        final Map<String, List<String>> parameters = Map.of("testParam", List.of("testValue"));
 
         final Object result = mock(Object.class);
         when(_nextVersionManagementController.getPreferences(_root,
@@ -200,9 +196,8 @@ public class GenericCategoryControllerTest extends UnitTestBase
     @Test
     public void setPreferences()
     {
-        final List<String> path = Arrays.asList("test1", "test2");
-        final Map<String, List<String>> parameters =
-                Collections.singletonMap("testParam", Collections.singletonList("testValue"));
+        final List<String> path = List.of("test1", "test2");
+        final Map<String, List<String>> parameters = Map.of("testParam", List.of("testValue"));
 
         final Object preferences = mock(Object.class);
         _controller.setPreferences(_root, path, preferences, parameters, true);
@@ -218,9 +213,8 @@ public class GenericCategoryControllerTest extends UnitTestBase
     @Test
     public void deletePreferences()
     {
-        final List<String> path = Arrays.asList("test1", "test2");
-        final Map<String, List<String>> parameters =
-                Collections.singletonMap("testParam", Collections.singletonList("testValue"));
+        final List<String> path = List.of("test1", "test2");
+        final Map<String, List<String>> parameters = Map.of("testParam", List.of("testValue"));
 
         _controller.deletePreferences(_root, path, parameters);
 
@@ -236,9 +230,9 @@ public class GenericCategoryControllerTest extends UnitTestBase
     @Test
     public void convertAttributesToNextVersion()
     {
-        final List<String> path = Arrays.asList("test1", "test2");
-        final Map<String, Object> attributes = Collections.singletonMap("testParam", "testValue");
-        final Map<String, Object> convertedAttributes = Collections.singletonMap("testParam", "testValue2");
+        final List<String> path = List.of("test1", "test2");
+        final Map<String, Object> attributes = Map.of("testParam", "testValue");
+        final Map<String, Object> convertedAttributes = Map.of("testParam", "testValue2");
 
         when(_typeController.convertAttributesToNextVersion(_root, path, attributes)).thenReturn(convertedAttributes);
         final Map<String, Object> converted = _controller.convertAttributesToNextVersion(_root, path, attributes);

@@ -33,14 +33,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.security.PrivilegedAction;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -121,7 +120,7 @@ public class LatestManagementControllerTest extends UnitTestBase
     public void getCategoryHierarchyForBrokerRootAndQueueCategory()
     {
         final Broker<?> object = BrokerTestHelper.createBrokerMock();
-        final Collection<String> expected = Arrays.asList("VirtualHostNode", "VirtualHost", "Queue");
+        final Collection<String> expected = List.of("VirtualHostNode", "VirtualHost", "Queue");
         assertThat(_controller.getCategoryHierarchy(object, "Queue"), is(equalTo(expected)));
     }
 
@@ -129,7 +128,7 @@ public class LatestManagementControllerTest extends UnitTestBase
     public void getCategoryHierarchyForVirtualHostRootAndExchangeCategory() throws Exception
     {
         final QueueManagingVirtualHost<?> object = BrokerTestHelper.createVirtualHost("test", this);
-        final Collection<String> expected = Collections.singletonList("Exchange");
+        final Collection<String> expected = List.of("Exchange");
         assertThat(_controller.getCategoryHierarchy(object, "Exchange"), is(equalTo(expected)));
     }
 
@@ -138,7 +137,7 @@ public class LatestManagementControllerTest extends UnitTestBase
     public void getCategoryHierarchyForBrokerRootAndUnknownCategory()
     {
         final Broker<?> object = BrokerTestHelper.createBrokerMock();
-        final Collection<String> expected = Collections.emptyList();
+        final Collection<String> expected = List.of();
         assertThat(_controller.getCategoryHierarchy(object, "Binding"), is(equalTo(expected)));
     }
 
@@ -157,8 +156,8 @@ public class LatestManagementControllerTest extends UnitTestBase
         final ManagementRequest request = mock(ManagementRequest.class);
         when(request.getCategory()).thenReturn("queue");
         doReturn(virtualHost.getBroker()).when(request).getRoot();
-        when(request.getPath()).thenReturn(Arrays.asList("*", hostName));
-        when(request.getParameters()).thenReturn(Collections.emptyMap());
+        when(request.getPath()).thenReturn(List.of("*", hostName));
+        when(request.getParameters()).thenReturn(Map.of());
         when(request.getMethod()).thenReturn("GET");
 
         final RequestType type = _controller.getRequestType(request);
@@ -175,9 +174,9 @@ public class LatestManagementControllerTest extends UnitTestBase
         final ManagementRequest request = mock(ManagementRequest.class);
         when(request.getCategory()).thenReturn("queue");
         doReturn(virtualHost.getBroker()).when(request).getRoot();
-        final List<String> path = Arrays.asList(virtualHost.getParent().getName(), hostName, "bar");
+        final List<String> path = List.of(virtualHost.getParent().getName(), hostName, "bar");
         when(request.getPath()).thenReturn(path);
-        when(request.getParameters()).thenReturn(Collections.emptyMap());
+        when(request.getParameters()).thenReturn(Map.of());
         when(request.getMethod()).thenReturn("GET");
 
         final RequestType type = _controller.getRequestType(request);
@@ -194,12 +193,9 @@ public class LatestManagementControllerTest extends UnitTestBase
         final ManagementRequest request = mock(ManagementRequest.class);
         when(request.getCategory()).thenReturn("queue");
         doReturn(virtualHost.getBroker()).when(request).getRoot();
-        List<String> path = Arrays.asList(virtualHost.getParent().getName(),
-                                          hostName,
-                                          "bar",
-                                          "userpreferences");
+        List<String> path = List.of(virtualHost.getParent().getName(), hostName, "bar", "userpreferences");
         when(request.getPath()).thenReturn(path);
-        when(request.getParameters()).thenReturn(Collections.emptyMap());
+        when(request.getParameters()).thenReturn(Map.of());
         when(request.getMethod()).thenReturn("GET");
 
         final RequestType type = _controller.getRequestType(request);
@@ -216,9 +212,9 @@ public class LatestManagementControllerTest extends UnitTestBase
         final ManagementRequest request = mock(ManagementRequest.class);
         when(request.getCategory()).thenReturn("queue");
         doReturn(virtualHost.getBroker()).when(request).getRoot();
-        List<String> path = Arrays.asList(virtualHost.getParent().getName(), hostName, "bar", "visiblepreferences");
+        List<String> path = List.of(virtualHost.getParent().getName(), hostName, "bar", "visiblepreferences");
         when(request.getPath()).thenReturn(path);
-        when(request.getParameters()).thenReturn(Collections.emptyMap());
+        when(request.getParameters()).thenReturn(Map.of());
         when(request.getMethod()).thenReturn("GET");
 
         final RequestType type = _controller.getRequestType(request);
@@ -232,9 +228,9 @@ public class LatestManagementControllerTest extends UnitTestBase
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName, "foo", "bar");
         final String nodeName = virtualHost.getParent().getName();
-        final List<String> path = Arrays.asList(nodeName, hostName, "foo");
+        final List<String> path = List.of(nodeName, hostName, "foo");
 
-        final Object object = _controller.get(virtualHost.getBroker(), "queue", path, Collections.emptyMap());
+        final Object object = _controller.get(virtualHost.getBroker(), "queue", path, Map.of());
         assertThat(object, is(notNullValue()));
         assertThat(object, is(instanceOf(Queue.class)));
 
@@ -248,9 +244,9 @@ public class LatestManagementControllerTest extends UnitTestBase
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName, "foo", "bar");
         final String nodeName = virtualHost.getParent().getName();
-        final List<String> path = Arrays.asList(nodeName, hostName);
+        final List<String> path = List.of(nodeName, hostName);
 
-        final Object object = _controller.get(virtualHost.getBroker(), "queue", path, Collections.emptyMap());
+        final Object object = _controller.get(virtualHost.getBroker(), "queue", path, Map.of());
         assertThat(object, is(notNullValue()));
         assertThat(object, is(instanceOf(Collection.class)));
 
@@ -272,9 +268,9 @@ public class LatestManagementControllerTest extends UnitTestBase
     {
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName, "foo", "bar");
-        final List<String> path = Arrays.asList("*", hostName);
+        final List<String> path = List.of("*", hostName);
 
-        final Object object = _controller.get(virtualHost.getBroker(), "queue", path, Collections.emptyMap());
+        final Object object = _controller.get(virtualHost.getBroker(), "queue", path, Map.of());
         assertThat(object, is(notNullValue()));
         assertThat(object, is(instanceOf(Collection.class)));
 
@@ -297,12 +293,12 @@ public class LatestManagementControllerTest extends UnitTestBase
     {
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName, "foo", "bar", "bar2");
-        final List<String> path = Arrays.asList("*", hostName);
+        final List<String> path = List.of("*", hostName);
 
         final Object object = _controller.get(virtualHost.getBroker(),
                                               "queue",
                                               path,
-                                              Collections.singletonMap(Queue.NAME, Arrays.asList("foo", "bar")));
+                                              Map.of(Queue.NAME, List.of("foo", "bar")));
         assertThat(object, is(notNullValue()));
         assertThat(object, is(instanceOf(Collection.class)));
 
@@ -325,12 +321,12 @@ public class LatestManagementControllerTest extends UnitTestBase
     {
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName);
-        final List<String> path = Arrays.asList(virtualHost.getParent().getName(), hostName, "bar");
+        final List<String> path = List.of(virtualHost.getParent().getName(), hostName, "bar");
 
         final Object object = _controller.createOrUpdate(virtualHost.getBroker(),
                                                          "queue",
                                                          path,
-                                                         new HashMap<>(Collections.singletonMap(Queue.NAME, "bar")),
+                                                         new HashMap<>(Map.of(Queue.NAME, "bar")),
                                                          false);
 
         assertThat(object, is(notNullValue()));
@@ -343,14 +339,14 @@ public class LatestManagementControllerTest extends UnitTestBase
     {
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName);
-        final List<String> path = Arrays.asList(virtualHost.getParent().getName(), hostName, "bar");
+        final List<String> path = List.of(virtualHost.getParent().getName(), hostName, "bar");
 
         try
         {
             _controller.createOrUpdate(virtualHost.getBroker(),
                                        "queue",
                                        path,
-                                       new HashMap<>(Collections.singletonMap(Queue.NAME, "bar")),
+                                       Map.of(Queue.NAME, "bar"),
                                        true);
             fail("Post update should fail for non existing");
         }
@@ -365,12 +361,12 @@ public class LatestManagementControllerTest extends UnitTestBase
     {
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName, "bar");
-        final List<String> path = Arrays.asList(virtualHost.getParent().getName(), hostName, "bar");
+        final List<String> path = List.of(virtualHost.getParent().getName(), hostName, "bar");
 
         final Object object = _controller.createOrUpdate(virtualHost.getBroker(),
                                                          "queue",
                                                          path,
-                                                         new HashMap<>(Collections.singletonMap(Queue.NAME, "bar")),
+                                                         Map.of(Queue.NAME, "bar"),
                                                          true);
 
         assertThat(object, is(nullValue()));
@@ -381,12 +377,12 @@ public class LatestManagementControllerTest extends UnitTestBase
     {
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName);
-        final List<String> path = Arrays.asList(virtualHost.getParent().getName(), hostName);
+        final List<String> path = List.of(virtualHost.getParent().getName(), hostName);
 
         final Object object = _controller.createOrUpdate(virtualHost.getBroker(),
                                                          "queue",
                                                          path,
-                                                         new HashMap<>(Collections.singletonMap(Queue.NAME, "bar")),
+                                                         Map.of(Queue.NAME, "bar"),
                                                          true);
 
         assertThat(object, is(notNullValue()));
@@ -400,9 +396,9 @@ public class LatestManagementControllerTest extends UnitTestBase
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName, "foo", "bar");
 
-        List<String> path = Arrays.asList(virtualHost.getParent().getName(), hostName, "bar");
+        List<String> path = List.of(virtualHost.getParent().getName(), hostName, "bar");
 
-        int count = _controller.delete(virtualHost.getBroker(), "queue", path, Collections.emptyMap());
+        int count = _controller.delete(virtualHost.getBroker(), "queue", path, Map.of());
 
         assertThat(count, is(equalTo(1)));
     }
@@ -413,12 +409,12 @@ public class LatestManagementControllerTest extends UnitTestBase
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName, "foo", "bar");
 
-        List<String> path = Arrays.asList(virtualHost.getParent().getName(), hostName);
+        List<String> path = List.of(virtualHost.getParent().getName(), hostName);
 
         int count = _controller.delete(virtualHost.getBroker(),
                                        "queue",
                                        path,
-                                       Collections.singletonMap(Queue.NAME, Arrays.asList("foo", "bar", "bar2")));
+                                       Map.of(Queue.NAME, List.of("foo", "bar", "bar2")));
 
         assertThat(count, is(equalTo(2)));
     }
@@ -429,9 +425,9 @@ public class LatestManagementControllerTest extends UnitTestBase
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName, "foo", "bar");
 
-        List<String> path = Arrays.asList(virtualHost.getParent().getName(), hostName, "*");
+        List<String> path = List.of(virtualHost.getParent().getName(), hostName, "*");
 
-        int count = _controller.delete(virtualHost.getBroker(), "queue", path, Collections.emptyMap());
+        int count = _controller.delete(virtualHost.getBroker(), "queue", path, Map.of());
 
         assertThat(count, is(equalTo(2)));
     }
@@ -442,7 +438,7 @@ public class LatestManagementControllerTest extends UnitTestBase
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName, "foo", "bar");
 
-        List<String> path = Arrays.asList(virtualHost.getParent().getName(), hostName);
+        List<String> path = List.of(virtualHost.getParent().getName(), hostName);
 
         Map<String, Object> message = new HashMap<>();
         message.put("address", "foo");
@@ -453,7 +449,7 @@ public class LatestManagementControllerTest extends UnitTestBase
                                                          "virtualhost",
                                                          path,
                                                          "publishMessage",
-                                                         Collections.singletonMap("message", message),
+                                                         Map.of("message", message),
                                                          true,
                                                          true);
 
@@ -470,14 +466,14 @@ public class LatestManagementControllerTest extends UnitTestBase
         final String hostName = "default";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName);
         final String preferencesType = "X-type-preference";
-        final Map<String, Object> preferenceValue = Collections.singletonMap("foo", "bar");
+        final Map<String, Object> preferenceValue = Map.of("foo", "bar");
         final Subject testSubject = createTestSubject();
         final String prefernceName = "test";
         createPreferences(testSubject, virtualHost, preferencesType, prefernceName, preferenceValue);
 
-        List<String> path = Arrays.asList(virtualHost.getParent().getName(), hostName, "userpreferences");
+        List<String> path = List.of(virtualHost.getParent().getName(), hostName, "userpreferences");
         final Object preferences = Subject.doAs(testSubject, (PrivilegedAction<Object>) () ->
-                _controller.getPreferences(virtualHost.getBroker(), "virtualhost", path, Collections.emptyMap()));
+                _controller.getPreferences(virtualHost.getBroker(), "virtualhost", path, Map.of()));
 
         assertPreference(preferencesType, prefernceName, preferenceValue, preferences);
     }
@@ -489,29 +485,28 @@ public class LatestManagementControllerTest extends UnitTestBase
         final String hostName = "default";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName);
         final String preferencesType = "X-type";
-        final Map<String, Object> preferenceValue = Collections.singletonMap("foo", "bar");
+        final Map<String, Object> preferenceValue = Map.of("foo", "bar");
         final Subject testSubject = createTestSubject();
         final String preferenceName = "pref";
         final UUID id = createPreferences(testSubject, virtualHost, preferencesType, preferenceName, preferenceValue);
-        final List<String> path = Arrays.asList(virtualHost.getParent().getName(), hostName, "userpreferences");
-        final Map<String, Object> newValue = Collections.singletonMap("foo", "bar2");
+        final List<String> path = List.of(virtualHost.getParent().getName(), hostName, "userpreferences");
+        final Map<String, Object> newValue = Map.of("foo", "bar2");
         final Map<String, Object> data = new HashMap<>();
         data.put("id", id.toString());
         data.put("name", preferenceName);
         data.put("value", newValue);
-        final Map<String, List<Object>> modifiedPreferences = Collections.singletonMap(preferencesType,
-                                                                                       Collections.singletonList(data));
+        final Map<String, List<Object>> modifiedPreferences = Map.of(preferencesType, List.of(data));
         Subject.doAs(testSubject, (PrivilegedAction<Void>) () -> {
             _controller.setPreferences(virtualHost.getBroker(),
                                        "virtualhost",
                                        path,
                                        modifiedPreferences,
-                                       Collections.emptyMap(),
+                                       Map.of(),
                                        true);
             return null;
         });
         final Object preferences = Subject.doAs(testSubject, (PrivilegedAction<Object>) () ->
-                _controller.getPreferences(virtualHost.getBroker(), "virtualhost", path, Collections.emptyMap()));
+                _controller.getPreferences(virtualHost.getBroker(), "virtualhost", path, Map.of()));
 
         assertPreference(preferencesType, preferenceName, newValue, preferences);
     }
@@ -522,12 +517,12 @@ public class LatestManagementControllerTest extends UnitTestBase
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName);
         final String preferencesType = "X-type";
-        final Map<String, Object> preferenceValue = Collections.singletonMap("foo", "bar");
+        final Map<String, Object> preferenceValue = Map.of("foo", "bar");
         final Subject testSubject = createTestSubject();
         final String preferenceName = "pref";
         createPreferences(testSubject, virtualHost, preferencesType, preferenceName, preferenceValue);
 
-        final List<String> path = Arrays.asList(virtualHost.getParent().getName(),
+        final List<String> path = List.of(virtualHost.getParent().getName(),
                                                 hostName,
                                                 "userpreferences",
                                                 preferencesType,
@@ -537,14 +532,14 @@ public class LatestManagementControllerTest extends UnitTestBase
             _controller.deletePreferences(virtualHost.getBroker(),
                                           "virtualhost",
                                           path,
-                                          Collections.emptyMap());
+                                          Map.of());
             return null;
         });
 
-        final List<String> path2 = Arrays.asList(virtualHost.getParent().getName(), hostName, "userpreferences");
+        final List<String> path2 = List.of(virtualHost.getParent().getName(), hostName, "userpreferences");
 
         final Object preferences = Subject.doAs(testSubject, (PrivilegedAction<Object>) () ->
-                _controller.getPreferences(virtualHost.getBroker(), "virtualhost", path2, Collections.emptyMap()));
+                _controller.getPreferences(virtualHost.getBroker(), "virtualhost", path2, Map.of()));
         assertThat(preferences, is(notNullValue()));
         assertThat(preferences, is(instanceOf(Map.class)));
 
@@ -558,11 +553,7 @@ public class LatestManagementControllerTest extends UnitTestBase
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName, "foo", "bar");
 
-        final Object formatted = _controller.formatConfiguredObject(virtualHost,
-                                                                    Collections.singletonMap("depth",
-                                                                                             Collections.singletonList(
-                                                                                                     "1")),
-                                                                    true);
+        final Object formatted = _controller.formatConfiguredObject(virtualHost, Map.of("depth", List.of("1")), true);
         assertThat(formatted, is(notNullValue()));
         assertThat(formatted, is(instanceOf(Map.class)));
 
@@ -595,11 +586,7 @@ public class LatestManagementControllerTest extends UnitTestBase
         final String hostName = "test";
         final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName, "foo", "bar");
 
-        final Object formatted = _controller.formatConfiguredObject(Collections.singletonList(virtualHost),
-                                                                    Collections.singletonMap("depth",
-                                                                                             Collections.singletonList(
-                                                                                                     "1")),
-                                                                    true);
+        final Object formatted = _controller.formatConfiguredObject(List.of(virtualHost), Map.of("depth", List.of("1")), true);
         assertThat(formatted, is(notNullValue()));
         assertThat(formatted, is(instanceOf(Collection.class)));
 
@@ -642,7 +629,7 @@ public class LatestManagementControllerTest extends UnitTestBase
         final ManagementRequest request = mock(ManagementRequest.class);
         when(request.getCategory()).thenReturn("queue");
         doReturn(virtualHost.getBroker()).when(request).getRoot();
-        when(request.getPath()).thenReturn(Arrays.asList(nodeName, hostName, "foo"));
+        when(request.getPath()).thenReturn(List.of(nodeName, hostName, "foo"));
         when(request.getMethod()).thenReturn("GET");
 
         final ManagementResponse response = _controller.handleGet(request);
@@ -666,8 +653,8 @@ public class LatestManagementControllerTest extends UnitTestBase
         final ManagementRequest request = mock(ManagementRequest.class);
         when(request.getCategory()).thenReturn("queue");
         doReturn(virtualHost.getBroker()).when(request).getRoot();
-        when(request.getPath()).thenReturn(Arrays.asList(nodeName, hostName));
-        when(request.getParameters()).thenReturn(Collections.emptyMap());
+        when(request.getPath()).thenReturn(List.of(nodeName, hostName));
+        when(request.getParameters()).thenReturn(Map.of());
         when(request.getMethod()).thenReturn("GET");
 
         final ManagementResponse response = _controller.handleGet(request);
@@ -701,8 +688,8 @@ public class LatestManagementControllerTest extends UnitTestBase
         final ManagementRequest request = mock(ManagementRequest.class);
         when(request.getCategory()).thenReturn("queue");
         doReturn(virtualHost.getBroker()).when(request).getRoot();
-        when(request.getPath()).thenReturn(Arrays.asList(nodeName, hostName));
-        when(request.getParameters()).thenReturn(Collections.singletonMap("name", Collections.singletonList("bar")));
+        when(request.getPath()).thenReturn(List.of(nodeName, hostName));
+        when(request.getParameters()).thenReturn(Map.of("name", List.of("bar")));
         when(request.getMethod()).thenReturn("GET");
 
         ManagementResponse response = _controller.handleGet(request);
@@ -726,11 +713,11 @@ public class LatestManagementControllerTest extends UnitTestBase
         final QueueManagingVirtualHost<?> virtualHost = BrokerTestHelper.createVirtualHost(hostName, this);
         final Broker root = virtualHost.getBroker();
         final ConfiguredObject<?> virtualHostNode = virtualHost.getParent();
-        when(root.getChildren(VirtualHostNode.class)).thenReturn(Collections.singletonList(virtualHostNode));
-        when(virtualHostNode.getChildren(VirtualHost.class)).thenReturn(Collections.singletonList(virtualHost));
+        when(root.getChildren(VirtualHostNode.class)).thenReturn(List.of(virtualHostNode));
+        when(virtualHostNode.getChildren(VirtualHost.class)).thenReturn(List.of(virtualHost));
         when(virtualHostNode.getChildByName(VirtualHost.class, hostName)).thenReturn(virtualHost);
         Stream.of(queueName)
-              .forEach(n -> virtualHost.createChild(Queue.class, Collections.singletonMap(Queue.NAME, n)));
+              .forEach(n -> virtualHost.createChild(Queue.class, Map.of(Queue.NAME, n)));
         return virtualHost;
     }
 
@@ -754,7 +741,7 @@ public class LatestManagementControllerTest extends UnitTestBase
                                                          null,
                                                          new GenericPreferenceValueFactory().createInstance(
                                                                  preferenceValue));
-        final List<Preference> preferenceList = Collections.singletonList(preference);
+        final List<Preference> preferenceList = List.of(preference);
         final Future<Void> result = Subject.doAs(testSubject,
                                                  (PrivilegedAction<Future<Void>>) () -> virtualHost.getUserPreferences()
                                                                                                    .updateOrAppend(
@@ -771,9 +758,9 @@ public class LatestManagementControllerTest extends UnitTestBase
         when(provider.getName()).thenReturn("name");
 
         return new Subject(false,
-                           Collections.singleton(new AuthenticatedPrincipal(new UsernamePrincipal("user", provider))),
-                           Collections.emptySet(),
-                           Collections.emptySet());
+                           Set.of(new AuthenticatedPrincipal(new UsernamePrincipal("user", provider))),
+                           Set.of(),
+                           Set.of());
     }
 
     private void assertPreference(final String expectedType,

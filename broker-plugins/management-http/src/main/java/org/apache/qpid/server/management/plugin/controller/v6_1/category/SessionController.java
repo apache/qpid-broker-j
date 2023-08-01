@@ -21,7 +21,7 @@
 package org.apache.qpid.server.management.plugin.controller.v6_1.category;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -68,7 +68,7 @@ public class SessionController extends LegacyCategoryController
             {
                 final LegacyConfiguredObject nextVersionSession = getNextVersionLegacyConfiguredObject();
                 final ManagementResponse result =
-                        nextVersionSession.invoke("getConsumers", Collections.emptyMap(), true);
+                        nextVersionSession.invoke("getConsumers", Map.of(), true);
                 if (result != null && result.getResponseCode() == 200  && result.getType() == ResponseType.MODEL_OBJECT)
                 {
                     final Object objects = result.getBody();

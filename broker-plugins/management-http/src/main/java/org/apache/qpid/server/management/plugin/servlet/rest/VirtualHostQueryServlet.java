@@ -183,7 +183,7 @@ public class VirtualHostQueryServlet extends QueryServlet<VirtualHost<?>>
     private List<ConfiguredObject<?>> getObjects(final List<Class<? extends ConfiguredObject>> hierarchy,
                                                  Collection<ConfiguredObject<?>> parents)
     {
-        Collection<ConfiguredObject<?>> children = Collections.emptyList();
+        Collection<ConfiguredObject<?>> children = List.of();
         for(Class<? extends ConfiguredObject> childClass : hierarchy)
         {
             children = new HashSet<>();

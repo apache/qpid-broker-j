@@ -21,7 +21,7 @@
 package org.apache.qpid.server.management.plugin.controller.v6_1.category;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -84,7 +84,7 @@ public class ExchangeController extends DestinationController
                                                                              b.getArguments()))
                                    .collect(Collectors.toList());
                 }
-                return Collections.emptyList();
+                return List.of();
             }
             return super.getChildren(category);
         }

@@ -21,7 +21,6 @@
 package org.apache.qpid.server.management.plugin.report;
 
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
 
 /**
  * <p>

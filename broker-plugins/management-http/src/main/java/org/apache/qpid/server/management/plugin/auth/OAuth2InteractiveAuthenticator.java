@@ -167,41 +167,37 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
 
                 final NamedAddressSpace addressSpace = configuration.getPort(request).getAddressSpace(request.getServerName());
 
-                return new AuthenticationHandler()
+                return response ->
                 {
-                    @Override
-                    public void handleAuthentication(final HttpServletResponse response) throws IOException
+                    AuthenticationResult authenticationResult = oauth2Provider.authenticateViaAuthorizationCode(authorizationCode, redirectUri, addressSpace);
+                    try
                     {
-                        AuthenticationResult authenticationResult = oauth2Provider.authenticateViaAuthorizationCode(authorizationCode, redirectUri, addressSpace);
-                        try
+                        SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure(), request.getServerName());
+                        SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
+                        Subject original = result.getSubject();
+
+                        if (original == null)
                         {
-                            SubjectCreator subjectCreator = port.getSubjectCreator(request.isSecure(), request.getServerName());
-                            SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
-                            Subject original = result.getSubject();
-
-                            if (original == null)
-                            {
-                                throw new SecurityException("Only authenticated users can access the management interface");
-                            }
-
-                            Broker broker = (Broker) oauth2Provider.getParent();
-                            HttpManagementUtil.createServletConnectionSubjectAssertManagementAccessAndSave(broker, request, original);
-
-                            LOGGER.debug("Successful login. Redirect to original resource {}", originalRequestUri);
-                            response.sendRedirect(originalRequestUri);
+                            throw new SecurityException("Only authenticated users can access the management interface");
                         }
-                        catch (SecurityException e)
+
+                        Broker broker = (Broker) oauth2Provider.getParent();
+                        HttpManagementUtil.createServletConnectionSubjectAssertManagementAccessAndSave(broker, request, original);
+
+                        LOGGER.debug("Successful login. Redirect to original resource {}", originalRequestUri);
+                        response.sendRedirect(originalRequestUri);
+                    }
+                    catch (SecurityException e)
+                    {
+                        if (e instanceof AccessControlException)
                         {
-                            if (e instanceof AccessControlException)
-                            {
-                                LOGGER.info("User '{}' is not authorised for management", authenticationResult.getMainPrincipal());
-                                response.sendError(403, "User is not authorised for management");
-                            }
-                            else
-                            {
-                                LOGGER.info("Authentication failed", authenticationResult.getCause());
-                                response.sendError(401);
-                            }
+                            LOGGER.info("User '{}' is not authorised for management", authenticationResult.getMainPrincipal());
+                            response.sendError(403, "User is not authorised for management");
+                        }
+                        else
+                        {
+                            LOGGER.info("Authentication failed", authenticationResult.getCause());
+                            response.sendError(401);
                         }
                     }
                 };
@@ -225,14 +221,7 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
             if (oauth2Provider.getPostLogoutURI() != null)
             {
                 final String postLogoutRedirect = oauth2Provider.getPostLogoutURI().toString();
-                return new LogoutHandler()
-                {
-                    @Override
-                    public void handleLogout(final HttpServletResponse response) throws IOException
-                    {
-                        response.sendRedirect(postLogoutRedirect);
-                    }
-                };
+                return response -> response.sendRedirect(postLogoutRedirect);
             }
         }
         return null;

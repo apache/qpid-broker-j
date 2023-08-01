@@ -30,9 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -87,7 +85,7 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
         final String statisticName = "statisticName";
         final int statisticValue = 10;
 
-        when(_configuredObject.getStatistics()).thenReturn(Collections.singletonMap(statisticName, (Number) statisticValue));
+        when(_configuredObject.getStatistics()).thenReturn(Map.of(statisticName, (Number) statisticValue));
 
         Map<String, Object> resultMap = _converter.convertObjectToMap(_configuredObject,
                                                                       ConfiguredObject.class,
@@ -162,7 +160,7 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
         when(mockChild.getModel()).thenReturn(model);
         when(_configuredObject.getModel()).thenReturn(model);
         configureMockToReturnOneAttribute(mockChild, childAttributeName, childAttributeValue);
-        when(_configuredObject.getChildren(TestChild.class)).thenReturn(Arrays.asList(mockChild));
+        when(_configuredObject.getChildren(TestChild.class)).thenReturn(List.of(mockChild));
 
         Map<String, Object> resultMap = _converter.convertObjectToMap(_configuredObject,
                                                                       ConfiguredObject.class,
@@ -189,24 +187,24 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
         final String childAttributeName = "childattribute";
         final String childAttributeValue = "childvalue";
         final String childActualAttributeValue = "${actualvalue}";
-        final Map<String,Object> actualContext = Collections.singletonMap("key", "value");
-        final Set<String> inheritedKeys = new HashSet<>(Arrays.asList("key","inheritedkey"));
+        final Map<String,Object> actualContext = Map.of("key", "value");
+        final Set<String> inheritedKeys = new HashSet<>(List.of("key","inheritedkey"));
 
         Model model = createTestModel();
 
         TestChild mockChild = mock(TestChild.class);
         when(mockChild.getModel()).thenReturn(model);
         when(_configuredObject.getModel()).thenReturn(model);
-        when(_configuredObject.getAttributeNames()).thenReturn(Collections.singletonList(ConfiguredObject.CONTEXT));
+        when(_configuredObject.getAttributeNames()).thenReturn(List.of(ConfiguredObject.CONTEXT));
         when(_configuredObject.getContextValue(eq(String.class), eq("key"))).thenReturn("value");
         when(_configuredObject.getContextValue(eq(String.class),eq("inheritedkey"))).thenReturn("foo");
         when(_configuredObject.getContextKeys(anyBoolean())).thenReturn(inheritedKeys);
         when(_configuredObject.getContext()).thenReturn(actualContext);
-        when(_configuredObject.getActualAttributes()).thenReturn(Collections.singletonMap(ConfiguredObject.CONTEXT, actualContext));
-        when(mockChild.getAttributeNames()).thenReturn(Arrays.asList(childAttributeName, ConfiguredObject.CONTEXT));
+        when(_configuredObject.getActualAttributes()).thenReturn(Map.of(ConfiguredObject.CONTEXT, actualContext));
+        when(mockChild.getAttributeNames()).thenReturn(List.of(childAttributeName, ConfiguredObject.CONTEXT));
         when(mockChild.getAttribute(childAttributeName)).thenReturn(childAttributeValue);
-        when(mockChild.getActualAttributes()).thenReturn(Collections.singletonMap(childAttributeName, childActualAttributeValue));
-        when(_configuredObject.getChildren(TestChild.class)).thenReturn(Arrays.asList(mockChild));
+        when(mockChild.getActualAttributes()).thenReturn(Map.of(childAttributeName, childActualAttributeValue));
+        when(_configuredObject.getChildren(TestChild.class)).thenReturn(List.of(mockChild));
 
 
         Map<String, Object> resultMap = _converter.convertObjectToMap(_configuredObject,
@@ -264,7 +262,7 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
         when(mockChild.getModel()).thenReturn(model);
         when(_configuredObject.getModel()).thenReturn(model);
         configureMockToReturnOneAttribute(mockChild, "longAttr", "this is not long");
-        when(_configuredObject.getChildren(TestChild.class)).thenReturn(Arrays.asList(mockChild));
+        when(_configuredObject.getChildren(TestChild.class)).thenReturn(List.of(mockChild));
 
 
          Map<String, Object> resultMap = _converter.convertObjectToMap(_configuredObject,
@@ -344,8 +342,8 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
         configureMockToReturnOneAttribute(mockChild, "secureAttribute", "*****");
 
         // set actual values
-        when(mockChild.getActualAttributes()).thenReturn(Collections.singletonMap("secureAttribute", "secret"));
-        when(_configuredObject.getChildren(TestChild.class)).thenReturn(Arrays.asList(mockChild));
+        when(mockChild.getActualAttributes()).thenReturn(Map.of("secureAttribute", "secret"));
+        when(_configuredObject.getChildren(TestChild.class)).thenReturn(List.of(mockChild));
         when(model.getParentType(TestChild.class)).thenReturn((Class)TestChild.class);
         when(_configuredObject.getCategoryClass()).thenReturn(TestChild.class);
         when(mockChild.isDurable()).thenReturn(true);
@@ -505,7 +503,7 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
     private Model createTestModel()
     {
         Model model = mock(Model.class);
-        final List<Class<? extends ConfiguredObject>> list = new ArrayList<Class<? extends ConfiguredObject>>();
+        final List<Class<? extends ConfiguredObject>> list = new ArrayList<>();
         list.add(TestChild.class);
         when(model.getChildTypes(ConfiguredObject.class)).thenReturn(list);
         final ConfiguredObjectTypeRegistry typeRegistry = mock(ConfiguredObjectTypeRegistry.class);
@@ -518,7 +516,7 @@ public class ConfiguredObjectToMapConverterTest extends UnitTestBase
 
     private void configureMockToReturnOneAttribute(ConfiguredObject mockConfiguredObject, String attributeName, Object attributeValue)
     {
-        when(mockConfiguredObject.getAttributeNames()).thenReturn(Arrays.asList(attributeName));
+        when(mockConfiguredObject.getAttributeNames()).thenReturn(List.of(attributeName));
         when(mockConfiguredObject.getAttribute(attributeName)).thenReturn(attributeValue);
     }
 

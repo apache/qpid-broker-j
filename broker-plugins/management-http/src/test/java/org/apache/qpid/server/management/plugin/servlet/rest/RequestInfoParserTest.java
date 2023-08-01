@@ -29,8 +29,7 @@ import static org.mockito.Mockito.when;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -56,7 +55,7 @@ public class RequestInfoParserTest extends UnitTestBase
         RequestInfo info = parser.parse(_request);
 
         assertEquals(RequestType.MODEL_OBJECT, info.getType(), "Unexpected request type");
-        assertEquals(Collections.emptyList(), info.getModelParts(), "Unexpected model parts");
+        assertEquals(List.of(), info.getModelParts(), "Unexpected model parts");
     }
 
     @Test
@@ -73,7 +72,7 @@ public class RequestInfoParserTest extends UnitTestBase
         RequestInfo info = parser.parse(_request);
 
         assertEquals(RequestType.MODEL_OBJECT, info.getType(), "Unexpected request type");
-        assertEquals(Arrays.asList(vhnName, vhName), info.getModelParts(), "Unexpected model parts");
+        assertEquals(List.of(vhnName, vhName), info.getModelParts(), "Unexpected model parts");
         assertTrue(info.isSingletonRequest(), "Expected exact object request");
     }
 
@@ -87,7 +86,7 @@ public class RequestInfoParserTest extends UnitTestBase
         RequestInfo info = parser.parse(_request);
 
         assertEquals(RequestType.MODEL_OBJECT, info.getType(), "Unexpected request type");
-        assertEquals(Arrays.asList(vhnName), info.getModelParts(), "Unexpected model parts");
+        assertEquals(List.of(vhnName), info.getModelParts(), "Unexpected model parts");
         assertFalse(info.isSingletonRequest(), "Expected exact object request");
     }
 
@@ -128,7 +127,7 @@ public class RequestInfoParserTest extends UnitTestBase
         RequestInfo info = parser.parse(_request);
 
         assertEquals(RequestType.MODEL_OBJECT, info.getType(), "Unexpected request type");
-        assertEquals(Arrays.asList(vhnName), info.getModelParts(), "Unexpected model parts");
+        assertEquals(List.of(vhnName), info.getModelParts(), "Unexpected model parts");
     }
 
 
@@ -146,7 +145,7 @@ public class RequestInfoParserTest extends UnitTestBase
         RequestInfo info = parser.parse(_request);
 
         assertEquals(RequestType.MODEL_OBJECT, info.getType(), "Unexpected request type");
-        assertEquals(Arrays.asList(vhnName, vhName), info.getModelParts(), "Unexpected model parts");
+        assertEquals(List.of(vhnName, vhName), info.getModelParts(), "Unexpected model parts");
     }
 
     @Test
@@ -205,7 +204,7 @@ public class RequestInfoParserTest extends UnitTestBase
         RequestInfo info = parser.parse(_request);
 
         assertEquals(RequestType.MODEL_OBJECT, info.getType(), "Unexpected request type");
-        assertEquals(Arrays.asList(vhnName, vhName), info.getModelParts(), "Unexpected model parts");
+        assertEquals(List.of(vhnName, vhName), info.getModelParts(), "Unexpected model parts");
     }
 
     @Test
@@ -220,7 +219,7 @@ public class RequestInfoParserTest extends UnitTestBase
         RequestInfo info = parser.parse(_request);
 
         assertEquals(RequestType.MODEL_OBJECT, info.getType(), "Unexpected request type");
-        assertEquals(Arrays.asList(vhnName, vhName), info.getModelParts(), "Unexpected model parts");
+        assertEquals(List.of(vhnName, vhName), info.getModelParts(), "Unexpected model parts");
     }
 
     @Test
@@ -273,7 +272,7 @@ public class RequestInfoParserTest extends UnitTestBase
         RequestInfo info = parser.parse(_request);
 
         assertEquals(RequestType.MODEL_OBJECT, info.getType(), "Unexpected request type");
-        assertEquals(Arrays.asList(vhnName, vhName), info.getModelParts(), "Unexpected model parts");
+        assertEquals(List.of(vhnName, vhName), info.getModelParts(), "Unexpected model parts");
     }
 
 
@@ -289,7 +288,7 @@ public class RequestInfoParserTest extends UnitTestBase
         RequestInfo info = parser.parse(_request);
 
         assertEquals(RequestType.MODEL_OBJECT, info.getType(), "Unexpected request type");
-        assertEquals(Arrays.asList(vhnName, vhName), info.getModelParts(), "Unexpected model parts");
+        assertEquals(List.of(vhnName, vhName), info.getModelParts(), "Unexpected model parts");
     }
 
     @Test
@@ -322,7 +321,7 @@ public class RequestInfoParserTest extends UnitTestBase
         RequestInfo info = parser.parse(_request);
 
         assertEquals(RequestType.MODEL_OBJECT, info.getType(), "Unexpected request type");
-        assertEquals(Arrays.asList(vhnName), info.getModelParts(), "Unexpected model parts");
+        assertEquals(List.of(vhnName), info.getModelParts(), "Unexpected model parts");
     }
 
     @Test
@@ -361,7 +360,7 @@ public class RequestInfoParserTest extends UnitTestBase
         RequestInfo info = parser.parse(_request);
 
         assertEquals(RequestType.OPERATION, info.getType(), "Unexpected request type");
-        assertEquals(Arrays.asList(vhnName), info.getModelParts(), "Unexpected model parts");
+        assertEquals(List.of(vhnName), info.getModelParts(), "Unexpected model parts");
         assertEquals(operationName, info.getOperationName(), "Unexpected operation name");
         assertTrue(info.isSingletonRequest(), "Expected exact object request");
     }

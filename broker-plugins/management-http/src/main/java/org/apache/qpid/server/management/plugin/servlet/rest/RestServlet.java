@@ -22,7 +22,6 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -304,7 +303,7 @@ public class RestServlet extends AbstractServlet
     {
         if (Strings.isNullOrEmpty(queryString))
         {
-            return Collections.emptyMap();
+            return Map.of();
         }
         Map<String, List<String>> query = new LinkedHashMap<>();
         final String[] pairs = queryString.split("&");
@@ -322,15 +321,8 @@ public class RestServlet extends AbstractServlet
 
             String key;
             String value;
-            try
-            {
-                key = URLDecoder.decode(pair.get(0), "UTF-8");
-                value = pair.get(1) == null ? null : URLDecoder.decode(pair.get(1), "UTF-8");
-            }
-            catch (UnsupportedEncodingException e)
-            {
-                throw new RuntimeException(e);
-            }
+            key = URLDecoder.decode(pair.get(0), StandardCharsets.UTF_8);
+            value = pair.get(1) == null ? null : URLDecoder.decode(pair.get(1), StandardCharsets.UTF_8);
             if (!query.containsKey(key))
             {
                 query.put(key, new ArrayList<>());
@@ -395,7 +387,7 @@ public class RestServlet extends AbstractServlet
 
         public Map<String, List<String>> getParameters()
         {
-            return Collections.unmodifiableMap(_query);
+            return _query;
         }
 
         @Override

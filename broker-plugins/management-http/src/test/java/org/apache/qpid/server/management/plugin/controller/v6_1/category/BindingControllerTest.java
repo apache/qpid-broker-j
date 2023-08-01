@@ -33,12 +33,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -103,11 +102,10 @@ public class BindingControllerTest extends UnitTestBase
     @Test
     public void get()
     {
-        final List<String> path = Arrays.asList("my-vhn", "my-vh", "my-exchange", "my-queue", "my-binding");
-        final Map<String, List<String>> parameters =
-                Collections.singletonMap("actuals", Collections.singletonList("true"));
+        final List<String> path = List.of("my-vhn", "my-vh", "my-exchange", "my-queue", "my-binding");
+        final Map<String, List<String>> parameters = Map.of("actuals", List.of("true"));
 
-        final List<String> hierarchy = Arrays.asList("virtualhostnode", "virtualhost", "exchange", "queue", "binding");
+        final List<String> hierarchy = List.of("virtualhostnode", "virtualhost", "exchange", "queue", "binding");
         when(_managementController.getCategoryHierarchy(_root, "Binding")).thenReturn(hierarchy);
 
         final LegacyConfiguredObject exchange1 = mock(LegacyConfiguredObject.class);
@@ -121,15 +119,15 @@ public class BindingControllerTest extends UnitTestBase
         when(exchange2.getParent("VirtualHost")).thenReturn(vh);
         final LegacyConfiguredObject queue = mock(LegacyConfiguredObject.class);
         when(queue.getAttribute(LegacyConfiguredObject.NAME)).thenReturn("my-queue");
-        final Collection<LegacyConfiguredObject> queues = Collections.singletonList(queue);
+        final Collection<LegacyConfiguredObject> queues = List.of(queue);
         when(vh.getChildren("Queue")).thenReturn(queues);
         final Binding binding = mock(Binding.class);
         when(binding.getName()).thenReturn("my-binding");
         when(binding.getDestination()).thenReturn("my-queue");
         when(binding.getBindingKey()).thenReturn("my-binding");
-        final Collection<Binding> bindings = Collections.singletonList(binding);
+        final Collection<Binding> bindings = List.of(binding);
         when(exchange2.getAttribute("bindings")).thenReturn(bindings);
-        final Collection<LegacyConfiguredObject> exchanges = Arrays.asList(exchange1, exchange2);
+        final Collection<LegacyConfiguredObject> exchanges = List.of(exchange1, exchange2);
 
         doReturn(exchanges).when(_nextVersionManagementController).get(any(), eq("exchange"), any(), any());
 
@@ -149,12 +147,12 @@ public class BindingControllerTest extends UnitTestBase
     @Test
     public void createOrUpdate()
     {
-        final List<String> path = Arrays.asList("my-vhn", "my-vh", "my-exchange");
+        final List<String> path = List.of("my-vhn", "my-vh", "my-exchange");
         final Map<String, Object> attributes = new HashMap<>();
         attributes.put("name", "my-binding");
         attributes.put("queue", "my-queue");
 
-        final List<String> hierarchy = Arrays.asList("virtualhostnode", "virtualhost", "exchange", "queue", "binding");
+        final List<String> hierarchy = List.of("virtualhostnode", "virtualhost", "exchange", "queue", "binding");
         doReturn(hierarchy).when(_managementController).getCategoryHierarchy(_root, "Binding");
 
         final LegacyConfiguredObject exchange = mock(LegacyConfiguredObject.class);
@@ -193,9 +191,9 @@ public class BindingControllerTest extends UnitTestBase
     @Test
     public void delete()
     {
-        final List<String> path = Arrays.asList("my-vhn", "my-vh", "my-exchange", "my-queue", "my-binding");
+        final List<String> path = List.of("my-vhn", "my-vh", "my-exchange", "my-queue", "my-binding");
 
-        final List<String> hierarchy = Arrays.asList("virtualhostnode", "virtualhost", "exchange", "queue", "binding");
+        final List<String> hierarchy = List.of("virtualhostnode", "virtualhost", "exchange", "queue", "binding");
         doReturn(hierarchy).when(_managementController).getCategoryHierarchy(_root, "Binding");
 
 
@@ -208,7 +206,7 @@ public class BindingControllerTest extends UnitTestBase
 
         doReturn(exchange).when(_nextVersionManagementController).get(any(), eq("exchange"), any(), any());
 
-        int result = _controller.delete(_root, path, Collections.emptyMap());
+        int result = _controller.delete(_root, path, Map.of());
 
         assertThat(result, is(equalTo(1)));
         verify(exchange).invoke(eq("unbind"), any(), eq(true));
@@ -217,13 +215,13 @@ public class BindingControllerTest extends UnitTestBase
     @Test
     public void invoke()
     {
-        final List<String> path = Arrays.asList("my-vhn", "my-vh", "my-exchange", "my-queue", "my-binding");
+        final List<String> path = List.of("my-vhn", "my-vh", "my-exchange", "my-queue", "my-binding");
         final String operationName = "getStatistics";
-        final Map<String, Object> parameters = Collections.emptyMap();
+        final Map<String, Object> parameters = Map.of();
 
 
 
-        final List<String> hierarchy = Arrays.asList("virtualhostnode", "virtualhost", "exchange", "queue", "binding");
+        final List<String> hierarchy = List.of("virtualhostnode", "virtualhost", "exchange", "queue", "binding");
         when(_managementController.getCategoryHierarchy(_root, "Binding")).thenReturn(hierarchy);
 
 
@@ -234,15 +232,15 @@ public class BindingControllerTest extends UnitTestBase
         when(exchange.getParent("VirtualHost")).thenReturn(vh);
         final LegacyConfiguredObject queue = mock(LegacyConfiguredObject.class);
         when(queue.getAttribute(LegacyConfiguredObject.NAME)).thenReturn("my-queue");
-        final Collection<LegacyConfiguredObject> queues = Collections.singletonList(queue);
+        final Collection<LegacyConfiguredObject> queues = List.of(queue);
         when(vh.getChildren("Queue")).thenReturn(queues);
         final Binding binding = mock(Binding.class);
         when(binding.getName()).thenReturn("my-binding");
         when(binding.getDestination()).thenReturn("my-queue");
         when(binding.getBindingKey()).thenReturn("my-binding");
-        final Collection<Binding> bindings = Collections.singletonList(binding);
+        final Collection<Binding> bindings = List.of(binding);
         when(exchange.getAttribute("bindings")).thenReturn(bindings);
-        final Collection<LegacyConfiguredObject> exchanges = Collections.singletonList(exchange);
+        final Collection<LegacyConfiguredObject> exchanges = List.of(exchange);
 
         doReturn(exchanges).when(_nextVersionManagementController).get(any(), eq("exchange"), any(), any());
 
@@ -251,14 +249,14 @@ public class BindingControllerTest extends UnitTestBase
         assertThat(result, is(notNullValue()));
         assertThat(result.getResponseCode(), is(equalTo(200)));
         assertThat(result.getBody(), is(notNullValue()));
-        assertThat(result.getBody(), is(equalTo(Collections.emptyMap())));
+        assertThat(result.getBody(), is(equalTo(Map.of())));
     }
 
     @Test
     public void getPreferences()
     {
-        final List<String> path = Arrays.asList("vhn", "vh", "exchange", "queue", "binding");
-        final Map<String, List<String>> parameters = Collections.emptyMap();
+        final List<String> path = List.of("vhn", "vh", "exchange", "queue", "binding");
+        final Map<String, List<String>> parameters = Map.of();
         try
         {
             _controller.getPreferences(_root, path, parameters);
@@ -273,15 +271,13 @@ public class BindingControllerTest extends UnitTestBase
     @Test
     public void setPreferences()
     {
-        final List<String> path = Arrays.asList("vhn", "vh", "exchange", "queue", "binding");
-        final Map<String, List<String>> parameters = Collections.emptyMap();
+        final List<String> path = List.of("vhn", "vh", "exchange", "queue", "binding");
+        final Map<String, List<String>> parameters = Map.of();
         try
         {
             _controller.setPreferences(_root,
                                        path,
-                                       Collections.singletonMap("Binding-Preferences",
-                                                                Collections.singleton(Collections.singletonMap("value",
-                                                                                                               "foo"))),
+                                       Map.of("Binding-Preferences", Set.of(Map.of("value", "foo"))),
                                        parameters,
                                        true);
             fail("Binding preferences are unknown");
@@ -295,13 +291,11 @@ public class BindingControllerTest extends UnitTestBase
     @Test
     public void deletePreferences()
     {
-        final List<String> path = Arrays.asList("vhn", "vh", "exchange", "queue", "binding");
-        final Map<String, List<String>> parameters = Collections.emptyMap();
+        final List<String> path = List.of("vhn", "vh", "exchange", "queue", "binding");
+        final Map<String, List<String>> parameters = Map.of();
         try
         {
-            _controller.deletePreferences(_root,
-                                          path,
-                                          parameters);
+            _controller.deletePreferences(_root, path, parameters);
             fail("Binding preferences are unknown");
         }
         catch (ManagementException e)

@@ -54,7 +54,7 @@ public class TimeZoneServlet extends AbstractServlet
 
     public List<TimeZoneDetails> getTimeZones()
     {
-        List<TimeZoneDetails> timeZoneDetails = new ArrayList<TimeZoneDetails>();
+        List<TimeZoneDetails> timeZoneDetails = new ArrayList<>();
         String[] ids = TimeZone.getAvailableIDs();
         long currentTime = System.currentTimeMillis();
         Date currentDate = new Date(currentTime);

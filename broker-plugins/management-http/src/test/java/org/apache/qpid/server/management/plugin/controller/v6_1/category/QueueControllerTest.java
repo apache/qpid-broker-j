@@ -29,12 +29,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.text.NumberFormat;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,7 +59,7 @@ public class QueueControllerTest extends UnitTestBase
         final ManagementController nextVersionManagementController = mock(ManagementController.class);
         when(_legacyVersionManagementController.getNextVersionManagementController()).thenReturn(
                 nextVersionManagementController);
-        _queueController = new QueueController(_legacyVersionManagementController, Collections.emptySet());
+        _queueController = new QueueController(_legacyVersionManagementController, Set.of());
     }
 
     @Test
@@ -86,7 +85,7 @@ public class QueueControllerTest extends UnitTestBase
         when(nextVersionQueue.getAttribute(AbstractConfiguredObject.NAME)).thenReturn(queueName);
         when(nextVersionQueue.getAttribute("overflowPolicy")).thenReturn("PRODUCER_FLOW_CONTROL");
         when(nextVersionQueue.getAttribute("maximumQueueDepthBytes")).thenReturn(10000L);
-        when(nextVersionQueue.getAttribute("context")).thenReturn(Collections.singletonMap("queue.queueFlowResumeLimit", "70"));
+        when(nextVersionQueue.getAttribute("context")).thenReturn(Map.of("queue.queueFlowResumeLimit", "70"));
         when(nextVersionQueue.getAttribute("messageGroupType")).thenReturn("SHARED_GROUPS");
         when(nextVersionQueue.getAttribute("messageGroupKeyOverride")).thenReturn("test");
 
@@ -95,14 +94,14 @@ public class QueueControllerTest extends UnitTestBase
 
         when(nextVersionExchange.getAttribute(AbstractConfiguredObject.NAME)).thenReturn(exchangeName);
         when(nextVersionExchange.getCategory()).thenReturn(ExchangeController.TYPE);
-        when(nextVersionExchange.getAttribute("bindings")).thenReturn(Collections.singletonList(nextVersionBinding));
+        when(nextVersionExchange.getAttribute("bindings")).thenReturn(List.of(nextVersionBinding));
 
         when(nextVersionAlternateExchange.getCategory()).thenReturn(ExchangeController.TYPE);
         when(nextVersionAlternateExchange.getCategory()).thenReturn(ExchangeController.TYPE);
         when(nextVersionAlternateExchange.getAttribute(LegacyConfiguredObject.NAME)).thenReturn(alternateExchangeName);
 
-        when(nextVersionVirtualHost.getChildren(ExchangeController.TYPE)).thenReturn(Arrays.asList(nextVersionExchange, nextVersionAlternateExchange));
-        when(nextVersionVirtualHost.getChildren(QueueController.TYPE)).thenReturn(Collections.singletonList(nextVersionExchange));
+        when(nextVersionVirtualHost.getChildren(ExchangeController.TYPE)).thenReturn(List.of(nextVersionExchange, nextVersionAlternateExchange));
+        when(nextVersionVirtualHost.getChildren(QueueController.TYPE)).thenReturn(List.of(nextVersionExchange));
 
         final LegacyConfiguredObject convertedExchange = mock(LegacyConfiguredObject.class);
         final LegacyConfiguredObject convertedAltExchange = mock(LegacyConfiguredObject.class);
@@ -143,7 +142,7 @@ public class QueueControllerTest extends UnitTestBase
 
 
         final ConfiguredObject<?> root = mock(ConfiguredObject.class);
-        final List path = Arrays.asList("my-vhn", "my-vh", "testQueue");
+        final List path = List.of("my-vhn", "my-vh", "testQueue");
         final Map<String, Object> converted = _queueController.convertAttributesToNextVersion(root, path, attributes);
 
         assertThat(converted, is(notNullValue()));

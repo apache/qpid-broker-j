@@ -26,7 +26,6 @@ import static org.apache.qpid.server.management.plugin.ManagementException.creat
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -277,7 +276,7 @@ public class BindingController implements CategoryController
         return (LegacyConfiguredObject) _nextVersionManagementController.get(root,
                                                                              type.toLowerCase(),
                                                                              path,
-                                                                             Collections.emptyMap());
+                                                                             Map.of());
     }
 
     @Override
@@ -287,7 +286,7 @@ public class BindingController implements CategoryController
                                      Map<String, Object> parameters,
                                      boolean isPost, final boolean isSecure) throws ManagementException
     {
-        Object result = get(root, path, Collections.emptyMap());
+        Object result = get(root, path, Map.of());
         if (result instanceof Collection && ((Collection)result).size() == 1)
         {
             LegacyConfiguredObject  object = (LegacyConfiguredObject) ((Collection<?>)result).iterator().next();
@@ -360,10 +359,7 @@ public class BindingController implements CategoryController
     {
         try
         {
-            return _nextVersionManagementController.get(root,
-                                                        ExchangeController.TYPE.toLowerCase(),
-                                                        exchangePath,
-                                                        Collections.emptyMap());
+            return _nextVersionManagementController.get(root, ExchangeController.TYPE.toLowerCase(), exchangePath, Map.of());
         }
         catch (ManagementException e)
         {
@@ -371,17 +367,14 @@ public class BindingController implements CategoryController
             {
                 throw e;
             }
-            return Collections.emptyList();
+            return List.of();
         }
     }
-
 
     private Collection<LegacyConfiguredObject> getExchangeBindings(final LegacyConfiguredObject nextVersionExchange,
                                                                    final String queueName,
                                                                    final String bindingName)
     {
-
-        @SuppressWarnings("unchecked")
         Object items = nextVersionExchange.getAttribute("bindings");
         if (items instanceof Collection)
         {
@@ -395,7 +388,7 @@ public class BindingController implements CategoryController
                                           .map(b -> createManageableBinding(b, nextVersionExchange))
                                           .collect(Collectors.toList());
         }
-        return Collections.emptyList();
+        return List.of();
     }
 
     private LegacyConfiguredObject createManageableBinding(final Binding binding,
@@ -437,9 +430,8 @@ public class BindingController implements CategoryController
         private static final String QUEUE = "queue";
         private static final String EXCHANGE = "exchange";
         private static final Collection<String> ATTRIBUTE_NAMES =
-                Collections.unmodifiableSet(Stream.concat(GenericLegacyConfiguredObject.AVAILABLE_ATTRIBUTES.stream(),
-                                                          Stream.of(ARGUMENTS, QUEUE, EXCHANGE))
-                                                  .collect(Collectors.toSet()));
+                Stream.concat(LegacyConfiguredObject.AVAILABLE_ATTRIBUTES.stream(), Stream.of(ARGUMENTS, QUEUE, EXCHANGE))
+                .collect(Collectors.toUnmodifiableSet());
 
         private final String _bindingKey;
         private final Map<String, Object> _arguments;
@@ -534,7 +526,7 @@ public class BindingController implements CategoryController
         @Override
         public Collection<LegacyConfiguredObject> getChildren(final String category)
         {
-            return Collections.emptyList();
+            return List.of();
         }
 
         @Override
@@ -550,7 +542,7 @@ public class BindingController implements CategoryController
         {
             if ("getStatistics".equals(operation))
             {
-                return new ControllerManagementResponse(ResponseType.DATA, Collections.emptyMap());
+                return new ControllerManagementResponse(ResponseType.DATA, Map.of());
             }
             throw createBadRequestManagementException("No operation is available for Binding");
         }
@@ -605,7 +597,7 @@ public class BindingController implements CategoryController
         @Override
         public Map<String, Object> getStatistics()
         {
-            return Collections.emptyMap();
+            return Map.of();
         }
     }
 }

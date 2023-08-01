@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -353,7 +352,7 @@ public abstract class AbstractServlet extends HttpServlet
 
     private Map<String, Object> getResponseHeaders(final Object content)
     {
-        Map<String, Object> headers = Collections.emptyMap();
+        Map<String, Object> headers = Map.of();
         if (content instanceof CustomRestHeaders)
         {
             CustomRestHeaders customRestHeaders = (CustomRestHeaders) content;
