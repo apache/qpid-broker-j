@@ -20,15 +20,11 @@
 package org.apache.qpid.server.security.auth.manager;
 
 import static java.util.Collections.disjoint;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.unmodifiableList;
 
 import java.security.GeneralSecurityException;
 import java.security.Principal;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
@@ -38,6 +34,7 @@ import java.util.Set;
 
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
+import javax.naming.InvalidNameException;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -46,6 +43,7 @@ import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
+import javax.naming.ldap.LdapName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.security.auth.Subject;
@@ -91,15 +89,15 @@ public class SimpleLDAPAuthenticationManagerImpl
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleLDAPAuthenticationManagerImpl.class);
 
     /** LDAP connectivity attributes (used to validate configuration changes) */
-    private static final List<String> CONNECTIVITY_ATTRS = unmodifiableList(Arrays.asList(PROVIDER_URL,
-                                                                                          PROVIDER_AUTH_URL,
-                                                                                          SEARCH_CONTEXT,
-                                                                                          LDAP_CONTEXT_FACTORY,
-                                                                                          SEARCH_USERNAME,
-                                                                                          SEARCH_PASSWORD,
-                                                                                          TRUST_STORE,
-                                                                                          LOGIN_CONFIG_SCOPE,
-                                                                                          AUTHENTICATION_METHOD));
+    private static final List<String> CONNECTIVITY_ATTRS = List.of(PROVIDER_URL,
+            PROVIDER_AUTH_URL,
+            SEARCH_CONTEXT,
+            LDAP_CONTEXT_FACTORY,
+            SEARCH_USERNAME,
+            SEARCH_PASSWORD,
+            TRUST_STORE,
+            LOGIN_CONFIG_SCOPE,
+            AUTHENTICATION_METHOD);
 
     /** Environment key to instruct {@link InitialDirContext} to override the socket factory. */
     private static final String JAVA_NAMING_LDAP_FACTORY_SOCKET = "java.naming.ldap.factory.socket";
@@ -134,6 +132,10 @@ public class SimpleLDAPAuthenticationManagerImpl
     /** Flag defining whether LDAP bind should be done without search or not */
     @ManagedAttributeField
     private boolean _bindWithoutSearch;
+
+    /** Flag defining whether full LDAP name should be used as a principal name or not */
+    @ManagedAttributeField
+    private boolean _useFullLDAPName;
 
     /** LDAP username used for search */
     @ManagedAttributeField
@@ -222,29 +224,33 @@ public class SimpleLDAPAuthenticationManagerImpl
 
     /** Retrieves protocol / cipher allow and deny lists from context. Creates authentication result cacher. */
     @Override
+    @SuppressWarnings("unchecked")
     protected void onOpen()
     {
         super.onOpen();
 
         _tlsProtocolAllowList = getContextValue(List.class,
-                                                ParameterizedTypes.LIST_OF_STRINGS,
-                                                CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST);
+                ParameterizedTypes.LIST_OF_STRINGS,
+                CommonProperties.QPID_SECURITY_TLS_PROTOCOL_ALLOW_LIST);
         _tlsProtocolDenyList = getContextValue(List.class,
-                                               ParameterizedTypes.LIST_OF_STRINGS,
-                                               CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST);
+                ParameterizedTypes.LIST_OF_STRINGS,
+                CommonProperties.QPID_SECURITY_TLS_PROTOCOL_DENY_LIST);
         _tlsCipherSuiteAllowList = getContextValue(List.class,
-                                                   ParameterizedTypes.LIST_OF_STRINGS,
-                                                   CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST);
+                ParameterizedTypes.LIST_OF_STRINGS,
+                CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST);
         _tlsCipherSuiteDenyList = getContextValue(List.class,
-                                                  ParameterizedTypes.LIST_OF_STRINGS,
-                                                  CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST);
+                ParameterizedTypes.LIST_OF_STRINGS,
+                CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST);
 
         Integer cacheMaxSize = getContextValue(Integer.class, AUTHENTICATION_CACHE_MAX_SIZE);
         Long cacheExpirationTime = getContextValue(Long.class, AUTHENTICATION_CACHE_EXPIRATION_TIME);
         Integer cacheIterationCount = getContextValue(Integer.class, AUTHENTICATION_CACHE_ITERATION_COUNT);
-        if (cacheMaxSize == null || cacheMaxSize <= 0 ||
-                cacheExpirationTime == null || cacheExpirationTime <= 0 ||
-                cacheIterationCount == null || cacheIterationCount < 0)
+
+        final boolean isCacheMaxSizeUndefined = cacheMaxSize == null || cacheMaxSize <= 0;
+        final boolean isCacheExpirationTimeUndefined = cacheExpirationTime == null || cacheExpirationTime <= 0;
+        final boolean isCacheIterationCountUndefined = cacheIterationCount == null || cacheIterationCount < 0;
+
+        if (isCacheMaxSizeUndefined || isCacheExpirationTimeUndefined || isCacheIterationCountUndefined)
         {
             LOGGER.debug("disabling authentication result caching");
             cacheMaxSize = 0;
@@ -342,7 +348,7 @@ public class SimpleLDAPAuthenticationManagerImpl
     @Override
     public List<String> getMechanisms()
     {
-        return singletonList(PlainNegotiator.MECHANISM);
+        return List.of(PlainNegotiator.MECHANISM);
     }
 
     /**
@@ -386,7 +392,7 @@ public class SimpleLDAPAuthenticationManagerImpl
     private AuthenticationResult getOrLoadAuthenticationResult(final String userId, final String password)
     {
         return _authenticationResultCacher.getOrLoad(new String[]{userId, password},
-                                                     () -> doLDAPNameAuthentication(userId, password));
+                () -> doLDAPNameAuthentication(userId, password));
     }
 
     /**
@@ -396,6 +402,8 @@ public class SimpleLDAPAuthenticationManagerImpl
      * @param password password
      * @return AuthenticationResult
      */
+    @SuppressWarnings("java:S1149")
+    // Hashtable use if forced by JNDI API
     private AuthenticationResult doLDAPNameAuthentication(final String userId, final String password)
     {
         Subject gssapiIdentity = null;
@@ -412,7 +420,7 @@ public class SimpleLDAPAuthenticationManagerImpl
             }
         }
 
-        final String name;
+        String name;
         try
         {
             name = getNameFromId(userId, gssapiIdentity);
@@ -441,7 +449,7 @@ public class SimpleLDAPAuthenticationManagerImpl
         {
             ctx = createInitialDirContext(env, gssapiIdentity);
 
-            Set<Principal> groups = Collections.emptySet();
+            Set<Principal> groups = Set.of();
             if (isGroupSearchRequired())
             {
                 if (!providerAuthUrl.equals(getProviderUrl()))
@@ -452,7 +460,12 @@ public class SimpleLDAPAuthenticationManagerImpl
                 groups = findGroups(ctx, name, gssapiIdentity);
             }
 
-            //Authentication succeeded
+            if (!_useFullLDAPName)
+            {
+                name = extractCN(name);
+            }
+
+            // Authentication succeeded
             return new AuthenticationResult(new UsernamePrincipal(name, this), groups, null);
         }
         catch (AuthenticationException ae)
@@ -481,7 +494,7 @@ public class SimpleLDAPAuthenticationManagerImpl
         return (isSpecified(getGroupSearchContext()) && isSpecified(getGroupSearchFilter()));
     }
 
-    private boolean isSpecified(String value)
+    private boolean isSpecified(final String value)
     {
         return (value != null && !value.isEmpty());
     }
@@ -521,11 +534,8 @@ public class SimpleLDAPAuthenticationManagerImpl
             searchControls.setSearchScope(isGroupSubtreeSearchScope()
                                                   ? SearchControls.SUBTREE_SCOPE
                                                   : SearchControls.ONELEVEL_SCOPE);
-            final PrivilegedExceptionAction<NamingEnumeration<?>> search = () -> context.search(getGroupSearchContext(),
-                                                                                                getGroupSearchFilter(),
-                                                                                                new String[]{encode(
-                                                                                                        userDN)},
-                                                                                                searchControls);
+            final PrivilegedExceptionAction<NamingEnumeration<?>> search =
+                    () -> context.search(getGroupSearchContext(), getGroupSearchFilter(), new String[]{encode(userDN)}, searchControls);
             final NamingEnumeration<?> groupEnumeration = invokeContextOperationAs(gssapiIdentity, search);
             while (groupEnumeration.hasMore())
             {
@@ -621,8 +631,8 @@ public class SimpleLDAPAuthenticationManagerImpl
             LOGGER.error("Exception creating SSLContext", e);
             if (trustStore != null)
             {
-                throw new IllegalConfigurationException("Error creating SSLContext with trust store : "
-                                                        + trustStore.getName(), e);
+                throw new IllegalConfigurationException("Error creating SSLContext with trust store : " +
+                        trustStore.getName(), e);
             }
             else
             {
@@ -648,6 +658,7 @@ public class SimpleLDAPAuthenticationManagerImpl
                 ", searchFilter=" + _searchFilter +
                 ", ldapContextFactory=" + _ldapContextFactory +
                 ", bindWithoutSearch=" + _bindWithoutSearch +
+                ", useFullLDAPName=" + _useFullLDAPName +
                 ", trustStore=" + _trustStore +
                 ", searchUsername=" + _searchUsername +
                 ", loginConfigScope=" + _loginConfigScope +
@@ -757,12 +768,9 @@ public class SimpleLDAPAuthenticationManagerImpl
                 searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 
                 LOGGER.debug("Searching for '{}'", id);
-                final NamingEnumeration<?> namingEnum = invokeContextOperationAs(gssapiIdentity,
-                                                                                 (PrivilegedExceptionAction<NamingEnumeration<?>>) () -> ctx.search(
-                                                                                         _searchContext,
-                                                                                         _searchFilter,
-                                                                                         new String[]{id},
-                                                                                         searchControls));
+                final PrivilegedExceptionAction<NamingEnumeration<?>> action =
+                        () -> ctx.search(_searchContext, _searchFilter, new String[]{id}, searchControls);
+                final NamingEnumeration<?> namingEnum = invokeContextOperationAs(gssapiIdentity, action);
 
                 if (namingEnum.hasMore())
                 {
@@ -786,6 +794,20 @@ public class SimpleLDAPAuthenticationManagerImpl
         {
             return id;
         }
+    }
+
+    /**
+     * Extracts common name from full LDAP name
+     * @param dn Full LDAP name
+     * @return Common name
+     */
+    private String extractCN(final String dn) throws InvalidNameException
+    {
+        final LdapName ln = new LdapName(dn);
+        return ln.getRdns().stream().filter(rdn -> "CN".equalsIgnoreCase(rdn.getType()))
+                .map(rdn -> (String) rdn.getValue())
+                .findFirst()
+                .orElseThrow(() -> new InvalidNameException("Failed to extract CN from LDAP name '" + dn + "'"));
     }
 
     private <T> T invokeContextOperationAs(final Subject identity, final PrivilegedExceptionAction<T> action)
@@ -843,27 +865,33 @@ public class SimpleLDAPAuthenticationManagerImpl
     }
 
     @Override
+    public boolean isUseFullLDAPName()
+    {
+        return _useFullLDAPName;
+    }
+
+    @Override
     public List<String> getTlsProtocolAllowList()
     {
-        return Collections.unmodifiableList(_tlsProtocolAllowList);
+        return List.copyOf(_tlsProtocolAllowList);
     }
 
     @Override
     public List<String> getTlsProtocolDenyList()
     {
-        return Collections.unmodifiableList(_tlsProtocolDenyList);
+        return List.copyOf(_tlsProtocolDenyList);
     }
 
     @Override
     public List<String> getTlsCipherSuiteAllowList()
     {
-        return Collections.unmodifiableList(_tlsCipherSuiteAllowList);
+        return List.copyOf(_tlsCipherSuiteAllowList);
     }
 
     @Override
     public List<String> getTlsCipherSuiteDenyList()
     {
-        return Collections.unmodifiableList(_tlsCipherSuiteDenyList);
+        return List.copyOf(_tlsCipherSuiteDenyList);
     }
 
     /**
