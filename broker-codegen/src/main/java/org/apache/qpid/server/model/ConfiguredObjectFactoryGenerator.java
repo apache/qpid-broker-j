@@ -178,7 +178,7 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
             pw.println("    }");
             pw.println();
 
-            generateAccessCheckedMethods(childClassSimpleName, classElement, pw, new HashSet<TypeElement>(), new HashSet<String>());
+            generateAccessCheckedMethods(childClassSimpleName, classElement, pw, new HashSet<>(), new HashSet<>());
 
             pw.println("}");
 

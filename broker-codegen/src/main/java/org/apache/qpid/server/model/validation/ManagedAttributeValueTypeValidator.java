@@ -86,7 +86,7 @@ public class ManagedAttributeValueTypeValidator extends AbstractProcessor
 
     private void checkAllMethodsAreAccessors(final Element e, final boolean isAbstract)
     {
-        checkAllMethodsAreAccessors(e, new HashSet<Element>(), isAbstract);
+        checkAllMethodsAreAccessors(e, new HashSet<>(), isAbstract);
     }
 
     private void checkAllMethodsAreAccessors(final Element e, Set<Element> checked, final boolean isAbstract)
