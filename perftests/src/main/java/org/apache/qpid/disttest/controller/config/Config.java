@@ -19,8 +19,6 @@
 package org.apache.qpid.disttest.controller.config;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class Config
@@ -30,7 +28,7 @@ public class Config
     public Config()
     {
         super();
-        _tests = Collections.emptyList();
+        _tests = List.of();
     }
 
     public Config(List<TestConfig> tests)
@@ -40,12 +38,12 @@ public class Config
 
     public Config(TestConfig... tests)
     {
-        _tests = Arrays.asList(tests);
+        _tests = List.of(tests);
     }
 
     public List<TestInstance> getTests()
     {
-        List<TestInstance> testInstances = new ArrayList<TestInstance>();
+        List<TestInstance> testInstances = new ArrayList<>();
         for (TestConfig testConfig : _tests)
         {
             int iterationNumber = 0;
@@ -65,12 +63,12 @@ public class Config
             }
         }
 
-        return Collections.unmodifiableList(testInstances);
+        return List.copyOf(testInstances);
     }
 
     public List<TestConfig> getTestConfigs()
     {
-        return Collections.unmodifiableList(_tests);
+        return List.copyOf(_tests);
     }
 
     public int getTotalNumberOfClients()

@@ -29,7 +29,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -113,7 +112,7 @@ public class MalformedMessageTest extends BrokerAdminUsingTestBase
                        .bindName(ExchangeDefaults.TOPIC_EXCHANGE_NAME)
                        .bindRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
                        .bindQueueName(BrokerAdmin.TEST_QUEUE_NAME)
-                       .bindArguments(Collections.singletonMap(AMQPFilterTypes.JMS_SELECTOR.getValue(), "prop = 1"))
+                       .bindArguments(Map.of(AMQPFilterTypes.JMS_SELECTOR.getValue(), "prop = 1"))
                        .bind()
                        .consumeResponse(QueueBindOkBody.class)
                        .basic().publishExchange(ExchangeDefaults.TOPIC_EXCHANGE_NAME)
@@ -195,7 +194,7 @@ public class MalformedMessageTest extends BrokerAdminUsingTestBase
                        .basic().publishExchange("")
                        .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
                        .contentHeaderPropertiesContentType("text/plain")
-                       .contentHeaderPropertiesHeaders(Collections.emptyMap())
+                       .contentHeaderPropertiesHeaders(Map.of())
                        .content(content2Bytes)
                        .publishMessage();
 

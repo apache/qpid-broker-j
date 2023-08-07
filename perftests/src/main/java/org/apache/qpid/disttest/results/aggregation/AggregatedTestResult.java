@@ -71,7 +71,7 @@ public class AggregatedTestResult implements ITestResult
     @Override
     public List<ParticipantResult> getParticipantResults()
     {
-        List<ParticipantResult> allParticipantResults = new ArrayList<ParticipantResult>(_originalTestResult.getParticipantResults());
+        List<ParticipantResult> allParticipantResults = new ArrayList<>(_originalTestResult.getParticipantResults());
 
         allParticipantResults.add(_allConsumerParticipantResult);
         allParticipantResults.add(_allProducerParticipantResult);

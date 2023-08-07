@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -98,7 +97,7 @@ public class QueueInteraction
 
     public QueueInteraction declareArguments(final Map<String,Object> args)
     {
-        _declareArguments = args == null ? Collections.emptyMap() : new HashMap<>(args);
+        _declareArguments = args == null ? Map.of() : new HashMap<>(args);
         return this;
     }
 
@@ -167,7 +166,7 @@ public class QueueInteraction
 
     public QueueInteraction bindArguments(final Map<String, Object> args)
     {
-        _bindArguments = args == null ? Collections.emptyMap() : new HashMap<>(args);
+        _bindArguments = args == null ? Map.of() : new HashMap<>(args);
         return this;
     }
 

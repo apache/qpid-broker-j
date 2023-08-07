@@ -36,7 +36,6 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.general.Dataset;
 import org.jfree.data.xy.DefaultXYDataset;
 
-
 public abstract class XYDataSetBasedChartBuilder extends BaseChartBuilder
 {
     public XYDataSetBasedChartBuilder(SeriesBuilder seriesBuilder)
@@ -55,7 +54,7 @@ public abstract class XYDataSetBasedChartBuilder extends BaseChartBuilder
             @Override
             public void beginSeries(SeriesDefinition seriesDefinition)
             {
-                _xyPairs = new ArrayList<Double[]>();
+                _xyPairs = new ArrayList<>();
             }
 
             @Override

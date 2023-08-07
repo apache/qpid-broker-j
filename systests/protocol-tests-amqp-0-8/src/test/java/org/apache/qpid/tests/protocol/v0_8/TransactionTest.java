@@ -24,7 +24,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Collections;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -91,7 +90,7 @@ public class TransactionTest extends BrokerAdminUsingTestBase
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .tx().select().consumeResponse(TxSelectOkBody.class)
                        .basic().contentHeaderPropertiesContentType("text/plain")
-                       .contentHeaderPropertiesHeaders(Collections.singletonMap("test", "testValue"))
+                       .contentHeaderPropertiesHeaders(Map.of("test", "testValue"))
                        .contentHeaderPropertiesDeliveryMode((byte)1)
                        .contentHeaderPropertiesPriority((byte)1)
                        .publishExchange("")
@@ -294,7 +293,7 @@ public class TransactionTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction = transport.newInteraction();
 
-            Map<String, Object> clientProperties = Collections.singletonMap(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE, true);
+            Map<String, Object> clientProperties = Map.of(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE, true);
             ConnectionCloseBody response = interaction.connection().startOkClientProperties(clientProperties)
                                                       .interaction().negotiateOpen()
                                                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
@@ -321,7 +320,7 @@ public class TransactionTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction = transport.newInteraction();
 
-            Map<String, Object> clientProperties = Collections.singletonMap(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE, false);
+            Map<String, Object> clientProperties = Map.of(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE, false);
             final String messageContent = "Test";
             BasicReturnBody returned = interaction.connection().startOkClientProperties(clientProperties)
                                                   .interaction().negotiateOpen()

@@ -19,7 +19,6 @@
 package org.apache.qpid.disttest.results.formatting;
 
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.collect.ComparisonChain;
@@ -32,12 +31,8 @@ import org.apache.qpid.disttest.message.ProducerParticipantResult;
 public class CSVOrderParticipantResultComparator implements Comparator<ParticipantResult>
 {
     // TODO yuk
-    private static final Map<Class<? extends ParticipantResult>, Integer> TYPE_CODES = new HashMap<Class<? extends ParticipantResult>, Integer>();
-    static {
-        TYPE_CODES.put(ProducerParticipantResult.class, 0);
-        TYPE_CODES.put(ConsumerParticipantResult.class, 1);
-        TYPE_CODES.put(ParticipantResult.class, 2);
-    }
+    private static final Map<Class<? extends ParticipantResult>, Integer> TYPE_CODES =
+            Map.of(ProducerParticipantResult.class, 0, ConsumerParticipantResult.class, 1, ParticipantResult.class, 2);
 
     @Override
     public int compare(ParticipantResult left, ParticipantResult right)

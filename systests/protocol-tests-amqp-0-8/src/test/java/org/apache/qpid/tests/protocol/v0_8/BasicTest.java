@@ -28,7 +28,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -75,7 +74,7 @@ public class BasicTest extends BrokerAdminUsingTestBase
             interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .basic().contentHeaderPropertiesContentType("text/plain")
-                               .contentHeaderPropertiesHeaders(Collections.singletonMap("test", "testValue"))
+                               .contentHeaderPropertiesHeaders(Map.of("test", "testValue"))
                                .contentHeaderPropertiesDeliveryMode((byte)1)
                                .contentHeaderPropertiesPriority((byte)1)
                                .publishExchange("")
@@ -170,7 +169,7 @@ public class BasicTest extends BrokerAdminUsingTestBase
         String messageContent = "Test";
         String messageContentType = "text/plain";
         byte deliveryMode = (byte) 2;
-        Map<String, Object> messageHeaders = Collections.singletonMap("test", "testValue");
+        Map<String, Object> messageHeaders = Map.of("test", "testValue");
 
         try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
@@ -235,7 +234,7 @@ public class BasicTest extends BrokerAdminUsingTestBase
             String messageContent = "Test";
             String consumerTag = "A";
             String queueName = BrokerAdmin.TEST_QUEUE_NAME;
-            Map<String, Object> messageHeaders = Collections.singletonMap("test", "testValue");
+            Map<String, Object> messageHeaders = Map.of("test", "testValue");
             String messageContentType = "text/plain";
             byte deliveryMode = (byte) 1;
             byte priority = (byte) 2;
@@ -408,9 +407,9 @@ public class BasicTest extends BrokerAdminUsingTestBase
                           + "also falls into other prefetch limits).")
     public void qosBytesPrefetch() throws Exception
     {
-        String messageContent1 = String.join("", Collections.nCopies(128, "1"));
-        String messageContent2 = String.join("", Collections.nCopies(128, "2"));
-        String messageContent3 = String.join("", Collections.nCopies(256, "3"));
+        String messageContent1 = "1".repeat(128);
+        String messageContent2 = "2".repeat(128);
+        String messageContent3 = "3".repeat(256);
 
         try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
@@ -479,7 +478,7 @@ public class BasicTest extends BrokerAdminUsingTestBase
                           + "unacknowledged messages.")
     public void qosBytesSizeQosDoesNotPreventFirstMessage() throws Exception
     {
-        String messageContent = String.join("", Collections.nCopies(1024, "*"));
+        String messageContent = "*".repeat(1024);
         getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messageContent);
 
         try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())

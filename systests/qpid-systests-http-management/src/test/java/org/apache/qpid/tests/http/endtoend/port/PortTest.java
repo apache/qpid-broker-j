@@ -36,7 +36,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.security.cert.X509Certificate;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -233,8 +232,7 @@ public class PortTest extends HttpTestBase
 
     private void createAnonymousAuthenticationProvider() throws IOException
     {
-        final Map<String, Object> data = Collections.singletonMap(ConfiguredObject.TYPE,
-                                                                  AnonymousAuthenticationManager.PROVIDER_TYPE);
+        final Map<String, Object> data = Map.of(ConfiguredObject.TYPE, AnonymousAuthenticationManager.PROVIDER_TYPE);
         getHelper().submitRequest("authenticationprovider/" + _authenticationProvider, "PUT", data, SC_CREATED);
     }
 

@@ -28,10 +28,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyString;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.util.Collections;
 import java.util.Map;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -844,7 +842,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
                        .consumeResponse(ExchangeDeclareOkBody.class)
                        .queue()
                        .declareName(BrokerAdmin.TEST_QUEUE_NAME)
-                       .declareArguments(Collections.singletonMap("alternateExchange", altExchName)).declare()
+                       .declareArguments(Map.of("alternateExchange", altExchName)).declare()
                        .consumeResponse(QueueDeclareOkBody.class);
 
             ChannelCloseBody inUseResponse = interaction.exchange()
@@ -877,7 +875,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
                                                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                       .queue()
                                                       .declareName(BrokerAdmin.TEST_QUEUE_NAME)
-                                                      .declareArguments(Collections.singletonMap("alternateExchange", "notKnown")).declare()
+                                                      .declareArguments(Map.of("alternateExchange", "notKnown")).declare()
                                                       .consumeResponse().getLatestResponse(ConnectionCloseBody.class);
             assertThat(response.getReplyCode(), is(equalTo(ErrorCodes.NOT_FOUND)));
         }
@@ -894,7 +892,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
         try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
-            final Map<String, Object> messageProps = Collections.singletonMap("prop", 0);
+            final Map<String, Object> messageProps = Map.of("prop", 0);
             interaction.negotiateOpen()
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .tx().select()
@@ -903,7 +901,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
                        .bindName(ExchangeDefaults.TOPIC_EXCHANGE_NAME)
                        .bindRoutingKey(routingKey)
                        .bindQueueName(BrokerAdmin.TEST_QUEUE_NAME)
-                       .bindArguments(Collections.singletonMap(AMQPFilterTypes.JMS_SELECTOR.getValue(), "prop = 1"))
+                       .bindArguments(Map.of(AMQPFilterTypes.JMS_SELECTOR.getValue(), "prop = 1"))
                        .bind()
                        .consumeResponse(QueueBindOkBody.class)
                        .basic()
@@ -921,7 +919,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
                        .bindName(ExchangeDefaults.TOPIC_EXCHANGE_NAME)
                        .bindRoutingKey(routingKey)
                        .bindQueueName(BrokerAdmin.TEST_QUEUE_NAME)
-                       .bindArguments(Collections.singletonMap(AMQPFilterTypes.JMS_SELECTOR.getValue(), "prop = 0"))
+                       .bindArguments(Map.of(AMQPFilterTypes.JMS_SELECTOR.getValue(), "prop = 0"))
                        .bind()
                        .consumeResponse(QueueBindOkBody.class)
                        .basic().publishExchange(ExchangeDefaults.TOPIC_EXCHANGE_NAME)

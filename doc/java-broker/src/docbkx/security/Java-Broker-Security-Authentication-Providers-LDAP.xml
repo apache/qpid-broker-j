@@ -67,6 +67,11 @@
             </para>
         </listitem>
         <listitem>
+            <para><emphasis>useFullLDAPName</emphasis> is a boolean flag, defining whether user principal name will be
+                obtained from full LDAP DN (default behavior) or from CN only. Set this flag to "false" to be able
+                referencing principal by its CN in broker ACL rules.</para>
+        </listitem>
+        <listitem>
             <para>Additional group information can be obtained from LDAP.
                 There are two common ways of representing group membership in LDAP.
                 <itemizedlist>

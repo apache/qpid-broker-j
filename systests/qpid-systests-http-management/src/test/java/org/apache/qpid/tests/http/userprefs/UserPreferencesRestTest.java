@@ -26,7 +26,6 @@ import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -158,8 +157,7 @@ public class UserPreferencesRestTest extends HttpTestBase
         prefAttributes.put(Preference.VALUE_ATTRIBUTE, prefValueAttributes);
 
         String rootUrl = "virtualhost/userpreferences";
-        Map<String, List<Map<String, Object>>> payload =
-                Collections.singletonMap(prefType, Collections.singletonList(prefAttributes));
+        Map<String, List<Map<String, Object>>> payload = Map.of(prefType, List.of(prefAttributes));
         getHelper().submitRequest(rootUrl, "POST", payload, SC_OK);
 
         Map<String, List<Map<String, Object>>> allPrefs = getHelper().getJson(rootUrl, MAP_TYPE_REF, SC_OK);
@@ -202,29 +200,26 @@ public class UserPreferencesRestTest extends HttpTestBase
         Map<String, Object> pref1Attributes = new HashMap<>();
         pref1Attributes.put(Preference.NAME_ATTRIBUTE, pref1Name);
         pref1Attributes.put(Preference.TYPE_ATTRIBUTE, prefType1);
-        pref1Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref1Attributes.put(Preference.VALUE_ATTRIBUTE, Map.of());
 
         Map<String, Object> pref2Attributes = new HashMap<>();
         pref2Attributes.put(Preference.NAME_ATTRIBUTE, pref2Name);
         pref2Attributes.put(Preference.TYPE_ATTRIBUTE, prefType2);
-        pref2Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref2Attributes.put(Preference.VALUE_ATTRIBUTE, Map.of());
 
         Map<String, Object> payload = new HashMap<>();
-        payload.put(prefType1, Collections.singletonList(pref1Attributes));
-        payload.put(prefType2, Collections.singletonList(pref2Attributes));
+        payload.put(prefType1, List.of(pref1Attributes));
+        payload.put(prefType2, List.of(pref2Attributes));
         String url = "virtualhost/userpreferences";
         getHelper().submitRequest(url, "POST", payload, SC_OK);
 
         Map<String, Object> pref3Attributes = new HashMap<>();
         pref3Attributes.put(Preference.NAME_ATTRIBUTE, pref3Name);
         pref3Attributes.put(Preference.TYPE_ATTRIBUTE, prefType2);
-        pref3Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref3Attributes.put(Preference.VALUE_ATTRIBUTE, Map.of());
 
         String url2 = String.format("virtualhost/userpreferences/%s", prefType2);
-        getHelper().submitRequest(url2,
-                                  "POST",
-                                  Collections.singletonList(pref3Attributes),
-                                  SC_OK);
+        getHelper().submitRequest(url2, "POST", List.of(pref3Attributes), SC_OK);
 
         String allUrl = "virtualhost/userpreferences";
         final Map<String, Object> allMap = getHelper().getJsonAsMap(allUrl);
@@ -257,7 +252,7 @@ public class UserPreferencesRestTest extends HttpTestBase
         Map<String, Object> prefAttributes = new HashMap<>();
         prefAttributes.put(Preference.DESCRIPTION_ATTRIBUTE, prefDescription);
 
-        prefAttributes.put("value", Collections.emptyMap());
+        prefAttributes.put("value", Map.of());
         String fullUrl = String.format("virtualhost/userpreferences/%s/%s", prefType, prefName);
         getHelper().submitRequest(fullUrl, "PUT", prefAttributes, SC_OK);
 
@@ -294,12 +289,12 @@ public class UserPreferencesRestTest extends HttpTestBase
 
             Map<String, Object> pref1Attributes = new HashMap<>();
             pref1Attributes.put(Preference.NAME_ATTRIBUTE, pref1Name);
-            pref1Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+            pref1Attributes.put(Preference.VALUE_ATTRIBUTE, Map.of());
             pref1Attributes.put(Preference.TYPE_ATTRIBUTE, pref1Type);
 
             Map<String, Object> pref2Attributes = new HashMap<>();
             pref2Attributes.put(Preference.NAME_ATTRIBUTE, pref2Name);
-            pref2Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+            pref2Attributes.put(Preference.VALUE_ATTRIBUTE, Map.of());
             pref2Attributes.put(Preference.TYPE_ATTRIBUTE, pref2Type);
 
             final Map<String, List<Map<String, Object>>> payload = new HashMap<>();
@@ -334,12 +329,12 @@ public class UserPreferencesRestTest extends HttpTestBase
 
             Map<String, Object> pref3Attributes = new HashMap<>();
             pref3Attributes.put(Preference.NAME_ATTRIBUTE, pref3Name);
-            pref3Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+            pref3Attributes.put(Preference.VALUE_ATTRIBUTE, Map.of());
             pref3Attributes.put(Preference.TYPE_ATTRIBUTE, pref1Type);
 
             Map<String, Object> pref4Attributes = new HashMap<>();
             pref4Attributes.put(Preference.NAME_ATTRIBUTE, pref4Name);
-            pref4Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+            pref4Attributes.put(Preference.VALUE_ATTRIBUTE, Map.of());
             pref4Attributes.put(Preference.TYPE_ATTRIBUTE, pref3Type);
 
             final Map<String, List<Map<String, Object>>> payload = new HashMap<>();
@@ -375,8 +370,8 @@ public class UserPreferencesRestTest extends HttpTestBase
         Map<String, Object> prefAttributes = new HashMap<>();
         prefAttributes.put(Preference.NAME_ATTRIBUTE, prefName);
         prefAttributes.put(Preference.DESCRIPTION_ATTRIBUTE, prefDescription);
-        prefAttributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
-        final List<Map<String, Object>> payloadCreate = Collections.singletonList(prefAttributes);
+        prefAttributes.put(Preference.VALUE_ATTRIBUTE, Map.of());
+        final List<Map<String, Object>> payloadCreate = List.of(prefAttributes);
         getHelper().submitRequest(typeUrl, "POST", payloadCreate, SC_OK);
 
         Map<String, Object> storedPreference = getHelper().getJsonAsMap(fullUrl);
@@ -388,7 +383,7 @@ public class UserPreferencesRestTest extends HttpTestBase
         // Update via url to type
         Map<String, Object> updatePreference = new HashMap<>(storedPreference);
         updatePreference.put(Preference.DESCRIPTION_ATTRIBUTE, "update 1");
-        final List<Map<String, Object>> payloadUpdate1 = Collections.singletonList(updatePreference);
+        final List<Map<String, Object>> payloadUpdate1 = List.of(updatePreference);
         getHelper().submitRequest(typeUrl, "POST", payloadUpdate1, SC_OK);
 
         Map<String, Object> rereadPrefDetails = getHelper().getJsonAsMap(fullUrl);
@@ -401,8 +396,7 @@ public class UserPreferencesRestTest extends HttpTestBase
         // Update via url to root
         updatePreference = new HashMap<>(rereadPrefDetails);
         updatePreference.put(Preference.DESCRIPTION_ATTRIBUTE, "update 2");
-        Map<String, List<Map<String, Object>>> payloadUpdate2 =
-                Collections.singletonMap(prefType, Collections.singletonList(updatePreference));
+        Map<String, List<Map<String, Object>>> payloadUpdate2 = Map.of(prefType, List.of(updatePreference));
         getHelper().submitRequest(rootUrl, "POST", payloadUpdate2, SC_OK);
 
         rereadPrefDetails = getHelper().getJsonAsMap(fullUrl);
@@ -420,7 +414,7 @@ public class UserPreferencesRestTest extends HttpTestBase
 
         Map<String, Object> prefAttributes = new HashMap<>();
         prefAttributes.put(Preference.DESCRIPTION_ATTRIBUTE, prefDescription);
-        prefAttributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        prefAttributes.put(Preference.VALUE_ATTRIBUTE, Map.of());
         String fullUrl = String.format("virtualhost/userpreferences/%s/%s", prefType, prefName);
         getHelper().submitRequest(fullUrl, "PUT", prefAttributes, SC_OK);
 

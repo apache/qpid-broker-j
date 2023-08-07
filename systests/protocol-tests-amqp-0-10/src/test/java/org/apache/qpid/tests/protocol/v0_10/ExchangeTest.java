@@ -28,7 +28,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.util.Collections;
+import java.util.Map;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -493,7 +493,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                        .bindExchange("amq.direct")
                        .bindQueue(BrokerAdmin.TEST_QUEUE_NAME)
                        .bindBindingKey("bk")
-                       .bindArguments(Collections.singletonMap(JMS_SELECTOR.name(), "name='a'"))
+                       .bindArguments(Map.of(JMS_SELECTOR.name(), "name='a'"))
                        .bind()
                        .session()
                        .flushCompleted()
@@ -505,8 +505,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                                                     .boundExchange("amq.direct")
                                                     .boundQueue(BrokerAdmin.TEST_QUEUE_NAME)
                                                     .boundBindingKey("bk")
-                                                    .boundArguments(Collections.singletonMap(JMS_SELECTOR.name(),
-                                                                                             "name='a'"))
+                                                    .boundArguments(Map.of(JMS_SELECTOR.name(), "name='a'"))
                                                     .bound()
                                                     .session()
                                                     .flushCompleted()

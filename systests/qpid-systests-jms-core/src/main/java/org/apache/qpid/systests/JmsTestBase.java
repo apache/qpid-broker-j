@@ -67,7 +67,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 
     protected ConnectionBuilder getConnectionBuilder()
     {
-        InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
+        final InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         return _jmsProvider.getConnectionBuilder()
                            .setHost(brokerAddress.getHostName())
                            .setPort(brokerAddress.getPort())
@@ -77,14 +77,13 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 
     protected void createEntityUsingAmqpManagement(final String entityName,
                                                    final String entityType,
-                                                   final Map<String, Object> attributes)
-            throws Exception
+                                                   final Map<String, Object> attributes) throws Exception
     {
-        Connection connection = getConnection();
+        final Connection connection = getConnection();
         try
         {
             connection.start();
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             _managementFacade.createEntityUsingAmqpManagement(entityName, session, entityType, attributes);
         }
         finally
@@ -96,14 +95,13 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
     protected Object performOperationUsingAmqpManagement(final String name,
                                                          final String operation,
                                                          final String type,
-                                                         Map<String, Object> arguments)
-            throws Exception
+                                                         final Map<String, Object> arguments) throws Exception
     {
-        Connection connection = getConnection();
+        final Connection connection = getConnection();
         try
         {
             connection.start();
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             return _managementFacade.performOperationUsingAmqpManagement(name, operation, session, type, arguments);
         }
         finally
@@ -134,7 +132,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 
     protected Topic createTopic(final String topicName) throws Exception
     {
-        Connection connection = getConnection();
+        final Connection connection = getConnection();
         try
         {
             return _jmsProvider.createTopic(connection, topicName);
@@ -152,11 +150,11 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 
     protected Queue createQueue(final String virtualHostName, final String queueName) throws Exception
     {
-        Connection connection = getConnectionBuilder().setVirtualHost(virtualHostName).build();
+        final Connection connection = getConnectionBuilder().setVirtualHost(virtualHostName).build();
         try
         {
             connection.start();
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             try
             {
                 return _jmsProvider.createQueue(session, queueName);
@@ -174,20 +172,20 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 
     protected int getQueueCount() throws Exception
     {
-        Map<String, Object> statisticsMap = getVirtualHostStatistics("queueCount");
+        final Map<String, Object> statisticsMap = getVirtualHostStatistics("queueCount");
         return ((Number) statisticsMap.get("queueCount")).intValue();
     }
 
     protected long getTotalDepthOfQueuesMessages() throws Exception
     {
-        Map<String, Object> statisticsMap = getVirtualHostStatistics("totalDepthOfQueuesMessages");
+        final Map<String, Object> statisticsMap = getVirtualHostStatistics("totalDepthOfQueuesMessages");
         return ((Number) statisticsMap.get("totalDepthOfQueuesMessages")).intValue();
     }
 
     @SuppressWarnings("unchecked")
     protected Map<String, Object> getVirtualHostStatistics(final String... statisticsName) throws Exception
     {
-        Map<String, Object> arguments = Collections.singletonMap("statistics", Arrays.asList(statisticsName));
+        final Map<String, Object> arguments = Collections.singletonMap("statistics", Arrays.asList(statisticsName));
         Object statistics = performOperationUsingAmqpManagement(getVirtualHostName(),
                                                                 "getStatistics",
                                                                 "org.apache.qpid.VirtualHost",
@@ -201,10 +199,9 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 
     protected void updateEntityUsingAmqpManagement(final String entityName,
                                                    final String entityType,
-                                                   final Map<String, Object> attributes)
-            throws Exception
+                                                   final Map<String, Object> attributes) throws Exception
     {
-        Connection connection = getConnection();
+        final Connection connection = getConnection();
         try
         {
             connection.start();
@@ -219,10 +216,9 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
     protected void updateEntityUsingAmqpManagement(final String entityName,
                                                  final String entityType,
                                                  final Map<String, Object> attributes,
-                                                 final Connection connection)
-            throws JMSException
+                                                 final Connection connection) throws JMSException
     {
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         try
         {
             _managementFacade.updateEntityUsingAmqpManagementAndReceiveResponse(entityName, entityType, attributes, session);
@@ -234,14 +230,13 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
     }
 
     protected void deleteEntityUsingAmqpManagement(final String entityName,
-                                                   final String entityType)
-            throws Exception
+                                                   final String entityType) throws Exception
     {
-        Connection connection = getConnection();
+        final Connection connection = getConnection();
         try
         {
             connection.start();
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             _managementFacade.deleteEntityUsingAmqpManagement(entityName, session, entityType);
         }
         finally
@@ -253,7 +248,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
     protected Map<String, Object> readEntityUsingAmqpManagement(String name, String type, boolean actuals)
             throws Exception
     {
-        Connection connection = getConnection();
+        final Connection connection = getConnection();
         try
         {
             connection.start();
@@ -268,10 +263,9 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
     protected Map<String, Object> readEntityUsingAmqpManagement(final String name,
                                                                 final String type,
                                                                 final boolean actuals,
-                                                                final Connection connection)
-            throws JMSException
+                                                                final Connection connection) throws JMSException
     {
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         try
         {
             return _managementFacade.readEntityUsingAmqpManagement(session, type, name, actuals);
@@ -285,7 +279,7 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
     protected List<Map<String, Object>> queryEntitiesUsingAmqpManagement(final String type, final Connection connection)
             throws JMSException
     {
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         try
         {
             return _managementFacade.managementQueryObjects(session, type);
@@ -298,10 +292,10 @@ public abstract class JmsTestBase extends BrokerAdminUsingTestBase
 
     protected Map<String, Object> createEntity(final String entityName,
                                                final String entityType,
-                                               final Map<String, Object> attributes, final Connection connection)
-            throws Exception
+                                               final Map<String, Object> attributes,
+                                               final Connection connection) throws Exception
     {
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         try
         {
             return _managementFacade.createEntityAndAssertResponse(entityName, entityType, attributes, session);

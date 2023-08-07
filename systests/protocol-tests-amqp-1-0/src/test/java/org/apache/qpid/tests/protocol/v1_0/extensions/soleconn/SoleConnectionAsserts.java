@@ -36,7 +36,7 @@ import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.hamcrest.collection.IsMapContaining.hasKey;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.util.Collections;
+import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionDetectionPolicy;
@@ -111,13 +111,13 @@ class SoleConnectionAsserts
     {
         assertThat(close.getError(), is(notNullValue()));
         assertThat(close.getError().getCondition(), is(equalTo(AmqpError.RESOURCE_LOCKED)));
-        assertThat(close.getError().getInfo(), is(equalTo(Collections.singletonMap(SOLE_CONNECTION_ENFORCEMENT, true))));
+        assertThat(close.getError().getInfo(), is(equalTo(Map.of(SOLE_CONNECTION_ENFORCEMENT, true))));
     }
 
     static void assertInvalidContainerId(final Close close)
     {
         assertThat(close.getError(), is(notNullValue()));
         assertThat(close.getError().getCondition(), is(equalTo(AmqpError.INVALID_FIELD)));
-        assertThat(close.getError().getInfo(), is(equalTo(Collections.singletonMap(INVALID_FIELD, CONTAINER_ID))));
+        assertThat(close.getError().getInfo(), is(equalTo(Map.of(INVALID_FIELD, CONTAINER_ID))));
     }
 }

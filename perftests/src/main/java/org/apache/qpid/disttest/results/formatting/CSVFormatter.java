@@ -19,7 +19,6 @@
 package org.apache.qpid.disttest.results.formatting;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -43,8 +42,8 @@ public class CSVFormatter
         for (ITestResult testResult : results)
         {
 
-            List<ParticipantResult> participantResults = new ArrayList<ParticipantResult>(testResult.getParticipantResults());
-            Collections.sort(participantResults, new CSVOrderParticipantResultComparator());
+            List<ParticipantResult> participantResults = new ArrayList<>(testResult.getParticipantResults());
+            participantResults.sort(new CSVOrderParticipantResultComparator());
 
             for (ParticipantResult participantResult : participantResults)
             {
@@ -61,7 +60,7 @@ public class CSVFormatter
      */
     private String row(Map<ParticipantAttribute, Object> attributeValueMap)
     {
-        List<Object> attributeValues = new ArrayList<Object>();
+        List<Object> attributeValues = new ArrayList<>();
         for (ParticipantAttribute attribute : ParticipantAttribute.values())
         {
             Object attributeValue = attributeValueMap.get(attribute);
@@ -75,7 +74,7 @@ public class CSVFormatter
     /** return the header row, including a newline at the end */
     private String header()
     {
-        List<String> displayNames = new ArrayList<String>();
+        List<String> displayNames = new ArrayList<>();
         for (ParticipantAttribute attribute : ParticipantAttribute.values())
         {
             displayNames.add(attribute.getDisplayName());

@@ -20,8 +20,6 @@
 package org.apache.qpid.disttest.controller.config;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.qpid.disttest.message.Command;
@@ -36,7 +34,7 @@ public class ConnectionConfig
     public ConnectionConfig()
     {
         super();
-        _sessions = Collections.emptyList();
+        _sessions = List.of();
     }
 
     public ConnectionConfig(String name, String factory, SessionConfig... sessions)
@@ -44,13 +42,13 @@ public class ConnectionConfig
         super();
         _name = name;
         _factory = factory;
-        _sessions = Arrays.asList(sessions);
+        _sessions = List.of(sessions);
 
     }
 
     public List<SessionConfig> getSessions()
     {
-        return Collections.unmodifiableList(_sessions);
+        return _sessions;
     }
 
     public String getName()
@@ -60,7 +58,7 @@ public class ConnectionConfig
 
     public List<Command> createCommands()
     {
-        List<Command> commands = new ArrayList<Command>();
+        List<Command> commands = new ArrayList<>();
         commands.add(createCommand());
         for (SessionConfig sessionConfig : _sessions)
         {

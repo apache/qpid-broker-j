@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v0_10.transport.BBEncoder;
-import org.apache.qpid.server.protocol.v0_10.transport.Method;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolEvent;
 import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.tests.protocol.OutputEncoder;

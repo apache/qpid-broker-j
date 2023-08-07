@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +60,6 @@ import javax.naming.NamingException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class MemoryConsumptionTestClient
 {
@@ -361,7 +359,7 @@ public class MemoryConsumptionTestClient
 
         if (!"".equals(host) && !"".equals(port) && !"".equals(user) && !"".equals(password))
         {
-            Map<String, Object> environment = Collections.<String, Object>singletonMap(JMXConnector.CREDENTIALS, new String[]{user, password});
+            Map<String, Object> environment = Map.of(JMXConnector.CREDENTIALS, new String[]{user, password});
 
             try(JMXConnector jmxConnector = JMXConnectorFactory.newJMXConnector(new JMXServiceURL("rmi", "", 0, "/jndi/rmi://" + host + ":" + port + "/jmxrmi"), environment))
             {

@@ -50,7 +50,7 @@ public class ChartingDefinitionCreator
 
     public List<ChartingDefinition> createFromFileOrDirectory(String chartingDefinitionFileOrDirectory)
     {
-        List<ChartingDefinition> definitions = new ArrayList<ChartingDefinition>();
+        List<ChartingDefinition> definitions = new ArrayList<>();
 
         File fileOrDirectory = new File(chartingDefinitionFileOrDirectory);
         if (fileOrDirectory.isDirectory())

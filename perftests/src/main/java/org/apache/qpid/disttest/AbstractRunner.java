@@ -27,7 +27,6 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Map;
 import java.util.Properties;
 
@@ -40,7 +39,7 @@ public class AbstractRunner
     public static final String JNDI_CONFIG_PROP = "jndi-config";
     public static final String JNDI_CONFIG_DEFAULT = "perftests-jndi.properties";
 
-    private final Map<String,String> _cliOptions = new HashMap<String, String>();
+    private final Map<String,String> _cliOptions = new HashMap<>();
     {
         getCliOptions().put(JNDI_CONFIG_PROP, JNDI_CONFIG_DEFAULT);
     }

@@ -23,7 +23,6 @@ package org.apache.qpid.tests.protocol.v0_10;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -179,8 +178,7 @@ public class Interaction extends AbstractInteraction<Interaction>
         {
             final ConnectionStart start = this.negotiateProtocol().consumeResponse()
                                               .consumeResponse().getLatestResponse(ConnectionStart.class);
-            final List<Object> supportedMechanisms =
-                    start.getMechanisms() == null ? Collections.emptyList() : start.getMechanisms();
+            final List<Object> supportedMechanisms = start.getMechanisms() == null ? List.of() : start.getMechanisms();
 
             if (supportedMechanisms.stream().noneMatch(m -> String.valueOf(m).equalsIgnoreCase(ConnectionInteraction.SASL_MECHANISM_PLAIN)))
             {

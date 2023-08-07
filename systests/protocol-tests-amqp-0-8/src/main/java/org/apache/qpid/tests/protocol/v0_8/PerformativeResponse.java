@@ -20,7 +20,6 @@
 package org.apache.qpid.tests.protocol.v0_8;
 
 import org.apache.qpid.server.protocol.v0_8.transport.AMQBody;
-import org.apache.qpid.server.protocol.v0_8.transport.AMQFrame;
 import org.apache.qpid.tests.protocol.Response;
 
 public class PerformativeResponse implements Response<AMQBody>

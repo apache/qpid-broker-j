@@ -25,7 +25,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Collections;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -54,7 +54,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .exchange()
                        .declareName(TEST_EXCHANGE)
-                       .declareArguments(Collections.singletonMap("unroutableMessageBehaviour", "REJECT"))
+                       .declareArguments(Map.of("unroutableMessageBehaviour", "REJECT"))
                        .declare()
                        .consumeResponse(ExchangeDeclareOkBody.class);
 
@@ -79,7 +79,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                                                       .consumeResponse(ChannelOpenOkBody.class)
                                                       .exchange()
                                                       .declareName(TEST_EXCHANGE)
-                                                      .declareArguments(Collections.singletonMap("foo", "bar"))
+                                                      .declareArguments(Map.of("foo", "bar"))
                                                       .declare()
                                                       .consumeResponse(ConnectionCloseBody.class)
                                                       .getLatestResponse(ConnectionCloseBody.class);

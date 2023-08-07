@@ -137,6 +137,8 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     private static final String USER_1_NAME = "test1";
     private static final String USER_1_PASSWORD = "password1";
     private static final String USER_1_DN = "cn=integration-test1,ou=users,dc=qpid,dc=org";
+    private static final String USER_2_NAME = "test2";
+    private static final String USER_2_PASSWORD = "password2";
     private static final String GROUP_SEARCH_CONTEXT_VALUE = "ou=groups,dc=qpid,dc=org";
     private static final String GROUP_SEARCH_FILTER_VALUE = "(member={0})";
     private static final String LDAP_SERVICE_NAME = "ldap";
@@ -209,10 +211,9 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     @Test
     public void testGroups()
     {
-        _authenticationProvider.close();
         final Map<String, Object> groupSetUp = Map.of(SimpleLDAPAuthenticationManager.GROUP_SEARCH_CONTEXT, GROUP_SEARCH_CONTEXT_VALUE,
                 SimpleLDAPAuthenticationManager.GROUP_SEARCH_FILTER, GROUP_SEARCH_FILTER_VALUE);
-        _authenticationProvider = createAuthenticationProvider(groupSetUp);
+        _authenticationProvider.setAttributes(groupSetUp);
 
         final AuthenticationResult result = _authenticationProvider.authenticate(USER_1_NAME, USER_1_PASSWORD);
         assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus());
@@ -231,8 +232,8 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     @Test
     public void testAuthenticateSuccessWhenCachingEnabled()
     {
-        _authenticationProvider.close();
-        _authenticationProvider = createCachingAuthenticationProvider();
+        final Map<String, String> context = Map.of(AUTHENTICATION_CACHE_MAX_SIZE, "1");
+        _authenticationProvider.setAttributes(Map.of(SimpleLDAPAuthenticationManager.CONTEXT, context));
 
         final SocketConnectionPrincipal principal = mock(SocketConnectionPrincipal.class);
         when(principal.getRemoteAddress()).thenReturn(new InetSocketAddress(HOSTNAME, 5672));
@@ -310,16 +311,27 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         assertEquals(USER_1_DN, result.getMainPrincipal().getName());
     }
 
+    @Test
+    public void extractUserCN()
+    {
+        _authenticationProvider.setAttributes(Map.of("useFullLDAPName", "false"));
+        final AuthenticationResult result = _authenticationProvider.authenticate(USER_1_NAME, USER_1_PASSWORD);
+        assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus());
+        assertEquals("integration-test1", result.getMainPrincipal().getName());
+    }
+
+    @Test
+    public void extractInvalidUserCN()
+    {
+        _authenticationProvider.setAttributes(Map.of("useFullLDAPName", "false"));
+        final AuthenticationResult result = _authenticationProvider.authenticate(USER_2_NAME, USER_2_PASSWORD);
+        assertEquals(AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus());
+        assertEquals("Failed to extract CN from LDAP name 'uid=test2,ou=users,dc=qpid,dc=org'", result.getCause().getMessage());
+    }
+
     private SimpleLDAPAuthenticationManagerImpl createAuthenticationProvider()
     {
         return createAuthenticationProvider(Map.of());
-    }
-
-    private SimpleLDAPAuthenticationManagerImpl createCachingAuthenticationProvider()
-    {
-        final Map<String, String> context = Map.of(AUTHENTICATION_CACHE_MAX_SIZE, "1");
-        final Map<String, Object> attributes =Map.of(SimpleLDAPAuthenticationManager.CONTEXT, context);
-        return createAuthenticationProvider(attributes);
     }
 
     private SimpleLDAPAuthenticationManagerImpl createAuthenticationProvider(final Map<String, Object> settings)
@@ -425,7 +437,7 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         directoryService.getAdminSession().add(entry);
     }
 
-    private void createPrincipal(String uid, String userPassword) throws LdapException
+    private void createPrincipal(final String uid, final String userPassword) throws LdapException
     {
         createPrincipal(uid, uid, uid, userPassword, uid + "@" + REALM);
     }
@@ -451,7 +463,7 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         keytab.write(keyTabFile);
     }
 
-    private void createKeyTab(String... principals) throws LdapException, IOException
+    private void createKeyTab(final String... principals) throws LdapException, IOException
     {
         final File keyTabFile = createFile("kerberos", ".keytab");
         createPrincipal(keyTabFile, principals);

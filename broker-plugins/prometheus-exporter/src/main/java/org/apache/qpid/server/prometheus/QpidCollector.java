@@ -21,7 +21,6 @@ package org.apache.qpid.server.prometheus;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,8 +60,8 @@ public class QpidCollector extends Collector
     public List<MetricFamilySamples> collect()
     {
         final List<MetricFamilySamples> metricFamilySamples = new ArrayList<>();
-        addObjectMetrics(_root, Collections.emptyList(), new HashMap<>(), metricFamilySamples);
-        addChildrenMetrics(metricFamilySamples, _root, Collections.singletonList("name"));
+        addObjectMetrics(_root, List.of(), new HashMap<>(), metricFamilySamples);
+        addChildrenMetrics(metricFamilySamples, _root, List.of("name"));
         return metricFamilySamples;
     }
 

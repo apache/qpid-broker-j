@@ -31,7 +31,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -70,8 +69,8 @@ public class MessageManagementTest extends HttpTestBase
 
         getHelper().createKeyStoreAndSetItOnPort(getFullTestName());
 
-        final Map<String, Object> odd = Collections.singletonMap(INDEX, 1);
-        final Map<String, Object> even = Collections.singletonMap(INDEX, 0);
+        final Map<String, Object> odd = Map.of(INDEX, 1);
+        final Map<String, Object> even = Map.of(INDEX, 0);
 
         _messageIds = Stream.generate(UUID::randomUUID).map(UUID::toString).limit(4).collect(Collectors.toSet());
 
@@ -177,7 +176,7 @@ public class MessageManagementTest extends HttpTestBase
     {
         final Set<Long> ids = new HashSet<>(getMesssageIds(SOURCE_QUEUE_NAME));
         Iterator<Long> iterator = ids.iterator();
-        Set<Long> toDelete = Collections.singleton(iterator.next());
+        Set<Long> toDelete = Set.of(iterator.next());
         iterator.remove();
 
         Map<String, Object> parameters = new HashMap<>();
@@ -214,7 +213,7 @@ public class MessageManagementTest extends HttpTestBase
     public void testClearQueue() throws Exception
     {
         getHelper().submitRequest(String.format("queue/%s/clearQueue", SOURCE_QUEUE_NAME), "POST",
-                                  Collections.emptyMap(), HttpServletResponse.SC_OK);
+                Map.of(), HttpServletResponse.SC_OK);
 
         assertThat(getBrokerAdmin().getQueueDepthMessages(SOURCE_QUEUE_NAME), is(equalTo(0)));
     }
@@ -343,7 +342,7 @@ public class MessageManagementTest extends HttpTestBase
 
         getHelper().submitRequest("virtualhost/publishMessage",
                                   "POST",
-                                  Collections.singletonMap("message", messageBody),
+                                  Map.of("message", messageBody),
                                   SC_OK);
     }
 
@@ -352,12 +351,12 @@ public class MessageManagementTest extends HttpTestBase
         final Map<String, Object> messageBody = new HashMap<>();
         messageBody.put("address", queueName);
         messageBody.put("messageId", messageId);
-        messageBody.put("headers", Collections.singletonMap("id", messageId));
+        messageBody.put("headers", Map.of("id", messageId));
         messageBody.put("priority", priority);
 
         getHelper().submitRequest("virtualhost/publishMessage",
                                   "POST",
-                                  Collections.singletonMap("message", messageBody),
+                                  Map.of("message", messageBody),
                                   SC_OK);
     }
 

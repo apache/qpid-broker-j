@@ -39,8 +39,6 @@ public class HeaderResponse implements Response<byte[]>
     @Override
     public String toString()
     {
-        return "HeaderResponse{" +
-               "_header=" + Arrays.toString(_header) +
-               '}';
+        return "HeaderResponse{" + "_header=" + Arrays.toString(_header) + '}';
     }
 }

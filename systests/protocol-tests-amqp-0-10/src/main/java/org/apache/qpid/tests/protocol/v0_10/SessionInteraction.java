@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.tests.protocol.v0_10;
 
-import org.apache.qpid.server.protocol.v0_10.transport.Method;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionAttach;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionCommandPoint;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionDetach;

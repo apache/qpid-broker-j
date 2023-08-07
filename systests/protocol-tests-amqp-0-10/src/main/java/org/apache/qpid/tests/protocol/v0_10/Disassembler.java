@@ -56,13 +56,7 @@ public final class Disassembler implements ProtocolEventSender, ProtocolDelegate
     private final ByteBufferSender _sender;
     private final Object _sendlock = new Object();
     private volatile int _maxPayload;
-    private final static ThreadLocal<BBEncoder> _encoder = new ThreadLocal<BBEncoder>()
-    {
-        public BBEncoder initialValue()
-        {
-            return new BBEncoder(4 * 1024);
-        }
-    };
+    private final static ThreadLocal<BBEncoder> _encoder = ThreadLocal.withInitial(() -> new BBEncoder(4 * 1024));
 
     public Disassembler(ByteBufferSender sender, int maxFrame)
     {

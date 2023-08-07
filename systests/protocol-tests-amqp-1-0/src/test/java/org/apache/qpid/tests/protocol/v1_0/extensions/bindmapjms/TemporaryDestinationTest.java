@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.util.Collections;
+import java.util.Map;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -283,7 +283,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
-            source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
+            source.setDynamicNodeProperties(Map.of(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
             source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
             source.setCapabilities(capabilities);
             source.setDynamic(true);
@@ -305,7 +305,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
             assertThat(newTemporaryNodeAddress, is(notNullValue()));
 
             Target target = new Target();
-            target.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
+            target.setDynamicNodeProperties(Map.of(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
             target.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
             target.setCapabilities(capabilities);
             target.setAddress(newTemporaryNodeAddress);
@@ -347,7 +347,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
-            source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
+            source.setDynamicNodeProperties(Map.of(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
             source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
             source.setCapabilities(capabilities);
             source.setDynamic(true);
@@ -388,7 +388,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
-            source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
+            source.setDynamicNodeProperties(Map.of(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
             source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
             source.setCapabilities(capabilities);
             source.setDynamic(true);
@@ -459,7 +459,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
     private Target createTarget(final Symbol[] capabilities)
     {
         Target target = new Target();
-        target.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
+        target.setDynamicNodeProperties(Map.of(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
         target.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
         target.setDynamic(true);
         target.setCapabilities(capabilities);
@@ -469,7 +469,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
     private Source createSource(final String name, final Symbol[] capabilities)
     {
         final Source source = new Source();
-        source.setDynamicNodeProperties(Collections.singletonMap(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
+        source.setDynamicNodeProperties(Map.of(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
         source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
         source.setCapabilities(capabilities);
         source.setAddress(name);

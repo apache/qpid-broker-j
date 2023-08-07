@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.tests.http.rest.model;
 
-import static java.util.Collections.singletonMap;
 import static jakarta.servlet.http.HttpServletResponse.SC_CREATED;
 import static jakarta.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static jakarta.servlet.http.HttpServletResponse.SC_OK;
@@ -34,7 +33,6 @@ import static org.hamcrest.Matchers.oneOf;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -147,14 +145,12 @@ public class ReadTest extends HttpTestBase
     {
         final String hostContextKey = "myvhcontextvar";
         final String hostContextValue = UUID.randomUUID().toString();
-        final Map<String, Object> hostUpdateAttrs = singletonMap(ConfiguredObject.CONTEXT,
-                                                                 singletonMap(hostContextKey, hostContextValue));
+        final Map<String, Object> hostUpdateAttrs = Map.of(ConfiguredObject.CONTEXT, Map.of(hostContextKey, hostContextValue));
         getHelper().submitRequest("virtualhost", "POST", hostUpdateAttrs, SC_OK);
 
         final String queueContextKey = "myqueuecontextvar";
         final String queueContextValue = UUID.randomUUID().toString();
-        final Map<String, Object> queueUpdateAttrs = singletonMap(ConfiguredObject.CONTEXT,
-                                                                  singletonMap(queueContextKey, queueContextValue));
+        final Map<String, Object> queueUpdateAttrs = Map.of(ConfiguredObject.CONTEXT, Map.of(queueContextKey, queueContextValue));
         getHelper().submitRequest(QUEUE1_URL, "POST", queueUpdateAttrs, SC_OK);
 
         final Map<String, Object> queue = getHelper().getJsonAsMap(QUEUE1_URL);
@@ -179,7 +175,7 @@ public class ReadTest extends HttpTestBase
 
         final Map<String, Object> queueUpdateAttrs = new HashMap<>();
         queueUpdateAttrs.put(ConfiguredObject.DESCRIPTION, "${myqueuecontextvar}");
-        queueUpdateAttrs.put(ConfiguredObject.CONTEXT, singletonMap(queueContextKey, queueContextValue));
+        queueUpdateAttrs.put(ConfiguredObject.CONTEXT, Map.of(queueContextKey, queueContextValue));
         getHelper().submitRequest(QUEUE1_URL, "POST", queueUpdateAttrs, SC_OK);
 
 
@@ -312,13 +308,13 @@ public class ReadTest extends HttpTestBase
     private String createLoggerAndRule(final String loggerName, final String inclusionRuleName) throws Exception
     {
         final String parentUrl = String.format("virtualhostlogger/%s", loggerName);
-        Map<String, Object> parentAttrs = Collections.singletonMap(ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE);
+        Map<String, Object> parentAttrs = Map.of(ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE);
 
         int response = getHelper().submitRequest(parentUrl, "PUT", parentAttrs);
         assertThat(response, is(oneOf(SC_CREATED, SC_OK)));
 
         final String childUrl = String.format("virtualhostloginclusionrule/%s/%s", loggerName, inclusionRuleName);
-        Map<String, Object> childAttrs = Collections.singletonMap(ConfiguredObject.TYPE, VirtualHostNameAndLevelLogInclusionRule.TYPE);
+        Map<String, Object> childAttrs = Map.of(ConfiguredObject.TYPE, VirtualHostNameAndLevelLogInclusionRule.TYPE);
         getHelper().submitRequest(childUrl, "PUT", childAttrs, SC_CREATED);
 
         final Map<String, Object> child = getHelper().getJsonAsMap(childUrl);

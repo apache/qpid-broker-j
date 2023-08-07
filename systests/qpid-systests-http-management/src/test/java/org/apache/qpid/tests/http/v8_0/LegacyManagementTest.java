@@ -26,8 +26,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
 
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -75,8 +75,8 @@ public class LegacyManagementTest extends HttpTestBase
         final Map contextMap = (Map)portContext;
         assertThat(contextMap.get("qpid.security.tls.protocolAllowList"), is(equalTo("TLSv1")));
         assertThat(contextMap.get("qpid.security.tls.protocolDenyList"), is(equalTo("SSL.*")));
-        assertThat(portAttributes.get("tlsProtocolAllowList"),is(equalTo(Collections.singletonList("TLSv1"))));
-        assertThat(portAttributes.get("tlsProtocolDenyList"),is(equalTo(Collections.singletonList("SSL.*"))));
+        assertThat(portAttributes.get("tlsProtocolAllowList"),is(equalTo(List.of("TLSv1"))));
+        assertThat(portAttributes.get("tlsProtocolDenyList"),is(equalTo(List.of("SSL.*"))));
 
         final Map<String, Object> portAttributes8_0 = getHelper().getJsonAsMap("/api/v8.0/port/" + getTestName());
         assertThat(portAttributes8_0, is(notNullValue()));
@@ -85,8 +85,8 @@ public class LegacyManagementTest extends HttpTestBase
         final Map contextMap8_0 = (Map)portContext8_0;
         assertThat(contextMap8_0.get("qpid.security.tls.protocolWhiteList"), is(equalTo("TLSv1")));
         assertThat(contextMap8_0.get("qpid.security.tls.protocolBlackList"), is(equalTo("SSL.*")));
-        assertThat(portAttributes8_0.get("tlsProtocolWhiteList"),is(equalTo(Collections.singletonList("TLSv1"))));
-        assertThat(portAttributes8_0.get("tlsProtocolBlackList"),is(equalTo(Collections.singletonList("SSL.*"))));
+        assertThat(portAttributes8_0.get("tlsProtocolWhiteList"),is(equalTo(List.of("TLSv1"))));
+        assertThat(portAttributes8_0.get("tlsProtocolBlackList"),is(equalTo(List.of("SSL.*"))));
     }
 
     @Test

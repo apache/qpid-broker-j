@@ -28,13 +28,11 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-
 public class ParticipantAttributeExtractor
 {
     public static Map<ParticipantAttribute, Object> getAttributes(Object targetObject)
     {
-        Map<ParticipantAttribute, Object> attributes = new HashMap<ParticipantAttribute, Object>();
-
+        Map<ParticipantAttribute, Object> attributes = new HashMap<>();
 
         PropertyDescriptor[] descriptors;
         try
