@@ -64,23 +64,23 @@ public class AmqpManagementFacade
     public void createEntityUsingAmqpManagement(final String name, final Session session, final String type)
             throws JMSException
     {
-        createEntityUsingAmqpManagement(name, session, type, Collections.<String, Object>emptyMap());
+        createEntityUsingAmqpManagement(name, session, type, Collections.emptyMap());
     }
 
     public void createEntityUsingAmqpManagement(final String name,
                                                 final Session session,
                                                 final String type,
-                                                Map<String, Object> attributes)
+                                                final Map<String, Object> attributes)
             throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
+        final MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
 
-        MapMessage createMessage = session.createMapMessage();
+        final MapMessage createMessage = session.createMapMessage();
         createMessage.setStringProperty("type", type);
         createMessage.setStringProperty("operation", "CREATE");
         createMessage.setString("name", name);
         createMessage.setString("object-path", name);
-        for (Map.Entry<String, Object> entry : attributes.entrySet())
+        for (final Map.Entry<String, Object> entry : attributes.entrySet())
         {
             createMessage.setObject(entry.getKey(), entry.getValue());
         }
@@ -93,10 +93,9 @@ public class AmqpManagementFacade
     }
 
     public Map<String, Object> createEntityAndAssertResponse(final String name,
-                                            final String type,
-                                            final Map<String, Object> attributes,
-                                            final Session session)
-            throws JMSException
+                                                             final String type,
+                                                             final Map<String, Object> attributes,
+                                                             final Session session) throws JMSException
     {
         Destination replyToDestination;
         Destination replyConsumerDestination;
@@ -111,17 +110,17 @@ public class AmqpManagementFacade
             replyConsumerDestination = session.createQueue(AMQP_0_X_CONSUMER_REPLY_DESTINATION);
         }
 
-        MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
+        final MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
 
-        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
+        final MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
 
-        MapMessage createMessage = session.createMapMessage();
+        final MapMessage createMessage = session.createMapMessage();
         createMessage.setStringProperty("type", type);
         createMessage.setStringProperty("operation", "CREATE");
         createMessage.setString("name", name);
         createMessage.setString("object-path", name);
         createMessage.setJMSReplyTo(replyToDestination);
-        for (Map.Entry<String, Object> entry : attributes.entrySet())
+        for (final Map.Entry<String, Object> entry : attributes.entrySet())
         {
             createMessage.setObject(entry.getKey(), entry.getValue());
         }
@@ -139,34 +138,34 @@ public class AmqpManagementFacade
                                                           final Destination replyToDestination,
                                                           final int responseStatus) throws JMSException
     {
-        Message response = consumer.receive(5000);
+        final Message response = consumer.receive(5000);
         try
         {
             if (response != null)
             {
-                int statusCode = response.getIntProperty("statusCode");
+                final int statusCode = response.getIntProperty("statusCode");
                 if (statusCode == responseStatus)
                 {
                     if (response instanceof MapMessage)
                     {
-                        MapMessage bodyMap = (MapMessage) response;
-                        Map<String, Object> result = new HashMap<>();
-                        Enumeration keys = bodyMap.getMapNames();
+                        final MapMessage bodyMap = (MapMessage) response;
+                        final Map<String, Object> result = new HashMap<>();
+                        final Enumeration keys = bodyMap.getMapNames();
                         while (keys.hasMoreElements())
                         {
                             final String key = String.valueOf(keys.nextElement());
-                            Object value = bodyMap.getObject(key);
+                            final Object value = bodyMap.getObject(key);
                             result.put(key, value);
                         }
                         return result;
                     }
                     else if (response instanceof ObjectMessage)
                     {
-                        Object body = ((ObjectMessage) response).getObject();
+                        final Object body = ((ObjectMessage) response).getObject();
                         if (body instanceof Map)
                         {
                             @SuppressWarnings("unchecked")
-                            Map<String, Object> bodyMap = (Map<String, Object>) body;
+                            final Map<String, Object> bodyMap = (Map<String, Object>) body;
                             return new HashMap<>(bodyMap);
                         }
                     }
@@ -194,9 +193,9 @@ public class AmqpManagementFacade
     }
 
     public Map<String,Object> updateEntityUsingAmqpManagementAndReceiveResponse(final String name,
-                                                                  final String type,
-                                                                  Map<String, Object> attributes,
-                                                                  final Session session)
+                                                                                final String type,
+                                                                                final Map<String, Object> attributes,
+                                                                                final Session session)
             throws JMSException
     {
 
@@ -213,7 +212,7 @@ public class AmqpManagementFacade
             replyConsumerDestination = session.createQueue(AMQP_0_X_CONSUMER_REPLY_DESTINATION);
         }
 
-        MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
+        final MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
 
         updateEntityUsingAmqpManagement(name, type, attributes, replyToDestination, session);
 
@@ -224,28 +223,27 @@ public class AmqpManagementFacade
     public void updateEntityUsingAmqpManagement(final String name,
                                                 final Session session,
                                                 final String type,
-                                                Map<String, Object> attributes)
-            throws JMSException
+                                                final Map<String, Object> attributes) throws JMSException
     {
         updateEntityUsingAmqpManagement(name, type, attributes, null, session);
     }
 
     private void updateEntityUsingAmqpManagement(final String name,
                                                  final String type,
-                                                 Map<String, Object> attributes,
-                                                 Destination replyToDestination,
+                                                 final Map<String, Object> attributes,
+                                                 final Destination replyToDestination,
                                                  final Session session)
             throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
+        final MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
 
-        MapMessage createMessage = session.createMapMessage();
+        final MapMessage createMessage = session.createMapMessage();
         createMessage.setStringProperty("type", type);
         createMessage.setStringProperty("operation", "UPDATE");
         createMessage.setStringProperty("index", "object-path");
         createMessage.setStringProperty("key", name);
         createMessage.setJMSReplyTo(replyToDestination);
-        for (Map.Entry<String, Object> entry : attributes.entrySet())
+        for (final Map.Entry<String, Object> entry : attributes.entrySet())
         {
             createMessage.setObject(entry.getKey(), entry.getValue());
         }
@@ -260,9 +258,9 @@ public class AmqpManagementFacade
     public void deleteEntityUsingAmqpManagement(final String name, final Session session, final String type)
             throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
+        final MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
 
-        MapMessage createMessage = session.createMapMessage();
+        final MapMessage createMessage = session.createMapMessage();
         createMessage.setStringProperty("type", type);
         createMessage.setStringProperty("operation", "DELETE");
         createMessage.setStringProperty("index", "object-path");
@@ -279,7 +277,7 @@ public class AmqpManagementFacade
                                                       final String operation,
                                                       final Session session,
                                                       final String type,
-                                                      Map<String, Object> arguments)
+                                                      final Map<String, Object> arguments)
             throws JMSException
     {
         Destination replyToDestination;
@@ -295,27 +293,27 @@ public class AmqpManagementFacade
             replyConsumerDestination = session.createQueue(AMQP_0_X_CONSUMER_REPLY_DESTINATION);
         }
 
-        MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
+        final MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
 
-        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
+        final MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
 
-        MapMessage opMessage = session.createMapMessage();
+        final MapMessage opMessage = session.createMapMessage();
         opMessage.setStringProperty("type", type);
         opMessage.setStringProperty("operation", operation);
         opMessage.setStringProperty("index", "object-path");
         opMessage.setJMSReplyTo(replyToDestination);
 
         opMessage.setStringProperty("key", name);
-        for (Map.Entry<String, Object> argument : arguments.entrySet())
+        for (final Map.Entry<String, Object> argument : arguments.entrySet())
         {
-            Object value = argument.getValue();
+            final Object value = argument.getValue();
             if (value.getClass().isPrimitive() || value instanceof String)
             {
                 opMessage.setObjectProperty(argument.getKey(), value);
             }
             else
             {
-                ObjectMapper objectMapper = new ObjectMapper();
+                final ObjectMapper objectMapper = new ObjectMapper();
                 String jsonifiedValue;
                 try
                 {
@@ -337,18 +335,18 @@ public class AmqpManagementFacade
             session.commit();
         }
 
-        Message response = consumer.receive(5000);
+        final Message response = consumer.receive(5000);
         try
         {
-            int statusCode = response.getIntProperty("statusCode");
+            final int statusCode = response.getIntProperty("statusCode");
             if (statusCode < 200 || statusCode > 299)
             {
                 throw new OperationUnsuccessfulException(response.getStringProperty("statusDescription"), statusCode);
             }
             if (response instanceof StreamMessage)
             {
-                StreamMessage bodyStream = (StreamMessage) response;
-                List<Object> result = new ArrayList<>();
+                final StreamMessage bodyStream = (StreamMessage) response;
+                final List<Object> result = new ArrayList<>();
                 boolean done = false;
                 do
                 {
@@ -367,12 +365,12 @@ public class AmqpManagementFacade
             }
             else if (response instanceof MapMessage)
             {
-                MapMessage bodyMap = (MapMessage) response;
-                Map<String, Object> result = new TreeMap<>();
-                Enumeration mapNames = bodyMap.getMapNames();
+                final MapMessage bodyMap = (MapMessage) response;
+                final Map<String, Object> result = new TreeMap<>();
+                final Enumeration mapNames = bodyMap.getMapNames();
                 while (mapNames.hasMoreElements())
                 {
-                    String key = (String) mapNames.nextElement();
+                    final String key = (String) mapNames.nextElement();
                     result.put(key, bodyMap.getObject(key));
                 }
                 return result;
@@ -383,14 +381,14 @@ public class AmqpManagementFacade
             }
             else if (response instanceof BytesMessage)
             {
-                BytesMessage bytesMessage = (BytesMessage) response;
+                final BytesMessage bytesMessage = (BytesMessage) response;
                 if (bytesMessage.getBodyLength() == 0)
                 {
                     return null;
                 }
                 else
                 {
-                    byte[] buf = new byte[(int) bytesMessage.getBodyLength()];
+                    final byte[] buf = new byte[(int) bytesMessage.getBodyLength()];
                     bytesMessage.readBytes(buf);
                     return buf;
                 }
@@ -412,8 +410,7 @@ public class AmqpManagementFacade
         }
     }
 
-    public List<Map<String, Object>> managementQueryObjects(final Session session, final String type)
-            throws JMSException
+    public List<Map<String, Object>> managementQueryObjects(final Session session, final String type) throws JMSException
     {
         Destination replyToDestination;
         Destination replyConsumerDestination;
@@ -428,8 +425,8 @@ public class AmqpManagementFacade
             replyConsumerDestination = session.createQueue(AMQP_0_X_CONSUMER_REPLY_DESTINATION);
         }
 
-        MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
-        MapMessage message = session.createMapMessage();
+        final MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
+        final MapMessage message = session.createMapMessage();
         message.setStringProperty("identity", "self");
         message.setStringProperty("type", "org.amqp.management");
         message.setStringProperty("operation", "QUERY");
@@ -437,27 +434,27 @@ public class AmqpManagementFacade
         message.setString("attributeNames", "[]");
         message.setJMSReplyTo(replyToDestination);
 
-        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
+        final MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
         producer.send(message);
 
-        Message response = consumer.receive(5000);
+        final Message response = consumer.receive(5000);
         try
         {
             if (response instanceof MapMessage)
             {
-                MapMessage bodyMap = (MapMessage) response;
-                List<String> attributeNames = (List<String>) bodyMap.getObject("attributeNames");
-                List<List<Object>> attributeValues = (List<List<Object>>) bodyMap.getObject("results");
+                final MapMessage bodyMap = (MapMessage) response;
+                final List<String> attributeNames = (List<String>) bodyMap.getObject("attributeNames");
+                final List<List<Object>> attributeValues = (List<List<Object>>) bodyMap.getObject("results");
                 return getResultsAsMaps(attributeNames, attributeValues);
             }
             else if (response instanceof ObjectMessage)
             {
-                Object body = ((ObjectMessage) response).getObject();
+                final Object body = ((ObjectMessage) response).getObject();
                 if (body instanceof Map)
                 {
-                    Map<String, ?> bodyMap = (Map<String, ?>) body;
-                    List<String> attributeNames = (List<String>) bodyMap.get("attributeNames");
-                    List<List<Object>> attributeValues = (List<List<Object>>) bodyMap.get("results");
+                    final Map<String, ?> bodyMap = (Map<String, ?>) body;
+                    final List<String> attributeNames = (List<String>) bodyMap.get("attributeNames");
+                    final List<List<Object>> attributeValues = (List<List<Object>>) bodyMap.get("results");
                     return getResultsAsMaps(attributeNames, attributeValues);
                 }
             }
@@ -491,12 +488,11 @@ public class AmqpManagementFacade
             replyConsumerDestination = session.createQueue(AMQP_0_X_CONSUMER_REPLY_DESTINATION);
         }
 
-        MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
+        final MessageConsumer consumer = session.createConsumer(replyConsumerDestination);
 
-        MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
+        final MessageProducer producer = session.createProducer(session.createQueue(_managementAddress));
 
-
-        MapMessage request = session.createMapMessage();
+        final MapMessage request = session.createMapMessage();
         request.setStringProperty("type", type);
         request.setStringProperty("operation", "READ");
         request.setString("name", name);
@@ -512,7 +508,7 @@ public class AmqpManagementFacade
             session.commit();
         }
 
-        Message response = consumer.receive(5000);
+        final Message response = consumer.receive(5000);
         if (session.getTransacted())
         {
             session.commit();
@@ -521,33 +517,31 @@ public class AmqpManagementFacade
         {
             if (response instanceof MapMessage)
             {
-                MapMessage bodyMap = (MapMessage) response;
-                Map<String, Object> data = new HashMap<>();
+                final MapMessage bodyMap = (MapMessage) response;
+                final Map<String, Object> data = new HashMap<>();
                 @SuppressWarnings("unchecked")
-                Enumeration<String> keys = bodyMap.getMapNames();
+                final Enumeration<String> keys = bodyMap.getMapNames();
                 while (keys.hasMoreElements())
                 {
-                    String key = keys.nextElement();
+                    final String key = keys.nextElement();
                     data.put(key, bodyMap.getObject(key));
                 }
                 return data;
             }
             else if (response instanceof ObjectMessage)
             {
-                Object body = ((ObjectMessage) response).getObject();
+                final Object body = ((ObjectMessage) response).getObject();
                 if (body instanceof Map)
                 {
                     @SuppressWarnings("unchecked")
-                    Map<String, ?> bodyMap = (Map<String, ?>) body;
+                    final Map<String, ?> bodyMap = (Map<String, ?>) body;
                     return new HashMap<>(bodyMap);
                 }
             }
-            throw new AmqpManagementFacade.OperationUnsuccessfulException("Management read failed : "
-                                                                          + response.getStringProperty("statusCode")
-                                                                          + " - "
-                                                                          + response.getStringProperty(
-                    "statusDescription"),
-                                                                          response.getIntProperty("statusCode"));
+            throw new AmqpManagementFacade.OperationUnsuccessfulException("Management read failed : " +
+                    response.getStringProperty("statusCode") +
+                    " - " + response.getStringProperty("statusDescription"),
+                    response.getIntProperty("statusCode"));
         }
         finally
         {
@@ -562,7 +556,7 @@ public class AmqpManagementFacade
     public long getQueueDepth(final Queue destination, final Session session) throws Exception
     {
         final String escapedName = getEscapedName(destination);
-        Map<String, Object> arguments = Collections.singletonMap("statistics",
+        final Map<String, Object> arguments = Collections.singletonMap("statistics",
                                                                  Collections.singletonList("queueDepthMessages"));
         Object statistics = performOperationUsingAmqpManagement(escapedName,
                                                                 "getStatistics",
@@ -607,10 +601,10 @@ public class AmqpManagementFacade
     private List<Map<String, Object>> getResultsAsMaps(final List<String> attributeNames,
                                                        final List<List<Object>> attributeValues)
     {
-        List<Map<String, Object>> results = new ArrayList<>();
-        for (List<Object> resultObject : attributeValues)
+        final List<Map<String, Object>> results = new ArrayList<>();
+        for (final List<Object> resultObject : attributeValues)
         {
-            Map<String, Object> result = new HashMap<>();
+            final Map<String, Object> result = new HashMap<>();
             for (int i = 0; i < attributeNames.size(); ++i)
             {
                 result.put(attributeNames.get(i), resultObject.get(i));
