@@ -176,18 +176,13 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
         hostnameAliasAttributes.put(VirtualHostAlias.TYPE, HostNameAlias.TYPE_NAME);
         hostnameAliasAttributes.put(VirtualHostAlias.DURABLE, true);
 
-        Subject.doAs(getSubjectWithAddedSystemRights(),
-                     new PrivilegedAction<Object>()
-                     {
-                         @Override
-                         public Object run()
-                         {
-                             createChild(VirtualHostAlias.class, nameAliasAttributes);
-                             createChild(VirtualHostAlias.class, defaultAliasAttributes);
-                             createChild(VirtualHostAlias.class, hostnameAliasAttributes);
-                             return null;
-                         }
-                     });
+        Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () ->
+        {
+            createChild(VirtualHostAlias.class, nameAliasAttributes);
+            createChild(VirtualHostAlias.class, defaultAliasAttributes);
+            createChild(VirtualHostAlias.class, hostnameAliasAttributes);
+            return null;
+        });
     }
 
     @Override

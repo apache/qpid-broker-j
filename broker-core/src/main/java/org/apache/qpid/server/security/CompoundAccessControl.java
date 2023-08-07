@@ -21,7 +21,6 @@
 package org.apache.qpid.server.security;
 
 import java.security.AccessController;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -81,7 +80,7 @@ public class CompoundAccessControl implements AccessControl<CompoundSecurityToke
                             final Operation operation,
                             final PermissionedObject configuredObject)
     {
-        return authorise(token, operation, configuredObject, Collections.<String,Object>emptyMap());
+        return authorise(token, operation, configuredObject, Map.of());
     }
 
     @Override

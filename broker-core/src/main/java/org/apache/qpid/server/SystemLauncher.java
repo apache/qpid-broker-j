@@ -31,8 +31,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.Principal;
 import java.security.PrivilegedExceptionAction;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
@@ -86,10 +84,7 @@ public class SystemLauncher
     public SystemLauncher(SystemLauncherListener listener)
     {
         _listener = listener;
-        _brokerTaskSubject = new Subject(true,
-                                         new HashSet<>(Arrays.asList(_systemPrincipal, new TaskPrincipal("Broker"))),
-                                         Collections.emptySet(),
-                                         Collections.emptySet());
+        _brokerTaskSubject = new Subject(true, Set.of(_systemPrincipal, new TaskPrincipal("Broker")), Set.of(), Set.of());
 
     }
 
@@ -200,30 +195,26 @@ public class SystemLauncher
         final SystemOutMessageLogger systemOutMessageLogger = new SystemOutMessageLogger();
 
         _eventLogger = new EventLogger(systemOutMessageLogger);
-        Subject.doAs(_brokerTaskSubject, new PrivilegedExceptionAction<Object>()
+        Subject.doAs(_brokerTaskSubject, (PrivilegedExceptionAction<Object>) () ->
         {
-            @Override
-            public Object run() throws Exception
-            {
-                _listener.beforeStartup();
+            _listener.beforeStartup();
 
-                try
-                {
-                    startupImpl(systemConfigAttributes);
-                }
-                catch (RuntimeException e)
-                {
-                    systemOutMessageLogger.message(new SystemStartupMessage(e));
-                    LOGGER.error("Exception during startup", e);
-                    _listener.errorOnStartup(e);
-                    closeSystemConfigAndCleanUp();
-                }
-                finally
-                {
-                    _listener.afterStartup();
-                }
-                return null;
+            try
+            {
+                startupImpl(systemConfigAttributes);
             }
+            catch (RuntimeException e)
+            {
+                systemOutMessageLogger.message(new SystemStartupMessage(e));
+                LOGGER.error("Exception during startup", e);
+                _listener.errorOnStartup(e);
+                closeSystemConfigAndCleanUp();
+            }
+            finally
+            {
+                _listener.afterStartup();
+            }
+            return null;
         });
 
     }
@@ -255,27 +246,9 @@ public class SystemLauncher
                                                   _systemPrincipal,
                                                   systemConfigAttributes);
 
-        _systemConfig.setOnContainerResolveTask(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        _listener.onContainerResolve(_systemConfig);
-                    }
-                });
+        _systemConfig.setOnContainerResolveTask(() -> _listener.onContainerResolve(_systemConfig));
 
-        _systemConfig.setOnContainerCloseTask(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        _listener.onContainerClose(_systemConfig);
-
-                    }
-                });
-
+        _systemConfig.setOnContainerCloseTask(() -> _listener.onContainerClose(_systemConfig));
 
         _systemConfig.open();
         if (_systemConfig.getContainer().getState() == State.ERRORED)

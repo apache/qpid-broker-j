@@ -211,8 +211,7 @@ public class ConfiguredObjectFinder
                     parentType = hierarchy[i];
 
                     final Collection<? extends ConfiguredObject<?>> associated =
-                            (Collection<? extends ConfiguredObject<?>>) op.perform(_root,
-                                                                                   Collections.<String, Object>emptyMap());
+                            (Collection<? extends ConfiguredObject<?>>) op.perform(_root, Map.of());
 
                     if (path.size() > i
                         && path.get(i) != null
@@ -459,8 +458,7 @@ public class ConfiguredObjectFinder
         if (op != null)
         {
 
-            return Collections.unmodifiableCollection((Collection<? extends ConfiguredObject<?>>) op.perform(_root,
-                                                                                                             Collections.<String, Object>emptyMap()));
+            return Collections.unmodifiableCollection((Collection<? extends ConfiguredObject<?>>) op.perform(_root, Map.of()));
         }
         else
         {

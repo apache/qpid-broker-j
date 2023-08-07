@@ -42,7 +42,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 public class ConfiguredObjectCustomSerialization
 {
 
-    private static final Set<String> OBJECT_METHOD_NAMES = Collections.synchronizedSet(new HashSet<String>());
+    private static final Set<String> OBJECT_METHOD_NAMES = Collections.synchronizedSet(new HashSet<>());
 
     static
     {
@@ -99,7 +99,7 @@ public class ConfiguredObjectCustomSerialization
 
     @SuppressWarnings("unused")
     private static final Converter<Principal> PRINCIPAL_CONVERTER =
-            new AbstractConverter<Principal>(Principal.class)
+            new AbstractConverter<>(Principal.class)
             {
                 @Override
                 public Object convert(final Principal value)
@@ -122,7 +122,7 @@ public class ConfiguredObjectCustomSerialization
 
     @SuppressWarnings("unused")
     private static final Converter<Certificate> CERTIFICATE_CONVERTER =
-            new AbstractConverter<Certificate>(Certificate.class)
+            new AbstractConverter<>(Certificate.class)
             {
                 @Override
                 public Object convert(final Certificate value)
@@ -141,7 +141,7 @@ public class ConfiguredObjectCustomSerialization
 
     @SuppressWarnings("unused")
     private static final Converter<ConfiguredObject> CONFIGURED_OBJECT_CONVERTER =
-            new AbstractConverter<ConfiguredObject>(ConfiguredObject.class)
+            new AbstractConverter<>(ConfiguredObject.class)
             {
                 @Override
                 public Object convert(final ConfiguredObject value)

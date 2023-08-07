@@ -122,7 +122,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     {
 
         private final List<PropertiesMessageInstance> _queue =
-                Collections.synchronizedList(new ArrayList<PropertiesMessageInstance>());
+                Collections.synchronizedList(new ArrayList<>());
         private final T _target;
         private final String _name;
         private final UUID _identifier = UUID.randomUUID();

@@ -21,7 +21,6 @@
 package org.apache.qpid.server.txn;
 
 import java.util.Collection;
-import java.util.List;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;

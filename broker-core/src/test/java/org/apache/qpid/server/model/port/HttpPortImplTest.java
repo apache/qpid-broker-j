@@ -25,9 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,8 +68,7 @@ public class HttpPortImplTest extends UnitTestBase
         when(provider.getName()).thenReturn(AUTHENTICATION_PROVIDER_NAME);
         when(provider.getParent()).thenReturn(_broker);
         when(provider.getMechanisms()).thenReturn(List.of("PLAIN"));
-        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Collections.<AuthenticationProvider>singleton(
-                provider));
+        when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Set.of(provider));
         when(_broker.getChildByName(AuthenticationProvider.class, AUTHENTICATION_PROVIDER_NAME)).thenReturn(provider);
 
     }

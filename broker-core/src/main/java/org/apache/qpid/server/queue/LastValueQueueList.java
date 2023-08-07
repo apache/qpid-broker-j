@@ -40,19 +40,11 @@ public class LastValueQueueList extends OrderedQueueEntryList
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(LastValueQueueList.class);
 
-    private static final HeadCreator HEAD_CREATOR = new HeadCreator()
-    {
-
-        @Override
-        public ConflationQueueEntry createHead(final QueueEntryList list)
-        {
-            return ((LastValueQueueList)list).createHead();
-        }
-    };
+    private static final HeadCreator HEAD_CREATOR = list -> ((LastValueQueueList)list).createHead();
 
     private final String _conflationKey;
     private final ConcurrentMap<Object, AtomicReference<ConflationQueueEntry>> _latestValuesMap =
-        new ConcurrentHashMap<Object, AtomicReference<ConflationQueueEntry>>();
+            new ConcurrentHashMap<>();
 
     private final ConflationQueueEntry _deleteInProgress = new ConflationQueueEntry(this);
     private final ConflationQueueEntry _newerEntryAlreadyBeenAndGone = new ConflationQueueEntry(this);
@@ -93,7 +85,7 @@ public class LastValueQueueList extends OrderedQueueEntryList
                 LOGGER.debug("Adding entry " + addedEntry + " for message " + message.getMessageNumber() + " with conflation key " + keyValue);
             }
 
-            final AtomicReference<ConflationQueueEntry> referenceToEntry = new AtomicReference<ConflationQueueEntry>(addedEntry);
+            final AtomicReference<ConflationQueueEntry> referenceToEntry = new AtomicReference<>(addedEntry);
             AtomicReference<ConflationQueueEntry> entryReferenceFromMap;
             ConflationQueueEntry entryFromMap;
 
@@ -171,7 +163,7 @@ public class LastValueQueueList extends OrderedQueueEntryList
             latestValueReference = _latestValuesMap.get(key);
             if(latestValueReference == null)
             {
-                return new AtomicReference<ConflationQueueEntry>(_newerEntryAlreadyBeenAndGone);
+                return new AtomicReference<>(_newerEntryAlreadyBeenAndGone);
             }
         }
         return latestValueReference;

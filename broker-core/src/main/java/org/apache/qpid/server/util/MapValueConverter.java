@@ -203,7 +203,7 @@ public class MapValueConverter
         {
             return null;
         }
-        HashSet<T> set = new HashSet<T>();
+        HashSet<T> set = new HashSet<>();
         if (rawValue instanceof Iterable)
         {
             Iterable<?> iterable = (Iterable<?>)rawValue;

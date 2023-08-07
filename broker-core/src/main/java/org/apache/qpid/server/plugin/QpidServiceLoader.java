@@ -67,7 +67,7 @@ public class QpidServiceLoader
         Iterator<C> serviceLoaderIterator = ServiceLoader.load(clazz, classLoader).iterator();
 
         // create a new list so we can log the count
-        List<C> serviceImplementations = new ArrayList<C>();
+        List<C> serviceImplementations = new ArrayList<>();
         while(serviceLoaderIterator.hasNext())
         {
             C next = serviceLoaderIterator.next();

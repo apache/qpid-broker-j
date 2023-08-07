@@ -122,7 +122,7 @@ public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> i
     {
         try
         {
-            _bindingHeaderMatchers.remove(new HeadersBinding(binding, Collections.emptyMap()));
+            _bindingHeaderMatchers.remove(new HeadersBinding(binding, Map.of()));
         }
         catch (AMQInvalidArgumentException e)
         {

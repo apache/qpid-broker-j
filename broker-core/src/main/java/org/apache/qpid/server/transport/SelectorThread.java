@@ -162,7 +162,7 @@ class SelectorThread extends Thread
             }
 
             // QPID-7447: prevent unnecessary allocation of empty iterator
-            return toBeScheduled.isEmpty() ? Collections.<NonBlockingConnection>emptyList() : toBeScheduled;
+            return toBeScheduled.isEmpty() ? List.of() : toBeScheduled;
         }
 
         private List<NonBlockingConnection> processSelectionKeys()
@@ -286,7 +286,7 @@ class SelectorThread extends Thread
             }
 
             // QPID-7447: prevent unnecessary allocation of empty iterator
-            return unregisterableConnections.isEmpty() ? Collections.<NonBlockingConnection>emptyList() : unregisterableConnections;
+            return unregisterableConnections.isEmpty() ? List.of() : unregisterableConnections;
         }
 
         private void performSelect()
@@ -398,27 +398,22 @@ class SelectorThread extends Thread
     public void addAcceptingSocket(final ServerSocketChannel socketChannel,
                                    final NonBlockingNetworkTransport nonBlockingNetworkTransport)
     {
-        _tasks.add(new Runnable()
+        _tasks.add(() ->
         {
-            @Override
-            public void run()
+            try
             {
-
-                try
+                if (LOGGER.isDebugEnabled())
                 {
-                    if (LOGGER.isDebugEnabled())
-                    {
-                        LOGGER.debug("Registering selector on accepting port {} ",
-                                     socketChannel.socket().getLocalSocketAddress());
-                    }
-                    socketChannel.register(_selectionTasks[0].getSelector(), SelectionKey.OP_ACCEPT, nonBlockingNetworkTransport);
+                    LOGGER.debug("Registering selector on accepting port {} ",
+                                 socketChannel.socket().getLocalSocketAddress());
                 }
-                catch (IllegalStateException | ClosedChannelException e)
-                {
-                    // TODO Communicate condition back to model object to make it go into the ERROR state
-                    LOGGER.error("Failed to register selector on accepting port {} ",
-                                 socketChannel.socket().getLocalSocketAddress(), e);
-                }
+                socketChannel.register(_selectionTasks[0].getSelector(), SelectionKey.OP_ACCEPT, nonBlockingNetworkTransport);
+            }
+            catch (IllegalStateException | ClosedChannelException e)
+            {
+                // TODO Communicate condition back to model object to make it go into the ERROR state
+                LOGGER.error("Failed to register selector on accepting port {} ",
+                             socketChannel.socket().getLocalSocketAddress(), e);
             }
         });
         _selectionTasks[0].wakeup();
@@ -449,39 +444,35 @@ class SelectorThread extends Thread
     private Future<Void> cancelAcceptingSocketAsync(final ServerSocketChannel socketChannel)
     {
         final SettableFuture<Void> cancellationResult = SettableFuture.create();
-        _tasks.add(new Runnable()
+        _tasks.add(() ->
         {
-            @Override
-            public void run()
+            if (LOGGER.isDebugEnabled())
             {
-                if (LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug("Cancelling selector on accepting port {} ",
-                                 socketChannel.socket().getLocalSocketAddress());
-                }
+                LOGGER.debug("Cancelling selector on accepting port {} ",
+                             socketChannel.socket().getLocalSocketAddress());
+            }
 
+            try
+            {
+                SelectionKey selectionKey = null;
                 try
                 {
-                    SelectionKey selectionKey = null;
-                    try
-                    {
-                        selectionKey = socketChannel.register(_selectionTasks[0].getSelector(), 0);
-                    }
-                    catch (ClosedChannelException | CancelledKeyException e)
-                    {
-                        LOGGER.error("Failed to deregister selector on accepting port {}",
-                                     socketChannel.socket().getLocalSocketAddress(), e);
-                    }
-
-                    if (selectionKey != null)
-                    {
-                        selectionKey.cancel();
-                    }
+                    selectionKey = socketChannel.register(_selectionTasks[0].getSelector(), 0);
                 }
-                finally
+                catch (ClosedChannelException | CancelledKeyException e)
                 {
-                    cancellationResult.set(null);
+                    LOGGER.error("Failed to deregister selector on accepting port {}",
+                                 socketChannel.socket().getLocalSocketAddress(), e);
                 }
+
+                if (selectionKey != null)
+                {
+                    selectionKey.cancel();
+                }
+            }
+            finally
+            {
+                cancellationResult.set(null);
             }
         });
         _selectionTasks[0].wakeup();
@@ -649,13 +640,9 @@ class SelectorThread extends Thread
 
     public void close()
     {
-        Runnable goodNight = new Runnable()
+        Runnable goodNight = () ->
         {
-            @Override
-            public void run()
-            {
-                // Make sure take awakes so it can observe _closed
-            }
+            // Make sure take awakes so it can observe _closed
         };
         _closed.set(true);
 

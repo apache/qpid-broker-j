@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -66,7 +65,6 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
@@ -154,7 +152,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
         if (parent.isManagementMode())
         {
-            Map<String,Object> authManagerAttrs = new HashMap<String, Object>();
+            Map<String,Object> authManagerAttrs = new HashMap<>();
             authManagerAttrs.put(NAME,"MANAGEMENT_MODE_AUTHENTICATION");
             authManagerAttrs.put(ID, UUID.randomUUID());
             SimpleAuthenticationManager authManager = new SimpleAuthenticationManager(authManagerAttrs, this);
@@ -164,7 +162,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         }
         else
         {
-            _accessControl =  new CompoundAccessControl(Collections.<AccessControl<?>>emptyList(), Result.ALLOWED);
+            _accessControl =  new CompoundAccessControl(List.of(), Result.ALLOWED);
         }
 
         QpidServiceLoader qpidServiceLoader = new QpidServiceLoader();
@@ -325,15 +323,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     {
         if(_parent.isManagementMode())
         {
-            return doAfter(_managementModeAuthenticationProvider.openAsync(),
-                    new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            performActivation();
-                        }
-                    });
+            return doAfter(_managementModeAuthenticationProvider.openAsync(), this::performActivation);
         }
         else
         {
@@ -472,7 +462,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             _lastDisposalCounter = QpidByteBuffer.getPooledBufferDisposalCounter();
 
             ListenableFuture<Void> result = compactMemoryInternal();
-            addFutureCallback(result, new FutureCallback<Void>()
+            addFutureCallback(result, new FutureCallback<>()
             {
                 @Override
                 public void onSuccess(final Void result)
@@ -675,20 +665,14 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                        {
                            @Override
                            public ListenableFuture<VirtualHostNode> call(final VirtualHostNode virtualHostNode)
-                                   throws Exception
                            {
                                // permission has already been granted to create the virtual host
                                // disable further access check on other operations, e.g. create exchange
-                               Subject.doAs(getSubjectWithAddedSystemRights(),
-                                            new PrivilegedAction<Object>()
-                                            {
-                                                @Override
-                                                public Object run()
-                                                {
-                                                    virtualHostNode.start();
-                                                    return null;
-                                                }
-                                            });
+                               Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () ->
+                               {
+                                   virtualHostNode.start();
+                                   return null;
+                               });
                                return Futures.immediateFuture(virtualHostNode);
                            }
                        });
@@ -762,7 +746,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @Override
     public UserPreferences createUserPreferences(final ConfiguredObject<?> object)
     {
-        return new UserPreferencesImpl(_preferenceTaskExecutor, object, _preferenceStore, Collections.<Preference>emptySet());
+        return new UserPreferencesImpl(_preferenceTaskExecutor, object, _preferenceStore, Set.of());
     }
 
     private void updateAccessControl()
@@ -1010,26 +994,13 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @Override
     public void restart()
     {
-        Subject.doAs(getSystemTaskSubject("Broker"), new PrivilegedAction<Void>()
+        Subject.doAs(getSystemTaskSubject("Broker"), (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                final SystemConfig<?> systemConfig = (SystemConfig) getParent();
-                // This is deliberately asynchronous as the HTTP thread will be interrupted by restarting
-                doAfter(systemConfig.setAttributesAsync(Collections.<String,Object>singletonMap(ConfiguredObject.DESIRED_STATE,
-                                                                                                State.STOPPED)),
-                        new Callable<ListenableFuture<Void>>()
-                        {
-                            @Override
-                            public ListenableFuture<Void> call() throws Exception
-                            {
-                                return systemConfig.setAttributesAsync(Collections.<String,Object>singletonMap(ConfiguredObject.DESIRED_STATE, State.ACTIVE));
-                            }
-                        });
-
-                return null;
-            }
+            final SystemConfig<?> systemConfig = (SystemConfig) getParent();
+            // This is deliberately asynchronous as the HTTP thread will be interrupted by restarting
+            doAfter(systemConfig.setAttributesAsync(Map.of(ConfiguredObject.DESIRED_STATE, State.STOPPED)), () ->
+                    systemConfig.setAttributesAsync(Map.of(ConfiguredObject.DESIRED_STATE, State.ACTIVE)));
+            return null;
         });
 
     }
@@ -1093,9 +1064,9 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
         // remove Preferences from all ConfiguredObjects
         Subject userSubject = new Subject(true,
-                                          Collections.singleton(new AuthenticatedPrincipal(new UsernamePrincipal(username, origin))),
-                                          Collections.EMPTY_SET,
-                                          Collections.EMPTY_SET);
+                                          Set.of(new AuthenticatedPrincipal(new UsernamePrincipal(username, origin))),
+                                          Set.of(),
+                                          Set.of());
         java.util.Queue<ConfiguredObject<?>> configuredObjects = new LinkedList<>();
         configuredObjects.add(BrokerImpl.this);
         while (!configuredObjects.isEmpty())
@@ -1111,14 +1082,10 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                 }
             }
 
-            Subject.doAs(userSubject, new PrivilegedAction<Void>()
+            Subject.doAs(userSubject, (PrivilegedAction<Void>) () ->
             {
-                @Override
-                public Void run()
-                {
-                    currentObject.getUserPreferences().delete(null, null, null);
-                    return null;
-                }
+                currentObject.getUserPreferences().delete(null, null, null);
+                return null;
             });
         }
     }
@@ -1193,15 +1160,15 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
         SettableFuture<Void> resultFuture = SettableFuture.create();
         final ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(futures);
-        addFutureCallback(combinedFuture, new FutureCallback<List<Void>>()
+        addFutureCallback(combinedFuture, new FutureCallback<>()
         {
             @Override
             public void onSuccess(final List<Void> result)
             {
                 if (LOGGER.isDebugEnabled())
                 {
-                   LOGGER.debug("After compact direct memory buffers: numberOfActivePooledBuffers: {}",
-                                QpidByteBuffer.getNumberOfBuffersInUse());
+                    LOGGER.debug("After compact direct memory buffers: numberOfActivePooledBuffers: {}",
+                                 QpidByteBuffer.getNumberOfBuffersInUse());
                 }
                 resultFuture.set(null);
             }
@@ -1365,14 +1332,14 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         return principal == null ? null : principal.getConnectionMetaData();
     }
 
-    private final Set<Principal> getGroupsInternal()
+    private Set<Principal> getGroupsInternal()
     {
         final Subject currentSubject = Subject.getSubject(AccessController.getContext());
         if (currentSubject == null)
         {
-            return Collections.emptySet();
+            return Set.of();
         }
-        return Collections.<Principal>unmodifiableSet(currentSubject.getPrincipals(GroupPrincipal.class));
+        return Collections.unmodifiableSet(currentSubject.getPrincipals(GroupPrincipal.class));
     }
 
     private void reportDirectMemoryBelowThresholdIfReached()

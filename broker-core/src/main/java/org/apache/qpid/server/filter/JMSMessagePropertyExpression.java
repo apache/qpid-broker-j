@@ -23,7 +23,6 @@ package org.apache.qpid.server.filter;
 // Based on like named file from r450141 of the Apache ActiveMQ project <http://www.activemq.org/site/home.html>
 //
 
-
 import java.util.HashMap;
 
 import org.slf4j.Logger;
@@ -34,14 +33,7 @@ import org.slf4j.LoggerFactory;
  */
 public class JMSMessagePropertyExpression implements PropertyExpression<FilterableMessage>
 {
-    public static final PropertyExpressionFactory<FilterableMessage> FACTORY = new PropertyExpressionFactory<FilterableMessage>()
-    {
-        @Override
-        public PropertyExpression<FilterableMessage> createPropertyExpression(final String value)
-        {
-            return new JMSMessagePropertyExpression(value);
-        }
-    };
+    public static final PropertyExpressionFactory<FilterableMessage> FACTORY = JMSMessagePropertyExpression::new;
 
     // Constants - defined the same as JMS
     private static enum JMSDeliveryMode { NON_PERSISTENT, PERSISTENT }
@@ -50,18 +42,14 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JMSMessagePropertyExpression.class);
 
-    private static final HashMap<String, Expression> JMS_PROPERTY_EXPRESSIONS = new HashMap<String, Expression>();
+    private static final HashMap<String, Expression> JMS_PROPERTY_EXPRESSIONS = new HashMap<>();
     static
     {
-        JMS_PROPERTY_EXPRESSIONS.put("JMSDestination", new Expression<FilterableMessage>()
-                                     {
-                                         @Override
-                                         public Object evaluate(FilterableMessage message)
-                                         {
-                                             //TODO
-                                             return null;
-                                         }
-                                     });
+        JMS_PROPERTY_EXPRESSIONS.put("JMSDestination", (Expression<FilterableMessage>) message ->
+        {
+            //TODO
+            return null;
+        });
         JMS_PROPERTY_EXPRESSIONS.put("JMSReplyTo", new ReplyToExpression());
 
         JMS_PROPERTY_EXPRESSIONS.put("JMSType", new TypeExpression());
@@ -80,14 +68,7 @@ public class JMSMessagePropertyExpression implements PropertyExpression<Filterab
 
         JMS_PROPERTY_EXPRESSIONS.put("JMSExpiration", new ExpirationExpression());
 
-        JMS_PROPERTY_EXPRESSIONS.put("JMSRedelivered", new Expression<FilterableMessage>()
-                                     {
-                                         @Override
-                                         public Object evaluate(FilterableMessage message)
-                                         {
-                                             return message.isRedelivered();
-                                         }
-                                     });
+        JMS_PROPERTY_EXPRESSIONS.put("JMSRedelivered", (Expression<FilterableMessage>) FilterableMessage::isRedelivered);
     }
 
     private final String name;

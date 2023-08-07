@@ -40,7 +40,7 @@ public class ConfiguredObjectRecordImpl implements ConfiguredObjectRecord
 
     public ConfiguredObjectRecordImpl(UUID id, String type, Map<String, Object> attributes)
     {
-        this(id,type,attributes,Collections.<String,UUID>emptyMap());
+        this(id,type,attributes, Map.of());
     }
 
     public ConfiguredObjectRecordImpl(UUID id, String type, Map<String, Object> attributes, Map<String,UUID> parents)

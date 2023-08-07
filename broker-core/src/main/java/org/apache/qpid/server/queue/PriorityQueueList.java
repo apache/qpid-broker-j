@@ -40,15 +40,7 @@ abstract public class PriorityQueueList extends OrderedQueueEntryList
 
     static class PriorityQueueMasterList extends PriorityQueueList
     {
-        private static final HeadCreator DUMMY_HEAD_CREATOR =
-                new HeadCreator()
-                {
-                    @Override
-                    public PriorityQueueEntry createHead(final QueueEntryList list)
-                    {
-                        return null;
-                    }
-                };
+        private static final HeadCreator DUMMY_HEAD_CREATOR = list -> null;
         private final PriorityQueueImpl _queue;
         private final PriorityQueueEntrySubList[] _priorityLists;
         private final int _priorities;
@@ -233,14 +225,7 @@ abstract public class PriorityQueueList extends OrderedQueueEntryList
 
     static class PriorityQueueEntrySubList extends PriorityQueueList
     {
-        private static final HeadCreator HEAD_CREATOR = new HeadCreator()
-        {
-            @Override
-            public PriorityQueueEntry createHead(final QueueEntryList list)
-            {
-                return new PriorityQueueEntry((PriorityQueueList) list);
-            }
-        };
+        private static final HeadCreator HEAD_CREATOR = list -> new PriorityQueueEntry((PriorityQueueList) list);
         private final int _listPriority;
 
         public PriorityQueueEntrySubList(PriorityQueueImpl queue, int listPriority)

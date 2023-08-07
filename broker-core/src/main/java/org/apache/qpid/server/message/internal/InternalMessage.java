@@ -241,7 +241,7 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
                         InternalMessageMetaData.create(persistent, header, bytes.length);
                 final int metadataSize = metaData.getStorableSize();
 
-                return new StoredMessage<InternalMessageMetaData>()
+                return new StoredMessage<>()
                 {
                     @Override
                     public InternalMessageMetaData getMetaData()

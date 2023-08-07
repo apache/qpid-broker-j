@@ -22,7 +22,6 @@ package org.apache.qpid.server.exchange.topic;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -123,11 +122,11 @@ public class TopicParser
         TopicMatcherDFAState stateMachine = _stateMachine.get();
         if(stateMachine == null)
         {
-            return Collections.emptySet();
+            return Set.of();
         }
         else
         {
-            return stateMachine.parse(_dictionary,routingKey);
+            return stateMachine.parse(_dictionary, routingKey);
         }
     }
 
@@ -146,10 +145,10 @@ public class TopicParser
         if(wildCards == 0)
         {
             TopicMatcherDFAState[] states = new TopicMatcherDFAState[wordList.size()+1];
-            states[states.length-1] = new TopicMatcherDFAState(Collections.emptyMap(), Collections.singleton(result));
+            states[states.length-1] = new TopicMatcherDFAState(Map.of(), Set.of(result));
             for(int i = states.length-2; i >= 0; i--)
             {
-                states[i] = new TopicMatcherDFAState(Collections.singletonMap(wordList.get(i),states[i+1]),Collections.emptySet());
+                states[i] = new TopicMatcherDFAState(Map.of(wordList.get(i),states[i+1]), Set.of());
 
             }
             return states[0];
@@ -157,7 +156,7 @@ public class TopicParser
         else if(wildCards == wordList.size())
         {
             Map<TopicWord,TopicMatcherDFAState> stateMap = new HashMap<>();
-            TopicMatcherDFAState state = new TopicMatcherDFAState(stateMap, Collections.singleton(result));
+            TopicMatcherDFAState state = new TopicMatcherDFAState(stateMap, Set.of(result));
             stateMap.put(TopicWord.ANY_WORD, state);
             return state;
         }
@@ -232,11 +231,11 @@ public class TopicParser
         // we approach this by examining steps of increasing length - so we
         // look how far we can go from the start position in 1 word, 2 words, etc...
 
-        Map<Set<Position>,SimpleState> stateMap = new HashMap<>();
+        Map<Set<Position>, SimpleState> stateMap = new HashMap<>();
 
 
         SimpleState state = new SimpleState();
-        state._positions = Collections.singleton( positions[0] );
+        state._positions = Set.of(positions[0]);
         stateMap.put(state._positions, state);
 
         calculateNextStates(state, stateMap, positions);
@@ -262,11 +261,11 @@ public class TopicParser
 
             if(endState)
             {
-                results = Collections.singleton(result);
+                results = Set.of(result);
             }
             else
             {
-                results = Collections.emptySet();
+                results = Set.of();
             }
 
             dfaStateMaps[i] = new HashMap<>();
@@ -353,7 +352,7 @@ public class TopicParser
 
             if(loopingTerminal!=null)
             {
-                dest.setValue(Collections.singleton(loopingTerminal));
+                dest.setValue(Set.of(loopingTerminal));
             }
             else
             {

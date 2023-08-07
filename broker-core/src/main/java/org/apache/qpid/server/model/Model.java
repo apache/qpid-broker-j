@@ -50,7 +50,7 @@ public abstract class Model
                                                                     final Class<? extends ConfiguredObject> ancestorClass,
                                                                     final Class<X> clazz)
     {
-        Set<X> descendants = new HashSet<X>();
+        Set<X> descendants = new HashSet<>();
         for(Class<? extends ConfiguredObject> childClass : getChildTypes(ancestorClass))
         {
             Collection<? extends ConfiguredObject> children = ancestor.getChildren(childClass);
@@ -109,8 +109,7 @@ public abstract class Model
             final Class<? extends ConfiguredObject> category,
             final Class<? extends ConfiguredObject> descendantClass)
     {
-        Collection<Class<? extends ConfiguredObject>> candidateClasses =
-                Collections.<Class<? extends ConfiguredObject>>singleton(category);
+        Collection<Class<? extends ConfiguredObject>> candidateClasses = Collections.singleton(category);
         while(!candidateClasses.isEmpty())
         {
             for(Class<? extends ConfiguredObject> candidate : candidateClasses)

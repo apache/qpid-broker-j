@@ -49,10 +49,10 @@ public class MemoryMessageStore implements MessageStore
 
     private final AtomicLong _messageId = new AtomicLong(1);
 
-    private final ConcurrentMap<Long, StoredMemoryMessage> _messages = new ConcurrentHashMap<Long, StoredMemoryMessage>();
+    private final ConcurrentMap<Long, StoredMemoryMessage> _messages = new ConcurrentHashMap<>();
     private final Object _transactionLock = new Object();
-    private final Map<UUID, Set<Long>> _messageInstances = new HashMap<UUID, Set<Long>>();
-    private final Map<Xid, DistributedTransactionRecords> _distributedTransactions = new HashMap<Xid, DistributedTransactionRecords>();
+    private final Map<UUID, Set<Long>> _messageInstances = new HashMap<>();
+    private final Map<Xid, DistributedTransactionRecords> _distributedTransactions = new HashMap<>();
     private final AtomicLong _inMemorySize = new AtomicLong();
     private final Set<MessageDeleteListener> _messageDeleteListeners = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -60,11 +60,11 @@ public class MemoryMessageStore implements MessageStore
 
     private final class MemoryMessageStoreTransaction implements Transaction
     {
-        private final Map<UUID, Set<Long>> _localEnqueueMap = new HashMap<UUID, Set<Long>>();
-        private final Map<UUID, Set<Long>> _localDequeueMap = new HashMap<UUID, Set<Long>>();
+        private final Map<UUID, Set<Long>> _localEnqueueMap = new HashMap<>();
+        private final Map<UUID, Set<Long>> _localDequeueMap = new HashMap<>();
 
-        private final Map<Xid, DistributedTransactionRecords> _localDistributedTransactionsRecords = new HashMap<Xid, DistributedTransactionRecords>();
-        private final Set<Xid> _localDistributedTransactionsRemoves = new HashSet<Xid>();
+        private final Map<Xid, DistributedTransactionRecords> _localDistributedTransactionsRecords = new HashMap<>();
+        private final Set<Xid> _localDistributedTransactionsRemoves = new HashSet<>();
 
         @Override
         public <X> ListenableFuture<X> commitTranAsync(final X val)
@@ -79,7 +79,7 @@ public class MemoryMessageStore implements MessageStore
             Set<Long> messageIds = _localEnqueueMap.get(queue.getId());
             if (messageIds == null)
             {
-                messageIds = new HashSet<Long>();
+                messageIds = new HashSet<>();
                 _localEnqueueMap.put(queue.getId(), messageIds);
             }
             messageIds.add(message.getMessageNumber());
@@ -94,12 +94,7 @@ public class MemoryMessageStore implements MessageStore
 
         private void dequeueMessage(final UUID queueId, final long messageNumber)
         {
-            Set<Long> messageIds = _localDequeueMap.get(queueId);
-            if (messageIds == null)
-            {
-                messageIds = new HashSet<Long>();
-                _localDequeueMap.put(queueId, messageIds);
-            }
+            Set<Long> messageIds = _localDequeueMap.computeIfAbsent(queueId, uuid -> new HashSet<>());
             messageIds.add(messageNumber);
         }
 
@@ -230,12 +225,8 @@ public class MemoryMessageStore implements MessageStore
         {
             for (Map.Entry<UUID, Set<Long>> localEnqueuedEntry : transaction._localEnqueueMap.entrySet())
             {
-                Set<Long> messageIds = _messageInstances.get(localEnqueuedEntry.getKey());
-                if (messageIds == null)
-                {
-                    messageIds = new HashSet<Long>();
-                    _messageInstances.put(localEnqueuedEntry.getKey(), messageIds);
-                }
+                Set<Long> messageIds =
+                        _messageInstances.computeIfAbsent(localEnqueuedEntry.getKey(), uuid -> new HashSet<>());
                 messageIds.addAll(localEnqueuedEntry.getValue());
             }
 
@@ -252,10 +243,7 @@ public class MemoryMessageStore implements MessageStore
                 }
             }
 
-            for (Map.Entry<Xid, DistributedTransactionRecords> entry : transaction._localDistributedTransactionsRecords.entrySet())
-            {
-                _distributedTransactions.put(entry.getKey(), entry.getValue());
-            }
+            _distributedTransactions.putAll(transaction._localDistributedTransactionsRecords);
 
             for (Xid removed : transaction._localDistributedTransactionsRemoves)
             {
@@ -296,7 +284,7 @@ public class MemoryMessageStore implements MessageStore
     {
         long id = getNextMessageId();
 
-        StoredMemoryMessage<T> storedMemoryMessage = new StoredMemoryMessage<T>(id, metaData)
+        StoredMemoryMessage<T> storedMemoryMessage = new StoredMemoryMessage<>(id, metaData)
         {
 
             @Override

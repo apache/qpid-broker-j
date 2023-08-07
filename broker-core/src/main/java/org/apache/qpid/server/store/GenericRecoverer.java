@@ -146,12 +146,12 @@ public class GenericRecoverer
                                 final boolean isNew)
     {
         ConfiguredObjectFactory factory = parentObject.getObjectFactory();
-        Map<UUID, ConfiguredObject<?>> resolvedObjects = new HashMap<UUID, ConfiguredObject<?>>();
+        Map<UUID, ConfiguredObject<?>> resolvedObjects = new HashMap<>();
         resolvedObjects.put(parentObject.getId(), parentObject);
 
-        Collection<ConfiguredObjectRecord> recordsWithUnresolvedParents = new ArrayList<ConfiguredObjectRecord>(records);
+        Collection<ConfiguredObjectRecord> recordsWithUnresolvedParents = new ArrayList<>(records);
         Collection<UnresolvedConfiguredObject<? extends ConfiguredObject>> recordsWithUnresolvedDependencies =
-                new ArrayList<UnresolvedConfiguredObject<? extends ConfiguredObject>>();
+                new ArrayList<>();
 
         boolean updatesMade;
 
@@ -162,7 +162,7 @@ public class GenericRecoverer
             while (iter.hasNext())
             {
                 ConfiguredObjectRecord record = iter.next();
-                Collection<ConfiguredObject<?>> parents = new ArrayList<ConfiguredObject<?>>();
+                Collection<ConfiguredObject<?>> parents = new ArrayList<>();
                 boolean foundParents = true;
                 for (UUID parentId : record.getParents().values())
                 {
@@ -210,7 +210,7 @@ public class GenericRecoverer
             {
                 UnresolvedConfiguredObject<? extends ConfiguredObject> unresolvedObject = unresolvedIter.next();
                 Collection<ConfiguredObjectDependency<?>> dependencies =
-                        new ArrayList<ConfiguredObjectDependency<?>>(unresolvedObject.getUnresolvedDependencies());
+                        new ArrayList<>(unresolvedObject.getUnresolvedDependencies());
 
                 for(ConfiguredObjectDependency dependency : dependencies)
                 {

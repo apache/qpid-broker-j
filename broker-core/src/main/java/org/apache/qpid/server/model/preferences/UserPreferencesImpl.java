@@ -57,7 +57,7 @@ import org.apache.qpid.server.store.preferences.PreferenceStore;
 
 public class UserPreferencesImpl implements UserPreferences
 {
-    private static final Comparator<Preference> PREFERENCE_COMPARATOR = new Comparator<Preference>()
+    private static final Comparator<Preference> PREFERENCE_COMPARATOR = new Comparator<>()
     {
         private final Ordering<Comparable> _ordering = Ordering.natural().nullsFirst();
 
@@ -109,7 +109,7 @@ public class UserPreferencesImpl implements UserPreferences
     @Override
     public ListenableFuture<Void> updateOrAppend(final Collection<Preference> preferences)
     {
-        return _executor.submit(new PreferencesTask<Void>("updateOrAppend", preferences)
+        return _executor.submit(new PreferencesTask<>("updateOrAppend", preferences)
         {
             @Override
             public Void doOperation()
@@ -147,7 +147,7 @@ public class UserPreferencesImpl implements UserPreferences
     @Override
     public ListenableFuture<Set<Preference>> getPreferences()
     {
-        return _executor.submit(new PreferencesTask<Set<Preference>>("getPreferences")
+        return _executor.submit(new PreferencesTask<>("getPreferences")
         {
             @Override
             public Set<Preference> doOperation()
@@ -175,7 +175,7 @@ public class UserPreferencesImpl implements UserPreferences
     @Override
     public ListenableFuture<Void> replace(final Collection<Preference> preferences)
     {
-        return _executor.submit(new PreferencesTask<Void>("replace", preferences)
+        return _executor.submit(new PreferencesTask<>("replace", preferences)
         {
             @Override
             public Void doOperation()
@@ -189,7 +189,7 @@ public class UserPreferencesImpl implements UserPreferences
     @Override
     public ListenableFuture<Void> replaceByType(final String type, final Collection<Preference> preferences)
     {
-        return _executor.submit(new PreferencesTask<Void>("replaceByType", type, preferences)
+        return _executor.submit(new PreferencesTask<>("replaceByType", type, preferences)
         {
             @Override
             public Void doOperation()
@@ -241,7 +241,7 @@ public class UserPreferencesImpl implements UserPreferences
                                                        final String name,
                                                        final Preference newPreference)
     {
-        return _executor.submit(new PreferencesTask<Void>("replaceByTypeAndName", type, name, newPreference)
+        return _executor.submit(new PreferencesTask<>("replaceByTypeAndName", type, name, newPreference)
         {
             @Override
             public Void doOperation()
@@ -277,10 +277,10 @@ public class UserPreferencesImpl implements UserPreferences
             }
         }
 
-        _preferenceStore.replace(existingPreferenceId != null ? Collections.singleton(existingPreferenceId) : Collections.emptyList(),
+        _preferenceStore.replace(existingPreferenceId != null ? Set.of(existingPreferenceId) : List.of(),
                                  augmentedPreference == null
-                                         ? Collections.emptyList()
-                                         : Collections.singleton(PreferenceRecordImpl.fromPreference(augmentedPreference)));
+                                         ? List.of()
+                                         : Set.of(PreferenceRecordImpl.fromPreference(augmentedPreference)));
 
         if (existingPreferenceId != null)
         {
@@ -297,7 +297,7 @@ public class UserPreferencesImpl implements UserPreferences
     @Override
     public ListenableFuture<Void> delete(final String type, final String name, final UUID id)
     {
-        return _executor.submit(new PreferencesTask<Void>("delete", type, name, id)
+        return _executor.submit(new PreferencesTask<>("delete", type, name, id)
         {
             @Override
             public Void doOperation()
@@ -339,7 +339,7 @@ public class UserPreferencesImpl implements UserPreferences
             }
             else
             {
-                doReplaceByType(type, Collections.<Preference>emptySet());
+                doReplaceByType(type, Set.of());
             }
         }
     }
@@ -347,7 +347,7 @@ public class UserPreferencesImpl implements UserPreferences
     @Override
     public ListenableFuture<Set<Preference>> getVisiblePreferences()
     {
-        return _executor.submit(new PreferencesTask<Set<Preference>>("getVisiblePreferences")
+        return _executor.submit(new PreferencesTask<>("getVisiblePreferences")
         {
             @Override
             public Set<Preference> doOperation()
@@ -585,7 +585,7 @@ public class UserPreferencesImpl implements UserPreferences
             }
             else
             {
-                checkedPreferencesByName.put(preference.getName(), new ArrayList<Preference>());
+                checkedPreferencesByName.put(preference.getName(), new ArrayList<>());
             }
             checkedPreferences.put(preference.getId(), preference);
             checkedPreferencesByName.get(preference.getName()).add(preference);
@@ -622,7 +622,7 @@ public class UserPreferencesImpl implements UserPreferences
         _preferences.put(preference.getId(), preference);
         if (!_preferencesByName.containsKey(preference.getName()))
         {
-            _preferencesByName.put(preference.getName(), new ArrayList<Preference>());
+            _preferencesByName.put(preference.getName(), new ArrayList<>());
         }
         _preferencesByName.get(preference.getName()).add(preference);
     }
@@ -645,14 +645,7 @@ public class UserPreferencesImpl implements UserPreferences
         @Override
         public T execute() throws RuntimeException
         {
-            return Subject.doAs(_subject, new PrivilegedAction<T>()
-            {
-                @Override
-                public T run()
-                {
-                    return doOperation();
-                }
-            });
+            return Subject.doAs(_subject, (PrivilegedAction<T>) this::doOperation);
         }
 
         protected abstract T doOperation();

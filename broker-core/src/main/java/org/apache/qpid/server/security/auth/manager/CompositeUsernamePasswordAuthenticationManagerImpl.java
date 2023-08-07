@@ -209,7 +209,7 @@ public class CompositeUsernamePasswordAuthenticationManagerImpl
 
         // secure only SASL mechanisms are prepared as union of delegates secure only mechanisms
         _secureOnlyMechanisms = Stream.concat(
-            Optional.ofNullable(super.getSecureOnlyMechanisms()).orElse(Collections.emptyList()).stream(),
+            Optional.ofNullable(super.getSecureOnlyMechanisms()).orElse(List.of()).stream(),
             _authenticationProviders.stream()
             .filter(authProvider -> authProvider.getSecureOnlyMechanisms() != null)
             .flatMap(authProvider -> authProvider.getSecureOnlyMechanisms().stream()))
@@ -217,7 +217,7 @@ public class CompositeUsernamePasswordAuthenticationManagerImpl
 
         // disabled only SASL mechanisms are prepared as union of delegates disabled mechanisms
         _disabledMechanisms = Stream.concat(
-            Optional.ofNullable(super.getDisabledMechanisms()).orElse(Collections.emptyList()).stream(),
+            Optional.ofNullable(super.getDisabledMechanisms()).orElse(List.of()).stream(),
             _authenticationProviders.stream()
             .filter(authProvider -> authProvider.getDisabledMechanisms() != null)
             .flatMap(authProvider -> authProvider.getDisabledMechanisms().stream()))
@@ -470,7 +470,7 @@ public class CompositeUsernamePasswordAuthenticationManagerImpl
         final CompositeUsernamePasswordAuthenticationManagerImpl parent = this;
         final PasswordSource passwordSource = getPasswordSource();
 
-        return new ConfigModelPasswordManagingAuthenticationProvider<X>(attributes, (Container<?>) getParent())
+        return new ConfigModelPasswordManagingAuthenticationProvider<>(attributes, (Container<?>) getParent())
         {
 
             @Override
@@ -488,7 +488,8 @@ public class CompositeUsernamePasswordAuthenticationManagerImpl
             @Override
             protected String createStoredPassword(final String password)
             {
-                throw new ConnectionScopedRuntimeException("SaslNegotiator isn't supposed to call createStoredPassword()");
+                throw new ConnectionScopedRuntimeException(
+                        "SaslNegotiator isn't supposed to call createStoredPassword()");
             }
 
             @Override
@@ -504,11 +505,9 @@ public class CompositeUsernamePasswordAuthenticationManagerImpl
             }
 
             @Override
-            public SaslNegotiator createSaslNegotiator(
-                final String mechanism,
-                final SaslSettings saslSettings,
-                final NamedAddressSpace addressSpace
-            )
+            public SaslNegotiator createSaslNegotiator(final String mechanism,
+                                                       final SaslSettings saslSettings,
+                                                       final NamedAddressSpace addressSpace)
             {
                 throw new ConnectionScopedRuntimeException("SaslNegotiator isn't supposed to call createSaslNegotiator()");
             }

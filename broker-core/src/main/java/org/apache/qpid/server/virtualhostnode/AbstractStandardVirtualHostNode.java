@@ -71,7 +71,6 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
 
         getConfigurationStore().init(this);
 
-
         getConfigurationStore().upgradeStoreStructure();
 
         getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.CREATED());
@@ -81,7 +80,7 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
         getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_START());
 
         VirtualHostStoreUpgraderAndRecoverer upgrader = new VirtualHostStoreUpgraderAndRecoverer(this);
-        ConfiguredObjectRecord[] initialRecords  = null;
+        ConfiguredObjectRecord[] initialRecords;
         try
         {
             initialRecords = getInitialRecords();
@@ -92,9 +91,9 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
         }
 
         final boolean isNew = upgrader.upgradeAndRecover(getConfigurationStore(), initialRecords);
-        if(initialRecords.length > 0)
+        if (initialRecords.length > 0)
         {
-            setAttributes(Collections.<String, Object>singletonMap(VIRTUALHOST_INITIAL_CONFIGURATION, "{}"));
+            setAttributes(Map.of(VIRTUALHOST_INITIAL_CONFIGURATION, "{}"));
         }
 
         getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_COMPLETE());
@@ -106,16 +105,7 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
             final QueueManagingVirtualHost<?> recoveredHost = host;
             final ListenableFuture<Void> openFuture;
             recoveredHost.setFirstOpening(isNew && initialRecords.length == 0);
-            openFuture = Subject.doAs(getSubjectWithAddedSystemRights(),
-                                      new PrivilegedAction<ListenableFuture<Void>>()
-                                      {
-                                          @Override
-                                          public ListenableFuture<Void> run()
-                                          {
-                                              return recoveredHost.openAsync();
-
-                                          }
-                                      });
+            openFuture = Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<ListenableFuture<Void>>) recoveredHost::openAsync);
             return openFuture;
         }
         else

@@ -22,10 +22,11 @@ package org.apache.qpid.server.security.auth.manager;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,7 +46,7 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
         extends AbstractAuthenticationManager<X>
         implements PasswordCredentialManagingAuthenticationProvider<X>
 {
-    static final Charset ASCII = Charset.forName("ASCII");
+    static final Charset ASCII = StandardCharsets.US_ASCII;
     protected Map<String, ManagedUser> _users = new ConcurrentHashMap<>();
 
     protected ConfigModelPasswordManagingAuthenticationProvider(final Map<String, Object> attributes,
@@ -61,21 +62,16 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
 
     protected PasswordSource getPasswordSource()
     {
-        return new PasswordSource()
+        return username ->
         {
-            @Override
-            public char[] getPassword(final String username)
+            ManagedUser user = getUser(username);
+            if (user == null)
             {
-                ManagedUser user = getUser(username);
-                if (user == null)
-                {
-                    return null;
-                }
-                return user.getPassword().toCharArray();
+                return null;
             }
+            return user.getPassword().toCharArray();
         };
     }
-
 
     @Override
     public boolean createUser(final String username, final String password, final Map<String, String> attributes)
@@ -93,7 +89,6 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
                 userAttrs.put(User.TYPE, ManagedUser.MANAGED_USER_TYPE);
                 User user = createChild(User.class, userAttrs);
                 return user != null;
-
             }
 
             @Override
@@ -142,7 +137,7 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
                 Map<String, Map<String, String>> users = new HashMap<>();
                 for (String user : _users.keySet())
                 {
-                    users.put(user, Collections.<String, String>emptyMap());
+                    users.put(user, Map.of());
                 }
                 return users;
             }
@@ -249,6 +244,6 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
     @SuppressWarnings("unused")
     public static Map<String, Collection<String>> getSupportedUserTypes()
     {
-        return Collections.<String, Collection<String>>singletonMap(User.class.getSimpleName(), Collections.singleton(ManagedUser.MANAGED_USER_TYPE));
+        return Map.of(User.class.getSimpleName(), Set.of(ManagedUser.MANAGED_USER_TYPE));
     }
 }

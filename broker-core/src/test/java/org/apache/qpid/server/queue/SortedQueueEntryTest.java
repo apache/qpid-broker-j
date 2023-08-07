@@ -28,10 +28,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +42,6 @@ import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class SortedQueueEntryTest extends QueueEntryImplTestBase
 {

@@ -43,7 +43,7 @@ public class DtxBranch
     private static final Logger LOGGER = LoggerFactory.getLogger(DtxBranch.class);
 
     private final Xid _xid;
-    private final List<ServerTransaction.Action> _postTransactionActions = new ArrayList<ServerTransaction.Action>();
+    private final List<ServerTransaction.Action> _postTransactionActions = new ArrayList<>();
     private final Map<AMQPSession<?,?>, State> _associatedSessions = new HashMap<>();
     private final List<EnqueueRecord> _enqueueRecords = new ArrayList<>();
     private final List<DequeueRecord> _dequeueRecords = new ArrayList<>();
@@ -126,16 +126,12 @@ public class DtxBranch
 
             LOGGER.debug("Scheduling timeout and rollback after {}s for DtxBranch {}", delay/1000, _xid);
 
-            _timeoutFuture = _dtxRegistry.scheduleTask(delay, new Runnable()
+            _timeoutFuture = _dtxRegistry.scheduleTask(delay, () ->
             {
-                @Override
-                public void run()
-                {
-                    LOGGER.debug("Timing out DtxBranch {}", _xid);
+                LOGGER.debug("Timing out DtxBranch {}", _xid);
 
-                    setState(State.TIMEDOUT);
-                    rollback();
-                }
+                setState(State.TIMEDOUT);
+                rollback();
             });
         }
     }

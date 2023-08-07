@@ -110,14 +110,7 @@ public class DistributedTransaction implements ServerTransaction
         if(_branch != null)
         {
             final MessageEnqueueRecord[] enqueueRecords = new MessageEnqueueRecord[1];
-                _branch.enqueue(queue, message, new org.apache.qpid.server.util.Action<MessageEnqueueRecord>()
-                {
-                    @Override
-                    public void performAction(final MessageEnqueueRecord record)
-                    {
-                        enqueueRecords[0] = record;
-                    }
-                });
+            _branch.enqueue(queue, message, record -> enqueueRecords[0] = record);
             addPostTransactionAction(new Action()
             {
                 @Override
@@ -150,14 +143,7 @@ public class DistributedTransaction implements ServerTransaction
             for(BaseQueue queue : queues)
             {
                 final int pos = i;
-                _branch.enqueue(queue, message, new org.apache.qpid.server.util.Action<MessageEnqueueRecord>()
-                {
-                    @Override
-                    public void performAction(final MessageEnqueueRecord record)
-                    {
-                        enqueueRecords[pos] = record;
-                    }
-                });
+                _branch.enqueue(queue, message, record -> enqueueRecords[pos] = record);
                 i++;
             }
             addPostTransactionAction(new Action()

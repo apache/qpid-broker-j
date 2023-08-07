@@ -126,7 +126,7 @@ public class FileBasedGroupProviderImpl
         Collection<Group> principals = new ArrayList<>(groups.size());
         for (Principal group : groups)
         {
-            Map<String,Object> attrMap = new HashMap<String, Object>();
+            Map<String,Object> attrMap = new HashMap<>();
             UUID id = UUID.randomUUID();
             attrMap.put(ConfiguredObject.ID, id);
             attrMap.put(ConfiguredObject.NAME, group.getName());
@@ -210,7 +210,7 @@ public class FileBasedGroupProviderImpl
             }
             _groupDatabase.createGroup(groupName);
 
-            Map<String, Object> attrMap = new HashMap<String, Object>();
+            Map<String, Object> attrMap = new HashMap<>();
             UUID id = UUID.randomUUID();
             attrMap.put(ConfiguredObject.ID, id);
             attrMap.put(ConfiguredObject.NAME, groupName);
@@ -227,14 +227,14 @@ public class FileBasedGroupProviderImpl
     private Set<Principal> getGroupPrincipals()
     {
 
-        Set<String> groups = _groupDatabase == null ? Collections.<String>emptySet() : _groupDatabase.getAllGroups();
+        Set<String> groups = _groupDatabase == null ? Set.of() : _groupDatabase.getAllGroups();
         if (groups.isEmpty())
         {
             return Collections.emptySet();
         }
         else
         {
-            Set<Principal> principals = new HashSet<Principal>();
+            Set<Principal> principals = new HashSet<>();
             for (String groupName : groups)
             {
                 principals.add(new GroupPrincipal(groupName, this));
@@ -293,14 +293,14 @@ public class FileBasedGroupProviderImpl
     @Override
     public Set<Principal> getGroupPrincipalsForUser(Principal userPrincipal)
     {
-        Set<String> groups = _groupDatabase == null ? Collections.<String>emptySet() : _groupDatabase.getGroupsForUser(userPrincipal.getName());
+        Set<String> groups = _groupDatabase == null ? Set.of() : _groupDatabase.getGroupsForUser(userPrincipal.getName());
         if (groups.isEmpty())
         {
             return Collections.emptySet();
         }
         else
         {
-            Set<Principal> principals = new HashSet<Principal>();
+            Set<Principal> principals = new HashSet<>();
             for (String groupName : groups)
             {
                 principals.add(new GroupPrincipal(groupName, this));
@@ -338,11 +338,11 @@ public class FileBasedGroupProviderImpl
         {
             super.onOpen();
             Set<String> usersInGroup = _groupDatabase.getUsersInGroup(getName());
-            Collection<GroupMember> members = new ArrayList<GroupMember>();
+            Collection<GroupMember> members = new ArrayList<>();
             for (String username : usersInGroup)
             {
                 UUID id = UUID.randomUUID();
-                Map<String,Object> attrMap = new HashMap<String, Object>();
+                Map<String,Object> attrMap = new HashMap<>();
                 attrMap.put(ConfiguredObject.ID,id);
                 attrMap.put(ConfiguredObject.NAME, username);
                 GroupMemberAdapter groupMemberAdapter = new GroupMemberAdapter(attrMap);
@@ -362,7 +362,7 @@ public class FileBasedGroupProviderImpl
                 String memberName = (String) attributes.get(GroupMember.NAME);
                 _groupDatabase.addUserToGroup(memberName, getName());
                 UUID id = UUID.randomUUID();
-                Map<String, Object> attrMap = new HashMap<String, Object>();
+                Map<String, Object> attrMap = new HashMap<>();
                 attrMap.put(GroupMember.ID, id);
                 attrMap.put(GroupMember.NAME, memberName);
                 GroupMemberAdapter groupMemberAdapter = new GroupMemberAdapter(attrMap);

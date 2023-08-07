@@ -89,7 +89,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
             }
             else if (record.getType().equals("VirtualHost") && record.getAttributes().containsKey("storeType"))
             {
-                Map<String, Object> updatedAttributes = new HashMap<String, Object>(record.getAttributes());
+                Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
                 updatedAttributes.put("type", "STANDARD");
                 record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
                 getUpdateMap().put(record.getId(), record);
@@ -140,7 +140,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         {
             if (record.getType().equals("TrustStore") && record.getAttributes().containsKey("type"))
             {
-                Map<String, Object> updatedAttributes = new HashMap<String, Object>(record.getAttributes());
+                Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
                 updatedAttributes.put("trustStoreType", updatedAttributes.remove("type"));
                 record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
                 getUpdateMap().put(record.getId(), record);
@@ -148,7 +148,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
             }
             else if (record.getType().equals("KeyStore") && record.getAttributes().containsKey("type"))
             {
-                Map<String, Object> updatedAttributes = new HashMap<String, Object>(record.getAttributes());
+                Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
                 updatedAttributes.put("keyStoreType", updatedAttributes.remove("type"));
                 record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
                 getUpdateMap().put(record.getId(), record);
@@ -194,7 +194,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
             }
             else if (record.getType().equals("Plugin") && record.getAttributes().containsKey("pluginType"))
             {
-                Map<String, Object> updatedAttributes = new HashMap<String, Object>(record.getAttributes());
+                Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
                 updatedAttributes.put("type", updatedAttributes.remove("pluginType"));
                 record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
                 getUpdateMap().put(record.getId(), record);
@@ -233,7 +233,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
             }
             else if(record.getType().equals("User") && "scram".equals(record.getAttributes().get("type")) )
             {
-                Map<String, Object> updatedAttributes = new HashMap<String, Object>(record.getAttributes());
+                Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
                 updatedAttributes.put("type", "managed");
                 record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
                 getUpdateMap().put(record.getId(), record);
@@ -763,73 +763,67 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
 
     private static class VirtualHostEntryUpgrader
     {
-        @SuppressWarnings("serial")
-        Map<String, AttributesTransformer> _messageStoreToNodeTransformers = new HashMap<String, AttributesTransformer>()
-        {{
-                put("DERBY", new AttributesTransformer().
-                        addAttributeTransformer("id", copyAttribute()).
-                        addAttributeTransformer("name", copyAttribute()).
-                        addAttributeTransformer("createdTime", copyAttribute()).
-                        addAttributeTransformer("createdBy", copyAttribute()).
-                        addAttributeTransformer("storePath", copyAttribute()).
-                        addAttributeTransformer("storeUnderfullSize", copyAttribute()).
-                        addAttributeTransformer("storeOverfullSize", copyAttribute()));
-                put("Memory",  new AttributesTransformer().
-                        addAttributeTransformer("id", copyAttribute()).
-                        addAttributeTransformer("name", copyAttribute()).
-                        addAttributeTransformer("createdTime", copyAttribute()).
-                        addAttributeTransformer("createdBy", copyAttribute()));
-                put("BDB", new AttributesTransformer().
-                        addAttributeTransformer("id", copyAttribute()).
-                        addAttributeTransformer("name", copyAttribute()).
-                        addAttributeTransformer("createdTime", copyAttribute()).
-                        addAttributeTransformer("createdBy", copyAttribute()).
-                        addAttributeTransformer("storePath", copyAttribute()).
-                        addAttributeTransformer("storeUnderfullSize", copyAttribute()).
-                        addAttributeTransformer("storeOverfullSize", copyAttribute()).
-                        addAttributeTransformer("bdbEnvironmentConfig", mutateAttributeName("context")));
-                put("JDBC", new AttributesTransformer().
-                        addAttributeTransformer("id", copyAttribute()).
-                        addAttributeTransformer("name", copyAttribute()).
-                        addAttributeTransformer("createdTime", copyAttribute()).
-                        addAttributeTransformer("createdBy", copyAttribute()).
-                        addAttributeTransformer("storePath", mutateAttributeName("connectionURL")).
-                        addAttributeTransformer("connectionURL", mutateAttributeName("connectionUrl")).
-                        addAttributeTransformer("connectionPool", new AttributeTransformer()
+        Map<String, AttributesTransformer> _messageStoreToNodeTransformers = Map.of("DERBY", new AttributesTransformer().
+                    addAttributeTransformer("id", copyAttribute()).
+                    addAttributeTransformer("name", copyAttribute()).
+                    addAttributeTransformer("createdTime", copyAttribute()).
+                    addAttributeTransformer("createdBy", copyAttribute()).
+                    addAttributeTransformer("storePath", copyAttribute()).
+                    addAttributeTransformer("storeUnderfullSize", copyAttribute()).
+                    addAttributeTransformer("storeOverfullSize", copyAttribute()),
+                "Memory", new AttributesTransformer().
+                    addAttributeTransformer("id", copyAttribute()).
+                    addAttributeTransformer("name", copyAttribute()).
+                    addAttributeTransformer("createdTime", copyAttribute()).
+                    addAttributeTransformer("createdBy", copyAttribute()),
+                "BDB", new AttributesTransformer().
+                    addAttributeTransformer("id", copyAttribute()).
+                    addAttributeTransformer("name", copyAttribute()).
+                    addAttributeTransformer("createdTime", copyAttribute()).
+                    addAttributeTransformer("createdBy", copyAttribute()).
+                    addAttributeTransformer("storePath", copyAttribute()).
+                    addAttributeTransformer("storeUnderfullSize", copyAttribute()).
+                    addAttributeTransformer("storeOverfullSize", copyAttribute()).
+                    addAttributeTransformer("bdbEnvironmentConfig", mutateAttributeName("context")),
+                "JDBC", new AttributesTransformer().
+                    addAttributeTransformer("id", copyAttribute()).
+                    addAttributeTransformer("name", copyAttribute()).
+                    addAttributeTransformer("createdTime", copyAttribute()).
+                    addAttributeTransformer("createdBy", copyAttribute()).
+                    addAttributeTransformer("storePath", mutateAttributeName("connectionURL")).
+                    addAttributeTransformer("connectionURL", mutateAttributeName("connectionUrl")).
+                    addAttributeTransformer("connectionPool", entry ->
+                    {
+                        Object value = entry.getValue();
+                        if ("DEFAULT".equals(value))
                         {
-                            @Override
-                            public MutableEntry transform(MutableEntry entry)
-                            {
-                               Object value = entry.getValue();
-                                if ("DEFAULT".equals(value))
-                                {
-                                    value = "NONE";
-                                }
-                                return new MutableEntry("connectionPoolType", value);
-                            }
-                        }).
-                        addAttributeTransformer("jdbcBigIntType", addContextVar("qpid.jdbcstore.bigIntType")).
-                        addAttributeTransformer("jdbcBytesForBlob", addContextVar("qpid.jdbcstore.useBytesForBlob")).
-                        addAttributeTransformer("jdbcBlobType", addContextVar("qpid.jdbcstore.blobType")).
-                        addAttributeTransformer("jdbcVarbinaryType", addContextVar("qpid.jdbcstore.varBinaryType")).
-                        addAttributeTransformer("partitionCount", addContextVar("qpid.jdbcstore.bonecp.partitionCount")).
-                        addAttributeTransformer("maxConnectionsPerPartition", addContextVar("qpid.jdbcstore.bonecp.maxConnectionsPerPartition")).
-                        addAttributeTransformer("minConnectionsPerPartition", addContextVar("qpid.jdbcstore.bonecp.minConnectionsPerPartition")));
-                put("BDB_HA", new AttributesTransformer().
-                        addAttributeTransformer("id", copyAttribute()).
-                        addAttributeTransformer("createdTime", copyAttribute()).
-                        addAttributeTransformer("createdBy", copyAttribute()).
-                        addAttributeTransformer("storePath", copyAttribute()).
-                        addAttributeTransformer("storeUnderfullSize", copyAttribute()).
-                        addAttributeTransformer("storeOverfullSize", copyAttribute()).
-                        addAttributeTransformer("haNodeName", mutateAttributeName("name")).
-                        addAttributeTransformer("haGroupName", mutateAttributeName("groupName")).
-                        addAttributeTransformer("haHelperAddress", mutateAttributeName("helperAddress")).
-                        addAttributeTransformer("haNodeAddress", mutateAttributeName("address")).
-                        addAttributeTransformer("haDesignatedPrimary", mutateAttributeName("designatedPrimary")).
-                        addAttributeTransformer("haReplicationConfig", mutateAttributeName("context")).
-                        addAttributeTransformer("bdbEnvironmentConfig", mutateAttributeName("context")));
-            }};
+                            value = "NONE";
+                        }
+                        return new MutableEntry("connectionPoolType", value);
+                    }).
+                    addAttributeTransformer("jdbcBigIntType", addContextVar("qpid.jdbcstore.bigIntType")).
+                    addAttributeTransformer("jdbcBytesForBlob", addContextVar("qpid.jdbcstore.useBytesForBlob")).
+                    addAttributeTransformer("jdbcBlobType", addContextVar("qpid.jdbcstore.blobType")).
+                    addAttributeTransformer("jdbcVarbinaryType", addContextVar("qpid.jdbcstore.varBinaryType")).
+                    addAttributeTransformer("partitionCount", addContextVar("qpid.jdbcstore.bonecp.partitionCount")).
+                    addAttributeTransformer("maxConnectionsPerPartition",
+                                            addContextVar("qpid.jdbcstore.bonecp.maxConnectionsPerPartition")).
+                    addAttributeTransformer("minConnectionsPerPartition",
+                                            addContextVar("qpid.jdbcstore.bonecp.minConnectionsPerPartition")),
+                "BDB_HA", new AttributesTransformer().
+                    addAttributeTransformer("id", copyAttribute()).
+                    addAttributeTransformer("createdTime", copyAttribute()).
+                    addAttributeTransformer("createdBy", copyAttribute()).
+                    addAttributeTransformer("storePath", copyAttribute()).
+                    addAttributeTransformer("storeUnderfullSize", copyAttribute()).
+                    addAttributeTransformer("storeOverfullSize", copyAttribute()).
+                    addAttributeTransformer("haNodeName", mutateAttributeName("name")).
+                    addAttributeTransformer("haGroupName", mutateAttributeName("groupName")).
+                    addAttributeTransformer("haHelperAddress", mutateAttributeName("helperAddress")).
+                    addAttributeTransformer("haNodeAddress", mutateAttributeName("address")).
+                    addAttributeTransformer("haDesignatedPrimary", mutateAttributeName("designatedPrimary")).
+                    addAttributeTransformer("haReplicationConfig", mutateAttributeName("context")).
+                    addAttributeTransformer("bdbEnvironmentConfig", mutateAttributeName("context")));
 
         public ConfiguredObjectRecord upgrade(ConfiguredObjectRecord vhost)
         {
@@ -884,7 +878,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
 
     private static class AttributesTransformer
     {
-        private final Map<String, List<AttributeTransformer>> _transformers = new HashMap<String, List<AttributeTransformer>>();
+        private final Map<String, List<AttributeTransformer>> _transformers = new HashMap<>();
 
         public AttributesTransformer addAttributeTransformer(String string, AttributeTransformer... attributeTransformers)
         {
@@ -1091,7 +1085,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         new GenericRecoverer(_systemConfig).recover(upgradedRecords, false);
 
         final StoreConfigurationChangeListener configChangeListener = new StoreConfigurationChangeListener(store);
-        applyRecursively(_systemConfig.getContainer(Broker.class), new RecursiveAction<ConfiguredObject<?>>()
+        applyRecursively(_systemConfig.getContainer(Broker.class), new RecursiveAction<>()
         {
             @Override
             public void performAction(final ConfiguredObject<?> object)

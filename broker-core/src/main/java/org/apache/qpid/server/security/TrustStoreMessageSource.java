@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -145,7 +146,7 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource
                 LOGGER.error("Could not encode certificate of type " + cert.getType(), e);
             }
         }
-        InternalMessageHeader header = new InternalMessageHeader(Collections.<String,Object>emptyMap(),
+        InternalMessageHeader header = new InternalMessageHeader(Map.of(),
                                                                  null, 0L, null, null, UUID.randomUUID().toString(),
                                                                  null, null, (byte)4, System.currentTimeMillis(),
                                                                  0L, null, null, System.currentTimeMillis());

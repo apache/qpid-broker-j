@@ -77,7 +77,7 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
 
     private volatile TrustManager[] _trustManagers;
 
-    private volatile Map<String, Certificate> _certificates = Collections.emptyMap();
+    private volatile Map<String, Certificate> _certificates = Map.of();
 
     static
     {

@@ -32,7 +32,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.util.BaseAction;
 import org.apache.qpid.server.util.FileHelper;
 import org.apache.qpid.server.util.FileUtils;
 
@@ -215,14 +214,7 @@ public abstract class AbstractJsonFileStore
             _fileHelper.writeFileSafely( new File(_directoryName, _configFileName).toPath(),
                                          new File(_directoryName, _backupFileName).toPath(),
                                          tmpFile,
-                                         new BaseAction<File, IOException>()
-                                         {
-                                             @Override
-                                             public void performAction(File file) throws IOException
-                                             {
-                                                 getSerialisationObjectMapper().writeValue(file, data);
-                                             }
-                                         });
+                                         file -> getSerialisationObjectMapper().writeValue(file, data));
         }
         catch (IOException e)
         {

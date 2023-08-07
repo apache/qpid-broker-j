@@ -22,7 +22,6 @@ package org.apache.qpid.server.security.group;
 
 import java.security.Principal;
 import java.util.Enumeration;
-import java.util.Objects;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.QpidPrincipal;

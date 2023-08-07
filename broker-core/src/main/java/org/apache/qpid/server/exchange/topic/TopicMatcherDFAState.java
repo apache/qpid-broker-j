@@ -102,7 +102,7 @@ public class TopicMatcherDFAState
 
     public TopicMatcherDFAState  mergeStateMachines(TopicMatcherDFAState otherStateMachine)
     {
-        Map<Set<TopicMatcherDFAState>, TopicMatcherDFAState> newStateMap= new HashMap<Set<TopicMatcherDFAState>, TopicMatcherDFAState>();
+        Map<Set<TopicMatcherDFAState>, TopicMatcherDFAState> newStateMap= new HashMap<>();
 
         Collection<TopicMatcherResult> results;
 
@@ -116,17 +116,17 @@ public class TopicMatcherDFAState
         }
         else
         {
-            results = new HashSet<TopicMatcherResult>(_results);
+            results = new HashSet<>(_results);
             results.addAll(otherStateMachine._results);
         }
 
 
-        final Map<TopicWord, TopicMatcherDFAState> newNextStateMap = new HashMap<TopicWord, TopicMatcherDFAState>();
+        final Map<TopicWord, TopicMatcherDFAState> newNextStateMap = new HashMap<>();
 
         TopicMatcherDFAState newState = new TopicMatcherDFAState(newNextStateMap, results);
 
 
-        Set<TopicMatcherDFAState> oldStates = new HashSet<TopicMatcherDFAState>();
+        Set<TopicMatcherDFAState> oldStates = new HashSet<>();
         oldStates.add(this);
         oldStates.add(otherStateMachine);
 
@@ -143,7 +143,7 @@ public class TopicMatcherDFAState
             final Map<TopicWord, TopicMatcherDFAState> newNextStateMap,
             final Map<Set<TopicMatcherDFAState>, TopicMatcherDFAState> newStateMap)
     {
-        Map<TopicWord, Set<TopicMatcherDFAState>> nfaMap = new HashMap<TopicWord, Set<TopicMatcherDFAState>>();
+        Map<TopicWord, Set<TopicMatcherDFAState>> nfaMap = new HashMap<>();
 
         for(TopicMatcherDFAState state : oldStates)
         {
@@ -153,7 +153,7 @@ public class TopicMatcherDFAState
                 Set<TopicMatcherDFAState> states = nfaMap.get(entry.getKey());
                 if(states == null)
                 {
-                    states = new HashSet<TopicMatcherDFAState>();
+                    states = new HashSet<>();
                     nfaMap.put(entry.getKey(), states);
                 }
                 states.add(entry.getValue());
@@ -184,7 +184,7 @@ public class TopicMatcherDFAState
                 {
                     Collection<TopicMatcherResult> results;
 
-                    Set<Collection<TopicMatcherResult>> resultSets = new HashSet<Collection<TopicMatcherResult>>();
+                    Set<Collection<TopicMatcherResult>> resultSets = new HashSet<>();
                     for(TopicMatcherDFAState destination : destinations)
                     {
                         resultSets.add(destination._results);
@@ -200,24 +200,19 @@ public class TopicMatcherDFAState
                     }
                     else
                     {
-                        results = new HashSet<TopicMatcherResult>();
+                        results = new HashSet<>();
                         for(Collection<TopicMatcherResult> oldResult : resultSets)
                         {
                             results.addAll(oldResult);
                         }
                     }
 
-                    final Map<TopicWord, TopicMatcherDFAState> nextStateMap = new HashMap<TopicWord, TopicMatcherDFAState>();
+                    final Map<TopicWord, TopicMatcherDFAState> nextStateMap = new HashMap<>();
 
                     nextState = new TopicMatcherDFAState(nextStateMap, results);
                     newStateMap.put(destinations, nextState);
 
-                    mergeStateMachines(
-                            destinations,
-                                       nextStateMap,
-                                       newStateMap);
-
-
+                    mergeStateMachines(destinations, nextStateMap, newStateMap);
                 }
 
 
@@ -229,7 +224,7 @@ public class TopicMatcherDFAState
         TopicMatcherDFAState anyWordState = newNextStateMap.get(TopicWord.ANY_WORD);
         if(anyWordState != null)
         {
-            List<TopicWord> removeList = new ArrayList<TopicWord>();
+            List<TopicWord> removeList = new ArrayList<>();
             for(Map.Entry<TopicWord,TopicMatcherDFAState> entry : newNextStateMap.entrySet())
             {
                 if(entry.getValue() == anyWordState && entry.getKey() != TopicWord.ANY_WORD)
@@ -270,15 +265,7 @@ public class TopicMatcherDFAState
     {
         StringBuilder result = new StringBuilder("Start state: " + getId() + "\n");
 
-        SortedSet<TopicMatcherDFAState> reachableStates =
-                new TreeSet<TopicMatcherDFAState>(new Comparator<TopicMatcherDFAState>()
-                                                        {
-                                                            @Override
-                                                            public int compare(final TopicMatcherDFAState o1, final TopicMatcherDFAState o2)
-                                                            {
-                                                                return o1.getId() - o2.getId();
-                                                            }
-                                                        });
+        SortedSet<TopicMatcherDFAState> reachableStates = new TreeSet<>(Comparator.comparingInt(TopicMatcherDFAState::getId));
         reachableStates.add(this);
 
         int count;
@@ -286,15 +273,13 @@ public class TopicMatcherDFAState
         do
         {
             count = reachableStates.size();
-            Collection<TopicMatcherDFAState> originalStates = new ArrayList<TopicMatcherDFAState>(reachableStates);
+            Collection<TopicMatcherDFAState> originalStates = new ArrayList<>(reachableStates);
             for(TopicMatcherDFAState state : originalStates)
             {
                 reachableStates.addAll(state._nextStateMap.values());
             }
         }
         while(reachableStates.size() != count);
-
-
 
         for(TopicMatcherDFAState state : reachableStates)
         {
@@ -303,7 +288,6 @@ public class TopicMatcherDFAState
 
         return result.toString();
     }
-
 
     int getId()
     {

@@ -35,7 +35,7 @@ public class PublishAuthorisationCache
     private final long _publishAuthCacheTimeout;
     private final int _publishAuthCacheSize;
     private final LinkedHashMap<PublishAuthKey, Long> _publishAuthCache =
-            new LinkedHashMap<PublishAuthKey, Long>()
+            new LinkedHashMap<>()
             {
                 @Override
                 protected boolean removeEldestEntry(final Map.Entry<PublishAuthKey, Long> eldest)

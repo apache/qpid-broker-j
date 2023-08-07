@@ -47,7 +47,7 @@ import org.apache.qpid.test.utils.UnitTestBase;
  */
 public class HeadersBindingTest extends UnitTestBase
 {
-    private final Map<String,Object> bindHeaders = new HashMap<String,Object>();
+    private final Map<String,Object> bindHeaders = new HashMap<>();
     private final MockHeader matchHeaders = new MockHeader();
     private int _count = 0;
     private Queue<?> _queue;

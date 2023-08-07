@@ -153,15 +153,7 @@ public class NonBlockingNetworkTransport
                             new NonBlockingConnection(socketChannel,
                                                       engine,
                                                       _encryptionSet,
-                                                      new Runnable()
-                                                      {
-
-                                                          @Override
-                                                          public void run()
-                                                          {
-                                                              engine.encryptedTransport();
-                                                          }
-                                                      },
+                                                      engine::encryptedTransport,
                                                       _scheduler,
                                                       _port);
 

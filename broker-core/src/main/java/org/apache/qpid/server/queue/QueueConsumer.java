@@ -24,7 +24,6 @@ import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.session.AMQPSession;
 
 public interface QueueConsumer<X extends QueueConsumer<X,T>, T extends ConsumerTarget> extends Consumer<X, T>

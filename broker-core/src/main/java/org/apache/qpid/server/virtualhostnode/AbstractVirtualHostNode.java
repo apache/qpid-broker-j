@@ -167,28 +167,27 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         try
         {
             addFutureCallback(activate(),
-                                new FutureCallback<Void>()
-                                {
-                                    @Override
-                                    public void onSuccess(final Void result)
-                                    {
-                                        try
-                                        {
-                                            setState(State.ACTIVE);
-                                        }
-                                        finally
-                                        {
-                                            returnVal.set(null);
-                                        }
+                              new FutureCallback<>()
+                              {
+                                  @Override
+                                  public void onSuccess(final Void result)
+                                  {
+                                      try
+                                      {
+                                          setState(State.ACTIVE);
+                                      }
+                                      finally
+                                      {
+                                          returnVal.set(null);
+                                      }
+                                  }
 
-                                    }
-
-                                    @Override
-                                    public void onFailure(final Throwable t)
-                                    {
-                                        onActivationFailure(returnVal, t);
-                                    }
-                                }, getTaskExecutor()
+                                  @Override
+                                  public void onFailure(final Throwable t)
+                                  {
+                                      onActivationFailure(returnVal, t);
+                                  }
+                              }, getTaskExecutor()
                                );
         }
         catch(RuntimeException e)
@@ -317,14 +316,10 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     protected ListenableFuture<Void> stopAndSetStateTo(final State stoppedState)
     {
         ListenableFuture<Void> childCloseFuture = closeChildren();
-        return doAfterAlways(childCloseFuture, new Runnable()
+        return doAfterAlways(childCloseFuture, () ->
         {
-            @Override
-            public void run()
-            {
-                closeConfigurationStoreSafely();
-                setState(stoppedState);
-            }
+            closeConfigurationStoreSafely();
+            setState(stoppedState);
         });
     }
 
@@ -411,7 +406,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         if (preferenceStoreAttributes == null)
         {
             preferenceStoreType = NoopPreferenceStoreFactoryService.TYPE;
-            attributes = Collections.emptyMap();
+            attributes = Map.of();
         }
         else
         {

@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.exchange;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -64,7 +63,7 @@ class HeadersBinding
             throws AMQInvalidArgumentException
     {
         _binding = binding;
-        arguments = arguments == null ? Collections.emptyMap() : arguments;
+        arguments = arguments == null ? Map.of() : arguments;
         if(_binding != null)
         {
             _mappings = arguments;

@@ -56,29 +56,16 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     private static final Logger LOGGER = LoggerFactory.getLogger(JsonFileConfigStore.class);
 
     private static final Comparator<Class<? extends ConfiguredObject>> CATEGORY_CLASS_COMPARATOR =
-            new Comparator<Class<? extends ConfiguredObject>>()
-            {
-                @Override
-                public int compare(final Class<? extends ConfiguredObject> left,
-                                   final Class<? extends ConfiguredObject> right)
-                {
-                    return left.getSimpleName().compareTo(right.getSimpleName());
-                }
-            };
-    private static final Comparator<ConfiguredObjectRecord> CONFIGURED_OBJECT_RECORD_COMPARATOR =
-            new Comparator<ConfiguredObjectRecord>()
-            {
-                @Override
-                public int compare(final ConfiguredObjectRecord left, final ConfiguredObjectRecord right)
-                {
-                    String leftName = (String) left.getAttributes().get(ConfiguredObject.NAME);
-                    String rightName = (String) right.getAttributes().get(ConfiguredObject.NAME);
-                    return leftName.compareTo(rightName);
-                }
-            };
+            Comparator.comparing(Class::getSimpleName);
+    private static final Comparator<ConfiguredObjectRecord> CONFIGURED_OBJECT_RECORD_COMPARATOR = (left, right) ->
+    {
+        String leftName = (String) left.getAttributes().get(ConfiguredObject.NAME);
+        String rightName = (String) right.getAttributes().get(ConfiguredObject.NAME);
+        return leftName.compareTo(rightName);
+    };
 
-    private final Map<UUID, ConfiguredObjectRecord> _objectsById = new HashMap<UUID, ConfiguredObjectRecord>();
-    private final Map<String, List<UUID>> _idsByType = new HashMap<String, List<UUID>>();
+    private final Map<UUID, ConfiguredObjectRecord> _objectsById = new HashMap<>();
+    private final Map<String, List<UUID>> _idsByType = new HashMap<>();
     private volatile Class<? extends ConfiguredObject> _rootClass;
     private final ObjectMapper _objectMapper;
     private volatile Map<String,Class<? extends ConfiguredObject>> _classNameMapping;
@@ -113,7 +100,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
         setup(parent.getName(),
               fileBasedSettings.getStorePath(),
               parent.getContextValue(String.class, SystemConfig.POSIX_FILE_PERMISSIONS),
-              Collections.emptyMap());
+              Map.of());
         changeState(State.CLOSED, State.CONFIGURED);
 
     }
@@ -124,7 +111,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     {
         changeState(State.CONFIGURED, State.OPEN);
         boolean isNew = load(initialRecords);
-        List<ConfiguredObjectRecord> records = new ArrayList<ConfiguredObjectRecord>(_objectsById.values());
+        List<ConfiguredObjectRecord> records = new ArrayList<>(_objectsById.values());
         for(ConfiguredObjectRecord record : records)
         {
             handler.handle(record);
@@ -139,7 +126,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
         _idsByType.clear();
         _objectsById.clear();
         load();
-        List<ConfiguredObjectRecord> records = new ArrayList<ConfiguredObjectRecord>(_objectsById.values());
+        List<ConfiguredObjectRecord> records = new ArrayList<>(_objectsById.values());
         for(ConfiguredObjectRecord record : records)
         {
             handler.handle(record);
@@ -155,7 +142,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
             LOGGER.debug("Loading file {}", configFile.getCanonicalPath());
 
             boolean updated = false;
-            Collection<ConfiguredObjectRecord> records = Collections.emptyList();
+            Collection<ConfiguredObjectRecord> records;
             final ConfiguredObjectRecordConverter configuredObjectRecordConverter =
                     new ConfiguredObjectRecordConverter(_parent.getModel());
 
@@ -260,7 +247,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
             List<UUID> idsForType = _idsByType.get(record.getType());
             if(idsForType == null)
             {
-                idsForType = new ArrayList<UUID>();
+                idsForType = new ArrayList<>();
                 _idsByType.put(record.getType(), idsForType);
             }
 
@@ -299,7 +286,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
         final Map<String, Object> data;
         if (rootId == null)
         {
-            data = Collections.emptyMap();
+            data = Map.of();
         }
         else
         {
@@ -399,7 +386,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
             return new UUID[0];
         }
 
-        List<UUID> removedIds = new ArrayList<UUID>();
+        List<UUID> removedIds = new ArrayList<>();
         for(ConfiguredObjectRecord requestedRecord : objects)
         {
             ConfiguredObjectRecord record = _objectsById.remove(requestedRecord.getId());
@@ -466,7 +453,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
                 List<UUID> idsForType = _idsByType.get(type);
                 if(idsForType == null)
                 {
-                    idsForType = new ArrayList<UUID>();
+                    idsForType = new ArrayList<>();
                     _idsByType.put(type, idsForType);
                 }
                 if(idsForType.contains(record.getId()))
@@ -511,7 +498,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     private static Map<String,Class<? extends ConfiguredObject>> generateClassNameMap(final Model model,
                                                                                       final Class<? extends ConfiguredObject> clazz)
     {
-        Map<String,Class<? extends ConfiguredObject>>map = new HashMap<String, Class<? extends ConfiguredObject>>();
+        Map<String,Class<? extends ConfiguredObject>>map = new HashMap<>();
         if(clazz != null)
         {
             map.put(clazz.getSimpleName(), clazz);

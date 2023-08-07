@@ -413,7 +413,7 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
      */
     private Collection<? extends CRL> getCRLs(String crlUrl)
     {
-        Collection<? extends CRL> crls = Collections.emptyList();
+        Collection<? extends CRL> crls = List.of();
         if (crlUrl != null)
         {
             try (InputStream is = getUrlFromString(crlUrl).openStream())

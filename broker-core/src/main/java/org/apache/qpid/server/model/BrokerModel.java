@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -88,14 +89,12 @@ public final class BrokerModel extends Model
     public static final int MODEL_MINOR_VERSION = 0;
     public static final String MODEL_VERSION = MODEL_MAJOR_VERSION + "." + MODEL_MINOR_VERSION;
     private static final Model MODEL_INSTANCE = new BrokerModel();
-    private final Map<Class<? extends ConfiguredObject>, Class<? extends ConfiguredObject>> _parents =
-            new HashMap<>();
+    private final Map<Class<? extends ConfiguredObject>, Class<? extends ConfiguredObject>> _parents = new HashMap<>();
 
     private final Map<Class<? extends ConfiguredObject>, Collection<Class<? extends ConfiguredObject>>> _children =
-            new HashMap<Class<? extends ConfiguredObject>, Collection<Class<? extends ConfiguredObject>>>();
+            new HashMap<>();
 
-    private final Set<Class<? extends ConfiguredObject>> _supportedTypes =
-            new HashSet<Class<? extends ConfiguredObject>>();
+    private final Set<Class<? extends ConfiguredObject>> _supportedTypes = new HashSet<>();
     private final ConfiguredObjectTypeRegistry _typeRegistry;
 
     private Class<? extends ConfiguredObject> _rootCategory;
@@ -198,8 +197,7 @@ public final class BrokerModel extends Model
     public Collection<Class<? extends ConfiguredObject>> getChildTypes(Class<? extends ConfiguredObject> parent)
     {
         Collection<Class<? extends ConfiguredObject>> childTypes = _children.get(parent);
-        return childTypes == null ? Collections.<Class<? extends ConfiguredObject>>emptyList()
-                : Collections.unmodifiableCollection(childTypes);
+        return childTypes == null ? List.of() : Collections.unmodifiableCollection(childTypes);
     }
 
     @Override
@@ -227,7 +225,7 @@ public final class BrokerModel extends Model
         Collection<Class<? extends ConfiguredObject>> children = _children.get(parent);
         if (children == null)
         {
-            children = new ArrayList<Class<? extends ConfiguredObject>>();
+            children = new ArrayList<>();
             _children.put(parent, children);
         }
         children.add(child);

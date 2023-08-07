@@ -29,7 +29,6 @@ import java.net.URL;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +51,6 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordConverter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
-import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
@@ -227,14 +225,10 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     @StateTransition(currentState = State.ACTIVE, desiredState = State.STOPPED)
     protected ListenableFuture<Void> doStop()
     {
-        return doAfter(getContainer().closeAsync(), new Runnable()
+        return doAfter(getContainer().closeAsync(), () ->
         {
-            @Override
-            public void run()
-            {
-                _configurationStore.closeConfigurationStore();
-                AbstractSystemConfig.super.setState(State.STOPPED);
-            }
+            _configurationStore.closeConfigurationStore();
+            AbstractSystemConfig.super.setState(State.STOPPED);
         });
 
     }
@@ -243,14 +237,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     @StateTransition(currentState = { State.UNINITIALIZED, State.STOPPED }, desiredState = State.ACTIVE)
     protected ListenableFuture<Void> activate()
     {
-        return doAfter(makeActive(), new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                AbstractSystemConfig.super.setState(State.ACTIVE);
-            }
-        });
+        return doAfter(makeActive(), () -> AbstractSystemConfig.super.setState(State.ACTIVE));
     }
 
 
@@ -312,14 +299,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         store.upgradeStoreStructure();
         final List<ConfiguredObjectRecord> records = new ArrayList<>();
 
-        boolean isNew = store.openConfigurationStore(new ConfiguredObjectRecordHandler()
-        {
-            @Override
-            public void handle(final ConfiguredObjectRecord record)
-            {
-                records.add(record);
-            }
-        }, initialRecords);
+        boolean isNew = store.openConfigurationStore(records::add, initialRecords);
 
         String containerTypeName = getDefaultContainerType();
         for(ConfiguredObjectRecord record : records)
@@ -502,7 +482,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         if (preferenceStoreAttributes == null)
         {
             preferenceStoreType = NoopPreferenceStoreFactoryService.TYPE;
-            attributes = Collections.emptyMap();
+            attributes = Map.of();
         }
         else
         {

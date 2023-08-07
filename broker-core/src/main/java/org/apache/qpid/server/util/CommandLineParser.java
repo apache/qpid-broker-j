@@ -77,10 +77,10 @@ import java.util.regex.Pattern;
 public class CommandLineParser
 {
     /** Holds a mapping from command line option names to detailed information about those options. */
-    private final Map<String, CommandLineOption> optionMap = new HashMap<String, CommandLineOption>();
+    private final Map<String, CommandLineOption> optionMap = new HashMap<>();
 
     /** Holds a list of parsing errors. */
-    private List<String> parsingErrors = new ArrayList<String>();
+    private List<String> parsingErrors = new ArrayList<>();
 
     /** Holds the regular expression matcher to match command line options with. */
     private Matcher optionMatcher = null;
@@ -505,7 +505,7 @@ public class CommandLineParser
      */
     public void reset()
     {
-        parsingErrors = new ArrayList<String>();
+        parsingErrors = new ArrayList<>();
         parsedProperties = null;
     }
 

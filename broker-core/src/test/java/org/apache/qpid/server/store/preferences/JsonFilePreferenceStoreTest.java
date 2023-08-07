@@ -171,7 +171,7 @@ public class JsonFilePreferenceStoreTest extends UnitTestBase
 
         final Object storedAttributes = preferenceMap.get("attributes");
         assertNotNull(storedAttributes, "Attributes should not be null");
-        assertEquals(attributes, new HashMap<String, Object>((Map) storedAttributes), "Unexpected attributes");
+        assertEquals(attributes, new HashMap<>((Map) storedAttributes), "Unexpected attributes");
     }
 
     private Collection assertStoreVersionAndSizeAndGetData(final int expectedSize) throws IOException

@@ -37,7 +37,7 @@ public class FixedKeyMapCreator
 {
     private final String[] _keys;
     private final int[] _keyHashCodes;
-    private final Set<String> _keySet = new AbstractSet<String>()
+    private final Set<String> _keySet = new AbstractSet<>()
     {
         @Override
         public Iterator<String> iterator()

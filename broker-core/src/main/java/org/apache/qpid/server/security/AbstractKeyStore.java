@@ -106,14 +106,7 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
         int checkFrequency = getCertificateExpiryCheckFrequency();
         if(getBroker().getState() == State.ACTIVE)
         {
-            _checkExpiryTaskFuture = getBroker().scheduleHouseKeepingTask(checkFrequency, TimeUnit.DAYS, new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    checkCertificateExpiry();
-                }
-            });
+            _checkExpiryTaskFuture = getBroker().scheduleHouseKeepingTask(checkFrequency, TimeUnit.DAYS, this::checkCertificateExpiry);
         }
         else
         {

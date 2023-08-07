@@ -38,7 +38,6 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -260,7 +259,7 @@ public class AbstractVirtualHostTest extends UnitTestBase
         doNothing().when(store).openMessageStore(any(ConfiguredObject.class));
         when(store.newMessageStoreReader()).thenReturn(mock(MessageStore.MessageStoreReader.class));
 
-        host.setAttributes(Collections.<String, Object>singletonMap(VirtualHost.DESIRED_STATE, State.ACTIVE));
+        host.setAttributes(Map.of(VirtualHost.DESIRED_STATE, State.ACTIVE));
         assertEquals(State.ACTIVE, host.getState(), "Unexpected state");
         host.close();
     }
@@ -323,12 +322,14 @@ public class AbstractVirtualHostTest extends UnitTestBase
         final CountDownLatch logMessageReceivedLatch = new CountDownLatch(1);
         final ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         final ListAppender<ILoggingEvent> appender = new ListAppender<>();
-        appender.addFilter(new Filter<ILoggingEvent>()
+        appender.addFilter(new Filter<>()
         {
             @Override
             public FilterReply decide(final ILoggingEvent event)
             {
-                if (event.getLoggerName().equals(loggerName) && event.getLevel().equals(logLevel) && event.getFormattedMessage().contains(message))
+                if (event.getLoggerName().equals(loggerName)
+                    && event.getLevel().equals(logLevel)
+                    && event.getFormattedMessage().contains(message))
                 {
                     logMessageReceivedLatch.countDown();
                 }

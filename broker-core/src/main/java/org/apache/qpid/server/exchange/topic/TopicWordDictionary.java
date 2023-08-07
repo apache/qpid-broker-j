@@ -25,8 +25,7 @@ import java.util.concurrent.ConcurrentMap;
 
 public class TopicWordDictionary
 {
-    private final ConcurrentMap<String,TopicWord> _dictionary =
-            new ConcurrentHashMap<String,TopicWord>();
+    private final ConcurrentMap<String,TopicWord> _dictionary = new ConcurrentHashMap<>();
 
     public TopicWordDictionary()
     {
@@ -43,7 +42,6 @@ public class TopicWordDictionary
         }
         return word;
     }
-
 
     public TopicWord getWord(String name)
     {

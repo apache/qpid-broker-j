@@ -49,7 +49,7 @@ public class TopicNormalizer
         }
         else
         {
-            List<String> subscriptionList = new ArrayList<String>(Arrays.asList(routingKey.split("\\.")));
+            List<String> subscriptionList = new ArrayList<>(Arrays.asList(routingKey.split("\\.")));
 
             int size = subscriptionList.size();
 

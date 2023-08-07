@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -466,7 +465,7 @@ public final class Strings
      *
      * @return StringSubstitutionResolver
      */
-    public static Resolver createSubstitutionResolver(final String prefix, final LinkedHashMap<String, String> substitutions)
+    public static Resolver createSubstitutionResolver(final String prefix, final Map<String, String> substitutions)
     {
         return new StringSubstitutionResolver(prefix, substitutions);
     }
@@ -528,10 +527,10 @@ public final class Strings
     private static class StringSubstitutionResolver implements Resolver
     {
         private final ThreadLocal<Set<String>> _stack = new ThreadLocal<>();
-        private final LinkedHashMap<String, String> _substitutions;
+        private final Map<String, String> _substitutions;
         private final String _prefix;
 
-        private StringSubstitutionResolver(final String prefix, final LinkedHashMap<String, String> substitutions)
+        private StringSubstitutionResolver(final String prefix, final Map<String, String> substitutions)
         {
             _prefix = prefix;
             _substitutions = substitutions;

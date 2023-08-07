@@ -45,21 +45,16 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
 
 public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationStoreUpgraderAndRecoverer
 {
     private final VirtualHostNode<?> _virtualHostNode;
 
-    @SuppressWarnings("serial")
-    private static final Map<String, String> DEFAULT_EXCHANGES = Collections.unmodifiableMap(new HashMap<String, String>()
-    {{
-        put("amq.direct", "direct");
-        put("amq.topic", "topic");
-        put("amq.fanout", "fanout");
-        put("amq.match", "headers");
-    }});
+    private static final Map<String, String> DEFAULT_EXCHANGES = Map.of("amq.direct", "direct",
+            "amq.topic", "topic",
+            "amq.fanout", "fanout",
+            "amq.match", "headers");
 
     private final Map<String, UUID> _defaultExchangeIds;
 
@@ -80,7 +75,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         register(new Upgrader_7_1_to_8_0());
         register(new Upgrader_8_0_to_9_0());
 
-        Map<String, UUID> defaultExchangeIds = new HashMap<String, UUID>();
+        Map<String, UUID> defaultExchangeIds = new HashMap<>();
         for (String exchangeName : DEFAULT_EXCHANGES.keySet())
         {
             UUID id = UUIDGenerator.generateExchangeUUID(exchangeName, virtualHostNode.getName());
@@ -96,7 +91,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
      */
     private class Upgrader_0_0_to_0_1  extends StoreUpgraderPhase
     {
-        private final Map<UUID, ConfiguredObjectRecord> _records = new HashMap<UUID, ConfiguredObjectRecord>();
+        private final Map<UUID, ConfiguredObjectRecord> _records = new HashMap<>();
 
         public Upgrader_0_0_to_0_1()
         {
@@ -112,7 +107,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         private void removeSelectorArguments(Map<String, Object> binding)
         {
             @SuppressWarnings("unchecked")
-            Map<String, Object> arguments = new LinkedHashMap<String, Object>((Map<String,Object>)binding.get("arguments"));
+            Map<String, Object> arguments = new LinkedHashMap<>((Map<String, Object>) binding.get("arguments"));
 
             FilterSupport.removeFilters(arguments);
             binding.put("arguments", arguments);
@@ -166,7 +161,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                 }
                 else if(type.equals(Binding.class.getName()) && hasSelectorArguments(attributes) && !isTopicExchange(record))
                 {
-                    attributes = new LinkedHashMap<String, Object>(attributes);
+                    attributes = new LinkedHashMap<>(attributes);
                     removeSelectorArguments(attributes);
 
                     record = new ConfiguredObjectRecordImpl(id, type, attributes, record.getParents());
@@ -267,7 +262,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
             }
             else if ("Queue".equals(record.getType()))
             {
-                Map<String, Object> newAttributes = new LinkedHashMap<String, Object>();
+                Map<String, Object> newAttributes = new LinkedHashMap<>();
                 if (record.getAttributes().get(ARGUMENTS) instanceof Map)
                 {
                     newAttributes.putAll(convertWireArgsToModel((Map<String, Object>) record.getAttributes()
@@ -373,7 +368,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
             }
             else if(Queue.class.getSimpleName().equals(record.getType()))
             {
-                Map<String, Object> newAttributes = new LinkedHashMap<String, Object>(record.getAttributes());
+                Map<String, Object> newAttributes = new LinkedHashMap<>(record.getAttributes());
                 if(record.getAttributes().get(EXCLUSIVE) instanceof Boolean)
                 {
                     boolean isExclusive = (Boolean) record.getAttributes().get(EXCLUSIVE);
@@ -410,7 +405,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         private static final String DLQ_ENABLED_ARGUMENT = "x-qpid-dlq-enabled";
         private static final String  DEFAULT_DLE_NAME_SUFFIX = "_DLE";
 
-        private final Map<String, String> _missingAmqpExchanges = new HashMap<String, String>(DEFAULT_EXCHANGES);
+        private final Map<String, String> _missingAmqpExchanges = new HashMap<>(DEFAULT_EXCHANGES);
         private final Map<UUID, String> _queuesMissingAlternateExchange = new HashMap<>();
         private final Map<String, ConfiguredObjectRecord> _exchanges = new HashMap<>();
 
@@ -427,10 +422,10 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
             if("VirtualHost".equals(record.getType()))
             {
                 record = upgradeRootRecord(record);
-                Map<String, Object> virtualHostAttributes = new HashMap<String, Object>(record.getAttributes());
+                Map<String, Object> virtualHostAttributes = new HashMap<>(record.getAttributes());
                 virtualHostAttributes.put("name", _virtualHostNode.getName());
                 virtualHostAttributes.put("modelVersion", getToVersion());
-                record = new ConfiguredObjectRecordImpl(record.getId(), "VirtualHost", virtualHostAttributes, Collections.<String, UUID>emptyMap());
+                record = new ConfiguredObjectRecordImpl(record.getId(), "VirtualHost", virtualHostAttributes, Map.of());
                 _virtualHostRecord = record;
             }
             else if("Exchange".equals(record.getType()))
@@ -469,7 +464,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                 String type = entry.getValue();
                 UUID id = _defaultExchangeIds.get(name);
 
-                Map<String, Object> attributes = new HashMap<String, Object>();
+                Map<String, Object> attributes = new HashMap<>();
                 attributes.put("name", name);
                 attributes.put("type", type);
                 attributes.put("lifetimePolicy", "PERMANENT");
@@ -1118,14 +1113,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                                      final ConfiguredObjectRecord... initialRecords)
     {
         final List<ConfiguredObjectRecord> records = new ArrayList<>();
-        boolean isNew = durableConfigurationStore.openConfigurationStore(new ConfiguredObjectRecordHandler()
-        {
-            @Override
-            public void handle(final ConfiguredObjectRecord record)
-            {
-                records.add(record);
-            }
-        }, initialRecords);
+        boolean isNew = durableConfigurationStore.openConfigurationStore(records::add, initialRecords);
 
         List<ConfiguredObjectRecord> upgradedRecords = upgrade(durableConfigurationStore,
                                                                records,
@@ -1164,7 +1152,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                 configChangeListener = new StoreConfigurationChangeListener(durableConfigurationStore);
         if(_virtualHostNode.getVirtualHost() != null)
         {
-            applyRecursively(_virtualHostNode.getVirtualHost(), new RecursiveAction<ConfiguredObject<?>>()
+            applyRecursively(_virtualHostNode.getVirtualHost(), new RecursiveAction<>()
             {
                 @Override
                 public boolean applyToChildren(final ConfiguredObject<?> object)
@@ -1189,7 +1177,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                 {
                     if (child instanceof VirtualHost)
                     {
-                        applyRecursively(child, new RecursiveAction<ConfiguredObject<?>>()
+                        applyRecursively(child, new RecursiveAction<>()
                         {
                             @Override
                             public boolean applyToChildren(final ConfiguredObject<?> object)

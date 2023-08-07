@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.filter.JMSSelectorFilter;
-import org.apache.qpid.server.filter.selector.ParseException;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class SelectorParserTest extends UnitTestBase

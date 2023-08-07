@@ -22,7 +22,6 @@ package org.apache.qpid.server.configuration.store;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +43,6 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
@@ -106,7 +104,7 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
     {
 
         changeState(StoreState.CONFIGURED, StoreState.OPEN);
-        _records = new HashMap<UUID, ConfiguredObjectRecord>();
+        _records = new HashMap<>();
         UnderlyingStoreRecoveringObjectRecordHandler underlyingHandler = new UnderlyingStoreRecoveringObjectRecordHandler();
         boolean isNew = _store.openConfigurationStore(underlyingHandler, initialRecords);
 
@@ -153,7 +151,7 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
         synchronized (_store)
         {
 
-            Collection<ConfiguredObjectRecord> actualUpdates = new ArrayList<ConfiguredObjectRecord>();
+            Collection<ConfiguredObjectRecord> actualUpdates = new ArrayList<>();
 
             for(ConfiguredObjectRecord record : records)
             {
@@ -232,7 +230,7 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
         {
             throw new IllegalConfigurationException("Invalid http port is specified: " + managementModeHttpPortOverride);
         }
-        Map<UUID, ConfiguredObjectRecord> cliEntries = new HashMap<UUID, ConfiguredObjectRecord>();
+        Map<UUID, ConfiguredObjectRecord> cliEntries = new HashMap<>();
         if (managementModeHttpPortOverride != 0)
         {
             ConfiguredObjectRecord entry = createCLIPortEntry(managementModeHttpPortOverride, Protocol.HTTP);
@@ -245,13 +243,13 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
     {
         ConfiguredObjectRecord parent = findBroker();
 
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put(Port.PORT, port);
-        attributes.put(Port.PROTOCOLS, Collections.singleton(protocol));
+        attributes.put(Port.PROTOCOLS, Set.of(protocol));
         attributes.put(Port.NAME, MANAGEMENT_MODE_PORT_PREFIX + protocol.name());
         attributes.put(Port.AUTHENTICATION_PROVIDER, BrokerImpl.MANAGEMENT_MODE_AUTHENTICATION);
         ConfiguredObjectRecord portEntry = new ConfiguredObjectRecordImpl(UUID.randomUUID(), PORT_TYPE, attributes,
-                Collections.singletonMap(parent.getType(),parent.getId()));
+                Map.of(parent.getType(),parent.getId()));
         if (LOGGER.isDebugEnabled())
         {
             LOGGER.debug("Add management mode port configuration " + portEntry + " for port " + port + " and protocol "
@@ -275,7 +273,7 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
 
     private Map<UUID, Object> quiesceEntries(final SystemConfig<?> options, List<ConfiguredObjectRecord> records)
     {
-        final Map<UUID, Object> quiescedEntries = new HashMap<UUID, Object>();
+        final Map<UUID, Object> quiescedEntries = new HashMap<>();
         final int managementModeHttpPortOverride = options.getManagementModeHttpPortOverride();
 
         for(ConfiguredObjectRecord entry : records)
@@ -345,7 +343,7 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
 
     private ConfiguredObjectRecord createEntryWithState(ConfiguredObjectRecord entry, Object state)
     {
-        Map<String, Object> attributes = new HashMap<String, Object>(entry.getAttributes());
+        Map<String, Object> attributes = new HashMap<>(entry.getAttributes());
         if (state == null)
         {
             attributes.remove(ATTRIBUTE_DESIRED_STATE);
@@ -419,7 +417,7 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
 
                 // save original state
                 _quiescedEntriesOriginalState.put(object.getId(), attributes.get(ATTRIBUTE_DESIRED_STATE));
-                Map<String, Object> modifiedAttributes = new HashMap<String, Object>(attributes);
+                Map<String, Object> modifiedAttributes = new HashMap<>(attributes);
                 modifiedAttributes.put(ATTRIBUTE_DESIRED_STATE, State.QUIESCED);
                 ConfiguredObjectRecord record = new ConfiguredObjectRecordImpl(object.getId(),
                                                                                object.getType(),

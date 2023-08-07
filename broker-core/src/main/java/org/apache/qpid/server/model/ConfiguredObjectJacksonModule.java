@@ -42,7 +42,7 @@ public class ConfiguredObjectJacksonModule extends SimpleModule
     private static final ConfiguredObjectJacksonModule PERSISTENCE_INSTANCE = new ConfiguredObjectJacksonModule(true);
 
 
-    private static final Set<String> OBJECT_METHOD_NAMES = Collections.synchronizedSet(new HashSet<String>());
+    private static final Set<String> OBJECT_METHOD_NAMES = Collections.synchronizedSet(new HashSet<>());
 
     static
     {

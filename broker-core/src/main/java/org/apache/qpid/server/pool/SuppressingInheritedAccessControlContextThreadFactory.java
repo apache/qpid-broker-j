@@ -48,18 +48,14 @@ public class SuppressingInheritedAccessControlContextThreadFactory implements Th
     @Override
     public Thread newThread(final Runnable runnable)
     {
-        return Subject.doAsPrivileged(_subject, new PrivilegedAction<Thread>()
-                                            {
-                                                @Override
-                                                public Thread run()
-                                                {
-                                                    Thread thread = _defaultThreadFactory.newThread(runnable);
-                                                    if (_threadNamePrefix != null)
-                                                    {
-                                                        thread.setName(_threadNamePrefix + "-" + _threadId.getAndIncrement());
-                                                    }
-                                                    return thread;
-                                                }
-                                            }, null);
+        return Subject.doAsPrivileged(_subject, (PrivilegedAction<Thread>) () ->
+        {
+            Thread thread = _defaultThreadFactory.newThread(runnable);
+            if (_threadNamePrefix != null)
+            {
+                thread.setName(_threadNamePrefix + "-" + _threadId.getAndIncrement());
+            }
+            return thread;
+        }, null);
     }
 }

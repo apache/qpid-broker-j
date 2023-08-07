@@ -39,7 +39,7 @@ public abstract class AbstractMemoryStore implements DurableConfigurationStore, 
     private State _state = State.CLOSED;
     private final Object _lock = new Object();
 
-    private final ConcurrentMap<UUID, ConfiguredObjectRecord> _configuredObjectRecords = new ConcurrentHashMap<UUID, ConfiguredObjectRecord>();
+    private final ConcurrentMap<UUID, ConfiguredObjectRecord> _configuredObjectRecords = new ConcurrentHashMap<>();
 
     protected AbstractMemoryStore(final Class<? extends ConfiguredObject> rootClass)
     {
@@ -81,7 +81,7 @@ public abstract class AbstractMemoryStore implements DurableConfigurationStore, 
     public UUID[] remove(final ConfiguredObjectRecord... objects)
     {
         assertState(State.OPEN);
-        List<UUID> removed = new ArrayList<UUID>();
+        List<UUID> removed = new ArrayList<>();
         for (ConfiguredObjectRecord record : objects)
         {
             if (_configuredObjectRecords.remove(record.getId()) != null)

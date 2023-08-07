@@ -38,7 +38,7 @@ public class GenericStoreUpgrader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(GenericStoreUpgrader.class);
 
-    private final Map<UUID, ConfiguredObjectRecord> _records = new HashMap<UUID, ConfiguredObjectRecord>();
+    private final Map<UUID, ConfiguredObjectRecord> _records = new HashMap<>();
     private final Map<String, StoreUpgraderPhase> _upgraders;
     private final DurableConfigurationStore _store;
     private final String _rootCategory;
@@ -56,7 +56,7 @@ public class GenericStoreUpgrader
 
     public List<ConfiguredObjectRecord> getRecords()
     {
-        return new ArrayList<ConfiguredObjectRecord>(_records.values());
+        return new ArrayList<>(_records.values());
     }
 
     public void upgrade(List<ConfiguredObjectRecord> records)

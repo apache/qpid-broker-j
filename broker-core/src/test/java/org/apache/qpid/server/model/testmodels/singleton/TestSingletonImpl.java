@@ -21,7 +21,6 @@ package org.apache.qpid.server.model.testmodels.singleton;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Deque;
 import java.util.HashSet;

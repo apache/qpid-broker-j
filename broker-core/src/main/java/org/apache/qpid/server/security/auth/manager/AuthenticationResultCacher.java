@@ -80,14 +80,7 @@ public class AuthenticationResultCacher
             else
             {
                 String credentialDigest = digestCredentials(credentials);
-                return _authenticationCache.get(credentialDigest, new Callable<AuthenticationResult>()
-                {
-                    @Override
-                    public AuthenticationResult call() throws Exception
-                    {
-                        return loader.call();
-                    }
-                });
+                return _authenticationCache.get(credentialDigest, loader::call);
             }
         }
         catch (ExecutionException e)

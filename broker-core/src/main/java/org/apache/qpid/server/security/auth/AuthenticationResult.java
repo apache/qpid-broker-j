@@ -21,7 +21,6 @@
 package org.apache.qpid.server.security.auth;
 
 import java.security.Principal;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -61,7 +60,7 @@ public class AuthenticationResult
     private final AuthenticationStatus _status;
     private final byte[] _challenge;
     private final Exception _cause;
-    private final Set<Principal> _principals = new HashSet<Principal>();
+    private final Set<Principal> _principals = new HashSet<>();
     private final Principal _mainPrincipal;
 
     public AuthenticationResult(final AuthenticationStatus status)
@@ -76,7 +75,7 @@ public class AuthenticationResult
 
     public AuthenticationResult(Principal mainPrincipal, byte[] challenge)
     {
-        this(mainPrincipal, Collections.<Principal>emptySet(), challenge);
+        this(mainPrincipal, Set.of(), challenge);
     }
 
     public AuthenticationResult(Principal mainPrincipal, Set<Principal> otherPrincipals, byte[] challenge)
