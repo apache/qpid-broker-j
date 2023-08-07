@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -413,7 +412,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         @Override
         public void setPassword(String password)
         {
-            setAttributes(Collections.singletonMap(PASSWORD, password));
+            setAttributes(Map.of(PASSWORD, password));
         }
 
         @Override
