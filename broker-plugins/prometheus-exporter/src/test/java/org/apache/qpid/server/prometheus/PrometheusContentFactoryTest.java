@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,7 +76,7 @@ public class PrometheusContentFactoryTest
     @Test
     public void testCreateContent() throws Exception
     {
-        final Content content = _prometheusContentFactory.createContent(_root, Collections.emptyMap());
+        final Content content = _prometheusContentFactory.createContent(_root, Map.of());
         assertThat(content, is(notNullValue()));
         Collection<String> metrics;
         try (final ByteArrayOutputStream output = new ByteArrayOutputStream())
@@ -95,7 +94,7 @@ public class PrometheusContentFactoryTest
     @Test
     public void testCreateContentIncludeDisabled() throws Exception
     {
-        final Content content = _prometheusContentFactory.createContent(_root, Collections.singletonMap(INCLUDE_DISABLED, new String[]{"true"}));
+        final Content content = _prometheusContentFactory.createContent(_root, Map.of(INCLUDE_DISABLED, new String[]{"true"}));
         assertThat(content, is(notNullValue()));
         Collection<String> metrics;
         try (final ByteArrayOutputStream output = new ByteArrayOutputStream())
@@ -115,7 +114,7 @@ public class PrometheusContentFactoryTest
     public void testCreateContentIncludeDisabledUsingContextVariable() throws Exception
     {
         _root.setContextVariable(INCLUDE_DISABLED_CONTEXT_VARIABLE, "true");
-        final Content content = _prometheusContentFactory.createContent(_root, Collections.emptyMap());
+        final Content content = _prometheusContentFactory.createContent(_root, Map.of());
         assertThat(content, is(notNullValue()));
         Collection<String> metrics;
         try (final ByteArrayOutputStream output = new ByteArrayOutputStream())
