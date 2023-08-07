@@ -28,8 +28,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -157,8 +155,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     {
         final MessageDescription messageDescription = new MessageDescription();
         messageDescription.setMessageType(MessageDescription.MessageType.OBJECT_MESSAGE);
-        messageDescription.setContent(new SerializableTestClass(Collections.singletonMap("testKey", "testValue"),
-                                                                Collections.singletonList(42)));
+        messageDescription.setContent(new SerializableTestClass(Map.of("testKey", "testValue"), List.of(42)));
 
         performSimpleTest(messageDescription);
     }
@@ -199,7 +196,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         assumeTrue(AMQP_PRE010_PROTOCOLS.contains(getPublisherProtocolVersion()) &&
                 EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
 
-        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Map.of());
 
         ClientMessage publishedMessage = clientResults.get(0);
         ClientMessage subscriberMessage = clientResults.get(1);
@@ -214,7 +211,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         assumeTrue(AMQP_PRE010_PROTOCOLS.contains(getPublisherProtocolVersion()) &&
                 EnumSet.of(Protocol.AMQP_1_0).contains(getSubscriberProtocolVersion()));
 
-        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Map.of());
 
         ClientMessage publishedMessage = clientResults.get(0);
         ClientMessage subscriberMessage = clientResults.get(1);
@@ -232,7 +229,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         assumeTrue(EnumSet.of(Protocol.AMQP_0_10).contains(getPublisherProtocolVersion()) &&
                 AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
 
-        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Map.of());
 
         ClientMessage publishedMessage = clientResults.get(0);
         ClientMessage subscriberMessage = clientResults.get(1);
@@ -248,7 +245,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         assumeTrue(EnumSet.of(Protocol.AMQP_0_10).contains(getPublisherProtocolVersion()) &&
                 EnumSet.of(Protocol.AMQP_1_0).contains(getSubscriberProtocolVersion()));
 
-        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Map.of());
 
         ClientMessage publishedMessage = clientResults.get(0);
         ClientMessage subscriberMessage = clientResults.get(1);
@@ -268,7 +265,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
                 AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
 
-        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Map.of());
 
         // On the wire the "message-id-string comprises an identity of the publisher + a message sequence number
         ClientMessage publishedMessage = clientResults.get(0);
@@ -283,7 +280,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
                 AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
 
-        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Map.of(
                 JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "UUID"));
 
         ClientMessage publishedMessage = clientResults.get(0);
@@ -303,7 +300,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
                 AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
 
-        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Map.of(
                 JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "UUID_STRING"));
 
         ClientMessage publishedMessage = clientResults.get(0);
@@ -324,7 +321,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
                 AMQP_PRE010_PROTOCOLS.contains(getSubscriberProtocolVersion()));
 
-        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Map.of(
                 JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "PREFIXED_UUID_STRING"));
 
         ClientMessage publishedMessage = clientResults.get(0);
@@ -344,7 +341,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
                 EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
 
-        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.emptyMap());
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Map.of());
 
         // On the wire the message-id is a message-id-string comprising an identity of the pubisher + a message
         // sequence number
@@ -361,7 +358,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
                 EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
 
-        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Map.of(
                 JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "UUID"));
 
         ClientMessage publishedMessage = clientResults.get(0);
@@ -381,7 +378,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
                 EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
 
-        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Map.of(
                 JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "UUID_STRING"));
 
         ClientMessage publishedMessage = clientResults.get(0);
@@ -401,7 +398,7 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
         assumeTrue(EnumSet.of(Protocol.AMQP_1_0).contains(getPublisherProtocolVersion()) &&
                 EnumSet.of(Protocol.AMQP_0_10).contains(getSubscriberProtocolVersion()));
 
-        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Collections.singletonMap(
+        List<ClientMessage> clientResults = performProviderAssignedMessageIdTest(Map.of(
                 JMS_MESSAGE_IDPOLICY_MESSAGE_IDTYPE, "PREFIXED_UUID_STRING"));
 
         ClientMessage publishedMessage = clientResults.get(0);
@@ -587,17 +584,17 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
                 new ClientInstructionBuilder().configureDestinations(_defaultDestinations)
                                               .receiveMessage(destinationJndiName, messageDescription)
                                               .build();
-        List<ClientResult> clientResults = performTest(publisherInstructions, subscriberInstructions);
+        final List<ClientResult> clientResults = performTest(publisherInstructions, subscriberInstructions);
         assertThat("Unexpected number of client results", clientResults.size(), equalTo(2));
 
-        ClientResult publishedClientResult = clientResults.get(0);
+        final ClientResult publishedClientResult = clientResults.get(0);
         assertThat("Unexpected number of published client messages", publishedClientResult.getClientMessages().size(), equalTo(1));
-        ClientMessage publishedMessage = publishedClientResult.getClientMessages().get(0);
+        final ClientMessage publishedMessage = publishedClientResult.getClientMessages().get(0);
 
-        ClientResult subscriberClientResults = clientResults.get(1);
+        final ClientResult subscriberClientResults = clientResults.get(1);
         assertThat("Unexpected number of published client messages", subscriberClientResults.getClientMessages().size(), equalTo(1));
-        ClientMessage subscriberMessage = subscriberClientResults.getClientMessages().get(0);
+        final ClientMessage subscriberMessage = subscriberClientResults.getClientMessages().get(0);
 
-        return Arrays.asList(publishedMessage, subscriberMessage);
+        return List.of(publishedMessage, subscriberMessage);
     }
 }
