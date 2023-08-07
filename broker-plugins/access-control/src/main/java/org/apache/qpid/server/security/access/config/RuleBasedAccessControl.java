@@ -21,7 +21,6 @@
 package org.apache.qpid.server.security.access.config;
 
 import java.security.AccessController;
-import java.util.Collections;
 import java.util.Map;
 
 import javax.security.auth.Subject;
@@ -104,7 +103,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
                             final Operation operation,
                             final PermissionedObject configuredObject)
     {
-        return authorise(token, operation, configuredObject, Collections.<String,Object>emptyMap());
+        return authorise(token, operation, configuredObject, Map.of());
     }
 
     @Override

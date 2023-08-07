@@ -59,7 +59,7 @@ public class TestConfiguredObjectTypeFactory implements ConfiguredObjectTypeFact
     @Override
     public UnresolvedConfiguredObject<TestConfiguredObject> recover(final ConfiguredObjectFactory factory, final ConfiguredObjectRecord record, final ConfiguredObject<?> parent)
     {
-        return new UnresolvedConfiguredObject<TestConfiguredObject>()
+        return new UnresolvedConfiguredObject<>()
         {
             @Override
             public ConfiguredObject<?> getParent()

@@ -31,8 +31,9 @@ import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.UnresolvedConfiguredObject;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class TestConfiguredObjectFactory implements ConfiguredObjectFactory
 {
@@ -88,9 +89,9 @@ public class TestConfiguredObjectFactory implements ConfiguredObjectFactory
     {
         if (TestConfiguredObject.class.equals(category))
         {
-            return Collections.singleton(TestConfiguredObject.TYPE);
+            return Set.of(TestConfiguredObject.TYPE);
         }
-        return Collections.emptyList();
+        return List.of();
     }
 
     @Override
