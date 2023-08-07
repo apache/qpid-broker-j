@@ -93,7 +93,7 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
                 convertMetaData(serverMsg, addressSpace, mimeType, messageContent.length);
         final int metadataSize = messageMetaData_0_8.getStorableSize();
 
-        return new StoredMessage<MessageMetaData>()
+        return new StoredMessage<>()
         {
             @Override
             public MessageMetaData getMetaData()
@@ -196,7 +196,7 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
 
         props.setEncoding(convertToShortStringForProperty("encoding", serverMsg.getMessageHeader().getEncoding()));
 
-        Map<String,Object> headerProps = new LinkedHashMap<String, Object>();
+        Map<String,Object> headerProps = new LinkedHashMap<>();
 
         for(String headerName : serverMsg.getMessageHeader().getHeaderNames())
         {

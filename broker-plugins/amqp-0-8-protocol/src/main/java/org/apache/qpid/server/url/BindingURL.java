@@ -20,9 +20,6 @@
  */
 package org.apache.qpid.server.url;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -56,21 +53,19 @@ public interface BindingURL
      */
     String OPTION_REJECT_BEHAVIOUR = "rejectbehaviour";
 
-    Set<String> NON_CONSUMER_OPTIONS =
-            Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(OPTION_EXCLUSIVE,
-                                                                          OPTION_AUTODELETE,
-                                                                          OPTION_DURABLE,
-                                                                          OPTION_BROWSE,
-                                                                          OPTION_ROUTING_KEY,
-                                                                          OPTION_BINDING_KEY,
-                                                                          OPTION_EXCHANGE_AUTODELETE,
-                                                                          OPTION_EXCHANGE_DURABLE,
-                                                                          OPTION_EXCHANGE_DURABLE,
-                                                                          OPTION_REJECT_BEHAVIOUR,
-                                                                          OPTION_SEND_ENCRYPTED,
-                                                                          OPTION_ENCRYPTED_RECIPIENTS,
-                                                                          OPTION_DELIVERY_DELAY,
-                                                                          OPTION_LOCAL_ADDRESS)));
+    Set<String> NON_CONSUMER_OPTIONS = Set.of(OPTION_EXCLUSIVE,
+            OPTION_AUTODELETE,
+            OPTION_DURABLE,
+            OPTION_BROWSE,
+            OPTION_ROUTING_KEY,
+            OPTION_BINDING_KEY,
+            OPTION_EXCHANGE_AUTODELETE,
+            OPTION_EXCHANGE_DURABLE,
+            OPTION_REJECT_BEHAVIOUR,
+            OPTION_SEND_ENCRYPTED,
+            OPTION_ENCRYPTED_RECIPIENTS,
+            OPTION_DELIVERY_DELAY,
+            OPTION_LOCAL_ADDRESS);
 
 
     String getURL();

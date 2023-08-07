@@ -23,8 +23,6 @@ package org.apache.qpid.server.protocol.v0_8;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.BufferUnderflowException;
 import java.security.AccessControlException;
@@ -114,7 +112,7 @@ public class AMQPConnection_0_8Impl
      * Used so we know which channels we need to call {@link AMQChannel#receivedComplete()}
      * on after handling the frames.
      */
-    private final Set<AMQChannel> _channelsForCurrentMessage = Collections.newSetFromMap(new ConcurrentHashMap<AMQChannel, Boolean>());
+    private final Set<AMQChannel> _channelsForCurrentMessage = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private final ServerDecoder _decoder;
 
@@ -160,7 +158,7 @@ public class AMQPConnection_0_8Impl
     private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
 
     private final Set<AMQPSession<?,?>> _sessionsWithWork =
-            Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?,?>, Boolean>());
+            Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private volatile int _heartBeatDelay;
     private volatile String _closeCause;
@@ -314,7 +312,7 @@ public class AMQPConnection_0_8Impl
 
             String locales = "en_US";
 
-            Map<String,Object> props = Collections.emptyMap();
+            Map<String,Object> props = Map.of();
             for(ConnectionPropertyEnricher enricher : getPort().getConnectionPropertyEnrichers())
             {
                 props = enricher.addConnectionProperties(this, props);
@@ -322,8 +320,8 @@ public class AMQPConnection_0_8Impl
 
             FieldTable serverProperties = FieldTable.convertToFieldTable(props);
 
-            AMQMethodBody responseBody = getMethodRegistry().createConnectionStartBody((short) getProtocolMajorVersion(),
-                                                                                       (short) pv.getActualMinorVersion(),
+            AMQMethodBody responseBody = getMethodRegistry().createConnectionStartBody(getProtocolMajorVersion(),
+                                                                                       pv.getActualMinorVersion(),
                                                                                        serverProperties,
                                                                                        mechanisms.getBytes(US_ASCII),
                                                                                        locales.getBytes(US_ASCII));
@@ -706,15 +704,11 @@ public class AMQPConnection_0_8Impl
     @Override
     public final void readerIdle()
     {
-        AccessController.doPrivileged(new PrivilegedAction<Object>()
+        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " + _state, true));
-                getNetwork().close();
-                return null;
-            }
+            getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " + _state, true));
+            getNetwork().close();
+            return null;
         }, getAccessControllerContext());
     }
 
@@ -756,24 +750,19 @@ public class AMQPConnection_0_8Impl
             default:
                 cause = ErrorCodes.INTERNAL_ERROR;
         }
-        addAsyncTask(new Action<AMQPConnection_0_8Impl>()
+        addAsyncTask(object ->
         {
+            int channelId = session.getChannelId();
+            closeChannel(channelId, cause, message);
 
-            @Override
-            public void performAction(final AMQPConnection_0_8Impl object)
-            {
-                int channelId = session.getChannelId();
-                closeChannel(channelId, cause, message);
+            MethodRegistry methodRegistry = getMethodRegistry();
+            ChannelCloseBody responseBody =
+                    methodRegistry.createChannelCloseBody(
+                            cause,
+                            AMQShortString.validValueOf(message),
+                            0, 0);
 
-                MethodRegistry methodRegistry = getMethodRegistry();
-                ChannelCloseBody responseBody =
-                        methodRegistry.createChannelCloseBody(
-                                cause,
-                                AMQShortString.validValueOf(message),
-                                0, 0);
-
-                writeFrame(responseBody.generateFrame(channelId));
-            }
+            writeFrame(responseBody.generateFrame(channelId));
         });
 
     }
@@ -796,16 +785,10 @@ public class AMQPConnection_0_8Impl
         }
         _closeCauseCode = cause;
         _closeCause = description;
-        Action<AMQPConnection_0_8Impl> action = new Action<AMQPConnection_0_8Impl>()
+        Action<AMQPConnection_0_8Impl> action = object ->
         {
-            @Override
-            public void performAction(final AMQPConnection_0_8Impl object)
-            {
-                AMQConnectionException e = new AMQConnectionException(cause, description, 0, 0,
-                                                                      getMethodRegistry(),
-                                                                      null);
-                sendConnectionClose(0, e.getCloseFrame());
-            }
+            AMQConnectionException e = new AMQConnectionException(cause, description, 0, 0, getMethodRegistry(), null);
+            sendConnectionClose(0, e.getCloseFrame());
         };
         addAsyncTask(action);
     }
@@ -1295,30 +1278,24 @@ public class AMQPConnection_0_8Impl
         assertState(ConnectionState.OPEN);
 
         ServerChannelMethodProcessor channelMethodProcessor = getChannel(channelId);
-        if(channelMethodProcessor == null)
+        if (channelMethodProcessor == null)
         {
             channelMethodProcessor = (ServerChannelMethodProcessor) Proxy.newProxyInstance(ServerMethodDispatcher.class.getClassLoader(),
-                                                            new Class[] { ServerChannelMethodProcessor.class }, new InvocationHandler()
+                    new Class[] { ServerChannelMethodProcessor.class }, (proxy, method, args) ->
                     {
-                        @Override
-                        public Object invoke(final Object proxy, final Method method, final Object[] args)
-                                throws Throwable
+                        if (method.getName().equals("receiveChannelCloseOk") && channelAwaitingClosure(channelId))
                         {
-                            if (method.getName().equals("receiveChannelCloseOk") && channelAwaitingClosure(channelId))
-                            {
-                                closeChannelOk(channelId);
-                            }
-                            else if(method.getName().startsWith("receive"))
-                            {
-                                sendConnectionClose(ErrorCodes.CHANNEL_ERROR,
-                                        "Unknown channel id: " + channelId, channelId);
-                            }
-                            else if(method.getName().equals("ignoreAllButCloseOk"))
-                            {
-                                return channelAwaitingClosure(channelId);
-                            }
-                            return null;
+                            closeChannelOk(channelId);
                         }
+                        else if(method.getName().startsWith("receive"))
+                        {
+                            sendConnectionClose(ErrorCodes.CHANNEL_ERROR, "Unknown channel id: " + channelId, channelId);
+                        }
+                        else if(method.getName().equals("ignoreAllButCloseOk"))
+                        {
+                            return channelAwaitingClosure(channelId);
+                        }
+                        return null;
                     });
         }
         return channelMethodProcessor;
@@ -1450,26 +1427,15 @@ public class AMQPConnection_0_8Impl
                     final Action<? super AMQPConnection_0_8Impl> asyncAction = _asyncTaskList.poll();
                     if(asyncAction != null)
                     {
-                        return new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                asyncAction.performAction(AMQPConnection_0_8Impl.this);
-                            }
-                        };
+                        return () -> asyncAction.performAction(AMQPConnection_0_8Impl.this);
                     }
                     else
                     {
                         // in case the connection was marked as closing between a call to hasNext() and
                         // a subsequent call to next()
-                        return new Runnable()
+                        return () ->
                         {
-                            @Override
-                            public void run()
-                            {
 
-                            }
                         };
                     }
                 }
@@ -1480,17 +1446,13 @@ public class AMQPConnection_0_8Impl
                         _sessionIterator = _sessionsWithWork.iterator();
                     }
                     final AMQPSession<?,?> session = _sessionIterator.next();
-                    return new Runnable()
+                    return () ->
                     {
-                        @Override
-                        public void run()
-                        {
-                            _sessionIterator.remove();
+                        _sessionIterator.remove();
 
-                            if (session.processPending())
-                            {
-                                _sessionsWithWork.add(session);
-                            }
+                        if (session.processPending())
+                        {
+                            _sessionsWithWork.add(session);
                         }
                     };
                 }
@@ -1498,14 +1460,7 @@ public class AMQPConnection_0_8Impl
             else if(!_asyncTaskList.isEmpty())
             {
                 final Action<? super AMQPConnection_0_8Impl> asyncAction = _asyncTaskList.poll();
-                return new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        asyncAction.performAction(AMQPConnection_0_8Impl.this);
-                    }
-                };
+                return () -> asyncAction.performAction(AMQPConnection_0_8Impl.this);
             }
             else
             {

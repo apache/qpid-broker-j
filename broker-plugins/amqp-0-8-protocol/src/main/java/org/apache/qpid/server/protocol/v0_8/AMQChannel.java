@@ -118,14 +118,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQChannel.class);
     private static final InfiniteCreditCreditManager INFINITE_CREDIT_CREDIT_MANAGER = new InfiniteCreditCreditManager();
     private static final Function<MessageConsumerAssociation, MessageInstance>
-            MESSAGE_INSTANCE_FUNCTION = new Function<MessageConsumerAssociation, MessageInstance>()
-    {
-        @Override
-        public MessageInstance apply(final MessageConsumerAssociation input)
-        {
-            return input.getMessageInstance();
-        }
-    };
+            MESSAGE_INSTANCE_FUNCTION = MessageConsumerAssociation::getMessageInstance;
     private static final String ALTERNATE_EXCHANGE = "alternateExchange";
 
     private static final AMQShortString IMMEDIATE_DELIVERY_REPLY_TEXT =
@@ -140,7 +133,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     private final boolean _forceMessageValidation;
 
     /** Maps from consumer tag to subscription instance. Allows us to unsubscribe from a queue. */
-    private final Map<AMQShortString, ConsumerTarget_0_8> _tag2SubscriptionTargetMap = new HashMap<AMQShortString, ConsumerTarget_0_8>();
+    private final Map<AMQShortString, ConsumerTarget_0_8> _tag2SubscriptionTargetMap = new HashMap<>();
 
     private final MessageStore _messageStore;
 
@@ -153,7 +146,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     private final AMQPConnection_0_8 _connection;
     private final AtomicBoolean _closing = new AtomicBoolean(false);
 
-    private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<Object>());
+    private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<>());
 
     private final AtomicBoolean _blocking = new AtomicBoolean(false);
 
@@ -229,16 +222,11 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
         _clientDeliveryMethod = connection.createDeliveryMethod(_channelId);
 
-        AccessController.doPrivileged((new PrivilegedAction<Object>()
+        AccessController.doPrivileged(((PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                message(ChannelMessages.CREATE());
-
-                return null;
-            }
-        }),_accessControllerContext);
+            message(ChannelMessages.CREATE());
+            return null;
+        }), _accessControllerContext);
 
         _forceMessageValidation = connection.getContextValue(Boolean.class, AMQPConnection_0_8.FORCE_MESSAGE_VALIDATION);
 
@@ -303,14 +291,10 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     public final void receivedComplete()
     {
-        AccessController.doPrivileged(new PrivilegedAction<Void>()
+        AccessController.doPrivileged((PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                sync();
-                return null;
-            }
+            sync();
+            return null;
         }, getAccessControllerContext());
 
     }
@@ -385,28 +369,23 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                         _currentMessage = null;
 
 
-                        final InstanceProperties instanceProperties =
-                                new InstanceProperties()
-                                {
-                                    @Override
-                                    public Object getProperty(final Property prop)
-                                    {
-                                        switch (prop)
-                                        {
-                                            case EXPIRATION:
-                                                return amqMessage.getExpiration();
-                                            case IMMEDIATE:
-                                                return amqMessage.isImmediate();
-                                            case PERSISTENT:
-                                                return amqMessage.isPersistent();
-                                            case MANDATORY:
-                                                return amqMessage.isMandatory();
-                                            case REDELIVERED:
-                                                return false;
-                                        }
-                                        return null;
-                                    }
-                                };
+                        final InstanceProperties instanceProperties = prop ->
+                        {
+                            switch (prop)
+                            {
+                                case EXPIRATION:
+                                    return amqMessage.getExpiration();
+                                case IMMEDIATE:
+                                    return amqMessage.isImmediate();
+                                case PERSISTENT:
+                                    return amqMessage.isPersistent();
+                                case MANDATORY:
+                                    return amqMessage.isMandatory();
+                                case REDELIVERED:
+                                    return false;
+                            }
+                            return null;
+                        };
 
                         final RoutingResult<AMQMessage> result =
                                 destination.route(amqMessage,
@@ -1090,19 +1069,15 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         if(async && _transaction instanceof LocalTransaction)
         {
 
-            ((LocalTransaction)_transaction).commitAsync(new Runnable()
+            ((LocalTransaction)_transaction).commitAsync(() ->
             {
-                @Override
-                public void run()
+                try
                 {
-                    try
-                    {
-                        immediateAction.run();
-                    }
-                    finally
-                    {
-                        _connection.incrementTransactionBeginCounter();
-                    }
+                    immediateAction.run();
+                }
+                finally
+                {
+                    _connection.incrementTransactionBeginCounter();
                 }
             });
         }
@@ -1371,7 +1346,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             }
             finally
             {
-                _ackedMessages = Collections.emptySet();
+                _ackedMessages = Set.of();
             }
 
         }
@@ -1400,7 +1375,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 }
                 finally
                 {
-                    _ackedMessages = Collections.emptySet();
+                    _ackedMessages = Set.of();
                 }
             }
 
@@ -1566,16 +1541,8 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             int requeues = 0;
             if (messageInstance.makeAcquisitionUnstealable(association.getConsumer()))
             {
-                requeues = messageInstance.routeToAlternate(new Action<MessageInstance>()
-                {
-                    @Override
-                    public void performAction(final MessageInstance requeueEntry)
-                    {
-                        messageWithSubject(ChannelMessages.DEADLETTERMSG(msg.getMessageNumber(),
-                                                                         requeueEntry.getOwningResource()
-                                                                               .getName()));
-                    }
-                }, null, null);
+                requeues = messageInstance.routeToAlternate(requeueEntry ->
+                        messageWithSubject(ChannelMessages.DEADLETTERMSG(msg.getMessageNumber(), requeueEntry.getOwningResource().getName())), null, null);
             }
 
             if(requeues == 0)
@@ -2626,7 +2593,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 try
                 {
 
-                    Map<String, Object> attributes = new HashMap<String, Object>();
+                    Map<String, Object> attributes = new HashMap<>();
                     if (arguments != null)
                     {
                         attributes.putAll(FieldTable.convertToMap(arguments));
@@ -3404,17 +3371,8 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
         else
         {
-            commit(new Runnable()
-            {
-
-                @Override
-                public void run()
-                {
-                    _connection.writeFrame(_txCommitOkFrame);
-                }
-            }, true);
+            commit(() -> _connection.writeFrame(_txCommitOkFrame), true);
         }
-
     }
 
     @Override
