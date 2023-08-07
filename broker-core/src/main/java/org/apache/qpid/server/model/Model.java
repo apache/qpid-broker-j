@@ -23,6 +23,7 @@ package org.apache.qpid.server.model;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -108,7 +109,7 @@ public abstract class Model
             final Class<? extends ConfiguredObject> category,
             final Class<? extends ConfiguredObject> descendantClass)
     {
-        Collection<Class<? extends ConfiguredObject>> candidateClasses = Set.of(category);
+        Collection<Class<? extends ConfiguredObject>> candidateClasses = Collections.singleton(category);
         while(!candidateClasses.isEmpty())
         {
             for(Class<? extends ConfiguredObject> candidate : candidateClasses)
