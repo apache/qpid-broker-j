@@ -28,7 +28,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
@@ -56,7 +55,7 @@ public class UpdateTest extends HttpTestBase
     public void update() throws Exception
     {
         final String newDescription = "newDescription";
-        Map<String, Object> updatedAttrs = Collections.singletonMap(ConfiguredObject.DESCRIPTION, newDescription);
+        Map<String, Object> updatedAttrs = Map.of(ConfiguredObject.DESCRIPTION, newDescription);
 
         getHelper().submitRequest(QUEUE_URL, "PUT", updatedAttrs, SC_OK);
         final Map<String, Object> queue = getHelper().getJsonAsMap(QUEUE_URL);
@@ -68,21 +67,21 @@ public class UpdateTest extends HttpTestBase
     @Test
     public void typeError() throws Exception
     {
-        Map<String, Object> updatedAttrs = Collections.singletonMap(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, "notNumber");
+        Map<String, Object> updatedAttrs = Map.of(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, "notNumber");
         getHelper().submitRequest(QUEUE_URL, "PUT", updatedAttrs, SC_UNPROCESSABLE_ENTITY);
     }
 
     @Test
     public void emptyUpdate() throws Exception
     {
-        getHelper().submitRequest(QUEUE_URL, "PUT", Collections.<String, Object>emptyMap(), SC_OK);
+        getHelper().submitRequest(QUEUE_URL, "PUT", Map.of(), SC_OK);
     }
 
     @Test
     public void notFound() throws Exception
     {
         final String queueUrl = "queue/unknown";
-        getHelper().submitRequest(queueUrl, "POST", Collections.emptyMap(), SC_NOT_FOUND);
+        getHelper().submitRequest(queueUrl, "POST", Map.of(), SC_NOT_FOUND);
     }
 
     @Test
@@ -92,7 +91,7 @@ public class UpdateTest extends HttpTestBase
         String originalId = (String) before.get(ConfiguredObject.ID);
         assertThat(originalId, is(notNullValue()));
 
-        Map<String, Object> updatedAttrs = Collections.singletonMap(ConfiguredObject.ID, UUID.randomUUID());
+        Map<String, Object> updatedAttrs = Map.of(ConfiguredObject.ID, UUID.randomUUID());
 
         getHelper().submitRequest(QUEUE_URL, "POST", updatedAttrs, SC_UNPROCESSABLE_ENTITY);
         final Map<String, Object> queue = getHelper().getJsonAsMap(QUEUE_URL);

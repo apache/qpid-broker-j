@@ -32,8 +32,8 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.io.FileNotFoundException;
-import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -58,7 +58,7 @@ public class OperationTest extends HttpTestBase
     public void invokeNoParameters() throws Exception
     {
         Map<String, Object> response = getHelper().postJson("virtualhost/getStatistics",
-                                                            Collections.emptyMap(),
+                                                            Map.of(),
                                                             MAP_TYPE_REF, SC_OK);
         assertThat(response.size(), is(greaterThan(1)));
     }
@@ -66,8 +66,7 @@ public class OperationTest extends HttpTestBase
     @Test
     public void invokeWithParameters() throws Exception
     {
-        Map<Object, Object> params = Collections.singletonMap("statistics",
-                                                              Collections.singletonList("connectionCount"));
+        Map<Object, Object> params = Map.of("statistics", List.of("connectionCount"));
 
         Map<String, Object> response = getHelper().postJson("virtualhost/getStatistics",
                                                             params,
@@ -86,7 +85,7 @@ public class OperationTest extends HttpTestBase
     @Test
     public void invalidParameter() throws Exception
     {
-        Map<String, Object> params = Collections.singletonMap("unknown", Collections.emptyMap());
+        Map<String, Object> params = Map.of("unknown", Map.of());
 
         getHelper().submitRequest("virtualhost/getStatistics", "POST", params, SC_UNPROCESSABLE_ENTITY);
     }
@@ -94,7 +93,7 @@ public class OperationTest extends HttpTestBase
     @Test
     public void operationNotFound() throws Exception
     {
-        getHelper().submitRequest("virtualhost/notfound", "POST", Collections.emptyMap(), SC_NOT_FOUND);
+        getHelper().submitRequest("virtualhost/notfound", "POST", Map.of(), SC_NOT_FOUND);
     }
 
     @Test
@@ -102,7 +101,7 @@ public class OperationTest extends HttpTestBase
     {
         final HttpTestHelper brokerHelper = new HttpTestHelper(getBrokerAdmin());
         final Void response = brokerHelper.postJson("broker/performGC",
-                                                    Collections.emptyMap(),
+                                                    Map.of(),
                                                     new TypeReference<Void>()
                                                     {
                                                     },
@@ -117,7 +116,7 @@ public class OperationTest extends HttpTestBase
         try
         {
             getHelper().postJson("broker/performGC",
-                                 Collections.emptyMap(),
+                                 Map.of(),
                                  new TypeReference<Void>()
                                  {
                                  },

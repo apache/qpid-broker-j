@@ -31,7 +31,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +54,7 @@ public class CreateTest extends HttpTestBase
     public void create() throws Exception
     {
         final String queueUrl = "queue/myqueue";
-        getHelper().submitRequest(queueUrl, "PUT", Collections.emptyMap(), SC_CREATED);
+        getHelper().submitRequest(queueUrl, "PUT", Map.of(), SC_CREATED);
         final Map<String, Object> queue = getHelper().getJsonAsMap(queueUrl);
 
         assertThat(queue.get(ConfiguredObject.NAME), is(equalTo("myqueue")));
@@ -66,7 +65,7 @@ public class CreateTest extends HttpTestBase
     {
         final String queueUrl = "queue/myqueue";
         Map<String, List<String>> headers = new HashMap<>();
-        int responseCode = getHelper().submitRequest(queueUrl, "PUT", Collections.emptyMap(), headers);
+        int responseCode = getHelper().submitRequest(queueUrl, "PUT", Map.of(), headers);
         assertThat(responseCode, is(equalTo(SC_CREATED)));
         List<String> location = headers.get("Location");
         assertThat(location.size(), is(equalTo(1)));
@@ -79,7 +78,7 @@ public class CreateTest extends HttpTestBase
         final String parentUrl = "queue";
         final String queueUrl = "queue/myqueue";
         Map<String, List<String>> headers = new HashMap<>();
-        int responseCode = getHelper().submitRequest(parentUrl, "PUT", Collections.singletonMap(ConfiguredObject.NAME, "myqueue"), headers);
+        int responseCode = getHelper().submitRequest(parentUrl, "PUT", Map.of(ConfiguredObject.NAME, "myqueue"), headers);
         assertThat(responseCode, is(equalTo(SC_CREATED)));
         List<String> location = headers.get("Location");
         assertThat(location.size(), is(equalTo(1)));
@@ -90,7 +89,7 @@ public class CreateTest extends HttpTestBase
     public void createSubtype() throws Exception
     {
         final String queueUrl = "queue/myqueue";
-        final Map<String, Object> attrs = Collections.singletonMap(ConfiguredObject.TYPE, "priority");
+        final Map<String, Object> attrs = Map.of(ConfiguredObject.TYPE, "priority");
         getHelper().submitRequest(queueUrl, "PUT", attrs, SC_CREATED);
         final Map<String, Object> queue = getHelper().getJsonAsMap(queueUrl);
 
@@ -114,7 +113,7 @@ public class CreateTest extends HttpTestBase
     public void unknownSubtype() throws Exception
     {
         final String queueUrl = "queue/myqueue";
-        final Map<String, Object> attrs = Collections.singletonMap(ConfiguredObject.TYPE, "unknown");
+        final Map<String, Object> attrs = Map.of(ConfiguredObject.TYPE, "unknown");
         getHelper().submitRequest(queueUrl, "PUT", attrs, SC_UNPROCESSABLE_ENTITY);
         getHelper().submitRequest(queueUrl, "GET", SC_NOT_FOUND);
     }
@@ -123,7 +122,7 @@ public class CreateTest extends HttpTestBase
     public void unknownCategory() throws Exception
     {
         final String queueUrl = "unknown/myobj";
-        final Map<Object, Object> attrs = Collections.singletonMap(ConfiguredObject.TYPE, "unknown");
+        final Map<Object, Object> attrs = Map.of(ConfiguredObject.TYPE, "unknown");
         getHelper().submitRequest(queueUrl, "PUT", attrs, SC_METHOD_NOT_ALLOWED);
         getHelper().submitRequest(queueUrl, "GET", SC_NOT_FOUND);
     }
@@ -132,12 +131,12 @@ public class CreateTest extends HttpTestBase
     public void createChild() throws Exception
     {
         final String parentUrl = "virtualhostlogger/mylogger";
-        Map<String, Object> parentAttrs = Collections.singletonMap(ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE);
+        Map<String, Object> parentAttrs = Map.of(ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE);
 
         getHelper().submitRequest(parentUrl, "PUT", parentAttrs, SC_CREATED);
 
         final String childUrl = "virtualhostloginclusionrule/mylogger/myrule";
-        Map<String, Object> childAttrs = Collections.singletonMap(ConfiguredObject.TYPE, VirtualHostNameAndLevelLogInclusionRule.TYPE);
+        Map<String, Object> childAttrs = Map.of(ConfiguredObject.TYPE, VirtualHostNameAndLevelLogInclusionRule.TYPE);
         getHelper().submitRequest(childUrl, "PUT", childAttrs, SC_CREATED);
     }
 
@@ -145,7 +144,7 @@ public class CreateTest extends HttpTestBase
     public void unknownParent() throws Exception
     {
         final String childUrl = "virtualhostloginclusionrule/unknown/myrule";
-        Map<String, Object> childAttrs = Collections.singletonMap(ConfiguredObject.TYPE, VirtualHostNameAndLevelLogInclusionRule.TYPE);
+        Map<String, Object> childAttrs = Map.of(ConfiguredObject.TYPE, VirtualHostNameAndLevelLogInclusionRule.TYPE);
         getHelper().submitRequest(childUrl, "PUT", childAttrs, SC_UNPROCESSABLE_ENTITY);
     }
 
@@ -158,7 +157,7 @@ public class CreateTest extends HttpTestBase
         String queueUrl = "queue/" + queueNameDoubleEncoded;
 
         Map<String, List<String>> headers = new HashMap<>();
-        int responseCode = getHelper().submitRequest(queueUrl, "PUT", Collections.emptyMap(), headers);
+        int responseCode = getHelper().submitRequest(queueUrl, "PUT", Map.of(), headers);
         assertThat(responseCode, is(equalTo(SC_CREATED)));
         List<String> location = headers.get("Location");
         assertThat(location.size(), is(equalTo(1)));
@@ -174,7 +173,7 @@ public class CreateTest extends HttpTestBase
     {
         final String parentUrl = "queue";
         final String queueName = "myqueue";
-        final Map<Object, Object> attrs = Collections.singletonMap(ConfiguredObject.NAME, queueName);
+        final Map<Object, Object> attrs = Map.of(ConfiguredObject.NAME, queueName);
         getHelper().submitRequest(parentUrl, method, attrs, SC_CREATED);
         final Map<String, Object> queue = getHelper().getJsonAsMap(String.format("%s/%s", parentUrl, queueName));
 

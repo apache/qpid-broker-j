@@ -28,7 +28,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +51,7 @@ import org.apache.qpid.tests.http.HttpRequestConfig;
 import org.apache.qpid.tests.http.HttpTestBase;
 
 @HttpRequestConfig(useVirtualHostAsHost = false)
-public class SpiltStoreTest extends HttpTestBase
+public class SplitStoreTest extends HttpTestBase
 {
     private static final String TEST_QUEUE = "testQueue";
 
@@ -130,7 +129,7 @@ public class SpiltStoreTest extends HttpTestBase
 
     private void changeState(final String url, final String desiredState) throws Exception
     {
-        Map<String, Object> attributes = Collections.singletonMap(ConfiguredObject.DESIRED_STATE, desiredState);
+        Map<String, Object> attributes = Map.of(ConfiguredObject.DESIRED_STATE, desiredState);
         getHelper().submitRequest(url, "POST", attributes, SC_OK);
     }
 

@@ -33,7 +33,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +54,6 @@ import javax.jms.StreamMessage;
 import javax.jms.TextMessage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.base.Strings;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -106,8 +104,7 @@ public class MessageTest extends HttpTestBase
         }
 
         List<Map<String, Object>> messages = getHelper().postJson("queue/myqueue/getMessageInfo",
-                                                                  Collections.singletonMap("includeHeaders",
-                                                                                           Boolean.TRUE),
+                                                                  Map.of("includeHeaders", Boolean.TRUE),
                                                                   LIST_MAP_TYPE_REF, SC_OK);
         assertThat(messages.size(), is(equalTo(1)));
 
@@ -137,8 +134,7 @@ public class MessageTest extends HttpTestBase
         }
 
         List<Map<String, Object>> messages = getHelper().postJson("queue/myqueue/getMessageInfo",
-                                                                  Collections.singletonMap("includeHeaders",
-                                                                                           Boolean.FALSE),
+                                                                  Map.of("includeHeaders", Boolean.FALSE),
                                                                   LIST_MAP_TYPE_REF, SC_OK);
         assertThat(messages.size(), is(equalTo(1)));
 
@@ -163,8 +159,7 @@ public class MessageTest extends HttpTestBase
             producer.send(jmsMessage);
 
             List<Map<String, Object>> messages = getHelper().postJson("queue/myqueue/getMessageInfo",
-                                                                      Collections.singletonMap("includeHeaders",
-                                                                                               Boolean.FALSE),
+                                                                      Map.of("includeHeaders", Boolean.FALSE),
                                                                       LIST_MAP_TYPE_REF, SC_OK);
             assertThat(messages.size(), is(equalTo(1)));
             Map<String, Object> message = messages.get(0);
@@ -175,10 +170,8 @@ public class MessageTest extends HttpTestBase
             jmsMessage = consumer.receive(getReceiveTimeout());
             assertThat(jmsMessage, is(notNullValue()));
 
-            messages = getHelper().postJson("queue/myqueue/getMessageInfo",
-                                                                      Collections.singletonMap("includeHeaders",
-                                                                                               Boolean.FALSE),
-                                                                      LIST_MAP_TYPE_REF, SC_OK);
+            messages = getHelper().postJson("queue/myqueue/getMessageInfo", Map.of("includeHeaders", Boolean.FALSE),
+                    LIST_MAP_TYPE_REF, SC_OK);
             assertThat(messages.size(), is(equalTo(1)));
 
             message = messages.get(0);
@@ -212,8 +205,7 @@ public class MessageTest extends HttpTestBase
         }
 
         List<Map<String, Object>> messages = getHelper().postJson("queue/myqueue/getMessageInfo",
-                                                                  Collections.singletonMap("includeHeaders",
-                                                                                           Boolean.TRUE),
+                                                                  Map.of("includeHeaders", Boolean.TRUE),
                                                                   LIST_MAP_TYPE_REF, SC_OK);
         assertThat(messages.size(), is(equalTo(1)));
         Map<String, Object> message = messages.get(0);
@@ -250,8 +242,7 @@ public class MessageTest extends HttpTestBase
         }
 
         List<Map<String, Object>> messages = getHelper().postJson("queue/myqueue/getMessageInfo",
-                                                                  Collections.singletonMap("includeHeaders",
-                                                                                           Boolean.TRUE),
+                                                                  Map.of("includeHeaders", Boolean.TRUE),
                                                                   LIST_MAP_TYPE_REF, SC_OK);
         assertThat(messages.size(), is(equalTo(1)));
         Map<String, Object> message = messages.get(0);
@@ -291,8 +282,7 @@ public class MessageTest extends HttpTestBase
         }
 
         List<Map<String, Object>> messages = getHelper().postJson("queue/myqueue/getMessageInfo",
-                                                                  Collections.singletonMap("includeHeaders",
-                                                                                           Boolean.TRUE),
+                                                                  Map.of("includeHeaders", Boolean.TRUE),
                                                                   LIST_MAP_TYPE_REF, SC_OK);
         assertThat(messages.size(), is(equalTo(1)));
         Map<String, Object> message = messages.get(0);
@@ -314,7 +304,7 @@ public class MessageTest extends HttpTestBase
 
         getHelper().submitRequest("virtualhost/publishMessage",
                                   "POST",
-                                  Collections.singletonMap("message", messageBody),
+                                  Map.of("message", messageBody),
                                   SC_OK);
 
         Connection connection = getConnection();
@@ -351,7 +341,7 @@ public class MessageTest extends HttpTestBase
 
         getHelper().submitRequest("virtualhost/publishMessage",
                                   "POST",
-                                  Collections.singletonMap("message", messageBody),
+                                  Map.of("message", messageBody),
                                   SC_OK);
 
         Connection connection = getConnection();
@@ -387,7 +377,7 @@ public class MessageTest extends HttpTestBase
 
         getHelper().submitRequest("virtualhost/publishMessage",
                                   "POST",
-                                  Collections.singletonMap("message", messageBody),
+                                  Map.of("message", messageBody),
                                   SC_OK);
 
         Connection connection = getConnection();
@@ -460,7 +450,7 @@ public class MessageTest extends HttpTestBase
 
         getHelper().submitRequest("virtualhost/publishMessage",
                                   "POST",
-                                  Collections.singletonMap("message", messageBody),
+                                  Map.of("message", messageBody),
                                   SC_OK);
 
         Connection connection = getConnection();

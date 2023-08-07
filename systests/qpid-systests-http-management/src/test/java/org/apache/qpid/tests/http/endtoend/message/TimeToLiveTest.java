@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Collections;
+import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
@@ -87,14 +87,14 @@ public class TimeToLiveTest extends HttpTestBase
 
         getHelper().submitRequest(String.format("queue/%s", QUEUE_NAME),
                                   "POST",
-                                  Collections.singletonMap("maximumMessageTtl", 1),
+                                  Map.of("maximumMessageTtl", 1),
                                   SC_OK);
 
         Thread.sleep(HOUSE_KEEPING_CHECK_PERIOD * 2);
 
         getHelper().submitRequest(String.format("queue/%s", QUEUE_NAME),
                                   "POST",
-                                  Collections.singletonMap("maximumMessageTtl", 0),
+                                  Map.of("maximumMessageTtl", 0),
                                   SC_OK);
 
         Connection connection2 = getConnection();

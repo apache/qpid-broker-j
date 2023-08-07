@@ -28,8 +28,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -74,7 +74,7 @@ public class CompressedResponsesTest extends HttpTestBase
     {
         final boolean expectCompression = allowCompression && acceptCompressed;
 
-        getHelper().submitRequest("plugin/httpManagement", "POST", Collections.singletonMap("compressResponses", expectCompression), SC_OK);
+        getHelper().submitRequest("plugin/httpManagement", "POST", Map.of("compressResponses", expectCompression), SC_OK);
 
 
         HttpURLConnection conn = getHelper().openManagementConnection("/service/metadata", "GET");

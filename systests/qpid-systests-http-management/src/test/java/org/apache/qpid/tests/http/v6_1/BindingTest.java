@@ -30,7 +30,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,11 +55,10 @@ public class BindingTest extends HttpTestBase
     @Test
     public void bind() throws Exception
     {
-        Map<String, String> arguments = Collections.singletonMap(AMQPFilterTypes.JMS_SELECTOR.getValue(), "1<2");
+        Map<String, String> arguments = Map.of(AMQPFilterTypes.JMS_SELECTOR.getValue(), "1<2");
         getHelper().submitRequest("/api/v6.1/binding/amq.direct/myqueue/foo",
                                   "PUT",
-                                  Collections.singletonMap("arguments",
-                                                           arguments),
+                                  Map.of("arguments", arguments),
                                   SC_CREATED);
         List<Map<String, Object>> bindings = getHelper().getJsonAsList("queue/myqueue/getPublishingLinks");
         assertThat(bindings, is(notNullValue()));
@@ -84,7 +82,7 @@ public class BindingTest extends HttpTestBase
     @Test
     public void get() throws Exception
     {
-        Map<String, String> arguments = Collections.singletonMap(AMQPFilterTypes.JMS_SELECTOR.getValue(), "1<2");
+        Map<String, String> arguments = Map.of(AMQPFilterTypes.JMS_SELECTOR.getValue(), "1<2");
         Map<String, Object> bindOperationArguments = new HashMap<>();
         bindOperationArguments.put("destination", "myqueue");
         bindOperationArguments.put("bindingKey", "foo");
@@ -111,7 +109,7 @@ public class BindingTest extends HttpTestBase
     @Test
     public void delete() throws Exception
     {
-        Map<String, String> arguments = Collections.singletonMap(AMQPFilterTypes.JMS_SELECTOR.getValue(), "1<2");
+        Map<String, String> arguments = Map.of(AMQPFilterTypes.JMS_SELECTOR.getValue(), "1<2");
         Map<String, Object> bindOperationArguments = new HashMap<>();
         bindOperationArguments.put("destination", "myqueue");
         bindOperationArguments.put("bindingKey", "foo");

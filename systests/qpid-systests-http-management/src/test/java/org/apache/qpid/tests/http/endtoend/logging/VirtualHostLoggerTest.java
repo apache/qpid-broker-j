@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,7 +107,7 @@ public class VirtualHostLoggerTest extends HttpTestBase
         final int queueCreateMatchesBefore = countLogFileMatches(downloadUrl, "QUE-1001");
         assertThat("Unexpected queue matches before queue creation", queueCreateMatchesBefore, is(equalTo(0)));
 
-        getHelper().submitRequest("queue/myqueue", "PUT", Collections.emptyMap(), SC_CREATED);
+        getHelper().submitRequest("queue/myqueue", "PUT", Map.of(), SC_CREATED);
 
         final int queueCreateMatchesAfter = countLogFileMatches(downloadUrl, "QUE-1001");
         assertThat("Unexpected queue matches before queue creation", queueCreateMatchesAfter, is(equalTo(1)));
@@ -116,7 +115,7 @@ public class VirtualHostLoggerTest extends HttpTestBase
         ruleAttributes.put("level", "OFF");
         getHelper().submitRequest(loggerRuleUrl, "PUT", ruleAttributes, SC_OK);
 
-        getHelper().submitRequest("queue/myqueue2", "PUT", Collections.emptyMap(), SC_CREATED);
+        getHelper().submitRequest("queue/myqueue2", "PUT", Map.of(), SC_CREATED);
 
         final int afterLevelChange = countLogFileMatches(downloadUrl, "QUE-1001");
         assertThat("Unexpected queue matches after level change", afterLevelChange, is(equalTo(queueCreateMatchesAfter)));
@@ -124,7 +123,7 @@ public class VirtualHostLoggerTest extends HttpTestBase
         ruleAttributes.put("level", "INFO");
         getHelper().submitRequest(loggerRuleUrl, "PUT", ruleAttributes, SC_OK);
 
-        getHelper().submitRequest("queue/myqueue3", "PUT", Collections.emptyMap(), SC_CREATED);
+        getHelper().submitRequest("queue/myqueue3", "PUT", Map.of(), SC_CREATED);
 
         final int afterSecondLevelChange = countLogFileMatches(downloadUrl, "QUE-1001");
         assertThat("Unexpected queue matches after level change", afterSecondLevelChange, is(equalTo(afterLevelChange + 1)));
