@@ -46,7 +46,7 @@ public class ConsumerParticipant implements Participant
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerParticipant.class);
 
     private final AtomicInteger _totalNumberOfMessagesReceived = new AtomicInteger(0);
-    private final NavigableSet<Integer> _allConsumedPayloadSizes = new ConcurrentSkipListSet<Integer>();
+    private final NavigableSet<Integer> _allConsumedPayloadSizes = new ConcurrentSkipListSet<>();
     private final AtomicLong _totalPayloadSizeOfAllMessagesReceived = new AtomicLong(0);
     private final CountDownLatch _asyncRunHasFinished = new CountDownLatch(1);
     private final ClientJmsDelegate _jmsDelegate;
@@ -98,15 +98,7 @@ public class ConsumerParticipant implements Participant
         {
             LOGGER.debug("Consumer {} registering listener", getName());
 
-            _jmsDelegate.registerListener(_command.getParticipantName(), new MessageListener(){
-
-                @Override
-                public void onMessage(Message message)
-                {
-                    processAsyncMessage(message);
-                }
-
-            });
+            _jmsDelegate.registerListener(_command.getParticipantName(), this::processAsyncMessage);
 
             waitUntilMsgListenerHasFinished();
             rethrowAnyAsyncMessageListenerException();

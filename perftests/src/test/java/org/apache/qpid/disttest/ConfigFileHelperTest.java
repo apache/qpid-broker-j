@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -57,8 +56,8 @@ public class ConfigFileHelperTest extends UnitTestBase
 
         List<String> configFiles = _configFileHelper.getTestConfigFiles(testConfigPath);
 
-        Set<String> expectedFiles = new HashSet<String>(Arrays.asList(jsFile, jsonFile));
-        Set<String> actualFiles = new HashSet<String>(configFiles);
+        Set<String> expectedFiles = Set.of(jsFile, jsonFile);
+        Set<String> actualFiles = new HashSet<>(configFiles);
 
         assertEquals(expectedFiles, actualFiles);
     }

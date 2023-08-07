@@ -56,7 +56,7 @@ public class Client implements ResultReporter
     public Client(final ClientJmsDelegate delegate) throws NamingException
     {
         _clientJmsDelegate = delegate;
-        _state = new AtomicReference<ClientState>(ClientState.CREATED);
+        _state = new AtomicReference<>(ClientState.CREATED);
         _visitor = new ClientCommandVisitor(this, _clientJmsDelegate);
     }
 
@@ -65,14 +65,10 @@ public class Client implements ResultReporter
      */
     public void start()
     {
-        _clientJmsDelegate.setConnectionLostListener(new ConnectionLostListener()
+        _clientJmsDelegate.setConnectionLostListener(() ->
         {
-            @Override
-            public void connectionLost()
-            {
-                LOGGER.warn("Client unexpectedly lost the JMS connection. Shutting down.");
-                transitToStopped();
-            }
+            LOGGER.warn("Client unexpectedly lost the JMS connection. Shutting down.");
+            transitToStopped();
         });
         _clientJmsDelegate.setInstructionListener(this);
         _clientJmsDelegate.sendRegistrationMessage();

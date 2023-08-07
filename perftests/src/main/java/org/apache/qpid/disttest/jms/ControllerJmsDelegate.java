@@ -19,7 +19,6 @@
  */
 package org.apache.qpid.disttest.jms;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +30,6 @@ import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
-import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
@@ -51,14 +49,14 @@ public class ControllerJmsDelegate
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ControllerJmsDelegate.class);
 
-    private final Map<String, Destination> _clientNameToQueueMap = new ConcurrentHashMap<String, Destination>();
+    private final Map<String, Destination> _clientNameToQueueMap = new ConcurrentHashMap<>();
     private final Connection _connection;
     private final Queue _controllerQueue;
     private final Session _controllerQueueListenerSession;
     private final Session _commandSession;
     private final QueueCreator _queueCreator;
 
-    private final List<CommandListener> _commandListeners = new CopyOnWriteArrayList<CommandListener>();
+    private final List<CommandListener> _commandListeners = new CopyOnWriteArrayList<>();
 
     public ControllerJmsDelegate(final Context context) throws NamingException, JMSException
     {
@@ -77,26 +75,22 @@ public class ControllerJmsDelegate
         {
             createControllerQueue();
             final MessageConsumer consumer = _controllerQueueListenerSession.createConsumer(_controllerQueue);
-            consumer.setMessageListener(new MessageListener()
+            consumer.setMessageListener(message ->
             {
-                @Override
-                public void onMessage(final Message message)
+                try
                 {
-                    try
-                    {
-                        String jmsMessageID = message.getJMSMessageID();
-                        LOGGER.debug("Received message ID {}", jmsMessageID);
+                    String jmsMessageID = message.getJMSMessageID();
+                    LOGGER.debug("Received message ID {}", jmsMessageID);
 
-                        final Command command = JmsMessageAdaptor.messageToCommand(message);
-                        LOGGER.debug("Converted message ID {} into command {}", jmsMessageID, command);
+                    final Command command = JmsMessageAdaptor.messageToCommand(message);
+                    LOGGER.debug("Converted message ID {} into command {}", jmsMessageID, command);
 
-                        processCommandWithFirstSupportingListener(command);
-                        LOGGER.debug("Finished processing command for message ID", jmsMessageID);
-                    }
-                    catch (Exception t)
-                    {
-                        LOGGER.error("Can't handle JMS message", t);
-                    }
+                    processCommandWithFirstSupportingListener(command);
+                    LOGGER.debug("Finished processing command for message ID", jmsMessageID);
+                }
+                catch (Exception t)
+                {
+                    LOGGER.error("Can't handle JMS message", t);
                 }
             });
         }
@@ -239,12 +233,8 @@ public class ControllerJmsDelegate
 
     private void createControllerQueue() throws JMSException
     {
-        QueueConfig controllerQueueConfig = new QueueConfig(_controllerQueue.getQueueName(),
-                                                            true,
-                                                            Collections.<String, Object>emptyMap());
-        _queueCreator.createQueues(_connection,
-                                   _controllerQueueListenerSession,
-                                   Collections.singletonList(controllerQueueConfig));
+        final QueueConfig controllerQueueConfig = new QueueConfig(_controllerQueue.getQueueName(), true, Map.of());
+        _queueCreator.createQueues(_connection, _controllerQueueListenerSession, List.of(controllerQueueConfig));
     }
 
     public void addCommandListener(CommandListener commandListener)

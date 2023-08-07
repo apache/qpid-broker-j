@@ -42,7 +42,7 @@ public class ChartWriter
 
     static final String SUMMARY_FILE_NAME = "chart-summary.html";
 
-    private final SortedMap<File,ChartingDefinition> _chartFilesToChartDef = new TreeMap<File, ChartingDefinition>();
+    private final SortedMap<File,ChartingDefinition> _chartFilesToChartDef = new TreeMap<>();
 
     private File _chartDirectory = new File(".");
 

@@ -20,8 +20,6 @@
 package org.apache.qpid.disttest.controller.config;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -39,23 +37,23 @@ public class TestConfig
 
     public TestConfig()
     {
-        _clients = Collections.emptyList();
-        _queues = Collections.emptyList();
+        _clients = List.of();
+        _queues = List.of();
         _name = null;
-        _iterations = Collections.emptyList();
+        _iterations = List.of();
     }
 
     public TestConfig(String name, ClientConfig[] clients, QueueConfig[] queues)
     {
-        _clients = Arrays.asList(clients);
-        _queues = Arrays.asList(queues);
+        _clients = List.of(clients);
+        _queues = List.of(queues);
         _name = name;
-        _iterations = Collections.emptyList();
+        _iterations = List.of();
     }
 
     public List<String> getClientNames()
     {
-        List<String> clientNames = new ArrayList<String>();
+        List<String> clientNames = new ArrayList<>();
         for (ClientConfig clientConfig : _clients)
         {
             clientNames.add(clientConfig.getName());
@@ -80,18 +78,18 @@ public class TestConfig
 
     public List<CommandForClient> createCommands()
     {
-        List<CommandForClient> commandsForClients = new ArrayList<CommandForClient>();
+        List<CommandForClient> commandsForClients = new ArrayList<>();
         for (ClientConfig client : _clients)
         {
             commandsForClients.addAll(client.createCommands());
         }
 
-        return Collections.unmodifiableList(commandsForClients);
+        return List.copyOf(commandsForClients);
     }
 
     public List<QueueConfig> getQueues()
     {
-        return Collections.unmodifiableList(_queues);
+        return _queues;
     }
 
     public String getName()
@@ -101,7 +99,7 @@ public class TestConfig
 
     public List<IterationValue> getIterationValues()
     {
-        List<IterationValue> iterationValues = new ArrayList<IterationValue>();
+        List<IterationValue> iterationValues = new ArrayList<>();
         for (Map<String, String> iterationMap : _iterations)
         {
             iterationValues.add(new IterationValue(iterationMap));
@@ -112,6 +110,6 @@ public class TestConfig
 
     public List<ClientConfig> getClients()
     {
-        return Collections.unmodifiableList(_clients);
+        return _clients;
     }
 }

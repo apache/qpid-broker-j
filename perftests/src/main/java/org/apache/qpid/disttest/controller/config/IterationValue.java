@@ -20,7 +20,6 @@ package org.apache.qpid.disttest.controller.config;
 
 import java.beans.IntrospectionException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,7 +37,7 @@ public class IterationValue
 
     public IterationValue()
     {
-        _iterationPropertyValuesWithUnderscores = Collections.emptyMap();
+        _iterationPropertyValuesWithUnderscores = Map.of();
     }
 
     public Map<String, String> getIterationPropertyValuesWithUnderscores()
@@ -61,7 +60,7 @@ public class IterationValue
 
     private Map<String, String> getIterationPropertyValuesWithoutUnderscores()
     {
-        Map<String, String> iterationPropertyValues = new HashMap<String, String>();
+        Map<String, String> iterationPropertyValues = new HashMap<>();
         for (String propertyNameWithUnderscore : _iterationPropertyValuesWithUnderscores.keySet())
         {
             String propertyName = propertyNameWithUnderscore.replaceFirst("_", "");

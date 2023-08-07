@@ -20,8 +20,6 @@
 package org.apache.qpid.disttest.controller.config;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.qpid.disttest.controller.CommandForClient;
@@ -36,13 +34,13 @@ public class ClientConfig
     public ClientConfig()
     {
         _name = null;
-        _connections = Collections.emptyList();
-        _messageProviders = Collections.emptyList();
+        _connections = List.of();
+        _messageProviders = List.of();
     }
 
     public ClientConfig(String name, ConnectionConfig... connections)
     {
-        this(name,  Arrays.asList(connections), null);
+        this(name, List.of(connections), null);
     }
 
     public ClientConfig(String name, List<ConnectionConfig> connections, List<MessageProviderConfig> messageProviders)
@@ -51,7 +49,7 @@ public class ClientConfig
         _connections = connections;
         if (messageProviders == null)
         {
-            _messageProviders = Collections.emptyList();
+            _messageProviders = List.of();
         }
         else
         {
@@ -66,12 +64,12 @@ public class ClientConfig
 
     public List<ConnectionConfig> getConnections()
     {
-        return Collections.unmodifiableList(_connections);
+        return List.copyOf(_connections);
     }
 
     public List<CommandForClient> createCommands()
     {
-        List<CommandForClient> commandsForClient = new ArrayList<CommandForClient>();
+        List<CommandForClient> commandsForClient = new ArrayList<>();
 
         for (MessageProviderConfig messageProvider : _messageProviders)
         {
@@ -101,7 +99,7 @@ public class ClientConfig
 
     public List<MessageProviderConfig> getMessageProviders()
     {
-        return Collections.unmodifiableList(_messageProviders);
+        return List.copyOf(_messageProviders);
     }
 
 

@@ -58,7 +58,7 @@ public abstract class AbstractTestRunner implements ITestRunner
     private final ParticipatingClients _participatingClients;
     private final TestInstance _testInstance;
     private final AtomicInteger _errorResponseCount = new AtomicInteger();
-    private final Set<CommandType> _setOfResponsesToExpect = Collections.synchronizedSet(new HashSet<CommandType>());
+    private final Set<CommandType> _setOfResponsesToExpect = Collections.synchronizedSet(new HashSet<>());
 
     /** Length of time to await test results or {@value #WAIT_FOREVER} */
     private final long _testResultTimeout;

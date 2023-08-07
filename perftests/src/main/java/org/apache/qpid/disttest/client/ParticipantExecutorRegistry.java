@@ -26,7 +26,7 @@ import java.util.Set;
 
 public class ParticipantExecutorRegistry
 {
-    private final Set<ParticipantExecutor> _participantExecutors = Collections.synchronizedSet(new HashSet<ParticipantExecutor>());
+    private final Set<ParticipantExecutor> _participantExecutors = Collections.synchronizedSet(new HashSet<>());
 
     public void add(ParticipantExecutor participantExecutor)
     {

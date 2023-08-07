@@ -35,7 +35,7 @@ public class SeriesDefinitionCreator
 
     public List<SeriesDefinition> createFromProperties(Properties properties)
     {
-        final List<SeriesDefinition> seriesDefinitions = new ArrayList<SeriesDefinition>();
+        final List<SeriesDefinition> seriesDefinitions = new ArrayList<>();
 
         int index = 1;
         boolean moreSeriesDefinitions = true;

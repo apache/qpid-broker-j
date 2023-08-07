@@ -20,8 +20,6 @@
 package org.apache.qpid.disttest.controller.config;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import javax.jms.Session;
@@ -31,8 +29,8 @@ import org.apache.qpid.disttest.message.CreateSessionCommand;
 
 public class SessionConfig
 {
-    private static final List<ProducerConfig> EMPTY_PRODUCER_LIST = Collections.emptyList();
-    private static final List<ConsumerConfig> EMPTY_CONSUMER_LIST = Collections.emptyList();
+    private static final List<ProducerConfig> EMPTY_PRODUCER_LIST = List.of();
+    private static final List<ConsumerConfig> EMPTY_CONSUMER_LIST = List.of();
 
     private final int _acknowledgeMode;
     private final String _sessionName;
@@ -46,12 +44,12 @@ public class SessionConfig
 
     public SessionConfig(String sessionName, int acknowledgeMode, ProducerConfig...producers)
     {
-        this(sessionName, acknowledgeMode, EMPTY_CONSUMER_LIST, Arrays.asList(producers));
+        this(sessionName, acknowledgeMode, EMPTY_CONSUMER_LIST, List.of(producers));
     }
 
     public SessionConfig(String sessionName, int acknowledgeMode, ConsumerConfig... consumers)
     {
-        this(sessionName, acknowledgeMode, Arrays.asList(consumers), EMPTY_PRODUCER_LIST);
+        this(sessionName, acknowledgeMode, List.of(consumers), EMPTY_PRODUCER_LIST);
     }
 
     public SessionConfig(String sessionName, int acknowledgeMode, List<ConsumerConfig> consumers, List<ProducerConfig> producers)
@@ -74,17 +72,17 @@ public class SessionConfig
 
     public List<ProducerConfig> getProducers()
     {
-        return Collections.unmodifiableList(_producers);
+        return List.copyOf(_producers);
     }
 
     public List<ConsumerConfig> getConsumers()
     {
-        return Collections.unmodifiableList(_consumers);
+        return List.copyOf(_consumers);
     }
 
     public List<Command> createCommands(String connectionName)
     {
-        List<Command> commands = new ArrayList<Command>();
+        List<Command> commands = new ArrayList<>();
         commands.add(createCommand(connectionName));
         for (ProducerConfig producer : _producers)
         {

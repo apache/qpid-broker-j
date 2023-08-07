@@ -32,7 +32,6 @@ import javax.jms.ConnectionFactory;
 import javax.jms.ConnectionMetaData;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
-import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -126,14 +125,7 @@ public class ClientJmsDelegate
         {
             _instructionQueue = _instructionListenerSession.createTemporaryQueue();
             final MessageConsumer instructionConsumer = _instructionListenerSession.createConsumer(_instructionQueue);
-            instructionConsumer.setMessageListener(new MessageListener()
-            {
-                @Override
-                public void onMessage(final Message message)
-                {
-                    client.processInstruction(JmsMessageAdaptor.messageToCommand(message));
-                }
-            });
+            instructionConsumer.setMessageListener(message -> client.processInstruction(JmsMessageAdaptor.messageToCommand(message)));
         }
         catch (final JMSException jmse)
         {
@@ -710,28 +702,24 @@ public class ClientJmsDelegate
     {
         try
         {
-            _controllerConnection.setExceptionListener(new ExceptionListener()
-                {
-                @Override
-                public void onException(final JMSException exception)
-                {
-                    LOGGER.warn("Caught ", exception);
+            _controllerConnection.setExceptionListener(exception ->
+            {
+                LOGGER.warn("Caught ", exception);
 
-                    if (connectionLostListener != null)
+                if (connectionLostListener != null)
+                {
+                    try
                     {
-                        try
-                        {
-                            _controllerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE).close();
-                        }
-                        catch (JMSException e)
-                        {
-                            LOGGER.warn("Unable to create/close a new session, assuming the connection is lost ", exception);
-
-                            connectionLostListener.connectionLost();
-                        }
+                        _controllerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE).close();
                     }
+                    catch (JMSException e)
+                    {
+                        LOGGER.warn("Unable to create/close a new session, assuming the connection is lost ", exception);
 
+                        connectionLostListener.connectionLost();
+                    }
                 }
+
             });
         }
         catch (JMSException e)

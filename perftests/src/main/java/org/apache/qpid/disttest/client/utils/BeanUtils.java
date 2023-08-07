@@ -32,7 +32,7 @@ import java.util.Map;
 
 public class BeanUtils
 {
-    private static final Map<Class, Class> PRIMITIVE_TYPES = Collections.synchronizedMap(new HashMap<Class, Class>());
+    private static final Map<Class, Class> PRIMITIVE_TYPES = Collections.synchronizedMap(new HashMap<>());
 
     static
     {
