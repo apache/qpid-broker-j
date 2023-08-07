@@ -22,7 +22,6 @@ package org.apache.qpid.server.management.amqp;
 
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
-import org.apache.qpid.server.util.Action;
 
 @PluggableService
 public class ManagementNodeCreator implements SystemNodeCreator
@@ -30,8 +29,7 @@ public class ManagementNodeCreator implements SystemNodeCreator
     @Override
     public void register(final SystemNodeRegistry registry)
     {
-        ManagementNode managementNode = new ManagementNode(registry.getVirtualHost(),
-                                                           registry.getVirtualHost());
+        ManagementNode managementNode = new ManagementNode(registry.getVirtualHost(), registry.getVirtualHost());
         registry.registerSystemNode(managementNode);
     }
 

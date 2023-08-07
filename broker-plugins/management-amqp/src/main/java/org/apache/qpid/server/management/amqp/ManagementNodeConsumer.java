@@ -52,7 +52,7 @@ class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanc
                                                                   BaseQueue
 {
     private final ManagementNode _managementNode;
-    private final List<ManagementResponse> _queue = Collections.synchronizedList(new ArrayList<ManagementResponse>());
+    private final List<ManagementResponse> _queue = Collections.synchronizedList(new ArrayList<>());
     private final T _target;
     private final String _name;
     private final UUID _identifier = UUID.randomUUID();

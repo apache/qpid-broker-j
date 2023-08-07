@@ -302,14 +302,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
                 connectionSpecificDestinations = new ConcurrentHashMap<>();
                 if(_connectionSpecificDestinations.putIfAbsent(connectionReference, connectionSpecificDestinations) == null)
                 {
-                    session.getAMQPConnection().addDeleteTask(new Action()
-                    {
-                        @Override
-                        public void performAction(final Object object)
-                        {
-                            _connectionSpecificDestinations.remove(connectionReference);
-                        }
-                    });
+                    session.getAMQPConnection().addDeleteTask(object -> _connectionSpecificDestinations.remove(connectionReference));
                 }
             }
             connectionSpecificDestinations.put(proxyMessageSource.getName(), proxyMessageSource);
@@ -368,7 +361,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
     @Override
     public List<String> getGlobalAddressDomains()
     {
-        return Collections.emptyList();
+        return List.of();
     }
 
     @Override
