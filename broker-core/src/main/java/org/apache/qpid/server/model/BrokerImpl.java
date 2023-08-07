@@ -999,7 +999,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             final SystemConfig<?> systemConfig = (SystemConfig) getParent();
             // This is deliberately asynchronous as the HTTP thread will be interrupted by restarting
             doAfter(systemConfig.setAttributesAsync(Map.of(ConfiguredObject.DESIRED_STATE, State.STOPPED)), () ->
-                    systemConfig.setAttributesAsync(Collections.singletonMap(ConfiguredObject.DESIRED_STATE, State.ACTIVE)));
+                    systemConfig.setAttributesAsync(Map.of(ConfiguredObject.DESIRED_STATE, State.ACTIVE)));
             return null;
         });
 
@@ -1064,9 +1064,9 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
         // remove Preferences from all ConfiguredObjects
         Subject userSubject = new Subject(true,
-                                          Collections.singleton(new AuthenticatedPrincipal(new UsernamePrincipal(username, origin))),
-                                          Collections.EMPTY_SET,
-                                          Collections.EMPTY_SET);
+                                          Set.of(new AuthenticatedPrincipal(new UsernamePrincipal(username, origin))),
+                                          Set.of(),
+                                          Set.of());
         java.util.Queue<ConfiguredObject<?>> configuredObjects = new LinkedList<>();
         configuredObjects.add(BrokerImpl.this);
         while (!configuredObjects.isEmpty())
@@ -1337,7 +1337,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         final Subject currentSubject = Subject.getSubject(AccessController.getContext());
         if (currentSubject == null)
         {
-            return Collections.emptySet();
+            return Set.of();
         }
         return Collections.unmodifiableSet(currentSubject.getPrincipals(GroupPrincipal.class));
     }
