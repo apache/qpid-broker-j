@@ -25,7 +25,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.util.Collections;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,7 +69,7 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
                        .channel().open().consumeResponse(ChannelOpenOkBody.class)
                        .tx().select().consumeResponse(TxSelectOkBody.class)
                        .basic().contentHeaderPropertiesContentType("text/plain")
-                       .contentHeaderPropertiesHeaders(Collections.singletonMap("test", "testValue"))
+                       .contentHeaderPropertiesHeaders(Map.of("test", "testValue"))
                        .contentHeaderPropertiesDeliveryMode((byte)1)
                        .contentHeaderPropertiesPriority((byte)1)
                        .publishExchange("")

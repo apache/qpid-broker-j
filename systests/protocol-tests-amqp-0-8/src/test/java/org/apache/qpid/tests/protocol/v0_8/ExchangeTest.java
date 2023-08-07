@@ -26,7 +26,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.util.Collections;
+import java.util.Map;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -389,7 +389,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                        .consumeResponse(ExchangeDeclareOkBody.class)
                        .exchange()
                        .declareName(TEST_EXCHANGE)
-                       .declareArguments(Collections.singletonMap("alternateExchange", altExchName)).declare()
+                       .declareArguments(Map.of("alternateExchange", altExchName)).declare()
                        .consumeResponse(ExchangeDeclareOkBody.class);
 
             ChannelCloseBody inUseResponse = interaction.exchange()
@@ -422,7 +422,7 @@ public class ExchangeTest extends BrokerAdminUsingTestBase
                                                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                       .exchange()
                                                       .declareName(TEST_EXCHANGE)
-                                                      .declareArguments(Collections.singletonMap("alternateExchange", "notKnown")).declare()
+                                                      .declareArguments(Map.of("alternateExchange", "notKnown")).declare()
                                                       .consumeResponse().getLatestResponse(ConnectionCloseBody.class);
             // TODO server fails - jira required
             assertThat(response.getReplyCode(), is(equalTo(ErrorCodes.NOT_FOUND)));

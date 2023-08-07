@@ -28,7 +28,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -67,7 +66,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
             QueueDeclareOkBody response = interaction.negotiateOpen()
                                                      .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                      .queue().declareName(BrokerAdmin.TEST_QUEUE_NAME)
-                                                     .declareArguments(Collections.singletonMap("defaultFilters",
+                                                     .declareArguments(Map.of("defaultFilters",
                                                                                                 "{\"selector\":{\"x-filter-jms-selector\":[\"id=2\"]}}"))
                                                      .declare()
                                                      .consumeResponse().getLatestResponse(QueueDeclareOkBody.class);
@@ -91,7 +90,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
                        .consumeResponse(ChannelFlowOkBody.class);
 
             String content2 = "Test Content 2";
-            Map<String, Object> messageHeaders2 = Collections.singletonMap("id", 2);
+            Map<String, Object> messageHeaders2 = Map.of("id", 2);
             String contentType = "text/plain";
 
             // first message is not matching queue default filter
@@ -99,7 +98,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
                        .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
                        .publishMandatory(true)
                        .contentHeaderPropertiesContentType(contentType)
-                       .contentHeaderPropertiesHeaders(Collections.singletonMap("id", 1))
+                       .contentHeaderPropertiesHeaders(Map.of("id", 1))
                        .content("Test1")
                        .publishMessage()
 
@@ -158,7 +157,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
             ConnectionCloseBody response = interaction.negotiateOpen()
                                                       .channel().open().consumeResponse(ChannelOpenOkBody.class)
                                                       .queue().declareName(BrokerAdmin.TEST_QUEUE_NAME)
-                                                      .declareArguments(Collections.singletonMap("foo", "bar"))
+                                                      .declareArguments(Map.of("foo", "bar"))
                                                       .declare()
                                                       .consumeResponse().getLatestResponse(ConnectionCloseBody.class);
 
