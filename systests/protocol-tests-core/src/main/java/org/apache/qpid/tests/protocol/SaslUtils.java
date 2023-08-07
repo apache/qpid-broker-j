@@ -30,21 +30,23 @@ public class SaslUtils
 
     private static String toHex(byte[] bin)
     {
-        StringBuilder result = new StringBuilder(2 * bin.length);
+        final StringBuilder result = new StringBuilder(2 * bin.length);
         for (byte b : bin) {
             result.append(HEX[(b >> 4) & 0xF]);
             result.append(HEX[(b & 0xF)]);
         }
         return result.toString();
     }
-    public static byte[] generateCramMD5ClientResponse(String userName, String userPassword, byte[] challengeBytes)
-            throws Exception
+
+    public static byte[] generateCramMD5ClientResponse(final String userName,
+                                                       final String userPassword,
+                                                       final byte[] challengeBytes) throws Exception
     {
-        String macAlgorithm = "HmacMD5";
-        Mac mac = Mac.getInstance(macAlgorithm);
+        final String macAlgorithm = "HmacMD5";
+        final Mac mac = Mac.getInstance(macAlgorithm);
         mac.init(new SecretKeySpec(userPassword.getBytes(StandardCharsets.UTF_8), macAlgorithm));
         final byte[] messageAuthenticationCode = mac.doFinal(challengeBytes);
-        String responseAsString = userName + " " + toHex(messageAuthenticationCode);
+        final String responseAsString = userName + " " + toHex(messageAuthenticationCode);
         return responseAsString.getBytes();
     }
 }

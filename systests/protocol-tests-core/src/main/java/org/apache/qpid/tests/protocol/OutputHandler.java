@@ -46,14 +46,14 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
     @Override
     public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise) throws Exception
     {
-        ByteBuffer byteBuffer = _outputEncoder.encode(msg);
+        final ByteBuffer byteBuffer = _outputEncoder.encode(msg);
         if (byteBuffer != null)
         {
             send(ctx, byteBuffer, promise);
         }
         else if (msg instanceof ByteBuf)
         {
-            ByteBuf buf = (ByteBuf) msg;
+            final ByteBuf buf = (ByteBuf) msg;
             final ByteBuffer bytes = ByteBuffer.allocate(buf.readableBytes());
             buf.readBytes(bytes.array());
             buf.release();
@@ -66,7 +66,7 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
         }
     }
 
-    private synchronized void send(ChannelHandlerContext ctx, final ByteBuffer dataByteBuffer, final ChannelPromise promise)
+    private synchronized void send(final ChannelHandlerContext ctx, final ByteBuffer dataByteBuffer, final ChannelPromise promise)
     {
         _cachedEncodedFramePromisePairs.add(new ByteBufferPromisePair(dataByteBuffer, promise));
         _encodedSize += dataByteBuffer.remaining();
@@ -77,17 +77,18 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
     public synchronized void flush(final ChannelHandlerContext ctx) throws Exception
     {
         final ChannelPromise promise = ctx.channel().newPromise();
-        byte[] data  = new byte[_encodedSize];
+        final byte[] data  = new byte[_encodedSize];
 
         int offset = 0;
-        while(offset < _encodedSize)
+        while (offset < _encodedSize)
         {
-            ByteBufferPromisePair currentPair = _cachedEncodedFramePromisePairs.poll();
-            int remaining = currentPair.byteBuffer.remaining();
+            final ByteBufferPromisePair currentPair = _cachedEncodedFramePromisePairs.poll();
+            final int remaining = currentPair.byteBuffer.remaining();
             currentPair.byteBuffer.get(data, offset, remaining) ;
             offset += remaining;
 
-            promise.addListener(future -> {
+            promise.addListener(future ->
+            {
                 if (future.isSuccess())
                 {
                     currentPair.channelPromise.setSuccess();
@@ -101,7 +102,7 @@ public class OutputHandler extends ChannelOutboundHandlerAdapter
 
         _encodedSize = 0;
 
-        ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
+        final ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         buffer.writeBytes(data);
 
         try

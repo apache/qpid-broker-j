@@ -61,7 +61,9 @@ public abstract class AbstractFrameTransport<I extends AbstractInteraction<I>> i
     private volatile Channel _channel;
     private volatile boolean _channelClosedSeen = false;
 
-    public AbstractFrameTransport(final InetSocketAddress brokerAddress, InputDecoder inputDecoder, OutputEncoder outputEncoder)
+    public AbstractFrameTransport(final InetSocketAddress brokerAddress,
+                                  final InputDecoder inputDecoder,
+                                  final OutputEncoder outputEncoder)
     {
         _brokerAddress = brokerAddress;
         _inputHandler = new InputHandler(_queue, inputDecoder);
@@ -78,14 +80,14 @@ public abstract class AbstractFrameTransport<I extends AbstractInteraction<I>> i
     {
         try
         {
-            Bootstrap b = new Bootstrap();
+            final Bootstrap b = new Bootstrap();
             b.group(_workerGroup);
             b.channel(NioSocketChannel.class);
             b.option(ChannelOption.SO_KEEPALIVE, true);
             b.handler(new ChannelInitializer<SocketChannel>()
             {
                 @Override
-                public void initChannel(SocketChannel ch) throws Exception
+                public void initChannel(final SocketChannel ch)
                 {
                     ChannelPipeline pipeline = ch.pipeline();
                     buildInputOutputPipeline(pipeline);
@@ -94,10 +96,10 @@ public abstract class AbstractFrameTransport<I extends AbstractInteraction<I>> i
 
             _channel = b.connect(_brokerAddress).sync().channel();
             _channel.closeFuture().addListener(future ->
-                                               {
-                                                   _channelClosedSeen = true;
-                                                   _queue.add(CHANNEL_CLOSED_RESPONSE);
-                                               });
+            {
+                _channelClosedSeen = true;
+                _queue.add(CHANNEL_CLOSED_RESPONSE);
+            });
         }
         catch (InterruptedException e)
         {
@@ -129,7 +131,7 @@ public abstract class AbstractFrameTransport<I extends AbstractInteraction<I>> i
         }
     }
 
-    ListenableFuture<Void> sendProtocolHeader(final byte[] bytes) throws Exception
+    ListenableFuture<Void> sendProtocolHeader(final byte[] bytes)
     {
         return sendBytes(bytes);
     }
@@ -137,8 +139,8 @@ public abstract class AbstractFrameTransport<I extends AbstractInteraction<I>> i
     public ListenableFuture<Void> sendBytes(final byte[] bytes)
     {
         Preconditions.checkState(_channel != null, "Not connected");
-        ChannelPromise promise = _channel.newPromise();
-        ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
+        final ChannelPromise promise = _channel.newPromise();
+        final ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         buffer.writeBytes(bytes);
         _channel.write(buffer, promise);
         return JdkFutureAdapters.listenInPoolThread(promise);
@@ -147,7 +149,7 @@ public abstract class AbstractFrameTransport<I extends AbstractInteraction<I>> i
     public ListenableFuture<Void> sendPerformative(final Object data) throws Exception
     {
         Preconditions.checkState(_channel != null, "Not connected");
-        ChannelPromise promise = _channel.newPromise();
+        final ChannelPromise promise = _channel.newPromise();
         _channel.write(data, promise);
         return JdkFutureAdapters.listenInPoolThread(promise);
     }
@@ -159,7 +161,7 @@ public abstract class AbstractFrameTransport<I extends AbstractInteraction<I>> i
 
     public void assertNoMoreResponses() throws Exception
     {
-        Response response = getNextResponse();
+        final Response response = getNextResponse();
         assertThat(response, anyOf(nullValue(), instanceOf(ChannelClosedResponse.class)));
     }
 
