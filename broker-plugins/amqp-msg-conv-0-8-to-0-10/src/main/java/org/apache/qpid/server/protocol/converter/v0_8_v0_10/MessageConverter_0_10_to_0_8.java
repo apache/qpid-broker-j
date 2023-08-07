@@ -176,7 +176,7 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
 
             if(messageProps.hasApplicationHeaders())
             {
-                Map<String, Object> appHeaders = new HashMap<String, Object>(messageProps.getApplicationHeaders());
+                Map<String, Object> appHeaders = new HashMap<>(messageProps.getApplicationHeaders());
                 if(messageProps.getApplicationHeaders().containsKey("x-jms-type"))
                 {
                     String jmsType = String.valueOf(appHeaders.remove("x-jms-type"));
@@ -235,7 +235,7 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
     {
         final MessageMetaData metaData = convertMetaData(message, addressSpace);
         final int metadataSize = metaData.getStorableSize();
-        return new StoredMessage<org.apache.qpid.server.protocol.v0_8.MessageMetaData>()
+        return new StoredMessage<>()
         {
             @Override
             public MessageMetaData getMetaData()
