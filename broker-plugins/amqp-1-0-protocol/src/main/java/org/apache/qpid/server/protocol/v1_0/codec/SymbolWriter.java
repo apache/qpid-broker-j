@@ -21,16 +21,15 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.nio.charset.Charset;
-
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
 public class SymbolWriter extends VariableWidthWriter<Symbol>
 {
-    private static final Charset ENCODING_CHARSET = Charset.forName("US-ASCII");
     public static final byte LARGE_ENCODING_CODE = (byte) 0xb3;
     public static final byte SMALL_ENCODING_CODE = (byte) 0xa3;
+    private static final Factory<Symbol> FACTORY = (registry, object) -> new SymbolWriter(object);
+
     private final Symbol _value;
 
     public SymbolWriter(final Symbol object)
@@ -60,17 +59,6 @@ public class SymbolWriter extends VariableWidthWriter<Symbol>
             buf.put((byte)_value.charAt(i));
         }
     }
-
-    private static final Factory<Symbol> FACTORY = new Factory<Symbol>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<Symbol> newInstance(final Registry registry,
-                                                                                       final Symbol object)
-                                                {
-                                                    return new SymbolWriter(object);
-                                                }
-                                            };
 
     public static void register(ValueWriter.Registry registry)
     {

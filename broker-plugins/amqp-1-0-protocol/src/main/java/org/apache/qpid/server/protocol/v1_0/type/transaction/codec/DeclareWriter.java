@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transaction.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,6 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.Declare;
 public class DeclareWriter extends AbstractDescribedTypeWriter<Declare>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x31);
+    private static final Factory<Declare> FACTORY = DeclareWriter::new;
 
     private DeclareWriter(final Registry registry, final Declare object)
     {
@@ -97,19 +96,8 @@ public class DeclareWriter extends AbstractDescribedTypeWriter<Declare>
         }
     }
 
-    private static final Factory<Declare> FACTORY = new Factory<Declare>()
-    {
-
-        @Override
-        public ValueWriter<Declare> newInstance(final Registry registry, final Declare object)
-        {
-            return new DeclareWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Declare.class, FACTORY);
     }
-
 }

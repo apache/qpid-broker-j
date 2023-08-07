@@ -257,7 +257,7 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
         {
             AbstractConfiguredObject.addFutureCallback(doStealLink(thiefInformation.getSession(),
                                                                    thiefInformation.getAttach()),
-                                                       new FutureCallback<LinkEndpoint<S, T>>()
+                                                       new FutureCallback<>()
                                                        {
                                                            @Override
                                                            public void onSuccess(final LinkEndpoint<S, T> result)

@@ -26,6 +26,7 @@ import java.util.UUID;
 public class UUIDWriter extends FixedSixteenWriter<UUID>
 {
     private static final byte FORMAT_CODE = (byte) 0x98;
+    private static final Factory<UUID> FACTORY = (registry, object) -> new UUIDWriter(object);
 
     public UUIDWriter()
     {
@@ -54,20 +55,8 @@ public class UUIDWriter extends FixedSixteenWriter<UUID>
         return value.getLeastSignificantBits();
     }
 
-    private static final Factory<UUID> FACTORY = new Factory<UUID>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<UUID> newInstance(final Registry registry,
-                                                                                     final UUID object)
-                                                {
-                                                    return new UUIDWriter(object);
-                                                }
-                                            };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(UUID.class, FACTORY);
     }
-
 }

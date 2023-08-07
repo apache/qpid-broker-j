@@ -33,22 +33,12 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequence;
 public class AmqpSequenceWriter extends AbstractDescribedTypeWriter<AmqpSequence>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x76);
-
+    private static final Factory<AmqpSequence> FACTORY = AmqpSequenceWriter::new;
 
     public AmqpSequenceWriter(final Registry registry, final AmqpSequence object)
     {
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
-
-    private static final Factory<AmqpSequence> FACTORY = new Factory<AmqpSequence>()
-    {
-
-        @Override
-        public ValueWriter<AmqpSequence> newInstance(final Registry registry, final AmqpSequence object)
-        {
-            return new AmqpSequenceWriter(registry, object);
-        }
-    };
 
     public static void register(ValueWriter.Registry registry)
     {

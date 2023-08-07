@@ -33,21 +33,12 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 public class AcceptedWriter extends AbstractDescribedTypeWriter<Accepted>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x24);
+    private static final Factory<Accepted> FACTORY = (registry, object) -> new AcceptedWriter(registry);
 
     public AcceptedWriter(final Registry registry)
     {
         super(DESCRIPTOR_WRITER, ListWriter.EMPTY_LIST_WRITER);
     }
-
-    private static final Factory<Accepted> FACTORY = new Factory<Accepted>()
-    {
-
-        @Override
-        public ValueWriter<Accepted> newInstance(final Registry registry, final Accepted object)
-        {
-            return new AcceptedWriter(registry);
-        }
-    };
 
     public static void register(ValueWriter.Registry registry)
     {

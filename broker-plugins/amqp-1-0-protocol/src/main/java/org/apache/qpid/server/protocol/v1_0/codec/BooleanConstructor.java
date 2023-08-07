@@ -19,50 +19,25 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public class BooleanConstructor
 {
-    private static final TypeConstructor<Boolean> TRUE_INSTANCE = new TypeConstructor<Boolean>()
+    private static final TypeConstructor<Boolean> TRUE_INSTANCE = (in, handler) -> Boolean.TRUE;
+    private static final TypeConstructor<Boolean> FALSE_INSTANCE = (in, handler) -> Boolean.FALSE;
+    private static final TypeConstructor<Boolean> BYTE_INSTANCE = (in, handler) ->
     {
-
-        @Override
-        public Boolean construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+        if (in.hasRemaining())
         {
-            return Boolean.TRUE;
+            byte b = in.get();
+            return b != (byte) 0;
+        }
+        else
+        {
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct boolean: insufficient input data");
         }
     };
-
-    private static final TypeConstructor<Boolean> FALSE_INSTANCE = new TypeConstructor<Boolean>()
-        {
-
-            @Override
-            public Boolean construct(final QpidByteBuffer in, final ValueHandler handler)
-                    throws AmqpErrorException
-            {
-                return Boolean.FALSE;
-            }
-        };
-    private static final TypeConstructor<Boolean> BYTE_INSTANCE = new TypeConstructor<Boolean>()
-    {
-
-        @Override
-        public Boolean construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
-        {
-            if (in.hasRemaining())
-            {
-                byte b = in.get();
-                return b != (byte) 0;
-            }
-            else
-            {
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct boolean: insufficient input data");
-            }
-        }
-    };
-
 
     public static TypeConstructor<Boolean> getTrueInstance()
     {

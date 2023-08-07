@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.security.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,6 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.security.SaslChallenge;
 public class SaslChallengeWriter extends AbstractDescribedTypeWriter<SaslChallenge>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x42);
+    private static final Factory<SaslChallenge> FACTORY = SaslChallengeWriter::new;
 
     private SaslChallengeWriter(final Registry registry,
                                 final SaslChallenge object)
@@ -97,19 +96,8 @@ public class SaslChallengeWriter extends AbstractDescribedTypeWriter<SaslChallen
         }
     }
 
-    private static final Factory<SaslChallenge> FACTORY = new Factory<SaslChallenge>()
-    {
-
-        @Override
-        public ValueWriter<SaslChallenge> newInstance(final Registry registry, final SaslChallenge object)
-        {
-            return new SaslChallengeWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(SaslChallenge.class, FACTORY);
     }
-
 }

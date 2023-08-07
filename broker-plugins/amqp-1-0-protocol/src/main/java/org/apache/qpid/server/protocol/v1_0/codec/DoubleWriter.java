@@ -24,6 +24,7 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 public class DoubleWriter extends FixedEightWriter<Double>
 {
     private static final byte FORMAT_CODE = (byte) 0x82;
+    private static final Factory<Double> FACTORY = (registry, object) -> new DoubleWriter(object);
 
     public DoubleWriter(final Double object)
     {
@@ -35,17 +36,6 @@ public class DoubleWriter extends FixedEightWriter<Double>
     {
         return FORMAT_CODE;
     }
-
-    private static final Factory<Double> FACTORY = new Factory<Double>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<Double> newInstance(final Registry registry,
-                                                                                       final Double object)
-                                                {
-                                                    return new DoubleWriter(object);
-                                                }
-                                            };
 
     public static void register(ValueWriter.Registry registry)
     {

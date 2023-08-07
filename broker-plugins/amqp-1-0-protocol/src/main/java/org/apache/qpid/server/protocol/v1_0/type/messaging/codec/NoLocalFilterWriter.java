@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -33,25 +31,15 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.NoLocalFilter;
 public class NoLocalFilterWriter extends AbstractDescribedTypeWriter<NoLocalFilter>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter(0x0000468C00000003L);
+    private static final Factory<NoLocalFilter> FACTORY = (registry, object) -> new NoLocalFilterWriter(registry);
 
     public NoLocalFilterWriter(final Registry registry)
     {
         super(DESCRIPTOR_WRITER, ListWriter.EMPTY_LIST_WRITER);
     }
 
-    private static final Factory<NoLocalFilter> FACTORY = new Factory<NoLocalFilter>()
-    {
-
-        @Override
-        public ValueWriter<NoLocalFilter> newInstance(final Registry registry, final NoLocalFilter object)
-        {
-            return new NoLocalFilterWriter(registry);
-        }
-    };
-
     public static void register(Registry registry)
     {
         registry.register(NoLocalFilter.class, FACTORY);
     }
-
 }

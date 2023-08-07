@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.security.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,7 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.security.SaslResponse;
 public class SaslResponseWriter extends AbstractDescribedTypeWriter<SaslResponse>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x43);
-
+    private static final Factory<SaslResponse> FACTORY = SaslResponseWriter::new;
 
     private SaslResponseWriter(final Registry registry, final SaslResponse object)
     {
@@ -98,19 +96,8 @@ public class SaslResponseWriter extends AbstractDescribedTypeWriter<SaslResponse
         }
     }
 
-    private static final Factory<SaslResponse> FACTORY = new Factory<SaslResponse>()
-    {
-
-        @Override
-        public ValueWriter<SaslResponse> newInstance(final Registry registry, final SaslResponse object)
-        {
-            return new SaslResponseWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(SaslResponse.class, FACTORY);
     }
-
 }

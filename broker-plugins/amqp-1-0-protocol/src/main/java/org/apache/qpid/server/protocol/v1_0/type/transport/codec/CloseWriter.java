@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,7 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 public class CloseWriter extends AbstractDescribedTypeWriter<Close>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x18);
-
+    private static final Factory<Close> FACTORY = CloseWriter::new;
 
     private CloseWriter(final Registry registry, final Close object)
     {
@@ -98,16 +96,6 @@ public class CloseWriter extends AbstractDescribedTypeWriter<Close>
             _field = 0;
         }
     }
-
-    private static final Factory<Close> FACTORY = new Factory<Close>()
-    {
-
-        @Override
-        public ValueWriter<Close> newInstance(final Registry registry, final Close object)
-        {
-            return new CloseWriter(registry, object);
-        }
-    };
 
     public static void register(ValueWriter.Registry registry)
     {

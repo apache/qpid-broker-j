@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -32,6 +30,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.MatchingSubjectFilter
 public class MatchingSubjectFilterWriter extends AbstractDescribedTypeWriter<MatchingSubjectFilter>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter(0x0000468C00000001L);
+    private static final Factory<MatchingSubjectFilter> FACTORY = MatchingSubjectFilterWriter::new;
 
     public MatchingSubjectFilterWriter(final Registry registry,
                                        final MatchingSubjectFilter object)
@@ -39,20 +38,8 @@ public class MatchingSubjectFilterWriter extends AbstractDescribedTypeWriter<Mat
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static final Factory<MatchingSubjectFilter> FACTORY = new Factory<MatchingSubjectFilter>()
-    {
-
-        @Override
-        public ValueWriter<MatchingSubjectFilter> newInstance(final Registry registry,
-                                                              final MatchingSubjectFilter object)
-        {
-            return new MatchingSubjectFilterWriter(registry, object);
-        }
-    };
-
     public static void register(Registry registry)
     {
         registry.register(MatchingSubjectFilter.class, FACTORY);
     }
-
 }

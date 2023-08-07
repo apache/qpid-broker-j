@@ -25,6 +25,8 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 
 public class UnsignedByteWriter extends FixedOneWriter<UnsignedByte>
 {
+    private static final Factory<UnsignedByte> FACTORY = (registry, object) -> new UnsignedByteWriter(object);
+
     public UnsignedByteWriter(final UnsignedByte value)
     {
         super(value.byteValue());
@@ -35,17 +37,6 @@ public class UnsignedByteWriter extends FixedOneWriter<UnsignedByte>
     {
         return (byte) 0x50;
     }
-
-    private static final Factory<UnsignedByte> FACTORY = new Factory<UnsignedByte>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<UnsignedByte> newInstance(final Registry registry,
-                                                                                             final UnsignedByte object)
-                                                {
-                                                    return new UnsignedByteWriter(object);
-                                                }
-                                            };
 
     public static void register(ValueWriter.Registry registry)
     {

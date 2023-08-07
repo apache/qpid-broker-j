@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -33,26 +31,15 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties
 public class ApplicationPropertiesWriter extends AbstractDescribedTypeWriter<ApplicationProperties>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x74);
+    private static final Factory<ApplicationProperties> FACTORY = ApplicationPropertiesWriter::new;
 
     private ApplicationPropertiesWriter(final Registry registry, final ApplicationProperties object)
     {
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static final Factory<ApplicationProperties> FACTORY = new Factory<ApplicationProperties>()
-    {
-
-        @Override
-        public ValueWriter<ApplicationProperties> newInstance(final Registry registry,
-                                                              final ApplicationProperties object)
-        {
-            return new ApplicationPropertiesWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(ApplicationProperties.class, FACTORY);
     }
-
 }

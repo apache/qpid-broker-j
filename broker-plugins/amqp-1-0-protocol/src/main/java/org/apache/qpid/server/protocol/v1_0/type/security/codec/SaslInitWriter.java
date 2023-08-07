@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.security.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,6 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
 public class SaslInitWriter extends AbstractDescribedTypeWriter<SaslInit>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x41);
+    private static final Factory<SaslInit> FACTORY = SaslInitWriter::new;
 
     private SaslInitWriter(final Registry registry, final SaslInit object)
     {
@@ -111,19 +110,8 @@ public class SaslInitWriter extends AbstractDescribedTypeWriter<SaslInit>
         }
     }
 
-    private static final Factory<SaslInit> FACTORY = new Factory<SaslInit>()
-    {
-
-        @Override
-        public ValueWriter<SaslInit> newInstance(final Registry registry, final SaslInit object)
-        {
-            return new SaslInitWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(SaslInit.class, FACTORY);
     }
-
 }

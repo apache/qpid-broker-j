@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,6 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 public class DetachWriter extends AbstractDescribedTypeWriter<Detach>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x16);
+    private static final Factory<Detach> FACTORY = DetachWriter::new;
 
     private DetachWriter(final Registry registry, final Detach object)
     {
@@ -114,19 +113,8 @@ public class DetachWriter extends AbstractDescribedTypeWriter<Detach>
         }
     }
 
-    private static final Factory<Detach> FACTORY = new Factory<Detach>()
-    {
-
-        @Override
-        public ValueWriter<Detach> newInstance(final Registry registry, final Detach object)
-        {
-            return new DetachWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Detach.class, FACTORY);
     }
-
 }

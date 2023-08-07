@@ -167,14 +167,10 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         _primaryDomain = getPrimaryDomain();
         _incomingWindow = UnsignedInteger.valueOf(incomingWindow);
 
-        AccessController.doPrivileged((new PrivilegedAction<Object>()
+        AccessController.doPrivileged(((PrivilegedAction<Object>) () ->
         {
-            @Override
-            public Object run()
-            {
-                _connection.getEventLogger().message(ChannelMessages.CREATE());
-                return null;
-            }
+            _connection.getEventLogger().message(ChannelMessages.CREATE());
+            return null;
         }), _accessControllerContext);
     }
 
@@ -847,9 +843,9 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                                                         final Terminus terminus) throws AmqpErrorException
     {
         final Symbol[] capabilities = terminus.getCapabilities();
-        final Set<Symbol> capabilitySet = capabilities == null ? Collections.emptySet() : Sets.newHashSet(capabilities);
+        final Set<Symbol> capabilitySet = capabilities == null ? Set.of() : Sets.newHashSet(capabilities);
         boolean isTopic = capabilitySet.contains(Symbol.valueOf("temporary-topic")) || capabilitySet.contains(Symbol.valueOf("topic"));
-        final String destName = (isTopic ? "TempTopic" : "TempQueue") + UUID.randomUUID().toString();
+        final String destName = (isTopic ? "TempTopic" : "TempQueue") + UUID.randomUUID();
         try
         {
             final Map<String, Object> attributes = createDynamicNodeAttributes(link, terminus, destName);

@@ -25,6 +25,8 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
 public class SymbolArrayWriter extends SimpleVariableWidthWriter<Symbol[]>
 {
+    private static final Factory<Symbol[]> FACTORY = (registry, object) -> new SymbolArrayWriter(object);
+
     private SymbolArrayWriter(final Symbol[] object)
     {
         super(getEncodedValue(object));
@@ -127,18 +129,6 @@ public class SymbolArrayWriter extends SimpleVariableWidthWriter<Symbol[]>
 
         return true;
     }
-
-
-    private static final Factory<Symbol[]> FACTORY = new Factory<Symbol[]>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<Symbol[]> newInstance(final Registry registry,
-                                                                                         final Symbol[] object)
-                                                {
-                                                    return new SymbolArrayWriter(object);
-                                                }
-                                            };
 
     public static void register(ValueWriter.Registry registry)
     {

@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,6 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 public class BeginWriter extends AbstractDescribedTypeWriter<Begin>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x11);
+    private static final Factory<Begin> FACTORY = BeginWriter::new;
 
     private BeginWriter(final Registry registry, Begin object)
     {
@@ -157,19 +156,8 @@ public class BeginWriter extends AbstractDescribedTypeWriter<Begin>
         }
     }
 
-    private static final Factory<Begin> FACTORY = new Factory<Begin>()
-    {
-
-        @Override
-        public ValueWriter<Begin> newInstance(final Registry registry, final Begin object)
-        {
-            return new BeginWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Begin.class, FACTORY);
     }
-
 }

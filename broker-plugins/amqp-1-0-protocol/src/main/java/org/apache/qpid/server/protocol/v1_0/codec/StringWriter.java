@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 
 public class StringWriter extends SimpleVariableWidthWriter<String>
 {
+    private static final Factory<String> FACTORY = (registry, object) -> new StringWriter(object);
 
     public StringWriter(final String value)
     {
@@ -42,18 +43,6 @@ public class StringWriter extends SimpleVariableWidthWriter<String>
     {
         return (byte) 0xa1;
     }
-
-
-    private static final Factory<String> FACTORY = new Factory<String>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<String> newInstance(final Registry registry,
-                                                                                       final String object)
-                                                {
-                                                    return new StringWriter(object);
-                                                }
-                                            };
 
     public static void register(ValueWriter.Registry registry)
     {

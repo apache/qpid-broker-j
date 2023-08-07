@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -33,26 +31,15 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnClose;
 public class DeleteOnCloseWriter extends AbstractDescribedTypeWriter<DeleteOnClose>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x2B);
+    private static final Factory<DeleteOnClose> FACTORY = (registry, object) -> new DeleteOnCloseWriter(registry);
 
     public DeleteOnCloseWriter(final Registry registry)
     {
         super(DESCRIPTOR_WRITER, ListWriter.EMPTY_LIST_WRITER);
     }
 
-
-    private static final Factory<DeleteOnClose> FACTORY = new Factory<DeleteOnClose>()
-    {
-
-        @Override
-        public ValueWriter<DeleteOnClose> newInstance(final Registry registry, final DeleteOnClose object)
-        {
-            return new DeleteOnCloseWriter(registry);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(DeleteOnClose.class, FACTORY);
     }
-
 }

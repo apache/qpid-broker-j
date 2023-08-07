@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,6 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 public class AttachWriter extends AbstractDescribedTypeWriter<Attach>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x12);
+    private static final Factory<Attach> FACTORY = AttachWriter::new;
 
     private AttachWriter(final Registry registry, final Attach object)
     {
@@ -202,19 +201,8 @@ public class AttachWriter extends AbstractDescribedTypeWriter<Attach>
         }
     }
 
-    private static final Factory<Attach> FACTORY = new Factory<Attach>()
-    {
-
-        @Override
-        public ValueWriter<Attach> newInstance(final Registry registry, final Attach object)
-        {
-            return new AttachWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Attach.class, FACTORY);
     }
-
 }

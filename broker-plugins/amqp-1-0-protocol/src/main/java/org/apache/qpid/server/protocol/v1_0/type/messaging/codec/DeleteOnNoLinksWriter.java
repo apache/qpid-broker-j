@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -33,25 +31,15 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnNoLinks;
 public class DeleteOnNoLinksWriter extends AbstractDescribedTypeWriter<DeleteOnNoLinks>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x2C);
+    private static final Factory<DeleteOnNoLinks> FACTORY = (registry, object) -> new DeleteOnNoLinksWriter(registry);
 
     public DeleteOnNoLinksWriter(final Registry registry)
     {
         super(DESCRIPTOR_WRITER, ListWriter.EMPTY_LIST_WRITER);
     }
 
-    private static final Factory<DeleteOnNoLinks> FACTORY = new Factory<DeleteOnNoLinks>()
-    {
-
-        @Override
-        public ValueWriter<DeleteOnNoLinks> newInstance(final Registry registry, final DeleteOnNoLinks object)
-        {
-            return new DeleteOnNoLinksWriter(registry);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(DeleteOnNoLinks.class, FACTORY);
     }
-
 }

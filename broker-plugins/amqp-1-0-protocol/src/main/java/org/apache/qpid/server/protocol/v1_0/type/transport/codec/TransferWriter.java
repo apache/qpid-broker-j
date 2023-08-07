@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,7 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 public class TransferWriter extends AbstractDescribedTypeWriter<Transfer>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x14);
-
+    private static final Factory<Transfer> FACTORY = TransferWriter::new;
 
     private TransferWriter(final Registry registry, final Transfer object)
     {
@@ -179,19 +177,8 @@ public class TransferWriter extends AbstractDescribedTypeWriter<Transfer>
         }
     }
 
-    private static final Factory<Transfer> FACTORY = new Factory<Transfer>()
-    {
-
-        @Override
-        public ValueWriter<Transfer> newInstance(final Registry registry, final Transfer object)
-        {
-            return new TransferWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Transfer.class, FACTORY);
     }
-
 }

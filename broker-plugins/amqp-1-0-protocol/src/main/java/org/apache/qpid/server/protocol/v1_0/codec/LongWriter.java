@@ -28,23 +28,17 @@ public class LongWriter
 
     private static final byte ONE_BYTE_FORMAT_CODE = (byte) 0x55;
 
-    private static final ValueWriter.Factory<Long> FACTORY =
-            new ValueWriter.Factory<Long>()
-            {
-                @Override
-                public ValueWriter<Long> newInstance(final ValueWriter.Registry registry,
-                                                     final Long l)
-                {
-                    if (l >= -128 && l <= 127)
-                    {
-                        return new LongFixedOneWriter(l);
-                    }
-                    else
-                    {
-                        return new LongFixedEightWriter(l);
-                    }
-                }
-            };
+    private static final ValueWriter.Factory<Long> FACTORY = (registry, l) ->
+    {
+        if (l >= -128 && l <= 127)
+        {
+            return new LongFixedOneWriter(l);
+        }
+        else
+        {
+            return new LongFixedEightWriter(l);
+        }
+    };
 
     public static void register(ValueWriter.Registry registry)
     {

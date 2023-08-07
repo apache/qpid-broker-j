@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -33,6 +31,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Footer;
 public class FooterWriter extends AbstractDescribedTypeWriter<Footer>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x78);
+    private static final Factory<Footer> FACTORY = FooterWriter::new;
 
     public FooterWriter(final Registry registry,
                         final Footer object)
@@ -40,19 +39,8 @@ public class FooterWriter extends AbstractDescribedTypeWriter<Footer>
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    private static final Factory<Footer> FACTORY = new Factory<Footer>()
-    {
-
-        @Override
-        public ValueWriter<Footer> newInstance(final Registry registry, final Footer object)
-        {
-            return new FooterWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Footer.class, FACTORY);
     }
-
 }

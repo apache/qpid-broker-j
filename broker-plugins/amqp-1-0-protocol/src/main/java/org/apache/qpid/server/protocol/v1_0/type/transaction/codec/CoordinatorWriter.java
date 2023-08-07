@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transaction.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -34,7 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
 public class CoordinatorWriter extends AbstractDescribedTypeWriter<Coordinator>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x30);
-
+    private static final Factory<Coordinator> FACTORY = CoordinatorWriter::new;
 
     private CoordinatorWriter(final Registry registry, final Coordinator object)
     {
@@ -98,19 +96,8 @@ public class CoordinatorWriter extends AbstractDescribedTypeWriter<Coordinator>
         }
     }
 
-    private static final Factory<Coordinator> FACTORY = new Factory<Coordinator>()
-    {
-
-        @Override
-        public ValueWriter<Coordinator> newInstance(final Registry registry, final Coordinator object)
-        {
-            return new CoordinatorWriter(registry, object);
-        }
-    };
-
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Coordinator.class, FACTORY);
     }
-
 }

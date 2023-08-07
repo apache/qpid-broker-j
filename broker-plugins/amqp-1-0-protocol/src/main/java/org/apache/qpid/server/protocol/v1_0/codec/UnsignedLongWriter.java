@@ -30,8 +30,7 @@ public class UnsignedLongWriter
     private static final byte ONE_BYTE_FORMAT_CODE = (byte) 0x53;
     private static final byte ZERO_BYTE_FORMAT_CODE = (byte) 0x44;
 
-
-    private static final ValueWriter<UnsignedLong> ZERO_BYTE_WRITER = new ValueWriter<UnsignedLong>()
+    private static final ValueWriter<UnsignedLong> ZERO_BYTE_WRITER = new ValueWriter<>()
     {
         @Override
         public int getEncodedSize()
@@ -46,30 +45,21 @@ public class UnsignedLongWriter
         }
     };
 
-
-
-    private static final ValueWriter.Factory<UnsignedLong> FACTORY =
-            new ValueWriter.Factory<UnsignedLong>()
-            {
-
-                @Override
-                public ValueWriter<UnsignedLong> newInstance(final ValueWriter.Registry registry,
-                                                             final UnsignedLong object)
-                {
-                    if (object.equals(UnsignedLong.ZERO))
-                    {
-                        return ZERO_BYTE_WRITER;
-                    }
-                    else if ((object.longValue() & 0xffL) == object.longValue())
-                    {
-                        return new UnsignedLongFixedOneWriter(object);
-                    }
-                    else
-                    {
-                        return new UnsignedLongFixedEightWriter(object);
-                    }
-                }
-            };
+    private static final ValueWriter.Factory<UnsignedLong> FACTORY = (registry, object) ->
+    {
+        if (object.equals(UnsignedLong.ZERO))
+        {
+            return ZERO_BYTE_WRITER;
+        }
+        else if ((object.longValue() & 0xffL) == object.longValue())
+        {
+            return new UnsignedLongFixedOneWriter(object);
+        }
+        else
+        {
+            return new UnsignedLongFixedEightWriter(object);
+        }
+    };
 
     public static void register(ValueWriter.Registry registry)
     {

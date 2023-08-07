@@ -25,6 +25,8 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 
 public class ByteWriter implements ValueWriter<Byte>
 {
+    private static final Factory<Byte> FACTORY = (registry, object) -> new ByteWriter(object);
+
     private byte _value;
 
     public ByteWriter()
@@ -54,17 +56,6 @@ public class ByteWriter implements ValueWriter<Byte>
     {
         _value = value.byteValue();
     }
-
-    private static final Factory<Byte> FACTORY = new Factory<Byte>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<Byte> newInstance(final Registry registry,
-                                                                                     final Byte object)
-                                                {
-                                                    return new ByteWriter(object);
-                                                }
-                                            };
 
     public static void register(ValueWriter.Registry registry)
     {

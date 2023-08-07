@@ -31,47 +31,41 @@ public class UnsignedIntegerWriter
     private static final byte ZERO_BYTE_FORMAT_CODE = (byte) 0x43;
 
 
-    private static final ValueWriter<UnsignedInteger> ZERO_BYTE_WRITER = new ValueWriter<UnsignedInteger>()
+    private static final ValueWriter<UnsignedInteger> ZERO_BYTE_WRITER = new ValueWriter<>()
+    {
+
+        @Override
+        public int getEncodedSize()
         {
+            return 1;
+        }
 
-            @Override
-            public int getEncodedSize()
-            {
-                return 1;
-            }
-
-            @Override
-            public void writeToBuffer(QpidByteBuffer buffer)
-            {
-                buffer.put(ZERO_BYTE_FORMAT_CODE);
-            }
-        };
+        @Override
+        public void writeToBuffer(QpidByteBuffer buffer)
+        {
+            buffer.put(ZERO_BYTE_FORMAT_CODE);
+        }
+    };
 
 
 
 
 
-    private static final ValueWriter.Factory<UnsignedInteger> FACTORY = new ValueWriter.Factory<UnsignedInteger>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<UnsignedInteger> newInstance(final ValueWriter.Registry registry,
-                                                                                                final UnsignedInteger uint)
-                                                {
-                                                    if(uint.equals(UnsignedInteger.ZERO))
-                                                    {
-                                                        return ZERO_BYTE_WRITER;
-                                                    }
-                                                    else if(uint.compareTo(UnsignedInteger.valueOf(256))<0)
-                                                    {
-                                                        return new UnsignedIntegerFixedOneWriter(uint);
-                                                    }
-                                                    else
-                                                    {
-                                                        return new UnsignedIntegerFixedFourWriter(uint);
-                                                    }
-                                                }
-                                            };
+    private static final ValueWriter.Factory<UnsignedInteger> FACTORY = (registry, uint) ->
+    {
+        if(uint.equals(UnsignedInteger.ZERO))
+        {
+            return ZERO_BYTE_WRITER;
+        }
+        else if(uint.compareTo(UnsignedInteger.valueOf(256))<0)
+        {
+            return new UnsignedIntegerFixedOneWriter(uint);
+        }
+        else
+        {
+            return new UnsignedIntegerFixedFourWriter(uint);
+        }
+    };
 
     public static void register(ValueWriter.Registry registry)
     {

@@ -26,6 +26,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 public class NullWriter implements ValueWriter<Void>
 {
     private static final NullWriter INSTANCE = new NullWriter();
+    private static final Factory<Void> FACTORY = (registry, object) -> INSTANCE;
 
     @Override
     public int getEncodedSize()
@@ -39,17 +40,6 @@ public class NullWriter implements ValueWriter<Void>
 
         buffer.put((byte)0x40);
     }
-
-    private static final Factory<Void> FACTORY = new Factory<Void>()
-                                            {
-
-                                                @Override
-                                                public ValueWriter<Void> newInstance(final Registry registry,
-                                                                                     final Void object)
-                                                {
-                                                    return INSTANCE;
-                                                }
-                                            };
 
     public static void register(ValueWriter.Registry registry)
     {

@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +19,6 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
@@ -32,6 +30,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter;
 public class JMSSelectorFilterWriter extends AbstractDescribedTypeWriter<JMSSelectorFilter>
 {
     private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter(0x0000468C00000004L);
+    private static final Factory<JMSSelectorFilter> FACTORY = JMSSelectorFilterWriter::new;
 
     public JMSSelectorFilterWriter(final Registry registry,
                                    final JMSSelectorFilter object)
@@ -39,20 +38,8 @@ public class JMSSelectorFilterWriter extends AbstractDescribedTypeWriter<JMSSele
         super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-
-    private static final Factory<JMSSelectorFilter> FACTORY = new Factory<JMSSelectorFilter>()
-    {
-
-        @Override
-        public ValueWriter<JMSSelectorFilter> newInstance(final Registry registry, final JMSSelectorFilter object)
-        {
-            return new JMSSelectorFilterWriter(registry, object);
-        }
-    };
-
     public static void register(Registry registry)
     {
         registry.register(JMSSelectorFilter.class, FACTORY);
     }
-
 }
