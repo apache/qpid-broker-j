@@ -21,8 +21,7 @@
 package org.apache.qpid.server.model;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.Collections;
 
 import org.apache.qpid.server.plugin.ConfiguredObjectAttributeInjector;
 import org.apache.qpid.server.plugin.ConfiguredObjectRegistration;
@@ -97,13 +96,13 @@ public final class SystemConfigBootstrapModel extends Model
     @Override
     public Collection<Class<? extends ConfiguredObject>> getChildTypes(Class<? extends ConfiguredObject> parent)
     {
-        return List.of();
+        return Collections.emptyList();
     }
 
     @Override
     public Collection<Class<? extends ConfiguredObject>> getSupportedCategories()
     {
-        return Set.of(SystemConfig.class);
+        return Collections.singleton(SystemConfig.class);
     }
 
     private void setRootCategory(final Class<? extends ConfiguredObject> rootCategory)
