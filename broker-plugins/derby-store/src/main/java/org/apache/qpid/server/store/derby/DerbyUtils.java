@@ -190,14 +190,7 @@ public class DerbyUtils
         public static final String DERBY_SYSTEM_HOME = "derby.system.home";
         public static final String DASHED_LINE = "\\s*-*\\s*";
 
-        private final ThreadLocal<StringBuilder> _threadLocalBuffer = new ThreadLocal<StringBuilder>()
-        {
-            @Override
-            protected StringBuilder initialValue()
-            {
-                return new StringBuilder();
-            }
-        };
+        private final ThreadLocal<StringBuilder> _threadLocalBuffer = ThreadLocal.withInitial(StringBuilder::new);
 
         @Override
         public void write(final char[] cbuf, final int off, final int len) throws IOException

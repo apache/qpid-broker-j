@@ -932,22 +932,18 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private <X> ListenableFuture<X> commitTranAsync(final ConnectionWrapper connWrapper, final X val) throws StoreException
     {
         final SettableFuture<X> future = SettableFuture.create();
-        _executor.submit(new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                try
-                                {
-                                    commitTran(connWrapper);
-                                    future.set(val);
-                                }
-                                catch (RuntimeException e)
-                                {
-                                    future.setException(e);
-                                }
-                            }
-                        });
+        _executor.submit(() ->
+        {
+            try
+            {
+                commitTran(connWrapper);
+                future.set(val);
+            }
+            catch (RuntimeException e)
+            {
+                future.setException(e);
+            }
+        });
         return future;
     }
 
@@ -1953,7 +1949,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
             try(Connection conn = newAutoCommitConnection())
             {
-                List<Xid> xids = new ArrayList<Xid>();
+                List<Xid> xids = new ArrayList<>();
 
                 try (Statement stmt = conn.createStatement())
                 {

@@ -282,18 +282,18 @@ public abstract class JDBCDetails
     public static JDBCDetails getJdbcDetails(final String vendor, final ConfiguredObject<?> object)
     {
         final Set<String> contextKeys = object.getContextKeys(false);
-        Map<String,String> mapConversion = new AbstractMap<String, String>()
+        Map<String,String> mapConversion = new AbstractMap<>()
         {
             @Override
             public Set<Entry<String, String>> entrySet()
             {
-                return new AbstractSet<Entry<String, String>>()
+                return new AbstractSet<>()
                 {
                     @Override
                     public Iterator<Entry<String, String>> iterator()
                     {
                         final Iterator<String> underlying = contextKeys.iterator();
-                        return new Iterator<Entry<String, String>>()
+                        return new Iterator<>()
                         {
                             @Override
                             public boolean hasNext()
@@ -306,7 +306,7 @@ public abstract class JDBCDetails
                             {
                                 final String key = underlying.next();
                                 final String value = object.getContextValue(String.class, key);
-                                return new Entry<String,String>()
+                                return new Entry<>()
                                 {
 
                                     @Override
@@ -327,7 +327,6 @@ public abstract class JDBCDetails
                                         throw new UnsupportedOperationException();
                                     }
                                 };
-
                             }
 
                             @Override
