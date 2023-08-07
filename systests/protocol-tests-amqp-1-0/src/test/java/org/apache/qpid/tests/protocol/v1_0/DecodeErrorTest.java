@@ -30,7 +30,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -108,8 +107,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
         {
             final Source source = new Source();
             source.setDynamic(Boolean.TRUE);
-            source.setDynamicNodeProperties(Collections.singletonMap(Symbol.valueOf("lifetime-policy"),
-                                                                     UnsignedInteger.MAX_VALUE));
+            source.setDynamicNodeProperties(Map.of(Symbol.valueOf("lifetime-policy"), UnsignedInteger.MAX_VALUE));
             final Interaction interaction = transport.newInteraction()
                                                         .negotiateOpen()
                                                         .begin().consumeResponse(Begin.class)
@@ -132,8 +130,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
         {
             final Target target = new Target();
             target.setDynamic(Boolean.TRUE);
-            target.setDynamicNodeProperties(Collections.singletonMap(Symbol.valueOf("supported-dist-modes"),
-                                                                     UnsignedInteger.ZERO));
+            target.setDynamicNodeProperties(Map.of(Symbol.valueOf("supported-dist-modes"), UnsignedInteger.ZERO));
             final Interaction interaction = transport.newInteraction()
                                                         .negotiateOpen()
                                                         .begin().consumeResponse(Begin.class)
@@ -168,7 +165,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
             encodedString.flip();
             payloads.add(encodedString);
 
-            final Map<Symbol, Object> annotationMap = Collections.singletonMap(Symbol.valueOf("foo"), "bar");
+            final Map<Symbol, Object> annotationMap = Map.of(Symbol.valueOf("foo"), "bar");
             final DeliveryAnnotations annotations = new DeliveryAnnotations(annotationMap);
             final DeliveryAnnotationsSection deliveryAnnotationsSection = annotations.createEncodingRetainingSection();
             try

@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.hamcrest.Matchers;
 
@@ -138,7 +139,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             assertThat(responseAttach2.getTarget(), is(notNullValue()));
             final Map<Binary, DeliveryState> remoteUnsettled = responseAttach2.getUnsettled();
             assertThat(remoteUnsettled, is(notNullValue()));
-            assertThat(remoteUnsettled.keySet(), is(equalTo(Collections.singleton(deliveryTag))));
+            assertThat(remoteUnsettled.keySet(), is(equalTo(Set.of(deliveryTag))));
             assertThat(remoteUnsettled.get(deliveryTag).getClass(), typeCompatibleWith(remoteDeliveryState.getClass()));
             assertThat(responseAttach2.getIncompleteUnsettled(), is(anyOf(nullValue(), equalTo(false))));
         }
@@ -198,8 +199,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             // 4. resume the link
             final UnsignedInteger linkHandle2 = UnsignedInteger.ONE;
             final Binary sampleLocalUnsettled = localUnsettled.keySet().iterator().next();
-            Map<Binary, DeliveryState> unsettled = Collections.singletonMap(sampleLocalUnsettled,
-                                                                            localUnsettled.get(sampleLocalUnsettled));
+            Map<Binary, DeliveryState> unsettled = Map.of(sampleLocalUnsettled, localUnsettled.get(sampleLocalUnsettled));
             final Response<?> latestResponse = interaction.attachHandle(linkHandle2)
                                                           .attachUnsettled(unsettled)
                                                           .attachIncompleteUnsettled(true)
@@ -292,8 +292,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             // 4. resume the link
             final UnsignedInteger linkHandle2 = UnsignedInteger.ONE;
             final Binary sampleLocalUnsettled = localUnsettled.keySet().iterator().next();
-            Map<Binary, DeliveryState> unsettled = Collections.singletonMap(sampleLocalUnsettled,
-                                                                            localUnsettled.get(sampleLocalUnsettled));
+            Map<Binary, DeliveryState> unsettled = Map.of(sampleLocalUnsettled, localUnsettled.get(sampleLocalUnsettled));
             final Response<?> latestResponse = interaction.attachHandle(linkHandle2)
                                                           .attachUnsettled(unsettled)
                                                           .attachIncompleteUnsettled(true)
@@ -389,8 +388,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 
             // 4. resume the link
             final Binary sampleLocalUnsettled = localUnsettled.keySet().iterator().next();
-            Map<Binary, DeliveryState> unsettled = Collections.singletonMap(sampleLocalUnsettled,
-                                                                            localUnsettled.get(sampleLocalUnsettled));
+            Map<Binary, DeliveryState> unsettled = Map.of(sampleLocalUnsettled, localUnsettled.get(sampleLocalUnsettled));
             final UnsignedInteger linkHandle2 = UnsignedInteger.ONE;
             Response<?> latestResponse = interaction.attachHandle(linkHandle2)
                                                     .attachUnsettled(unsettled)
@@ -534,7 +532,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
             Detach detach = interaction.detach().consumeResponse().getLatestResponse(Detach.class);
             assertThat(detach.getClosed(), anyOf(nullValue(), equalTo(false)));
 
-            interaction.attachUnsettled(Collections.singletonMap(deliveryTag, new Accepted()))
+            interaction.attachUnsettled(Map.of(deliveryTag, new Accepted()))
                        .attach()
                        .consumeResponse(Attach.class);
 
@@ -707,7 +705,7 @@ public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 
             final Map<Binary, DeliveryState> remoteUnsettled = responseAttach2.getUnsettled();
             assertThat(remoteUnsettled, is(notNullValue()));
-            assertThat(remoteUnsettled.keySet(), is(equalTo(Collections.singleton(deliveryTag))));
+            assertThat(remoteUnsettled.keySet(), is(equalTo(Set.of(deliveryTag))));
 
             interaction.transferHandle(linkHandle2)
                        .transferResume(true)

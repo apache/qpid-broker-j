@@ -28,8 +28,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -495,8 +495,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                        .flowLinkCredit(UnsignedInteger.ONE)
                        .flowHandleFromLinkHandle()
-                       .flowProperties(Collections.singletonMap(Symbol.valueOf("txn-id"),
-                                                                interaction.getCurrentTransactionId()))
+                       .flowProperties(Map.of(Symbol.valueOf("txn-id"), interaction.getCurrentTransactionId()))
                        .flow()
 
                        .receiveDelivery();
@@ -558,8 +557,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                        .flowLinkCredit(UnsignedInteger.ONE)
                        .flowHandleFromLinkHandle()
-                       .flowProperties(Collections.singletonMap(Symbol.valueOf("txn-id"),
-                                                                interaction.getCurrentTransactionId()))
+                       .flowProperties(Map.of(Symbol.valueOf("txn-id"), interaction.getCurrentTransactionId()))
                        .flow()
 
                        .receiveDelivery();
@@ -617,7 +615,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                               .flowIncomingWindow(UnsignedInteger.ONE)
                                               .flowLinkCredit(UnsignedInteger.ONE)
                                               .flowHandleFromLinkHandle()
-                                              .flowProperties(Collections.singletonMap(Symbol.valueOf("txn-id"),
+                                              .flowProperties(Map.of(Symbol.valueOf("txn-id"),
                                                                                        integerToBinary(Integer.MAX_VALUE)))
                                               .flow()
                                               .consume(ErrorCarryingFrameBody.class, Flow.class);

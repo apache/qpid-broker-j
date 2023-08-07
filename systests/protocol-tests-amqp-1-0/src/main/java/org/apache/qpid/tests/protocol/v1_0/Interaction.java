@@ -1093,13 +1093,11 @@ public class Interaction extends AbstractInteraction<Interaction>
 
     private DeliveryState handleCoordinatorResponse() throws Exception
     {
-        final Set<Class<?>> expected = new HashSet<>(Collections.singletonList(Disposition.class));
-        if (_coordinatorCredits.decrementAndGet() == 0)
-        {
-            expected.add(Flow.class);
-        }
+        final Set<Class<?>> expected = _coordinatorCredits.decrementAndGet() == 0
+                ? Set.of(Disposition.class, Flow.class)
+                : Set.of(Disposition.class);
 
-        final Map<Class<?>, ?> responses = consumeResponses(expected, Collections.singleton(Flow.class));
+        final Map<Class<?>, ?> responses = consumeResponses(expected, Set.of(Flow.class));
 
         final Disposition disposition = (Disposition) responses.get(Disposition.class);
         if (expected.contains(Flow.class))
@@ -1260,9 +1258,9 @@ public class Interaction extends AbstractInteraction<Interaction>
         boolean hasMore = true;
         do
         {
-            Set<Class<?>> responseTypesSet = new HashSet<>(Arrays.asList(ignore));
+            Set<Class<?>> responseTypesSet = new HashSet<>(List.of(ignore));
             responseTypesSet.add(Transfer.class);
-            Class<?>[] responseTypes = responseTypesSet.toArray(new Class<?>[responseTypesSet.size()]);
+            Class<?>[] responseTypes = responseTypesSet.toArray(new Class<?>[0]);
             Response<?> latestResponse = consumeResponse(responseTypes).getLatestResponse();
             if (latestResponse.getBody() instanceof Transfer)
             {

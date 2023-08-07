@@ -32,7 +32,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -91,8 +90,7 @@ public class FilterTest extends BrokerAdminUsingTestBase
             for (int i = 0; i < 2; i++)
             {
                 QpidByteBuffer payload =
-                        generateMessagePayloadWithApplicationProperties(Collections.singletonMap("index", i),
-                                                                        getTestName());
+                        generateMessagePayloadWithApplicationProperties(Map.of("index", i), getTestName());
                 interaction.transferPayload(payload)
                            .transferSettled(true)
                            .transfer();
@@ -108,8 +106,7 @@ public class FilterTest extends BrokerAdminUsingTestBase
                        .attachRole(Role.RECEIVER)
                        .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
                        .attachRcvSettleMode(ReceiverSettleMode.FIRST)
-                       .attachSourceFilter(Collections.singletonMap(Symbol.valueOf("selector-filter"),
-                                                                    new JMSSelectorFilter("index=1")))
+                       .attachSourceFilter(Map.of(Symbol.valueOf("selector-filter"), new JMSSelectorFilter("index=1")))
                        .attach().consumeResponse()
                        .flowIncomingWindow(UnsignedInteger.ONE)
                        .flowNextIncomingId(UnsignedInteger.ZERO)
