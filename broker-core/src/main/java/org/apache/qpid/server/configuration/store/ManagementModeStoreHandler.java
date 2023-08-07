@@ -22,7 +22,6 @@ package org.apache.qpid.server.configuration.store;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -246,11 +245,11 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(Port.PORT, port);
-        attributes.put(Port.PROTOCOLS, Collections.singleton(protocol));
+        attributes.put(Port.PROTOCOLS, Set.of(protocol));
         attributes.put(Port.NAME, MANAGEMENT_MODE_PORT_PREFIX + protocol.name());
         attributes.put(Port.AUTHENTICATION_PROVIDER, BrokerImpl.MANAGEMENT_MODE_AUTHENTICATION);
         ConfiguredObjectRecord portEntry = new ConfiguredObjectRecordImpl(UUID.randomUUID(), PORT_TYPE, attributes,
-                Collections.singletonMap(parent.getType(),parent.getId()));
+                Map.of(parent.getType(),parent.getId()));
         if (LOGGER.isDebugEnabled())
         {
             LOGGER.debug("Add management mode port configuration " + portEntry + " for port " + port + " and protocol "
