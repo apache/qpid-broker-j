@@ -147,7 +147,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     public List<LogFileDetails> getLogFiles()
     {
-        return _rolloverWatcher == null ? Collections.<LogFileDetails>emptyList() :_rolloverWatcher.getLogFileDetails();
+        return _rolloverWatcher == null ? Collections.emptyList() :_rolloverWatcher.getLogFileDetails();
     }
 
     @Override
@@ -212,7 +212,6 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     {
         onCloseOrDelete();
         return Futures.immediateFuture(null);
-
     }
 
     @Override
@@ -229,6 +228,4 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
             _statusManager.remove(_logbackStatusListener);
         }
     }
-
-
 }

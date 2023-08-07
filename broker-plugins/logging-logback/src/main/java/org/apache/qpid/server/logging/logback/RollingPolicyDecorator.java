@@ -30,7 +30,6 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -216,7 +215,7 @@ public class RollingPolicyDecorator implements RollingPolicy
             final List<Path> rolledFiles = new ArrayList<>();
             try
             {
-                Files.walkFileTree(_rolledFilesBaseFolder, new FileVisitor<Path>()
+                Files.walkFileTree(_rolledFilesBaseFolder, new FileVisitor<>()
                 {
                     @Override
                     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
@@ -275,14 +274,7 @@ public class RollingPolicyDecorator implements RollingPolicy
                 results[i++] = parent.relativize(f).toString();
             }
 
-            Arrays.sort(results, new Comparator<String>()
-            {
-                @Override
-                public int compare(String o1, String o2)
-                {
-                    return o1.compareTo(o2);
-                }
-            });
+            Arrays.sort(results, String::compareTo);
             return results;
         }
 

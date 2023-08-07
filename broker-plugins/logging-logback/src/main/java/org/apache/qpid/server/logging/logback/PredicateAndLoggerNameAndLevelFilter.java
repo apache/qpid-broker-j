@@ -52,7 +52,7 @@ class PredicateAndLoggerNameAndLevelFilter extends LoggerNameAndLevelFilter
     protected Filter<ILoggingEvent> createFilter(final String loggerName)
     {
         final Filter<ILoggingEvent> filter = super.createFilter(loggerName);
-        return new Filter<ILoggingEvent>()
+        return new Filter<>()
         {
             @Override
             public FilterReply decide(final ILoggingEvent event)

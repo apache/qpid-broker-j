@@ -76,12 +76,14 @@ public class StartupAppender  extends AppenderBase<ILoggingEvent>
         patternLayoutEncoder.setPattern("%X{qpid.log.prefix}%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n");
         patternLayoutEncoder.start();
 
-        consoleAppender.addFilter(new Filter<ILoggingEvent>()
+        consoleAppender.addFilter(new Filter<>()
         {
             @Override
             public FilterReply decide(final ILoggingEvent event)
             {
-                return event.getLevel().isGreaterOrEqual(_consoleAppenderAcceptLogLevel) ? FilterReply.ACCEPT : FilterReply.DENY;
+                return event.getLevel().isGreaterOrEqual(_consoleAppenderAcceptLogLevel)
+                        ? FilterReply.ACCEPT
+                        : FilterReply.DENY;
             }
         });
 

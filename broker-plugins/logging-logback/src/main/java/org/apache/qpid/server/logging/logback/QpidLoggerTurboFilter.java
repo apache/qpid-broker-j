@@ -108,7 +108,7 @@ public final class QpidLoggerTurboFilter extends TurboFilter
     {
         // Disable the 'decide' optimisation until the new minimum is established
         _minimumFilterLevel = Level.ALL.levelInt;
-        _effectiveLevels.set(new ConcurrentHashMap<Logger, Integer>());
+        _effectiveLevels.set(new ConcurrentHashMap<>());
         synchronized (_minimumFilterLevelUpdateLock)
         {
             int newMinimumLogLevel = Level.OFF.levelInt;

@@ -36,7 +36,7 @@ public class LogRecorder implements Iterable<LogRecord>
     public Iterator<LogRecord> iterator()
     {
         final CyclicBuffer<LogRecord> buffer = _eventAppender.getBuffer();
-        return buffer != null ?  buffer.asList().iterator() : Collections.<LogRecord>emptyIterator();
+        return buffer != null ?  buffer.asList().iterator() : Collections.emptyIterator();
     }
 
 }
