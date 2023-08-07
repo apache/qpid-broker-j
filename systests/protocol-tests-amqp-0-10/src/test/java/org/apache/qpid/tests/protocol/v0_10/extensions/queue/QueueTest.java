@@ -27,7 +27,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -62,8 +62,8 @@ public class QueueTest extends BrokerAdminUsingTestBase
                                                     .attachSession(SESSION_NAME)
                                                     .queue()
                                                     .declareQueue(BrokerAdmin.TEST_QUEUE_NAME)
-                                                    .declareArguments(Collections.singletonMap("defaultFilters",
-                                                                                               "{\"selector\":{\"x-filter-jms-selector\":[\"id=2\"]}}"))
+                                                    .declareArguments(Map.of("defaultFilters",
+                                                                             "{\"selector\":{\"x-filter-jms-selector\":[\"id=2\"]}}"))
                                                     .declareId(0)
                                                     .declare()
                                                     .session()
@@ -76,7 +76,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
 
             MessageProperties messageProperties1 = new MessageProperties();
-            messageProperties1.setApplicationHeaders(Collections.singletonMap("id", 1));
+            messageProperties1.setApplicationHeaders(Map.of("id", 1));
 
             interaction.message()
                        .transferDestination(BrokerAdmin.TEST_QUEUE_NAME)
@@ -90,7 +90,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
                        .consumeResponse();
 
             MessageProperties messageProperties2 = new MessageProperties();
-            messageProperties2.setApplicationHeaders(Collections.singletonMap("id", 2));
+            messageProperties2.setApplicationHeaders(Map.of("id", 2));
             final String body2 = "Message 2 Content";
             interaction.message()
                        .transferDestination(BrokerAdmin.TEST_QUEUE_NAME)
@@ -148,7 +148,7 @@ public class QueueTest extends BrokerAdminUsingTestBase
                        .attachSession(SESSION_NAME)
                        .queue()
                        .declareQueue(BrokerAdmin.TEST_QUEUE_NAME)
-                       .declareArguments(Collections.singletonMap("foo", "bar"))
+                       .declareArguments(Map.of("foo", "bar"))
                        .declareId(0)
                        .declare()
                        .session()
