@@ -90,68 +90,68 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
                 convertMetaData(serverMsg, addressSpace, mimeType, messageContent.length);
         final int metadataSize = messageMetaData_0_10.getStorableSize();
 
-        return new StoredMessage<MessageMetaData_0_10>()
-                {
-                    @Override
-                    public MessageMetaData_0_10 getMetaData()
-                    {
-                        return messageMetaData_0_10;
-                    }
+        return new StoredMessage<>()
+        {
+            @Override
+            public MessageMetaData_0_10 getMetaData()
+            {
+                return messageMetaData_0_10;
+            }
 
-                    @Override
-                    public long getMessageNumber()
-                    {
-                        return serverMsg.getMessageNumber();
-                    }
+            @Override
+            public long getMessageNumber()
+            {
+                return serverMsg.getMessageNumber();
+            }
 
-                    @Override
-                    public QpidByteBuffer getContent(final int offset, final int length)
-                    {
-                        return QpidByteBuffer.wrap(messageContent, offset, length);
-                    }
+            @Override
+            public QpidByteBuffer getContent(final int offset, final int length)
+            {
+                return QpidByteBuffer.wrap(messageContent, offset, length);
+            }
 
-                    @Override
-                    public int getContentSize()
-                    {
-                        return messageContent.length;
-                    }
+            @Override
+            public int getContentSize()
+            {
+                return messageContent.length;
+            }
 
-                    @Override
-                    public int getMetadataSize()
-                    {
-                        return metadataSize;
-                    }
+            @Override
+            public int getMetadataSize()
+            {
+                return metadataSize;
+            }
 
-                    @Override
-                    public void remove()
-                    {
-                        throw new UnsupportedOperationException();
-                    }
+            @Override
+            public void remove()
+            {
+                throw new UnsupportedOperationException();
+            }
 
-                    @Override
-                    public boolean isInContentInMemory()
-                    {
-                        return true;
-                    }
+            @Override
+            public boolean isInContentInMemory()
+            {
+                return true;
+            }
 
-                    @Override
-                    public long getInMemorySize()
-                    {
-                        return getContentSize() + getMetadataSize();
-                    }
+            @Override
+            public long getInMemorySize()
+            {
+                return getContentSize() + getMetadataSize();
+            }
 
-                    @Override
-                    public boolean flowToDisk()
-                    {
-                        return false;
-                    }
+            @Override
+            public boolean flowToDisk()
+            {
+                return false;
+            }
 
-                    @Override
-                    public void reallocate()
-                    {
+            @Override
+            public void reallocate()
+            {
 
-                    }
-                };
+            }
+        };
     }
 
     private String improveMimeType(final InternalMessage serverMsg, String mimeType)

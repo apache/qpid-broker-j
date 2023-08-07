@@ -204,7 +204,7 @@ public final class FragmentProperties extends Struct {
     @Override
     public Map<String,Object> getFields()
     {
-        Map<String,Object> result = new LinkedHashMap<String,Object>();
+        Map<String,Object> result = new LinkedHashMap<>();
 
         if ((packing_flags & 256) != 0)
         {
@@ -218,8 +218,6 @@ public final class FragmentProperties extends Struct {
         {
             result.put("fragmentSize", getFragmentSize());
         }
-
-
         return result;
     }
 
@@ -228,6 +226,4 @@ public final class FragmentProperties extends Struct {
     {
         throw new UnsupportedOperationException();
     }
-
-
 }

@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -476,27 +475,23 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
 
                 try
                 {
-                    final InstanceProperties instanceProperties = new InstanceProperties()
+                    final InstanceProperties instanceProperties = prop ->
                     {
-                        @Override
-                        public Object getProperty(final Property prop)
+                        switch (prop)
                         {
-                            switch (prop)
-                            {
-                                case EXPIRATION:
-                                    return message.getExpiration();
-                                case IMMEDIATE:
-                                    return message.isImmediate();
-                                case MANDATORY:
-                                    return (delvProps == null || !delvProps.getDiscardUnroutable())
-                                           && xfr.getAcceptMode() == MessageAcceptMode.EXPLICIT;
-                                case PERSISTENT:
-                                    return message.isPersistent();
-                                case REDELIVERED:
-                                    return delvProps.getRedelivered();
-                            }
-                            return null;
+                            case EXPIRATION:
+                                return message.getExpiration();
+                            case IMMEDIATE:
+                                return message.isImmediate();
+                            case MANDATORY:
+                                return (delvProps == null || !delvProps.getDiscardUnroutable())
+                                       && xfr.getAcceptMode() == MessageAcceptMode.EXPLICIT;
+                            case PERSISTENT:
+                                return message.isPersistent();
+                            case REDELIVERED:
+                                return delvProps.getRedelivered();
                         }
+                        return null;
                     };
 
                     RoutingResult<MessageTransferMessage> routingResult = ssn.enqueue(message, instanceProperties, destination);
@@ -921,7 +916,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
 
                 try
                 {
-                    Map<String,Object> attributes = new HashMap<String, Object>();
+                    Map<String,Object> attributes = new HashMap<>();
                     if(method.hasArguments())
                     {
                         attributes.putAll(method.getArguments());
@@ -936,7 +931,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                         validateAlternateExchangeIsNotQueue(addressSpace, alternateExchangeName);
 
                         attributes.put(org.apache.qpid.server.model.Exchange.ALTERNATE_BINDING,
-                                       Collections.singletonMap(AlternateBinding.DESTINATION, alternateExchangeName));
+                                Map.of(AlternateBinding.DESTINATION, alternateExchangeName));
                     }
                     validateAndSanitizeExchangeDeclareArguments(attributes, session.getAMQPConnection());
                     addressSpace.createMessageDestination(Exchange.class, attributes);;
@@ -1602,7 +1597,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                 if (method.hasAlternateExchange() && !nameNullOrEmpty(alternateExchangeName))
                 {
                     validateAlternateExchangeIsNotQueue(addressSpace, alternateExchangeName);
-                    arguments.put(Queue.ALTERNATE_BINDING, Collections.singletonMap(AlternateBinding.DESTINATION, alternateExchangeName));
+                    arguments.put(Queue.ALTERNATE_BINDING, Map.of(AlternateBinding.DESTINATION, alternateExchangeName));
                 }
 
                 arguments.put(Queue.NAME, queueName);

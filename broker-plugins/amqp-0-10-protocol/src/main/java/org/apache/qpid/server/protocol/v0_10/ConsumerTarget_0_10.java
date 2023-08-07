@@ -48,12 +48,10 @@ import org.apache.qpid.server.protocol.v0_10.transport.MessageCreditUnit;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageFlowMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
-import org.apache.qpid.server.protocol.v0_10.transport.Method;
 import org.apache.qpid.server.protocol.v0_10.transport.Option;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.GZIPUtils;
 import org.apache.qpid.server.util.StateChangeListener;
@@ -75,25 +73,26 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
     private volatile int _deferredMessageCredit;
     private volatile long _deferredSizeCredit;
 
-    private final StateChangeListener<MessageInstance, EntryState> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, EntryState>()
-    {
-
-        @Override
-        public void stateChanged(MessageInstance entry, EntryState oldState, EntryState newState)
-        {
-            if (isConsumerAcquiredStateForThis(oldState) && !isConsumerAcquiredStateForThis(newState))
+    private final StateChangeListener<MessageInstance, EntryState> _unacknowledgedMessageListener =
+            new StateChangeListener<>()
             {
-                removeUnacknowledgedMessage(entry);
-                entry.removeStateChangeListener(this);
-            }
-        }
 
-        private boolean isConsumerAcquiredStateForThis(EntryState state)
-        {
-            return state instanceof ConsumerAcquiredState
-                   && ((ConsumerAcquiredState) state).getConsumer().getTarget() == ConsumerTarget_0_10.this;
-        }
-    };
+                @Override
+                public void stateChanged(MessageInstance entry, EntryState oldState, EntryState newState)
+                {
+                    if (isConsumerAcquiredStateForThis(oldState) && !isConsumerAcquiredStateForThis(newState))
+                    {
+                        removeUnacknowledgedMessage(entry);
+                        entry.removeStateChangeListener(this);
+                    }
+                }
+
+                private boolean isConsumerAcquiredStateForThis(EntryState state)
+                {
+                    return state instanceof ConsumerAcquiredState
+                           && ((ConsumerAcquiredState) state).getConsumer().getTarget() == ConsumerTarget_0_10.this;
+                }
+            };
 
     public ConsumerTarget_0_10(ServerSession session,
                                String name,
@@ -293,14 +292,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         else if(_flowMode == MessageFlowMode.WINDOW)
         {
             final long messageSize = entry.getMessage().getSize();
-            xfr.setCompletionListener(new Method.CompletionListener()
-                                        {
-                                            @Override
-                                            public void onComplete(Method method)
-                                            {
-                                                deferredAddCredit(1, messageSize);
-                                            }
-                                        });
+            xfr.setCompletionListener(method -> deferredAddCredit(1, messageSize));
         }
 
 
@@ -429,16 +421,8 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         int requeues = 0;
         if (entry.makeAcquisitionUnstealable(consumer))
         {
-            requeues = entry.routeToAlternate(new Action<MessageInstance>()
-            {
-                @Override
-                public void performAction(final MessageInstance requeueEntry)
-                {
-                    getEventLogger().message(ChannelMessages.DEADLETTERMSG(msg.getMessageNumber(),
-                                                                           requeueEntry.getOwningResource()
-                                                                                   .getName()));
-                }
-            }, null, null);
+            requeues = entry.routeToAlternate(requeueEntry ->
+                    getEventLogger().message(ChannelMessages.DEADLETTERMSG(msg.getMessageNumber(), requeueEntry.getOwningResource().getName())), null, null);
         }
         if (requeues == 0)
         {

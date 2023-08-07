@@ -34,18 +34,18 @@ public class RangeSetImpl implements RangeSet
 
     public RangeSetImpl()
     {
-        ranges =  new ArrayList<Range>();
+        ranges = new ArrayList<>();
     }
 
     public RangeSetImpl(int size)
     {
-        ranges =  new ArrayList<Range>(size);
+        ranges = new ArrayList<>(size);
     }
 
 
     public RangeSetImpl(RangeSetImpl copy)
     {
-        ranges = new ArrayList<Range>(copy.ranges);
+        ranges = new ArrayList<>(copy.ranges);
     }
 
     @Override

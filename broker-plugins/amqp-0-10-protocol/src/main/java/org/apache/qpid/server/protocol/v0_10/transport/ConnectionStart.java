@@ -221,7 +221,7 @@ public final class ConnectionStart extends Method {
     @Override
     public Map<String,Object> getFields()
     {
-        Map<String,Object> result = new LinkedHashMap<String,Object>();
+        Map<String,Object> result = new LinkedHashMap<>();
 
         if ((packing_flags & 256) != 0)
         {
@@ -235,10 +235,6 @@ public final class ConnectionStart extends Method {
         {
             result.put("locales", getLocales());
         }
-
-
         return result;
     }
-
-
 }

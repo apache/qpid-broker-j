@@ -69,7 +69,7 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     private ServerDisassembler _disassembler;
 
     private final Set<AMQPSession<?,?>> _sessionsWithWork =
-            Collections.newSetFromMap(new ConcurrentHashMap<AMQPSession<?,?>, Boolean>());
+            Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public AMQPConnection_0_10Impl(final Broker<?> broker,
                                    ServerNetworkConnection network,

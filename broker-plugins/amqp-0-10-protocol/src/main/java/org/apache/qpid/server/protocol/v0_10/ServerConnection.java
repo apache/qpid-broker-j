@@ -83,8 +83,8 @@ public class ServerConnection extends ConnectionInvoker
     private final Object _reference = new Object();
     private final AmqpPort<?> _port;
     private final AtomicLong _lastIoTime = new AtomicLong();
-    final private Map<Binary,ServerSession> sessions = new HashMap<Binary,ServerSession>();
-    final private Map<Integer,ServerSession> channels = new ConcurrentHashMap<Integer,ServerSession>();
+    final private Map<Binary,ServerSession> sessions = new HashMap<>();
+    final private Map<Integer,ServerSession> channels = new ConcurrentHashMap<>();
     final private Object lock = new Object();
     private final AtomicBoolean connectionLost = new AtomicBoolean(false);
     private boolean _blocking;
@@ -221,30 +221,25 @@ public class ServerConnection extends ConnectionInvoker
             default:
                 cause = ErrorCodes.INTERNAL_ERROR;
         }
-        addAsyncTask(new Action<ServerConnection>()
+        addAsyncTask(conn ->
         {
-
-            @Override
-            public void performAction(final ServerConnection conn)
+            if(!session.isClosing())
             {
-                if(!session.isClosing())
+                ExecutionException ex = new ExecutionException();
+                ExecutionErrorCode code = ExecutionErrorCode.INTERNAL_ERROR;
+                try
                 {
-                    ExecutionException ex = new ExecutionException();
-                    ExecutionErrorCode code = ExecutionErrorCode.INTERNAL_ERROR;
-                    try
-                    {
-                        code = ExecutionErrorCode.get(cause);
-                    }
-                    catch (IllegalArgumentException iae)
-                    {
-                        // Ignore, already set to INTERNAL_ERROR
-                    }
-                    ex.setErrorCode(code);
-                    ex.setDescription(message);
-                    session.invoke(ex);
-
-                    session.close(cause, message);
+                    code = ExecutionErrorCode.get(cause);
                 }
+                catch (IllegalArgumentException iae)
+                {
+                    // Ignore, already set to INTERNAL_ERROR
+                }
+                ex.setErrorCode(code);
+                ex.setDescription(message);
+                session.invoke(ex);
+
+                session.close(cause, message);
             }
         });
 
@@ -294,18 +289,14 @@ public class ServerConnection extends ConnectionInvoker
 
     void sendConnectionCloseAsync(final ConnectionCloseCode replyCode, final String message)
     {
-        addAsyncTask(new Action<ServerConnection>()
+        addAsyncTask(object ->
         {
-            @Override
-            public void performAction(final ServerConnection object)
+            if(!isClosing())
             {
-                if(!isClosing())
-                {
-                    markAllSessionsClosed();
+                markAllSessionsClosed();
 
-                    setState(CLOSING);
-                    sendConnectionClose(replyCode, message);
-                }
+                setState(CLOSING);
+                sendConnectionClose(replyCode, message);
             }
         });
     }
@@ -391,7 +382,7 @@ public class ServerConnection extends ConnectionInvoker
 
             synchronized (lock)
             {
-                List<ServerSession> values = new ArrayList<ServerSession>(channels.values());
+                List<ServerSession> values = new ArrayList<>(channels.values());
                 for (ServerSession ssn : values)
                 {
                     ssn.closed();
@@ -721,15 +712,11 @@ public class ServerConnection extends ConnectionInvoker
         else
         {
             final FrameSizeObserver currentObserver = _frameSizeObserver;
-            _frameSizeObserver = new FrameSizeObserver()
-                                    {
-                                        @Override
-                                        public void setMaxFrameSize(final int frameSize)
-                                        {
-                                            currentObserver.setMaxFrameSize(frameSize);
-                                            frameSizeObserver.setMaxFrameSize(frameSize);
-                                        }
-                                    };
+            _frameSizeObserver = frameSize ->
+            {
+                currentObserver.setMaxFrameSize(frameSize);
+                frameSizeObserver.setMaxFrameSize(frameSize);
+            };
         }
     }
 
@@ -797,26 +784,15 @@ public class ServerConnection extends ConnectionInvoker
                     final Action<? super ServerConnection> asyncAction = _asyncTaskList.poll();
                     if(asyncAction != null)
                     {
-                        return new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                asyncAction.performAction(ServerConnection.this);
-                            }
-                        };
+                        return () -> asyncAction.performAction(ServerConnection.this);
                     }
                     else
                     {
                         // in case the connection was marked as closing between a call to hasNext() and
                         // a subsequent call to next()
-                        return new Runnable()
+                        return () ->
                         {
-                            @Override
-                            public void run()
-                            {
 
-                            }
                         };
                     }
                 }
@@ -827,16 +803,12 @@ public class ServerConnection extends ConnectionInvoker
                         _sessionIterator = _sessionsWithPending.iterator();
                     }
                     final AMQPSession<?,?> session = _sessionIterator.next();
-                    return new Runnable()
+                    return () ->
                     {
-                        @Override
-                        public void run()
+                        _sessionIterator.remove();
+                        if (session.processPending())
                         {
-                            _sessionIterator.remove();
-                            if (session.processPending())
-                            {
-                                _sessionsWithPending.add(session);
-                            }
+                            _sessionsWithPending.add(session);
                         }
                     };
                 }
@@ -844,14 +816,7 @@ public class ServerConnection extends ConnectionInvoker
             else if(!_asyncTaskList.isEmpty())
             {
                 final Action<? super ServerConnection> asyncAction = _asyncTaskList.poll();
-                return new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        asyncAction.performAction(ServerConnection.this);
-                    }
-                };
+                return () -> asyncAction.performAction(ServerConnection.this);
             }
             else
             {

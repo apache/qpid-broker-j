@@ -118,8 +118,8 @@ public class ServerSession extends SessionInvoker
     private final int commandLimit = Integer.getInteger("qpid.session.command_limit", 64 * 1024);
     private final Object commandsLock = new Object();
     private final Object stateLock = new Object();
-    private final Map<String, ConsumerTarget_0_10> _subscriptions = new ConcurrentHashMap<String, ConsumerTarget_0_10>();
-    private final AtomicReference<LogMessage> _forcedCloseLogMessage = new AtomicReference<LogMessage>();
+    private final Map<String, ConsumerTarget_0_10> _subscriptions = new ConcurrentHashMap<>();
+    private final AtomicReference<LogMessage> _forcedCloseLogMessage = new AtomicReference<>();
     private final long _blockingTimeout;
     private final ServerConnection connection;
     private final Binary name;
@@ -735,7 +735,7 @@ public class ServerSession extends SessionInvoker
         synchronized (commandsLock)
         {
             int command = commandsOut;
-            ResultFuture<T> future = new ResultFuture<T>(klass);
+            ResultFuture<T> future = new ResultFuture<>(klass);
             synchronized (results)
             {
                 results.put(command, future);
@@ -895,14 +895,10 @@ public class ServerSession extends SessionInvoker
         }
         else
         {
-            runAsSubject(new PrivilegedAction<Void>() {
-
-                @Override
-                public Void run()
-                {
-                    setState(state);
-                    return null;
-                }
+            runAsSubject(() ->
+            {
+                setState(state);
+                return null;
             });
 
         }
@@ -991,39 +987,18 @@ public class ServerSession extends SessionInvoker
 
     public void accept(RangeSet ranges)
     {
-        dispositionChange(ranges, new MessageDispositionAction()
-        {
-            @Override
-            public void performAction(MessageDispositionChangeListener listener)
-            {
-                listener.onAccept();
-            }
-        });
+        dispositionChange(ranges, MessageDispositionChangeListener::onAccept);
     }
 
 
     public void release(RangeSet ranges, final boolean setRedelivered)
     {
-        dispositionChange(ranges, new MessageDispositionAction()
-                                      {
-                                          @Override
-                                          public void performAction(MessageDispositionChangeListener listener)
-                                          {
-                                              listener.onRelease(setRedelivered, false);
-                                          }
-                                      });
+        dispositionChange(ranges, listener -> listener.onRelease(setRedelivered, false));
     }
 
     public void reject(RangeSet ranges)
     {
-        dispositionChange(ranges, new MessageDispositionAction()
-                                      {
-                                          @Override
-                                          public void performAction(MessageDispositionChangeListener listener)
-                                          {
-                                              listener.onReject();
-                                          }
-                                      });
+        dispositionChange(ranges, MessageDispositionChangeListener::onReject);
     }
 
     public RangeSet acquire(RangeSet transfers)
