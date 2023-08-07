@@ -22,7 +22,6 @@ package org.apache.qpid.server.exchange.topic;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -123,7 +122,7 @@ public class TopicParser
         TopicMatcherDFAState stateMachine = _stateMachine.get();
         if(stateMachine == null)
         {
-            return Collections.emptySet();
+            return Set.of();
         }
         else
         {
