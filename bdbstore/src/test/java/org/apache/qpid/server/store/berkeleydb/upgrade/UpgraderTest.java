@@ -108,7 +108,7 @@ public class UpgraderTest extends AbstractUpgradeTestCase
             _upgrader.upgradeIfNecessary();
 
             List<String> databaseNames = emptyEnvironment.getDatabaseNames();
-            List<String> expectedDatabases = new ArrayList<String>();
+            List<String> expectedDatabases = new ArrayList<>();
             expectedDatabases.add(Upgrader.VERSION_DB_NAME);
             assertEquals(expectedDatabases, databaseNames,
                          "Expectedonly VERSION table in initially empty store after upgrade: ");

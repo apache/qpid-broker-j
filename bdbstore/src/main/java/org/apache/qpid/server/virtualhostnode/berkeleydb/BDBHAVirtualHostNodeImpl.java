@@ -300,7 +300,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         if (!isFirstNodeInAGroup())
         {
             List<String> permittedNodes = new ArrayList<>(getPermittedNodesFromHelper());
-            setAttributes(Collections.<String, Object>singletonMap(PERMITTED_NODES, permittedNodes));
+            setAttributes(Collections.singletonMap(PERMITTED_NODES, permittedNodes));
         }
     }
 
@@ -384,7 +384,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         final SettableFuture<Void> returnVal = SettableFuture.create();
 
         ListenableFuture<Void> superFuture = super.doStop();
-        addFutureCallback(superFuture, new FutureCallback<Void>()
+        addFutureCallback(superFuture, new FutureCallback<>()
         {
             @Override
             public void onSuccess(final Void result)
@@ -413,7 +413,6 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 {
                     returnVal.set(null);
                 }
-
             }
         }, getTaskExecutor());
         return returnVal;
@@ -482,7 +481,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
 
     private Set<InetSocketAddress> getRemoteNodeAddresses()
     {
-        Set<InetSocketAddress> helpers = new HashSet<InetSocketAddress>();
+        Set<InetSocketAddress> helpers = new HashSet<>();
         @SuppressWarnings("rawtypes")
         Collection<? extends RemoteReplicationNode> remoteNodes = getRemoteReplicationNodes();
         for (RemoteReplicationNode<?> node : remoteNodes)
@@ -497,16 +496,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     @Override
     protected ListenableFuture<Void> onClose()
     {
-        return doAfterAlways(super.onClose(),
-                             new Runnable()
-                             {
-                                 @Override
-                                 public void run()
-                                 {
-                                     closeEnvironment();
-                                 }
-                             });
-
+        return doAfterAlways(super.onClose(), this::closeEnvironment);
     }
 
     @Override
@@ -626,7 +616,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 ConfiguredObjectRecord[] initialRecords = getInitialRecords();
                 if(upgraderAndRecoverer.upgradeAndRecover(getConfigurationStore(), initialRecords))
                 {
-                    setAttributes(Collections.<String, Object>singletonMap(VIRTUALHOST_INITIAL_CONFIGURATION, "{}"));
+                    setAttributes(Collections.singletonMap(VIRTUALHOST_INITIAL_CONFIGURATION, "{}"));
                     firstOpening = initialRecords.length == 0;
                 }
 
@@ -665,14 +655,10 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 {
                     ((QueueManagingVirtualHost<?>) recoveredHost).setFirstOpening(firstOpening);
                 }
-                Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
+                Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () ->
                 {
-                    @Override
-                    public Object run()
-                    {
-                        recoveredHost.open();
-                        return null;
-                    }
+                    recoveredHost.open();
+                    return null;
                 });
             }
             success = true;
@@ -1124,14 +1110,10 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         @Override
         public void onNodeState(final ReplicationNode node, final NodeState nodeState)
         {
-            Subject.doAs(getSystemTaskSubject(_virtualHostNodePrincipalName), new PrivilegedAction<Void>()
+            Subject.doAs(getSystemTaskSubject(_virtualHostNodePrincipalName), (PrivilegedAction<Void>) () ->
             {
-                @Override
-                public Void run()
-                {
-                    processNodeState(node, nodeState);
-                    return null;
-                }
+                processNodeState(node, nodeState);
+                return null;
             });
         }
 
@@ -1181,7 +1163,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                             {
                                 if (_permittedNodes.contains(remoteNode.getAddress()))
                                 {
-                                    setAttributes(Collections.<String, Object>singletonMap(PERMITTED_NODES, new ArrayList<>(permittedNodes)));
+                                    setAttributes(Collections.singletonMap(PERMITTED_NODES, new ArrayList<>(permittedNodes)));
                                 } else
                                 {
                                     LOGGER.warn("Cannot accept the new permitted node list from the master as the master '" + remoteNode.getName()
@@ -1212,15 +1194,8 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         @Override
         public boolean onIntruderNode(final ReplicationNode node)
         {
-            return Subject.doAs(getSystemTaskSubject(_virtualHostNodePrincipalName), new PrivilegedAction<Boolean>()
-            {
-                @Override
-                public Boolean run()
-                {
-                    return processIntruderNode(node);
-
-                }
-            });
+            return Subject.doAs(getSystemTaskSubject(_virtualHostNodePrincipalName), (PrivilegedAction<Boolean>) () ->
+                    processIntruderNode(node));
         }
 
         private boolean processIntruderNode(final ReplicationNode node)
@@ -1314,7 +1289,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
 
         private Map<String, Object> nodeToAttributes(ReplicationNode replicationNode)
         {
-            Map<String, Object> attributes = new HashMap<String, Object>();
+            Map<String, Object> attributes = new HashMap<>();
             attributes.put(ConfiguredObject.NAME, replicationNode.getName());
             attributes.put(ConfiguredObject.DURABLE, false);
             attributes.put(BDBHARemoteReplicationNode.ADDRESS, replicationNode.getHostName() + ":" + replicationNode.getPort());
@@ -1330,18 +1305,14 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         final State initialState = getState();
 
 
-        ListenableFuture<Void> future = doAfterAlways(stopAndSetStateTo(State.ERRORED), new Runnable()
+        ListenableFuture<Void> future = doAfterAlways(stopAndSetStateTo(State.ERRORED), () ->
         {
-            @Override
-            public void run()
-            {
-                _lastRole.set(NodeRole.DETACHED);
-                attributeSet(ROLE, _role, NodeRole.DETACHED);
-                notifyStateChanged(initialState, State.ERRORED);
-            }
+            _lastRole.set(NodeRole.DETACHED);
+            attributeSet(ROLE, _role, NodeRole.DETACHED);
+            notifyStateChanged(initialState, State.ERRORED);
         });
 
-        addFutureCallback(future, new FutureCallback<Void>()
+        addFutureCallback(future, new FutureCallback<>()
         {
             @Override
             public void onSuccess(final Void result)
@@ -1368,14 +1339,10 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         @Override
         public Void execute()
         {
-            return Subject.doAs(getSystemTaskSubject(_virtualHostNodePrincipalName), new PrivilegedAction<Void>()
+            return Subject.doAs(getSystemTaskSubject(_virtualHostNodePrincipalName), (PrivilegedAction<Void>) () ->
             {
-                @Override
-                public Void run()
-                {
-                    perform();
-                    return null;
-                }
+                perform();
+                return null;
             });
         }
 

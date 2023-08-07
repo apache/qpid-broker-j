@@ -167,7 +167,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             List<AMQShortString> potentialDurableSubs, Transaction transaction)
     {
         LOGGER.info("Queues");
-        final Set<String> existingQueues = new HashSet<String>();
+        final Set<String> existingQueues = new HashSet<>();
         if (environment.getDatabaseNames().contains(OLD_QUEUE_DB_NAME))
         {
             final QueueRecordBinding binding = new QueueRecordBinding(potentialDurableSubs);
@@ -196,7 +196,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             Transaction transaction)
     {
         final List<AMQShortString> exchangeNames = findTopicExchanges(environment);
-        final List<AMQShortString> queues = new ArrayList<AMQShortString>();
+        final List<AMQShortString> queues = new ArrayList<>();
         final PartialBindingRecordBinding binding = new PartialBindingRecordBinding();
 
         CursorOperation databaseOperation = new CursorOperation()
@@ -219,8 +219,8 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
     private Set<Long> upgradeDelivery(final Environment environment, final Set<String> existingQueues,
             final UpgradeInteractionHandler handler, Transaction transaction)
     {
-        final Set<Long> messagesToDiscard = new HashSet<Long>();
-        final Set<String> queuesToDiscard = new HashSet<String>();
+        final Set<Long> messagesToDiscard = new HashSet<>();
+        final Set<String> queuesToDiscard = new HashSet<>();
         final QueueEntryKeyBinding queueEntryKeyBinding = new QueueEntryKeyBinding();
         LOGGER.info("Delivery Records");
 
@@ -307,40 +307,37 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
 
         final QueueRecordBinding binding = new QueueRecordBinding(null);
         final BindingTuple bindingTuple = new BindingTuple();
-        DatabaseRunnable queueCreateOperation = new DatabaseRunnable()
+        DatabaseRunnable queueCreateOperation = (newQueueDatabase, newBindingsDatabase, transaction1) ->
         {
+            AMQShortString queueNameAMQ = AMQShortString.createAMQShortString(queueName);
+            QueueRecord record = new QueueRecord(queueNameAMQ, null, false, null);
 
-            @Override
-            public void run(Database newQueueDatabase, Database newBindingsDatabase, Transaction transaction)
-            {
-                AMQShortString queueNameAMQ = AMQShortString.createAMQShortString(queueName);
-                QueueRecord record = new QueueRecord(queueNameAMQ, null, false, null);
+            DatabaseEntry key = new DatabaseEntry();
 
-                DatabaseEntry key = new DatabaseEntry();
+            TupleOutput output = new TupleOutput();
+            AMQShortStringEncoding.writeShortString(record.getNameShortString(), output);
+            TupleBase.outputToEntry(output, key);
 
-                TupleOutput output = new TupleOutput();
-                AMQShortStringEncoding.writeShortString(record.getNameShortString(), output);
-                TupleBase.outputToEntry(output, key);
+            DatabaseEntry newValue = new DatabaseEntry();
+            binding.objectToEntry(record, newValue);
+            newQueueDatabase.put(transaction1, key, newValue);
 
-                DatabaseEntry newValue = new DatabaseEntry();
-                binding.objectToEntry(record, newValue);
-                newQueueDatabase.put(transaction, key, newValue);
+            FieldTable emptyArguments = FieldTableFactory.createFieldTable(Collections.emptyMap());
+            addBindingToDatabase(bindingTuple, newBindingsDatabase,
+                                 transaction1, queueNameAMQ,
+                                 AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_NAME), queueNameAMQ, emptyArguments);
 
-                FieldTable emptyArguments = FieldTableFactory.createFieldTable(Collections.emptyMap());
-                addBindingToDatabase(bindingTuple, newBindingsDatabase, transaction, queueNameAMQ,
-                        AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_NAME), queueNameAMQ, emptyArguments);
-
-                // TODO QPID-3490 we should not persist a default exchange binding
-                addBindingToDatabase(bindingTuple, newBindingsDatabase, transaction, queueNameAMQ,
-                        AMQShortString.valueOf(ExchangeDefaults.DEFAULT_EXCHANGE_NAME), queueNameAMQ, emptyArguments);
-            }
+            // TODO QPID-3490 we should not persist a default exchange binding
+            addBindingToDatabase(bindingTuple, newBindingsDatabase,
+                                 transaction1, queueNameAMQ,
+                                 AMQShortString.valueOf(ExchangeDefaults.DEFAULT_EXCHANGE_NAME), queueNameAMQ, emptyArguments);
         };
         new DatabaseTemplate(environment, NEW_QUEUE_DB_NAME, NEW_BINDINGS_DB_NAME, transaction).run(queueCreateOperation);
     }
 
     private List<AMQShortString> findTopicExchanges(final Environment environment)
     {
-        final List<AMQShortString> topicExchanges = new ArrayList<AMQShortString>();
+        final List<AMQShortString> topicExchanges = new ArrayList<>();
         final ExchangeRecordBinding binding = new ExchangeRecordBinding();
         CursorOperation databaseOperation = new CursorOperation()
         {

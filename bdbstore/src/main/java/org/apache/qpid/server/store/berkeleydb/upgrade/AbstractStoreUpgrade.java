@@ -22,9 +22,7 @@ package org.apache.qpid.server.store.berkeleydb.upgrade;
 
 import java.util.List;
 
-import com.sleepycat.je.Database;
 import com.sleepycat.je.Environment;
-import com.sleepycat.je.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,14 +61,7 @@ public abstract class AbstractStoreUpgrade implements StoreUpgrade
 
     private long getRowCount(String databaseName, Environment environment)
     {
-        DatabaseCallable<Long> operation = new DatabaseCallable<Long>()
-        {
-            @Override
-            public Long call(Database sourceDatabase, Database targetDatabase, Transaction transaction)
-            {
-                return sourceDatabase.count();
-            }
-        };
+        DatabaseCallable<Long> operation = (sourceDatabase, targetDatabase, transaction) -> sourceDatabase.count();
         return new DatabaseTemplate(environment, databaseName, null).call(operation);
     }
 

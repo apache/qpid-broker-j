@@ -23,7 +23,6 @@ package org.apache.qpid.server.store.berkeleydb;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -237,14 +236,7 @@ public class BDBBackup
         while (!consistentSet)
         {
             // List all .jdb files in the directory.
-            fileSet = fromDirFile.listFiles(new FilenameFilter()
-                    {
-                        @Override
-                        public boolean accept(File dir, String name)
-                        {
-                            return name.endsWith(LOG_FILE_SUFFIX);
-                        }
-                    });
+            fileSet = fromDirFile.listFiles((dir, name) -> name.endsWith(LOG_FILE_SUFFIX));
 
             if (fileSet == null || fileSet.length == 0)
             {
@@ -303,7 +295,7 @@ public class BDBBackup
         }
 
         // Copy the consistent set of open files.
-        List<String> backedUpFileNames = new LinkedList<String>();
+        List<String> backedUpFileNames = new LinkedList<>();
 
         for (int j = 0; j < fileSet.length; j++)
         {

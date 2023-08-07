@@ -22,7 +22,17 @@ package org.apache.qpid.server.store.berkeleydb.replication;
 
 import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.JUL_LOGGER_LEVEL_OVERRIDE;
 import static org.apache.qpid.server.store.berkeleydb.EnvironmentFacade.LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME;
-import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.*;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.DISABLE_COALESCING_COMMITTER_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.ENVIRONMENT_RESTART_RETRY_LIMIT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.EXECUTOR_SHUTDOWN_TIMEOUT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.MASTER_TRANSFER_TIMEOUT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.NO_SYNC_TX_DURABILITY_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.PERMITTED_NODE_LIST;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.REMOTE_NODE_MONITOR_INTERVAL_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.REMOTE_NODE_MONITOR_TIMEOUT_PROPERTY_NAME;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.ReplicationNodeImpl;
+import static org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade.getRemoteNodeState;
 import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD;
 import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.DEFAULT_QPID_BROKER_BDB_COMMITER_WAIT_TIMEOUT;
 import static org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost.QPID_BROKER_BDB_COMMITER_NOTIFY_THRESHOLD;
@@ -878,7 +888,8 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
         permittedNodes.add("localhost:" + _portHelper.getNextAvailable());
         firstNode.setPermittedNodes(permittedNodes);
 
-        ReplicationNodeImpl replicationNode = new ReplicationNodeImpl(TEST_NODE_NAME, TEST_NODE_HOST_PORT);
+        ReplicationNodeImpl
+                replicationNode = new ReplicationNodeImpl(TEST_NODE_NAME, TEST_NODE_HOST_PORT);
         NodeState nodeState = getRemoteNodeState(TEST_GROUP_NAME, replicationNode, 5000);
 
         ObjectMapper objectMapper = new ObjectMapper();

@@ -207,7 +207,7 @@ public class BDBPreferenceStoreTest extends UnitTestBase
     {
         try
         {
-            _preferenceStore.replace(Collections.<UUID>emptyList(), Collections.emptyList());
+            _preferenceStore.replace(Collections.emptyList(), Collections.emptyList());
             fail("Should not be able to replace");
         }
         catch (IllegalStateException e)

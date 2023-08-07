@@ -84,8 +84,8 @@ public class CoalescingCommiter implements Committer
     @Override
     public <X> ListenableFuture<X> commitAsync(Transaction tx, X val)
     {
-        ThreadNotifyingSettableFuture<X> future = new ThreadNotifyingSettableFuture<X>();
-        BDBCommitFutureResult<X> commitFuture = new BDBCommitFutureResult<X>(val, future);
+        ThreadNotifyingSettableFuture<X> future = new ThreadNotifyingSettableFuture<>();
+        BDBCommitFutureResult<X> commitFuture = new BDBCommitFutureResult<>(val, future);
         _commitThread.addJob(commitFuture, false);
         return future;
     }

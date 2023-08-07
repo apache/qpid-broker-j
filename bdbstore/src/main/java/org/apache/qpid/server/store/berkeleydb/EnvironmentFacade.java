@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -39,16 +37,12 @@ import org.apache.qpid.server.model.ConfiguredObject;
 
 public interface EnvironmentFacade
 {
-    @SuppressWarnings("serial")
-    final Map<String, String> ENVCONFIG_DEFAULTS = Collections.unmodifiableMap(new HashMap<String, String>()
-    {{
-        put(EnvironmentConfig.LOCK_N_LOCK_TABLES, "7");
-        // Turn off stats generation - feature introduced (and on by default) from BDB JE 5.0.84
-        put(EnvironmentConfig.STATS_COLLECT, "false");
-        put(EnvironmentConfig.FILE_LOGGING_LEVEL, "OFF");
-        put(EnvironmentConfig.CONSOLE_LOGGING_LEVEL, "OFF");
-        put(EnvironmentConfig.CLEANER_UPGRADE_TO_LOG_VERSION, "-1");
-    }});
+    Map<String, String> ENVCONFIG_DEFAULTS = Map.of(EnvironmentConfig.LOCK_N_LOCK_TABLES, "7",
+            // Turn off stats generation - feature introduced (and on by default) from BDB JE 5.0.84
+            EnvironmentConfig.STATS_COLLECT, "false",
+            EnvironmentConfig.FILE_LOGGING_LEVEL, "OFF",
+            EnvironmentConfig.CONSOLE_LOGGING_LEVEL, "OFF",
+            EnvironmentConfig.CLEANER_UPGRADE_TO_LOG_VERSION, "-1");
 
     String CACHE_MODE_PROPERTY_NAME = "qpid.bdb.cache_mode";
     CacheMode CACHE_MODE_DEFAULT = CacheMode.EVICT_LN;

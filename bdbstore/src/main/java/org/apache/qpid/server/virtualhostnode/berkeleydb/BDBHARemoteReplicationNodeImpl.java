@@ -43,7 +43,6 @@ import org.apache.qpid.server.logging.subjects.GroupLogSubject;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;

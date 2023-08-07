@@ -45,54 +45,47 @@ public class BDBPreferenceStore extends AbstractBDBPreferenceStore
     public BDBPreferenceStore(final ConfiguredObject<?> parent, final String storePath)
     {
         _storePath = storePath;
-        _environmentFactory = new EnvironmentFacadeFactory()
+        _environmentFactory = object -> new StandardEnvironmentFacade(new StandardEnvironmentConfiguration()
         {
             @Override
-            public EnvironmentFacade createEnvironmentFacade(final ConfiguredObject<?> object)
+            public String getName()
             {
-                return new StandardEnvironmentFacade(new StandardEnvironmentConfiguration()
-                {
-                    @Override
-                    public String getName()
-                    {
-                        return parent.getName();
-                    }
-
-                    @Override
-                    public String getStorePath()
-                    {
-                        return storePath;
-                    }
-
-                    @Override
-                    public CacheMode getCacheMode()
-                    {
-                        return BDBUtils.getCacheMode(parent);
-                    }
-
-                    @Override
-                    public Map<String, String> getParameters()
-                    {
-                        return BDBUtils.getEnvironmentConfigurationParameters(parent);
-                    }
-
-                    @Override
-                    public <T> T getFacadeParameter(final Class<T> paremeterClass, final String parameterName, final T defaultValue)
-                    {
-                        return BDBUtils.getContextValue(parent, paremeterClass, parameterName, defaultValue);
-                    }
-
-                    @Override
-                    public <T> T getFacadeParameter(final Class<T> paremeterClass,
-                                                    final Type type,
-                                                    final String parameterName,
-                                                    final T defaultValue)
-                    {
-                        return BDBUtils.getContextValue(parent, paremeterClass, type, parameterName, defaultValue);
-                    }
-                });
+                return parent.getName();
             }
-        };
+
+            @Override
+            public String getStorePath()
+            {
+                return storePath;
+            }
+
+            @Override
+            public CacheMode getCacheMode()
+            {
+                return BDBUtils.getCacheMode(parent);
+            }
+
+            @Override
+            public Map<String, String> getParameters()
+            {
+                return BDBUtils.getEnvironmentConfigurationParameters(parent);
+            }
+
+            @Override
+            public <T> T getFacadeParameter(final Class<T> paremeterClass, final String parameterName, final T defaultValue)
+            {
+                return BDBUtils.getContextValue(parent, paremeterClass, parameterName, defaultValue);
+            }
+
+            @Override
+            public <T> T getFacadeParameter(final Class<T> paremeterClass,
+                                            final Type type,
+                                            final String parameterName,
+                                            final T defaultValue)
+            {
+                return BDBUtils.getContextValue(parent, paremeterClass, type, parameterName, defaultValue);
+            }
+        });
     }
 
     @Override
