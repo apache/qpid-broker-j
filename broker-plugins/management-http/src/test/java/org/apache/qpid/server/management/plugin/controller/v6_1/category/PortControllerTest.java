@@ -28,10 +28,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,7 @@ public class PortControllerTest extends UnitTestBase
         final ManagementController nextVersionManagementController = mock(ManagementController.class);
         when(legacyManagementController.getNextVersionManagementController()).thenReturn(
                 nextVersionManagementController);
-        _portController = new PortController(legacyManagementController, Collections.emptySet());
+        _portController = new PortController(legacyManagementController, Set.of());
     }
 
     @Test
@@ -93,7 +93,7 @@ public class PortControllerTest extends UnitTestBase
         attributes.put(LegacyConfiguredObject.CONTEXT, context);
 
         final ConfiguredObject<?> root = mock(ConfiguredObject.class);
-        final List<String> path = Collections.emptyList();
+        final List<String> path = List.of();
         final Map<String, Object> converted = _portController.convertAttributesToNextVersion(root, path, attributes);
 
         assertThat(converted, is(instanceOf(Map.class)));

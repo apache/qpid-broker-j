@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
-import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.Named;
 
 public class ConfiguredObjectToMapConverter
@@ -216,7 +215,7 @@ public class ConfiguredObjectToMapConverter
             final ConfiguredObject<?> confObject, Map<String, Object> object)
     {
 
-        Map<String, Object> statMap = new TreeMap<String,Object>(confObject.getStatistics());
+        Map<String, Object> statMap = new TreeMap<>(confObject.getStatistics());
 
         if(!statMap.isEmpty())
         {
@@ -233,14 +232,7 @@ public class ConfiguredObjectToMapConverter
     {
         List<Class<? extends ConfiguredObject>> childTypes = new ArrayList<>(confObject.getModel().getChildTypes(clazz));
 
-        Collections.sort(childTypes, new Comparator<Class<? extends ConfiguredObject>>()
-        {
-            @Override
-            public int compare(final Class<? extends ConfiguredObject> o1, final Class<? extends ConfiguredObject> o2)
-            {
-                return o1.getSimpleName().compareTo(o2.getSimpleName());
-            }
-        });
+        childTypes.sort(Comparator.comparing(Class::getSimpleName));
 
         ConverterOptions childConverterOptions = new ConverterOptions(converterOptions, converterOptions.getDepth() - 1);
         for(Class<? extends ConfiguredObject> childClass : childTypes)
@@ -255,14 +247,7 @@ public class ConfiguredObjectToMapConverter
                 }
                 else
                 {
-                    Collections.sort(sortedChildren, new Comparator<ConfiguredObject>()
-                    {
-                        @Override
-                        public int compare(final ConfiguredObject o1, final ConfiguredObject o2)
-                        {
-                            return o1.getName().compareTo(o2.getName());
-                        }
-                    });
+                    sortedChildren.sort(Comparator.comparing((ConfiguredObject o) -> o.getName()));
                 }
                 List<Map<String, Object>> childObjects = new ArrayList<>();
 

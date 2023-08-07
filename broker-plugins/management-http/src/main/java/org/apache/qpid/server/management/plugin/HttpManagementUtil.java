@@ -22,7 +22,6 @@ package org.apache.qpid.server.management.plugin;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
@@ -249,22 +248,14 @@ public class HttpManagementUtil
     {
         if (pathInfo == null || pathInfo.length() == 0)
         {
-            return Collections.emptyList();
+            return List.of();
         }
 
         String[] pathInfoElements = pathInfo.substring(1).split("/");
         for (int i = 0; i < pathInfoElements.length; i++)
         {
-            try
-            {
-                // double decode to allow slashes in object names. first decoding happens in request.getPathInfo().
-                pathInfoElements[i] = URLDecoder.decode(pathInfoElements[i], StandardCharsets.UTF_8.name());
-            }
-            catch (UnsupportedEncodingException e)
-            {
-                throw new IllegalArgumentException("Servlet at " + servletPath
-                                                   + " could not decode path element: " + pathInfoElements[i], e);
-            }
+            // double decode to allow slashes in object names. first decoding happens in request.getPathInfo().
+            pathInfoElements[i] = URLDecoder.decode(pathInfoElements[i], StandardCharsets.UTF_8);
         }
         return Arrays.asList(pathInfoElements);
     }

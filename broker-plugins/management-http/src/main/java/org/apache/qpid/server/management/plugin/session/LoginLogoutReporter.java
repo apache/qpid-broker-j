@@ -72,14 +72,10 @@ public class LoginLogoutReporter implements HttpSessionBindingListener
     {
         LOGGER.debug("User logging in : {}", _principal);
 
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                getEventLogger().message(ManagementConsoleMessages.OPEN(_principal.getName()));
-                return null;
-            }
+            getEventLogger().message(ManagementConsoleMessages.OPEN(_principal.getName()));
+            return null;
         });
     }
 
@@ -87,14 +83,10 @@ public class LoginLogoutReporter implements HttpSessionBindingListener
     {
         LOGGER.debug("User logging out : {}", _principal);
 
-        Subject.doAs(_subject, new PrivilegedAction<Void>()
+        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            @Override
-            public Void run()
-            {
-                getEventLogger().message(ManagementConsoleMessages.CLOSE(_principal.getName()));
-                return null;
-            }
+            getEventLogger().message(ManagementConsoleMessages.CLOSE(_principal.getName()));
+            return null;
         });
     }
 

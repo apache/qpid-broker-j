@@ -36,11 +36,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,25 +77,21 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         final UUID objectUuid = UUID.randomUUID();
         final String objectName = "obj1";
 
-        ConfiguredObject obj1 = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, objectUuid);
-            put(ConfiguredObject.NAME, objectName);
-        }});
+        ConfiguredObject obj1 = createCO(Map.of(ConfiguredObject.ID, objectUuid, ConfiguredObject.NAME, objectName));
 
         _objects.add(obj1);
 
         _query = new ConfiguredObjectQuery(_objects, null, null);
 
         final List<String> headers = _query.getHeaders();
-        assertEquals(Lists.newArrayList(ConfiguredObject.ID, ConfiguredObject.NAME), headers, "Unexpected headers");
+        assertEquals(List.of(ConfiguredObject.ID, ConfiguredObject.NAME), headers, "Unexpected headers");
 
 
         List<List<Object>> results = _query.getResults();
         assertEquals(1, (long) results.size(), "Unexpected number of results");
 
         List<Object> row = results.iterator().next();
-        assertEquals(Lists.newArrayList(objectUuid, objectName), row, "Unexpected row");
+        assertEquals(List.of(objectUuid, objectName), row, "Unexpected row");
     }
 
     @Test
@@ -145,18 +139,11 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         final UUID object2Uuid = UUID.randomUUID();
         final String object2Name = "obj2";
 
-        ConfiguredObject obj1 = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, object1Uuid);
-            put(ConfiguredObject.NAME, object1Name);
-            put("foo", "bar");
-        }});
+        ConfiguredObject obj1 = createCO(Map.of(ConfiguredObject.ID, object1Uuid,
+                ConfiguredObject.NAME, object1Name,
+                "foo", "bar"));
 
-        ConfiguredObject obj2 = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, object2Uuid);
-            put(ConfiguredObject.NAME, object2Name);
-        }});
+        ConfiguredObject obj2 = createCO(Map.of(ConfiguredObject.ID, object2Uuid, ConfiguredObject.NAME, object2Name));
 
         _objects.add(obj1);
         _objects.add(obj2);
@@ -168,10 +155,10 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row1 = iterator.next();
-        assertEquals(Lists.newArrayList(object1Uuid, object1Name), row1, "Unexpected row");
+        assertEquals(List.of(object1Uuid, object1Name), row1, "Unexpected row");
 
         List<Object> row2 = iterator.next();
-        assertEquals(Lists.newArrayList(object2Uuid, object2Name), row2, "Unexpected row");
+        assertEquals(List.of(object2Uuid, object2Name), row2, "Unexpected row");
     }
 
     @Test
@@ -179,11 +166,7 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
     {
         final UUID objectUuid = UUID.randomUUID();
 
-        ConfiguredObject obj = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, objectUuid);
-            put(NUMBER_ATTR, 1234);
-        }});
+        ConfiguredObject obj = createCO(Map.of(ConfiguredObject.ID, objectUuid, NUMBER_ATTR, 1234));
 
         _objects.add(obj);
 
@@ -195,26 +178,23 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         assertEquals(1, (long) results.size(), "Unexpected number of results");
 
         final List<String> headers = _query.getHeaders();
-        assertEquals(Lists.newArrayList(ConfiguredObject.ID, NUMBER_ATTR), headers, "Unexpected headers");
+        assertEquals(List.of(ConfiguredObject.ID, NUMBER_ATTR), headers, "Unexpected headers");
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
-        assertEquals(Lists.newArrayList(objectUuid, 1234), row, "Unexpected row");
+        assertEquals(List.of(objectUuid, 1234), row, "Unexpected row");
     }
 
     @Test
     public void testSelectClause_NonExistingColumn()
     {
-       ConfiguredObject obj = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, UUID.randomUUID());
-        }});
+       ConfiguredObject obj = createCO(Map.of(ConfiguredObject.ID, UUID.randomUUID()));
         _objects.add(obj);
 
         _query = new ConfiguredObjectQuery(_objects, "foo", null);
         List<List<Object>> results = _query.getResults();
         assertEquals(1, (long) results.size(), "Unexpected number of results");
-        assertEquals(Collections.singletonList("foo"), _query.getHeaders(), "Unexpected headers");
+        assertEquals(List.of("foo"), _query.getHeaders(), "Unexpected headers");
         assertEquals(Collections.singletonList(null), results.get(0), "Unexpected row");
     }
 
@@ -223,12 +203,9 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
     {
         final UUID objectUuid = UUID.randomUUID();
 
-        ConfiguredObject obj = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, objectUuid);
-            put(ConfiguredObject.NAME, "myObj");
-            put(NUMBER_ATTR, 1234);
-        }});
+        ConfiguredObject obj = createCO(Map.of(ConfiguredObject.ID, objectUuid,
+                ConfiguredObject.NAME, "myObj",
+                NUMBER_ATTR, 1234));
 
         _objects.add(obj);
 
@@ -240,11 +217,11 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         assertEquals(1, (long) results.size(), "Unexpected number of results");
 
         final List<String> headers = _query.getHeaders();
-        assertEquals(Lists.newArrayList(ConfiguredObject.ID, "alias"), headers, "Unexpected headers");
+        assertEquals(List.of(ConfiguredObject.ID, "alias"), headers, "Unexpected headers");
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
-        assertEquals(Lists.newArrayList(objectUuid, "myObj1234"), row, "Unexpected row");
+        assertEquals(List.of(objectUuid, "myObj1234"), row, "Unexpected row");
     }
 
     @Test
@@ -253,17 +230,9 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         final UUID objectUuid = UUID.randomUUID();
         final String objectName = "obj2";
 
-        ConfiguredObject nonMatch = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, UUID.randomUUID());
-            put(ConfiguredObject.NAME, "obj1");
-        }});
+        ConfiguredObject nonMatch = createCO(Map.of(ConfiguredObject.ID, UUID.randomUUID(), ConfiguredObject.NAME, "obj1"));
 
-        ConfiguredObject match = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, objectUuid);
-            put(ConfiguredObject.NAME, objectName);
-        }});
+        ConfiguredObject match = createCO(Map.of(ConfiguredObject.ID, objectUuid, ConfiguredObject.NAME, objectName));
 
         _objects.add(nonMatch);
         _objects.add(match);
@@ -271,7 +240,7 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         _query = new ConfiguredObjectQuery(_objects, null, String.format("name = '%s'", objectName));
 
         final List<String> headers = _query.getHeaders();
-        assertEquals(Lists.newArrayList(ConfiguredObject.ID, ConfiguredObject.NAME), headers, "Unexpected headers");
+        assertEquals(List.of(ConfiguredObject.ID, ConfiguredObject.NAME), headers, "Unexpected headers");
 
         List<List<Object>> results = _query.getResults();
         assertEquals(1, (long) results.size(), "Unexpected number of results");
@@ -290,17 +259,11 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         final Date yesterday = new Date(now - oneDayInMillis);
         final Date tomorrow = new Date(now + oneDayInMillis);
 
-        ConfiguredObject nonMatch = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, UUID.randomUUID());
-            put(DATE_ATTR, yesterday);
-        }});
+        ConfiguredObject nonMatch = createCO(Map.of(ConfiguredObject.ID, UUID.randomUUID(),
+                DATE_ATTR, yesterday));
 
-        ConfiguredObject match = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, objectUuid);
-            put(DATE_ATTR, tomorrow);
-        }});
+        ConfiguredObject match = createCO(Map.of(ConfiguredObject.ID, objectUuid,
+                DATE_ATTR, tomorrow));
 
         _objects.add(nonMatch);
         _objects.add(match);
@@ -327,17 +290,9 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
 
         final UUID objectUuid = UUID.randomUUID();
 
-        ConfiguredObject nonMatch = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, UUID.randomUUID());
-            put(DATE_ATTR, new Date(0));
-        }});
+        ConfiguredObject nonMatch = createCO(Map.of(ConfiguredObject.ID, UUID.randomUUID(), DATE_ATTR, new Date(0)));
 
-        ConfiguredObject match = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, objectUuid);
-            put(DATE_ATTR, new Date(now));
-        }});
+        ConfiguredObject match = createCO(Map.of(ConfiguredObject.ID, objectUuid, DATE_ATTR, new Date(now)));
 
         _objects.add(nonMatch);
         _objects.add(match);
@@ -360,11 +315,7 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
     {
         final UUID objectUuid = UUID.randomUUID();
 
-        ConfiguredObject match = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, objectUuid);
-            put(DATE_ATTR, new Date(0));
-        }});
+        ConfiguredObject match = createCO(Map.of(ConfiguredObject.ID, objectUuid, DATE_ATTR, new Date(0)));
 
         _objects.add(match);
 
@@ -388,11 +339,7 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
     {
         final UUID objectUuid = UUID.randomUUID();
 
-        ConfiguredObject match = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, objectUuid);
-            put(DATE_ATTR, new Date(0));
-        }});
+        ConfiguredObject match = createCO(Map.of(ConfiguredObject.ID, objectUuid, DATE_ATTR, new Date(0)));
 
         _objects.add(match);
 
@@ -405,7 +352,7 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
-        assertEquals(Lists.newArrayList(objectUuid, "1970-01-01T00:00:00Z"), row, "Unexpected row");
+        assertEquals(List.of(objectUuid, "1970-01-01T00:00:00Z"), row, "Unexpected row");
     }
 
     @Test
@@ -413,11 +360,7 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
     {
         final UUID objectUuid = UUID.randomUUID();
 
-        ConfiguredObject match = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, objectUuid);
-            put(DATE_ATTR, new Date(0));
-        }});
+        ConfiguredObject match = createCO(Map.of(ConfiguredObject.ID, objectUuid, DATE_ATTR, new Date(0)));
 
         _objects.add(match);
 
@@ -429,11 +372,11 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
                                            null);
 
         List<List<Object>> results = _query.getResults();
-        assertEquals((long) 1, (long) results.size(), "Unexpected number of results");
+        assertEquals(1, (long) results.size(), "Unexpected number of results");
 
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
-        assertEquals(Lists.newArrayList(objectUuid, "1970-01-01 UTC"), row, "Unexpected row");
+        assertEquals(List.of(objectUuid, "1970-01-01 UTC"), row, "Unexpected row");
     }
 
     @Test
@@ -441,12 +384,9 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
     {
         final UUID objectUuid = UUID.randomUUID();
 
-        ConfiguredObject obj = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, objectUuid);
-            put(ENUM_ATTR, Snakes.PYTHON);
-            put(ENUM2_ATTR, Snakes.PYTHON);
-        }});
+        ConfiguredObject obj = createCO(Map.of(ConfiguredObject.ID, objectUuid,
+                ENUM_ATTR, Snakes.PYTHON,
+                ENUM2_ATTR, Snakes.PYTHON));
 
         _objects.add(obj);
 
@@ -466,8 +406,8 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
                                            String.format("'%s' = %s", Snakes.PYTHON, ENUM_ATTR));
 
         results = _query.getResults();
-        assertEquals((long) 1, (long) results.size(),
-                "Unexpected number of results - enum constant equality with enumAttr");
+        assertEquals(1, (long) results.size(),
+                     "Unexpected number of results - enum constant equality with enumAttr");
 
         row = _query.getResults().iterator().next();
         assertEquals(objectUuid, row.get(0), "Unexpected row");
@@ -494,12 +434,9 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
     {
         final UUID objectUuid = UUID.randomUUID();
 
-        ConfiguredObject obj = createCO(new HashMap<String, Object>()
-        {{
-            put(ConfiguredObject.ID, objectUuid);
-            put(ENUM_ATTR, Snakes.PYTHON);
-            put(ENUM2_ATTR, Snakes.PYTHON);
-        }});
+        ConfiguredObject obj = createCO(Map.of(ConfiguredObject.ID, objectUuid,
+                ENUM_ATTR, Snakes.PYTHON,
+                ENUM2_ATTR, Snakes.PYTHON));
 
         _objects.add(obj);
 
@@ -554,14 +491,11 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         for (int i = 0; i < NUMBER_OF_OBJECTS; ++i)
         {
             final int foo = (i + 1) % NUMBER_OF_OBJECTS;
-            ConfiguredObject object = createCO(new HashMap<String, Object>()
-            {{
-                put("foo", foo);
-            }});
+            ConfiguredObject object = createCO(Map.of("foo", foo));
             _objects.add(object);
         }
 
-        ConfiguredObject object = createCO(new HashMap<String, Object>()
+        ConfiguredObject object = createCO(new HashMap<>()
         {{
             put("foo", null);
         }});
@@ -586,20 +520,11 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
     @Test
     public void testAliasInOrderByClause()
     {
-        _objects.add(createCO(new HashMap<String, Object>()
-        {{
-            put("foo", 2);
-        }}));
+        _objects.add(createCO(Map.of("foo", 2)));
 
-        _objects.add(createCO(new HashMap<String, Object>()
-        {{
-            put("foo", 1);
-        }}));
+        _objects.add(createCO(Map.of("foo", 1)));
 
-        _objects.add(createCO(new HashMap<String, Object>()
-        {{
-            put("foo", 4);
-        }}));
+        _objects.add(createCO(Map.of("foo", 4)));
 
         _query = new ConfiguredObjectQuery(_objects, "foo AS bar", null, "bar ASC");
         assertQueryResults(new Object[][]{{1}, {2}, {4}}, _query.getResults());
@@ -608,17 +533,9 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
     @Test
     public void testExpressionToTermsOfAliasInOrderByClause()
     {
-        _objects.add(createCO(new HashMap<String, Object>()
-        {{
-            put("foo1", "A");
-            put("foo2", "B");
-        }}));
+        _objects.add(createCO(Map.of("foo1", "A", "foo2", "B")));
 
-        _objects.add(createCO(new HashMap<String, Object>()
-        {{
-            put("foo1", "A");
-            put("foo2", "A");
-        }}));
+        _objects.add(createCO(Map.of("foo1", "A", "foo2", "A")));
 
         _query = new ConfiguredObjectQuery(_objects, "foo1 AS bar1, foo2", null, "CONCAT(bar, foo2) ASC");
         assertQueryResults(new Object[][]{{"A", "A"}, {"A", "B"}}, _query.getResults());
@@ -627,20 +544,11 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
     @Test
     public void testDelimitedAliasInOrderByClause()
     {
-        _objects.add(createCO(new HashMap<String, Object>()
-        {{
-            put("foo", 2);
-        }}));
+        _objects.add(createCO(Map.of("foo", 2)));
 
-        _objects.add(createCO(new HashMap<String, Object>()
-        {{
-            put("foo", 1);
-        }}));
+        _objects.add(createCO(Map.of("foo", 1)));
 
-        _objects.add(createCO(new HashMap<String, Object>()
-        {{
-            put("foo", 4);
-        }}));
+        _objects.add(createCO(Map.of("foo", 4)));
 
         _query = new ConfiguredObjectQuery(_objects, "foo AS \"yogi bear\"", null, "\"yogi bear\" DESC");
         assertQueryResults(new Object[][]{{4}, {2}, {1}}, _query.getResults());
@@ -651,25 +559,13 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
     {
         ConfiguredObject object;
 
-        object = createCO(new HashMap<String, Object>()
-        {{
-            put("foo", 1);
-            put("bar", 1);
-        }});
+        object = createCO(Map.of("foo", 1, "bar", 1));
         _objects.add(object);
 
-        object = createCO(new HashMap<String, Object>()
-        {{
-            put("foo", 1);
-            put("bar", 2);
-        }});
+        object = createCO(Map.of("foo", 1, "bar", 2));
         _objects.add(object);
 
-        object = createCO(new HashMap<String, Object>()
-        {{
-            put("foo", 2);
-            put("bar", 0);
-        }});
+        object = createCO(Map.of("foo", 2, "bar", 0));
         _objects.add(object);
 
         _query = new ConfiguredObjectQuery(_objects, "foo,bar", null, "foo, bar");
@@ -741,10 +637,7 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         for(int i=0;i<numberOfTestObjects;i++)
         {
             final String name = "test-" + i;
-            ConfiguredObject object = createCO(new HashMap<String, Object>()
-            {{
-                put("name", name);
-            }});
+            ConfiguredObject object = createCO(Map.of("name", name));
             _objects.add(object);
         }
 
@@ -792,12 +685,11 @@ public class ConfiguredObjectQueryTest extends UnitTestBase
         }
     }
 
-    private ConfiguredObject createCO(final HashMap<String, Object> map)
+    private ConfiguredObject createCO(final Map<String, Object> map)
     {
         ConfiguredObject object = mock(ConfiguredObject.class);
 
-        Map<String, Object> orderedMap = Maps.newTreeMap();
-        orderedMap.putAll(map);
+        Map<String, Object> orderedMap = new TreeMap<>(map);
 
         when(object.getAttributeNames()).thenReturn(orderedMap.keySet());
         for(String attributeName : orderedMap.keySet())

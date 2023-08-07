@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.management.plugin.ManagementResponse;
-import org.apache.qpid.server.management.plugin.ManagementController;
 import org.apache.qpid.server.management.plugin.ManagementException;
 import org.apache.qpid.server.model.ConfiguredObject;
 

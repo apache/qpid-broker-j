@@ -25,7 +25,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.time.chrono.IsoChronology;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -93,18 +92,14 @@ public class ConfiguredObjectExpressionFactory
             @Override
             ConfiguredObjectExpression asExpression(final List<Expression> args)
             {
-                return new ConfiguredObjectExpression()
+                return object ->
                 {
-                    @Override
-                    public Object evaluate(final ConfiguredObject<?> object)
+                    StringBuilder buf = new StringBuilder();
+                    for(Expression expr : args)
                     {
-                        StringBuilder buf = new StringBuilder();
-                        for(Expression expr : args)
-                        {
-                            buf.append(expr.evaluate(object));
-                        }
-                        return buf.toString();
+                        buf.append(expr.evaluate(object));
                     }
+                    return buf.toString();
                 };
             }
         },
@@ -117,14 +112,7 @@ public class ConfiguredObjectExpressionFactory
                 {
                     throw new IllegalArgumentException(NOW.name() + " does not accept arguments.");
                 }
-                return new ConfiguredObjectExpression()
-                {
-                    @Override
-                    public Object evaluate(final ConfiguredObject<?> object)
-                    {
-                        return new Date();
-                    }
-                };
+                return object -> new Date();
             }
         },
 
@@ -186,32 +174,28 @@ public class ConfiguredObjectExpressionFactory
                     throw new IllegalArgumentException(DATE_ADD.name() + " requires two arguments.");
                 }
 
-                return new ConfiguredObjectExpression()
+                return object ->
                 {
-                    @Override
-                    public Object evaluate(final ConfiguredObject<?> object)
+                    Object date = args.get(0).evaluate(object);
+                    Object period = args.get(1).evaluate(object);
+                    if (!(date instanceof Date) || !(period instanceof String))
                     {
-                        Object date = args.get(0).evaluate(object);
-                        Object period = args.get(1).evaluate(object);
-                        if (!(date instanceof Date) || !(period instanceof String))
-                        {
-                            throw new IllegalArgumentException(String.format("%s requires a (Date, String) not a"
-                                                                             + " (%s,%s)",
-                                                                             DATE_ADD,
-                                                                             date.getClass().getSimpleName(),
-                                                                             period.getClass().getSimpleName()));
-                        }
-                        try
-                        {
-                            Date copy = new Date(((Date) date).getTime());
-                            final Duration duration = DATATYPE_FACTORY.newDuration((String) period);
-                            duration.addTo(copy);
-                            return copy;
-                        }
-                        catch (IllegalArgumentException e)
-                        {
-                            throw new IllegalArgumentException(DATE_ADD + " requires an ISO-8601 format duration.", e);
-                        }
+                        throw new IllegalArgumentException(String.format("%s requires a (Date, String) not a"
+                                                                         + " (%s,%s)",
+                                                                         DATE_ADD,
+                                                                         date.getClass().getSimpleName(),
+                                                                         period.getClass().getSimpleName()));
+                    }
+                    try
+                    {
+                        Date copy = new Date(((Date) date).getTime());
+                        final Duration duration = DATATYPE_FACTORY.newDuration((String) period);
+                        duration.addTo(copy);
+                        return copy;
+                    }
+                    catch (IllegalArgumentException e)
+                    {
+                        throw new IllegalArgumentException(DATE_ADD + " requires an ISO-8601 format duration.", e);
                     }
                 };
             }
@@ -226,39 +210,35 @@ public class ConfiguredObjectExpressionFactory
                     throw new IllegalArgumentException(TO_STRING.name() + " requires (Object[,{printf format specifier},[{timezone name}]]).");
                 }
 
-                return new ConfiguredObjectExpression()
+                return object ->
                 {
-                    @Override
-                    public Object evaluate(final ConfiguredObject<?> object)
+                    Object obj = args.get(0).evaluate(object);
+                    Object format = args.size() > 1 ? args.get(1).evaluate(object) : null;
+                    Object timezoneName = args.size() > 2 ? args.get(2).evaluate(object) : null;
+                    if (obj instanceof Date)
                     {
-                        Object obj = args.get(0).evaluate(object);
-                        Object format = args.size() > 1 ? args.get(1).evaluate(object) : null;
-                        Object timezoneName = args.size() > 2 ? args.get(2).evaluate(object) : null;
-                        if (obj instanceof Date)
+                        final Calendar cal = timezoneName == null ? Calendar.getInstance(UTC) : Calendar.getInstance(TimeZone.getTimeZone(
+                                (String) timezoneName));
+                        cal.setTime((Date) obj);
+                        if (format == null)
                         {
-                            final Calendar cal = timezoneName == null ? Calendar.getInstance(UTC) : Calendar.getInstance(TimeZone.getTimeZone(
-                                    (String) timezoneName));
-                            cal.setTime((Date) obj);
-                            if (format == null)
-                            {
-                                return DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(cal.toInstant().atZone(ZoneId.of(timezoneName == null ? "UTC" : (String)timezoneName)));
-                            }
-                            else
-                            {
-                                return String.format((String)format, cal);
-                            }
+                            return DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(cal.toInstant().atZone(ZoneId.of(timezoneName == null ? "UTC" : (String)timezoneName)));
                         }
                         else
                         {
-                            // TODO If obj itself is another configured object perhaps we should just use its name or id? The CO.toString value probably isn't too useful.
-                            if (format == null)
-                            {
-                                return String.valueOf(obj);
-                            }
-                            else
-                            {
-                                return String.format((String)format, obj);
-                            }
+                            return String.format((String)format, cal);
+                        }
+                    }
+                    else
+                    {
+                        // TODO If obj itself is another configured object perhaps we should just use its name or id? The CO.toString value probably isn't too useful.
+                        if (format == null)
+                        {
+                            return String.valueOf(obj);
+                        }
+                        else
+                        {
+                            return String.format((String)format, obj);
                         }
                     }
                 };

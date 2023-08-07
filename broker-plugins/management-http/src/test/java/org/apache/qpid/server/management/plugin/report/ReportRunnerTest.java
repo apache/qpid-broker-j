@@ -30,7 +30,6 @@ import static org.mockito.Mockito.when;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,18 +50,15 @@ public class ReportRunnerTest extends UnitTestBase
     @Test
     public void testTextReportCountsMessages()
     {
-        ReportRunner<String> runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME,
-                                                                                       Collections.emptyMap());
+        ReportRunner<String> runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME, Map.of());
         Queue queue = createMockQueue();
         assertEquals("There are 0 messages on the queue.", runner.runReport(queue));
 
-        runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME,
-                                                                  Collections.emptyMap());
+        runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME, Map.of());
         Queue queue1 = createMockQueue(createMockMessageForQueue());
         assertEquals("There are 1 messages on the queue.", runner.runReport(queue1));
 
-        runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME,
-                                                                  Collections.emptyMap());
+        runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME, Map.of());
         Queue queue2 = createMockQueue(createMockMessageForQueue(), createMockMessageForQueue());
         assertEquals("There are 2 messages on the queue.", runner.runReport(queue2));
     }
@@ -122,7 +118,7 @@ public class ReportRunnerTest extends UnitTestBase
     {
         try
         {
-            ReportRunner.createRunner("unknown", Collections.<String, String[]>emptyMap());
+            ReportRunner.createRunner("unknown", Map.of());
             fail("Unknown report name should throw exception");
         }
         catch(IllegalArgumentException e)
@@ -134,10 +130,10 @@ public class ReportRunnerTest extends UnitTestBase
     @Test
     public void testBinaryReportWithLimit() throws Exception
     {
-        Queue queue = createMockQueue(createMessageWithAppProperties(Collections.singletonMap("key", 1)),
-                                      createMessageWithAppProperties(Collections.singletonMap("key", 2)),
-                                      createMessageWithAppProperties(Collections.singletonMap("key", 3)),
-                                      createMessageWithAppProperties(Collections.singletonMap("key", 4)));
+        Queue queue = createMockQueue(createMessageWithAppProperties(Map.of("key", 1)),
+                                      createMessageWithAppProperties(Map.of("key", 2)),
+                                      createMessageWithAppProperties(Map.of("key", 3)),
+                                      createMessageWithAppProperties(Map.of("key", 4)));
         Map<String, String[]> parameterMap = new HashMap<>();
         parameterMap.put("propertyName", new String[]{"key"});
         parameterMap.put("limit", new String[] { "3" });

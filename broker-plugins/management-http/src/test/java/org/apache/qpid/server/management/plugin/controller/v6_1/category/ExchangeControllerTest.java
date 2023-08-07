@@ -26,9 +26,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,8 +57,7 @@ public class ExchangeControllerTest extends UnitTestBase
     @Test
     public void convertNextVersionLegacyConfiguredObject()
     {
-        final ExchangeController exchangeController =
-                new ExchangeController(_legacyManagementController, Collections.emptySet());
+        final ExchangeController exchangeController = new ExchangeController(_legacyManagementController, Set.of());
 
         final String exchangeName = "testExchange";
         final String alternateExchangeName = "altExchange";
@@ -77,7 +76,7 @@ public class ExchangeControllerTest extends UnitTestBase
         when(nextVersionExchange.getCategory()).thenReturn(ExchangeController.TYPE);
         when(nextVersionExchange.getAttribute("alternateBinding")).thenReturn(alternateBinding);
         when(nextVersionExchange.getAttribute(AbstractConfiguredObject.NAME)).thenReturn(exchangeName);
-        when(nextVersionExchange.getAttribute("bindings")).thenReturn(Collections.singletonList(nextVersionBinding));
+        when(nextVersionExchange.getAttribute("bindings")).thenReturn(List.of(nextVersionBinding));
         when(nextVersionExchange.getParent(VirtualHostController.TYPE)).thenReturn(nextVersionVirtualHost);
 
         when(nextVersionBinding.getDestination()).thenReturn(queueName);
@@ -86,9 +85,9 @@ public class ExchangeControllerTest extends UnitTestBase
         when(nextVersionAlternateExchange.getCategory()).thenReturn(ExchangeController.TYPE);
         when(nextVersionAlternateExchange.getAttribute(LegacyConfiguredObject.NAME)).thenReturn(alternateExchangeName);
 
-        when(nextVersionVirtualHost.getChildren(ExchangeController.TYPE)).thenReturn(Arrays.asList(nextVersionExchange,
-                nextVersionAlternateExchange));
-        when(nextVersionVirtualHost.getChildren(QueueController.TYPE)).thenReturn(Collections.singletonList(queue));
+        when(nextVersionVirtualHost.getChildren(ExchangeController.TYPE))
+                .thenReturn(List.of(nextVersionExchange, nextVersionAlternateExchange));
+        when(nextVersionVirtualHost.getChildren(QueueController.TYPE)).thenReturn(List.of(queue));
 
         final LegacyConfiguredObject convertedExchange = mock(LegacyConfiguredObject.class);
         final LegacyConfiguredObject convertedAltExchange = mock(LegacyConfiguredObject.class);

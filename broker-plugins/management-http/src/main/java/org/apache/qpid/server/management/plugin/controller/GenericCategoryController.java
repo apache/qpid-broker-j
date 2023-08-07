@@ -24,7 +24,6 @@ import static org.apache.qpid.server.management.plugin.ManagementException.creat
 import static org.apache.qpid.server.management.plugin.ManagementException.createInternalServerErrorManagementException;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -151,7 +150,7 @@ public abstract class GenericCategoryController implements CategoryController
                                      final boolean isSecure) throws ManagementException
     {
 
-        Object result = get(root, path, Collections.emptyMap());
+        Object result = get(root, path, Map.of());
         if (result instanceof LegacyConfiguredObject)
         {
             final LegacyConfiguredObject legacyConfiguredObject = (LegacyConfiguredObject) result;

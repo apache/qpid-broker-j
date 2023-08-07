@@ -27,7 +27,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
-import java.util.Collections;
 import java.util.Set;
 
 import javax.security.auth.Subject;
@@ -132,17 +131,17 @@ public class OAuth2PreemptiveAuthenticatorTest extends UnitTestBase
         SubjectAuthenticationResult mockSuccessfulSubjectAuthenticationResult = mock(SubjectAuthenticationResult.class);
         SubjectAuthenticationResult mockUnauthorizedSubjectAuthenticationResult = mock(SubjectAuthenticationResult.class);
         final Subject successfulSubject = new Subject(true,
-                                                      Collections.singleton(new AuthenticatedPrincipal(new UsernamePrincipal(
+                                                      Set.of(new AuthenticatedPrincipal(new UsernamePrincipal(
                                                               TEST_AUTHORIZED_USER,
                                                               null))),
-                                                      Collections.emptySet(),
-                                                      Collections.emptySet());
+                                                      Set.of(),
+                                                      Set.of());
         final Subject unauthorizedSubject = new Subject(true,
-                                                        Collections.singleton(new AuthenticatedPrincipal(new UsernamePrincipal(
+                                                        Set.of(new AuthenticatedPrincipal(new UsernamePrincipal(
                                                                 TEST_UNAUTHORIZED_USER,
                                                                 null))),
-                                                        Collections.emptySet(),
-                                                        Collections.emptySet());
+                                                        Set.of(),
+                                                        Set.of());
         AuthenticationResult mockSuccessfulAuthenticationResult = mock(AuthenticationResult.class);
         AuthenticationResult mockUnauthorizedAuthenticationResult = mock(AuthenticationResult.class);
         AuthenticationResult failedAuthenticationResult = new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR,

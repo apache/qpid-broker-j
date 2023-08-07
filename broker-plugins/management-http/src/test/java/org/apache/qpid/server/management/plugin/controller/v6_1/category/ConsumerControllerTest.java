@@ -31,11 +31,10 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -98,11 +97,10 @@ public class ConsumerControllerTest extends UnitTestBase
     @Test
     public void get()
     {
-        final List<String> path = Arrays.asList("my-vhn", "my-vh", "my-session", "my-queue", "my-consumer");
-        final Map<String, List<String>> parameters =
-                Collections.singletonMap("actuals", Collections.singletonList("true"));
+        final List<String> path = List.of("my-vhn", "my-vh", "my-session", "my-queue", "my-consumer");
+        final Map<String, List<String>> parameters = Map.of("actuals", List.of("true"));
 
-        final List<String> hierarchy = Arrays.asList("virtualhostnode", "virtualhost", "session", "queue", "consumer");
+        final List<String> hierarchy = List.of("virtualhostnode", "virtualhost", "session", "queue", "consumer");
         when(_managementController.getCategoryHierarchy(_root, "Consumer")).thenReturn(hierarchy);
 
         final LegacyConfiguredObject session = mock(LegacyConfiguredObject.class);
@@ -112,7 +110,7 @@ public class ConsumerControllerTest extends UnitTestBase
         final LegacyConfiguredObject consumer = mock(LegacyConfiguredObject.class);
         when(consumer.getAttribute(LegacyConfiguredObject.NAME)).thenReturn("my-consumer");
         when(consumer.getAttribute("session")).thenReturn(session);
-        final Collection<LegacyConfiguredObject> consumers = Collections.singletonList(consumer);
+        final Collection<LegacyConfiguredObject> consumers = List.of(consumer);
 
         final LegacyConfiguredObject queue1 = mock(LegacyConfiguredObject.class);
         when(queue1.getAttribute(LegacyConfiguredObject.NAME)).thenReturn("my-queue1");
@@ -120,13 +118,13 @@ public class ConsumerControllerTest extends UnitTestBase
         when(queue2.getAttribute(LegacyConfiguredObject.NAME)).thenReturn("my-queue");
         when(queue2.getChildren(ConsumerController.TYPE)).thenReturn(consumers);
 
-        final Collection<LegacyConfiguredObject> queues = Arrays.asList(queue1, queue2);
+        final Collection<LegacyConfiguredObject> queues = List.of(queue1, queue2);
 
         doReturn(queues).when(_nextVersionManagementController)
                        .get(eq(_root),
                             eq("Queue"),
-                            eq(Arrays.asList("my-vhn", "my-vh")),
-                            eq(Collections.emptyMap()));
+                            eq(List.of("my-vhn", "my-vh")),
+                            eq(Map.of()));
 
         final Object result = _controller.get(_root, path, parameters);
         assertThat(result, is(instanceOf(Collection.class)));
@@ -145,8 +143,8 @@ public class ConsumerControllerTest extends UnitTestBase
     @Test
     public void delete()
     {
-        final List<String> path = Arrays.asList("my-vhn", "my-vh",  "my-queue", "my-consumer");
-        final Map<String, List<String>> parameters = Collections.emptyMap();
+        final List<String> path = List.of("my-vhn", "my-vh",  "my-queue", "my-consumer");
+        final Map<String, List<String>> parameters = Map.of();
         try
         {
             _controller.delete(_root, path, parameters);
@@ -161,8 +159,8 @@ public class ConsumerControllerTest extends UnitTestBase
     @Test
     public void createOrUpdate()
     {
-        final List<String> path = Arrays.asList("my-vhn", "my-vh",  "my-queue", "my-consumer");
-        final Map<String, Object> attributes = Collections.singletonMap(LegacyConfiguredObject.NAME, "my-consumer" );
+        final List<String> path = List.of("my-vhn", "my-vh",  "my-queue", "my-consumer");
+        final Map<String, Object> attributes = Map.of(LegacyConfiguredObject.NAME, "my-consumer" );
         try
         {
             _controller.createOrUpdate(_root, path, attributes, true);
@@ -177,8 +175,8 @@ public class ConsumerControllerTest extends UnitTestBase
     @Test
     public void invoke()
     {
-        final List<String> path = Arrays.asList("my-vhn", "my-vh", "my-session", "my-queue", "my-consumer");
-        final List<String> hierarchy = Arrays.asList("virtualhostnode", "virtualhost", "session", "queue", "consumer");
+        final List<String> path = List.of("my-vhn", "my-vh", "my-session", "my-queue", "my-consumer");
+        final List<String> hierarchy = List.of("virtualhostnode", "virtualhost", "session", "queue", "consumer");
         when(_managementController.getCategoryHierarchy(_root, "Consumer")).thenReturn(hierarchy);
 
         final LegacyConfiguredObject consumer = mock(LegacyConfiguredObject.class);
@@ -191,19 +189,19 @@ public class ConsumerControllerTest extends UnitTestBase
 
         final Object stats = mock(Object.class);
         final ManagementResponse statistics = new ControllerManagementResponse(ResponseType.DATA, stats);
-        when(consumer.invoke(eq("getStatistics"), eq(Collections.emptyMap()), eq(false))).thenReturn(statistics);
-        final Collection<LegacyConfiguredObject> consumers = Collections.singletonList(consumer);
+        when(consumer.invoke(eq("getStatistics"), eq(Map.of()), eq(false))).thenReturn(statistics);
+        final Collection<LegacyConfiguredObject> consumers = List.of(consumer);
         when(queue.getChildren(ConsumerController.TYPE)).thenReturn(consumers);
 
-        final Collection<LegacyConfiguredObject> queues = Collections.singletonList(queue);
+        final Collection<LegacyConfiguredObject> queues = List.of(queue);
 
         doReturn(queues).when(_nextVersionManagementController)
                         .get(eq(_root),
                              eq("Queue"),
-                             eq(Arrays.asList("my-vhn", "my-vh")),
-                             eq(Collections.emptyMap()));
+                             eq(List.of("my-vhn", "my-vh")),
+                             eq(Map.of()));
 
-        ManagementResponse response = _controller.invoke(_root, path, "getStatistics", Collections.emptyMap(), false, false);
+        ManagementResponse response = _controller.invoke(_root, path, "getStatistics", Map.of(), false, false);
         assertThat(response, is(notNullValue()));
         assertThat(response.getResponseCode(), is(equalTo(200)));
         assertThat(response.getBody(), is(notNullValue()));
@@ -213,8 +211,8 @@ public class ConsumerControllerTest extends UnitTestBase
     @Test
     public void getPreferences()
     {
-        final List<String> path = Arrays.asList("my-vhn", "my-vh",  "my-queue", "my-consumer");
-        final Map<String, List<String>> parameters = Collections.emptyMap();
+        final List<String> path = List.of("my-vhn", "my-vh",  "my-queue", "my-consumer");
+        final Map<String, List<String>> parameters = Map.of();
         try
         {
             _controller.getPreferences(_root, path, parameters);
@@ -229,15 +227,13 @@ public class ConsumerControllerTest extends UnitTestBase
     @Test
     public void setPreferences()
     {
-        final List<String> path = Arrays.asList("my-vhn", "my-vh",  "my-queue", "my-consumer");
-        final Map<String, List<String>> parameters = Collections.emptyMap();
+        final List<String> path = List.of("my-vhn", "my-vh",  "my-queue", "my-consumer");
+        final Map<String, List<String>> parameters = Map.of();
         try
         {
             _controller.setPreferences(_root,
                                        path,
-                                       Collections.singletonMap("Consumer-Preferences",
-                                                                Collections.singleton(Collections.singletonMap("value",
-                                                                                                               "foo"))),
+                                       Map.of("Consumer-Preferences", Set.of(Map.of("value", "foo"))),
                                        parameters,
                                        true);
             fail("Consumer preferences are unknown");
@@ -251,8 +247,8 @@ public class ConsumerControllerTest extends UnitTestBase
     @Test
     public void deletePreferences()
     {
-        final List<String> path = Arrays.asList("my-vhn", "my-vh",  "my-queue", "my-consumer");
-        final Map<String, List<String>> parameters = Collections.emptyMap();
+        final List<String> path = List.of("my-vhn", "my-vh",  "my-queue", "my-consumer");
+        final Map<String, List<String>> parameters = Map.of();
         try
         {
             _controller.deletePreferences(_root,
@@ -287,7 +283,7 @@ public class ConsumerControllerTest extends UnitTestBase
         when(nextVersionConfiguredObject.getAttribute("queue")).thenReturn(queue2);
         when(nextVersionConfiguredObject.getAttribute(LegacyConfiguredObject.NAME)).thenReturn("test-consumer");
         when(nextVersionConfiguredObject.getParent(eq("Queue"))).thenReturn(queue2);
-        final Collection<LegacyConfiguredObject> consumers = Collections.singletonList(nextVersionConfiguredObject);
+        final Collection<LegacyConfiguredObject> consumers = List.of(nextVersionConfiguredObject);
         when(queue2.getChildren(ConsumerController.TYPE)).thenReturn(consumers);
 
         final LegacyConfiguredObject convertedSession = mock(LegacyConfiguredObject.class);

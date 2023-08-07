@@ -88,7 +88,7 @@ public class SaslServlet extends AbstractServlet
         final AuthenticationProvider<?> authenticationProvider = getAuthenticationProvider(request);
         final List<String> mechanismsList = authenticationProvider.getAvailableMechanisms(request.isSecure());
         final String[] mechanisms = mechanismsList.toArray(new String[mechanismsList.size()]);
-        final Map<String, Object> outputObject = new LinkedHashMap<String, Object>();
+        final Map<String, Object> outputObject = new LinkedHashMap<>();
 
         final Subject subject = Subject.getSubject(AccessController.getContext());
         final Principal principal = AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subject);

@@ -20,7 +20,6 @@ package org.apache.qpid.server.management.plugin.servlet.rest;/*
  */
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +43,7 @@ public class PluginClassProviderAction implements Action
             String className = (String) request.get("plugin");
             QpidServiceLoader serviceLoader = new QpidServiceLoader();
             final Class<Pluggable> clazz = (Class<Pluggable>) Class.forName("org.apache.qpid.server.plugin."+className);
-            List<String> values = new ArrayList<String>();
+            List<String> values = new ArrayList<>();
             for(Pluggable instance : serviceLoader.instancesOf(clazz))
             {
                 values.add(instance.getType());
@@ -53,8 +52,7 @@ public class PluginClassProviderAction implements Action
         }
         catch (ClassNotFoundException e)
         {
-            return Collections.emptyList();
+            return List.of();
         }
-
     }
 }

@@ -20,10 +20,6 @@
  */
 package org.apache.qpid.server.management.plugin.controller.v6_1.category;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -64,47 +60,40 @@ public class LegacyCategoryControllerFactory implements CategoryControllerFactor
     static final String CATEGORY_CONNECTION = "Connection";
     static final String CATEGORY_SESSION = SessionController.TYPE;
     static final String CATEGORY_SYSTEM_CONFIG = "SystemConfig";
-    static final Set<String> SUPPORTED_CATEGORIES =
-            Collections.unmodifiableSet(new HashSet<>(Arrays.asList(CATEGORY_BROKER,
-                                                                    CATEGORY_BROKER_LOGGER,
-                                                                    CATEGORY_BROKER_LOG_INCLUSION_RULE,
-                                                                    CATEGORY_AUTHENTICATION_PROVIDER,
-                                                                    CATEGORY_USER,
-                                                                    CATEGORY_ACCESS_CONTROL_PROVIDER,
-                                                                    CATEGORY_PLUGIN,
-                                                                    CATEGORY_TRUST_STORE,
-                                                                    CATEGORY_KEY_STORE,
-                                                                    CATEGORY_PORT,
-                                                                    CATEGORY_VIRTUAL_HOST_ALIAS,
-                                                                    CATEGORY_GROUP_PROVIDER,
-                                                                    CATEGORY_GROUP,
-                                                                    CATEGORY_GROUP_MEMBER,
-                                                                    CATEGORY_VIRTUAL_HOST_NODE,
-                                                                    CATEGORY_REMOTE_REPLICATION_NODE,
-                                                                    CATEGORY_VIRTUAL_HOST,
-                                                                    CATEGORY_VIRTUAL_HOST_LOGGER,
-                                                                    CATEGORY_VIRTUAL_HOST_LOG_INCLUSION_RULE,
-                                                                    CATEGORY_VIRTUAL_HOST_ACCESS_CONTROL_PROVIDER,
-                                                                    CATEGORY_EXCHANGE,
-                                                                    CATEGORY_QUEUE,
-                                                                    CATEGORY_BINDING,
-                                                                    CATEGORY_CONSUMER,
-                                                                    CATEGORY_CONNECTION,
-                                                                    CATEGORY_SESSION
-                                                                   )));
+    static final Set<String> SUPPORTED_CATEGORIES = Set.of(CATEGORY_BROKER,
+            CATEGORY_BROKER_LOGGER,
+            CATEGORY_BROKER_LOG_INCLUSION_RULE,
+            CATEGORY_AUTHENTICATION_PROVIDER,
+            CATEGORY_USER,
+            CATEGORY_ACCESS_CONTROL_PROVIDER,
+            CATEGORY_PLUGIN,
+            CATEGORY_TRUST_STORE,
+            CATEGORY_KEY_STORE,
+            CATEGORY_PORT,
+            CATEGORY_VIRTUAL_HOST_ALIAS,
+            CATEGORY_GROUP_PROVIDER,
+            CATEGORY_GROUP,
+            CATEGORY_GROUP_MEMBER,
+            CATEGORY_VIRTUAL_HOST_NODE,
+            CATEGORY_REMOTE_REPLICATION_NODE,
+            CATEGORY_VIRTUAL_HOST,
+            CATEGORY_VIRTUAL_HOST_LOGGER,
+            CATEGORY_VIRTUAL_HOST_LOG_INCLUSION_RULE,
+            CATEGORY_VIRTUAL_HOST_ACCESS_CONTROL_PROVIDER,
+            CATEGORY_EXCHANGE,
+            CATEGORY_QUEUE,
+            CATEGORY_BINDING,
+            CATEGORY_CONSUMER,
+            CATEGORY_CONNECTION,
+            CATEGORY_SESSION);
 
-    private static final Map<String, String> DEFAULT_TYPES = Collections.unmodifiableMap(new HashMap<String, String>()
-    {
-        {
-            put(CATEGORY_BROKER_LOGGER, "Broker");
-            put(CATEGORY_TRUST_STORE, "FileTrustStore");
-            put(CATEGORY_KEY_STORE, "FileKeyStore");
-            put(CATEGORY_GROUP, "ManagedGroup");
-            put(CATEGORY_GROUP_MEMBER, "ManagedGroupMember");
-            put(CATEGORY_VIRTUAL_HOST, "ProvidedStore");
-            put(CATEGORY_QUEUE, "standard");
-        }
-    });
+    private static final Map<String, String> DEFAULT_TYPES = Map.of(CATEGORY_BROKER_LOGGER, "Broker",
+            CATEGORY_TRUST_STORE, "FileTrustStore",
+            CATEGORY_KEY_STORE, "FileKeyStore",
+            CATEGORY_GROUP, "ManagedGroup",
+            CATEGORY_GROUP_MEMBER, "ManagedGroupMember",
+            CATEGORY_VIRTUAL_HOST, "ProvidedStore",
+            CATEGORY_QUEUE, "standard");
 
     @Override
     public CategoryController createController(final String type,

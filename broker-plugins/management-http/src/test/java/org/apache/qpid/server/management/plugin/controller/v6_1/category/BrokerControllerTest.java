@@ -26,9 +26,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,7 +63,7 @@ public class BrokerControllerTest extends UnitTestBase
         when(object.getAttribute("context")).thenReturn(context);
 
         final BrokerController controller =
-                new BrokerController(_legacyVersionManagementController, Collections.emptySet());
+                new BrokerController(_legacyVersionManagementController, Set.of());
         assertThat(controller.getCategory(), is(equalTo("Broker")));
 
         final LegacyConfiguredObject converted = controller.convertFromNextVersion(object);
@@ -84,12 +85,11 @@ public class BrokerControllerTest extends UnitTestBase
         attributes.put("statisticsReportingEnabled", true);
 
         final BrokerController controller =
-                new BrokerController(_legacyVersionManagementController, Collections.emptySet());
+                new BrokerController(_legacyVersionManagementController, Set.of());
         assertThat(controller.getCategory(), is(equalTo("Broker")));
 
-        final Map<String, Object> converted = controller.convertAttributesToNextVersion(mock(ConfiguredObject.class),
-                                                                                        Collections.emptyList(),
-                                                                                        attributes);
+        final Map<String, Object> converted =
+                controller.convertAttributesToNextVersion(mock(ConfiguredObject.class), List.of(), attributes);
         assertThat(converted.size(), is(equalTo(2)));
         assertThat(converted.get("statisticsReportingEnabled"), is(equalTo(true)));
 

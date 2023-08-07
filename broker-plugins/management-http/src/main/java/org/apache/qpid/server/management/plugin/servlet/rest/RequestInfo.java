@@ -19,7 +19,6 @@
 
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -42,20 +41,18 @@ public class RequestInfo
                                                      Map<String, List<String>> queryParameters,
                                                      final boolean hierarchySatisfied)
     {
-        return new RequestInfo(RequestType.MODEL_OBJECT, modelParts, null, Collections.<String>emptyList(), queryParameters, hierarchySatisfied );
+        return new RequestInfo(RequestType.MODEL_OBJECT, modelParts, null, List.of(), queryParameters, hierarchySatisfied );
     }
 
     public static RequestInfo createOperationRequestInfo(final List<String> modelParts, final String operationName, Map<String, List<String>> queryParameters)
     {
-        return new RequestInfo(RequestType.OPERATION, modelParts, operationName, Collections.<String>emptyList(), queryParameters,
+        return new RequestInfo(RequestType.OPERATION, modelParts, operationName, List.of(), queryParameters,
                                true);
     }
 
     public static RequestInfo createPreferencesRequestInfo(final List<String> modelParts, final List<String> preferencesParts)
     {
-        return new RequestInfo(RequestType.USER_PREFERENCES, modelParts, null, preferencesParts, Collections.<String,
-                List<String>>emptyMap(),
-                               true);
+        return new RequestInfo(RequestType.USER_PREFERENCES, modelParts, null, preferencesParts, Map.of(), true);
     }
 
     public static RequestInfo createPreferencesRequestInfo(final List<String> modelParts, final List<String> preferencesParts, Map<String, List<String>> queryParameters)

@@ -30,8 +30,6 @@ import static org.mockito.Mockito.when;
 
 import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -40,8 +38,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import javax.security.auth.Subject;
-
-import com.google.common.collect.Lists;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,10 +79,8 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         PreferenceStore preferenceStore = mock(PreferenceStore.class);
         _preferenceTaskExecutor = new CurrentThreadTaskExecutor();
         _preferenceTaskExecutor.start();
-        _userPreferences = new UserPreferencesImpl(_preferenceTaskExecutor,
-                                                   _configuredObject,
-                                                   preferenceStore,
-                                                   Collections.emptyList());
+        _userPreferences =
+                new UserPreferencesImpl(_preferenceTaskExecutor, _configuredObject, preferenceStore, List.of());
         _subject = TestPrincipalUtils.createTestSubject(MYUSER, MYGROUP);
         _groupPrincipal = _subject.getPrincipals(GroupPrincipal.class).iterator().next();
         _userPrincipal = _subject.getPrincipals(AuthenticatedPrincipal.class).iterator().next();
@@ -103,14 +97,12 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     public void testPutWithVisibilityList_ValidGroup()
     {
 
-        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                 Arrays.asList("X-testtype",
-                                                                                               "myprefname")
-                                                                                );
+        final RequestInfo requestInfo =
+                RequestInfo.createPreferencesRequestInfo(List.of(), List.of("X-testtype", "myprefname"));
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
-        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList(MYGROUP_SERIALIZATION));
+        pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, List.of(MYGROUP_SERIALIZATION));
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
@@ -131,12 +123,12 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     public void testPutWithVisibilityList_InvalidGroup()
     {
 
-        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(
-                Collections.emptyList(), Arrays.asList("X-testtype", "myprefname"));
+        final RequestInfo requestInfo =
+                RequestInfo.createPreferencesRequestInfo(List.of(), List.of("X-testtype", "myprefname"));
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
-        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList("Invalid Group"));
+        pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, List.of("Invalid Group"));
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
@@ -157,11 +149,11 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     public void testPutByTypeAndName()
     {
         final String prefName = "myprefname";
-        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(
-                Collections.emptyList(), Arrays.asList("X-testtype", prefName));
+        final RequestInfo requestInfo =
+                RequestInfo.createPreferencesRequestInfo(List.of(), List.of("X-testtype", prefName));
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
@@ -179,11 +171,11 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     public void testReplaceViaPutByTypeAndName()
     {
         final String prefName = "myprefname";
-        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(
-                Collections.emptyList(), Arrays.asList("X-testtype", prefName));
+        final RequestInfo requestInfo =
+                RequestInfo.createPreferencesRequestInfo(List.of(), List.of("X-testtype", prefName));
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
 
         final Preference createdPreference = Subject.doAs(_subject, (PrivilegedAction<Preference>) () ->
         {
@@ -199,7 +191,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
 
         final Map<String, Object> replacementPref = new HashMap<>();
         replacementPref.put(Preference.ID_ATTRIBUTE, createdPreference.getId().toString());
-        replacementPref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        replacementPref.put(Preference.VALUE_ATTRIBUTE, Map.of());
         final String changedDescription = "Replace that maintains id";
         replacementPref.put(Preference.DESCRIPTION_ATTRIBUTE, changedDescription);
 
@@ -239,16 +231,16 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     public void testReplaceViaPutByType()
     {
         final String prefName = "myprefname";
-        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(
-                Collections.emptyList(), Collections.singletonList("X-testtype"));
+        final RequestInfo requestInfo =
+                RequestInfo.createPreferencesRequestInfo(List.of(), List.of("X-testtype"));
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.NAME_ATTRIBUTE, prefName);
-        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref.put(Preference.VALUE_ATTRIBUTE, new HashMap<>());
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            _handler.handlePUT(_configuredObject, requestInfo, Lists.newArrayList(pref));
+            _handler.handlePUT(_configuredObject, requestInfo, List.of(pref));
 
             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
             assertEquals(1, (long) preferences.size(), "Unexpected number of preferences");
@@ -262,15 +254,15 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
 
         final Map<String, Object> replacementPref1 = new HashMap<>();
         replacementPref1.put(Preference.NAME_ATTRIBUTE, replacementPref1Name);
-        replacementPref1.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        replacementPref1.put(Preference.VALUE_ATTRIBUTE, Map.of());
 
         final Map<String, Object> replacementPref2 = new HashMap<>();
         replacementPref2.put(Preference.NAME_ATTRIBUTE, replacementPref2Name);
-        replacementPref2.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        replacementPref2.put(Preference.VALUE_ATTRIBUTE, Map.of());
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            _handler.handlePUT(_configuredObject, requestInfo, Lists.newArrayList(replacementPref1, replacementPref2));
+            _handler.handlePUT(_configuredObject, requestInfo, List.of(replacementPref1, replacementPref2));
 
             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
             assertEquals(2, (long) preferences.size(), "Unexpected number of preferences after update");
@@ -296,22 +288,21 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         final String pref2Name = "mypref2name";
         final String pref2Type = "X-testtype2";
 
-        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(
-                Collections.emptyList(), Collections.emptyList());
+        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(List.of(), List.of());
 
         final Map<String, Object> pref1 = new HashMap<>();
         pref1.put(Preference.NAME_ATTRIBUTE, pref1Name);
-        pref1.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref1.put(Preference.VALUE_ATTRIBUTE, Map.of());
         pref1.put(Preference.TYPE_ATTRIBUTE, pref1Type);
 
         final Map<String, Object> pref2 = new HashMap<>();
         pref2.put(Preference.NAME_ATTRIBUTE, pref2Name);
-        pref2.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref2.put(Preference.VALUE_ATTRIBUTE, Map.of());
         pref2.put(Preference.TYPE_ATTRIBUTE, pref2Type);
 
         final Map<String, List<Map<String, Object>>> payload = new HashMap<>();
-        payload.put(pref1Type, Collections.singletonList(pref1));
-        payload.put(pref2Type, Collections.singletonList(pref2));
+        payload.put(pref1Type, List.of(pref1));
+        payload.put(pref2Type, List.of(pref2));
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
@@ -326,11 +317,11 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
 
         final Map<String, Object> replacementPref1 = new HashMap<>();
         replacementPref1.put(Preference.NAME_ATTRIBUTE, replacementPref1Name);
-        replacementPref1.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        replacementPref1.put(Preference.VALUE_ATTRIBUTE, Map.of());
         replacementPref1.put(Preference.TYPE_ATTRIBUTE, pref1Type);
 
         payload.clear();
-        payload.put(pref1Type, Collections.singletonList(replacementPref1));
+        payload.put(pref1Type, List.of(replacementPref1));
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
@@ -348,17 +339,16 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     @Test
     public void testPostToTypeWithVisibilityList_ValidGroup()
     {
-        final RequestInfo typeRequestInfo = RequestInfo.createPreferencesRequestInfo(
-                Collections.emptyList(), Collections.singletonList("X-testtype"));
+        final RequestInfo typeRequestInfo = RequestInfo.createPreferencesRequestInfo(List.of(), List.of("X-testtype"));
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.NAME_ATTRIBUTE, "testPref");
-        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
-        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList(MYGROUP_SERIALIZATION));
+        pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, List.of(MYGROUP_SERIALIZATION));
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
-            _handler.handlePOST(_configuredObject, typeRequestInfo, Collections.singletonList(pref));
+            _handler.handlePOST(_configuredObject, typeRequestInfo, List.of(pref));
 
             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
             assertEquals(1, (long) preferences.size(), "Unexpected number of preferences");
@@ -374,18 +364,17 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     @Test
     public void testPostToRootWithVisibilityList_ValidGroup()
     {
-        final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(
-                Collections.emptyList(), Collections.emptyList());
+        final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(List.of(), List.of());
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.NAME_ATTRIBUTE, "testPref");
-        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
-        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList(MYGROUP_SERIALIZATION));
+        pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, List.of(MYGROUP_SERIALIZATION));
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
             final Map<String, List<Map<String, Object>>> payload =
-                    Collections.singletonMap("X-testtype2", Collections.singletonList(pref));
+                    Map.of("X-testtype2", List.of(pref));
             _handler.handlePOST(_configuredObject, rootRequestInfo, payload);
 
             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
@@ -403,19 +392,18 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     @Test
     public void testPostToTypeWithVisibilityList_InvalidGroup()
     {
-        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(
-                Collections.emptyList(), Collections.singletonList("X-testtype"));
+        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(List.of(), List.of("X-testtype"));
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.NAME_ATTRIBUTE, "testPref");
-        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
-        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList("Invalid Group"));
+        pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, List.of("Invalid Group"));
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
             try
             {
-                _handler.handlePOST(_configuredObject, requestInfo, Collections.singletonList(pref));
+                _handler.handlePOST(_configuredObject, requestInfo, List.of(pref));
                 fail("Expected exception not thrown");
             }
             catch (IllegalArgumentException e)
@@ -429,20 +417,19 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     @Test
     public void testPostToRootWithVisibilityList_InvalidGroup()
     {
-        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(
-                Collections.emptyList(), Collections.emptyList());
+        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(List.of(), List.of());
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.NAME_ATTRIBUTE, "testPref");
-        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
-        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList("Invalid Group"));
+        pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, List.of("Invalid Group"));
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
             try
             {
                 final Map<String, List<Map<String, Object>>> payload =
-                        Collections.singletonMap("X-testType", Collections.singletonList(pref));
+                        Map.of("X-testType", List.of(pref));
                 _handler.handlePOST(_configuredObject, requestInfo, payload);
                 fail("Expected exception not thrown");
             }
@@ -457,8 +444,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     @Test
     public void testGetHasCorrectVisibilityList()
     {
-        final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(
-                Collections.emptyList(), Collections.emptyList());
+        final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(List.of(), List.of());
         final String type = "X-testtype";
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
@@ -470,10 +456,10 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
                     "testpref",
                     null,
                     MYUSER_SERIALIZATION,
-                    Collections.singleton(MYGROUP_SERIALIZATION),
-                    Collections.emptyMap());
+                    Set.of(MYGROUP_SERIALIZATION),
+                    Map.of());
             Preference preference = PreferenceFactory.fromAttributes(_configuredObject, prefAttributes);
-            awaitPreferenceFuture(_userPreferences.updateOrAppend(Collections.singleton(preference)));
+            awaitPreferenceFuture(_userPreferences.updateOrAppend(Set.of(preference)));
 
             Map<String, List<Map<String, Object>>> typeToPreferenceListMap =
                     (Map<String, List<Map<String, Object>>>) _handler.handleGET(_userPreferences,
@@ -504,7 +490,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
                     null,
                     MYUSER_SERIALIZATION,
                     null,
-                    Collections.emptyMap());
+                    Map.of());
             Preference p1 = PreferenceFactory.fromAttributes(_configuredObject, pref1Attributes);
             Map<String, Object> pref2Attributes = createPreferenceAttributes(
                     null,
@@ -514,14 +500,13 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
                     null,
                     MYUSER_SERIALIZATION,
                     null,
-                    Collections.emptyMap());
+                    Map.of());
             Preference p2 = PreferenceFactory.fromAttributes(_configuredObject, pref2Attributes);
-            awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(p1, p2)));
+            awaitPreferenceFuture(_userPreferences.updateOrAppend(List.of(p1, p2)));
             UUID id = p1.getId();
 
-            final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(
-                    Collections.emptyList(), Collections.emptyList(),
-                    Collections.singletonMap("id", Collections.singletonList(id.toString())));
+            final RequestInfo rootRequestInfo =
+                    RequestInfo.createPreferencesRequestInfo(List.of(), List.of(), Map.of("id", List.of(id.toString())));
 
             Map<String, List<Map<String, Object>>> typeToPreferenceListMap =
                     (Map<String, List<Map<String, Object>>>) _handler.handleGET(_userPreferences, rootRequestInfo);
@@ -548,7 +533,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
                     null,
                     MYUSER_SERIALIZATION,
                     null,
-                    Collections.emptyMap());
+                    Map.of());
             Preference p1 = PreferenceFactory.fromAttributes(_configuredObject, pref1Attributes);
             Map<String, Object> pref2Attributes = createPreferenceAttributes(
                     null,
@@ -558,14 +543,13 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
                     null,
                     MYUSER_SERIALIZATION,
                     null,
-                    Collections.emptyMap());
+                    Map.of());
             Preference p2 = PreferenceFactory.fromAttributes(_configuredObject, pref2Attributes);
-            awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(p1, p2)));
+            awaitPreferenceFuture(_userPreferences.updateOrAppend(List.of(p1, p2)));
             UUID id = p1.getId();
 
-            final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(
-                    Collections.emptyList(), Collections.emptyList(),
-                    Collections.singletonMap("id", Collections.singletonList(id.toString())));
+            final RequestInfo rootRequestInfo =
+                    RequestInfo.createPreferencesRequestInfo(List.of(), List.of(), Map.of("id", List.of(id.toString())));
 
             _handler.handleDELETE(_userPreferences, rootRequestInfo);
 
@@ -581,11 +565,11 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     {
         final String preferenceType = "X-testtype";
         final String preferenceName = "myprefname";
-        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(
-                Collections.emptyList(), Arrays.asList(preferenceType, preferenceName));
+        final RequestInfo requestInfo =
+                RequestInfo.createPreferencesRequestInfo(List.of(), List.of(preferenceType, preferenceName));
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
 
         doTestDelete(preferenceType, preferenceName, requestInfo);
     }
@@ -595,11 +579,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     {
         final String preferenceType = "X-testtype";
         final String preferenceName = "myprefname";
-        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(
-                Collections.emptyList(), Collections.singletonList(preferenceType));
-
-        final Map<String, Object> pref = new HashMap<>();
-        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(List.of(), List.of(preferenceType));
 
         doTestDelete(preferenceType, preferenceName, requestInfo);
     }
@@ -609,11 +589,10 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     {
         final String preferenceType = "X-testtype";
         final String preferenceName = "myprefname";
-        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(
-                Collections.emptyList(), Collections.emptyList());
+        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(List.of(), List.of());
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
 
         doTestDelete(preferenceType, preferenceName, requestInfo);
     }
@@ -623,8 +602,8 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     {
         final String prefName = "testpref";
         final String prefType = "X-testtype";
-        final RequestInfo rootRequestInfo = RequestInfo.createVisiblePreferencesRequestInfo(
-                Collections.emptyList(), Collections.emptyList(), Collections.emptyMap());
+        final RequestInfo rootRequestInfo =
+                RequestInfo.createVisiblePreferencesRequestInfo(List.of(), List.of(), Map.of());
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
@@ -636,8 +615,8 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
                     prefName,
                     null,
                     MYUSER_SERIALIZATION,
-                    Collections.singleton(MYGROUP_SERIALIZATION),
-                    Collections.emptyMap());
+                    Set.of(MYGROUP_SERIALIZATION),
+                    Map.of());
             Preference p1 = PreferenceFactory.fromAttributes(_configuredObject, pref1Attributes);
             preferences.add(p1);
             Map<String, Object> pref2Attributes = createPreferenceAttributes(
@@ -647,8 +626,8 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
                     "testPref2",
                     null,
                     MYUSER_SERIALIZATION,
-                    Collections.emptySet(),
-                    Collections.emptyMap());
+                    Set.of(),
+                    Map.of());
             Preference p2 = PreferenceFactory.fromAttributes(_configuredObject, pref2Attributes);
             preferences.add(p2);
             awaitPreferenceFuture(_userPreferences.updateOrAppend(preferences));
@@ -684,8 +663,8 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     {
         final String prefName = "testpref";
         final String prefType = "X-testtype";
-        final RequestInfo rootRequestInfo = RequestInfo.createVisiblePreferencesRequestInfo(
-                Collections.emptyList(), Collections.singletonList(prefType), Collections.emptyMap());
+        final RequestInfo rootRequestInfo =
+                RequestInfo.createVisiblePreferencesRequestInfo(List.of(), List.of(prefType), Map.of());
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
@@ -697,8 +676,8 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
                     prefName,
                     null,
                     MYUSER_SERIALIZATION,
-                    Collections.singleton(MYGROUP_SERIALIZATION),
-                    Collections.emptyMap());
+                    Set.of(MYGROUP_SERIALIZATION),
+                    Map.of());
             Preference p1 = PreferenceFactory.fromAttributes(_configuredObject, pref1Attributes);
             preferences.add(p1);
             Map<String, Object> pref2Attributes = createPreferenceAttributes(
@@ -708,8 +687,8 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
                     "testPref2",
                     null,
                     MYUSER_SERIALIZATION,
-                    Collections.emptySet(),
-                    Collections.emptyMap());
+                    Set.of(),
+                    Map.of());
             Preference p2 = PreferenceFactory.fromAttributes(_configuredObject, pref2Attributes);
             preferences.add(p2);
             awaitPreferenceFuture(_userPreferences.updateOrAppend(preferences));
@@ -741,8 +720,8 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
     {
         final String prefName = "testpref";
         final String prefType = "X-testtype";
-        final RequestInfo rootRequestInfo = RequestInfo.createVisiblePreferencesRequestInfo(
-                Collections.emptyList(), Arrays.asList(prefType, prefName), Collections.emptyMap());
+        final RequestInfo rootRequestInfo =
+                RequestInfo.createVisiblePreferencesRequestInfo(List.of(), List.of(prefType, prefName), Map.of());
 
         Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
         {
@@ -754,8 +733,8 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
                     prefName,
                     null,
                     MYUSER_SERIALIZATION,
-                    Collections.singleton(MYGROUP_SERIALIZATION),
-                    Collections.emptyMap());
+                    Set.of(MYGROUP_SERIALIZATION),
+                    Map.of());
             Preference p1 = PreferenceFactory.fromAttributes(_configuredObject, pref1Attributes);
             preferences.add(p1);
             Map<String, Object> pref2Attributes = createPreferenceAttributes(
@@ -765,8 +744,8 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
                     "testPref2",
                     null,
                     MYUSER_SERIALIZATION,
-                    Collections.emptySet(),
-                    Collections.emptyMap());
+                    Set.of(),
+                    Map.of());
             Preference p2 = PreferenceFactory.fromAttributes(_configuredObject, pref2Attributes);
             preferences.add(p2);
             awaitPreferenceFuture(_userPreferences.updateOrAppend(preferences));
@@ -801,9 +780,9 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
                     null,
                     MYUSER_SERIALIZATION,
                     null,
-                    Collections.emptyMap());
+                    Map.of());
             Preference preference = PreferenceFactory.fromAttributes(_configuredObject, preferenceAttributes);
-            awaitPreferenceFuture(_userPreferences.updateOrAppend(Collections.singleton(preference)));
+            awaitPreferenceFuture(_userPreferences.updateOrAppend(Set.of(preference)));
             Set<Preference> retrievedPreferences = awaitPreferenceFuture(_userPreferences.getPreferences());
             assertEquals(1, (long) retrievedPreferences.size(), "adding pref failed");
 

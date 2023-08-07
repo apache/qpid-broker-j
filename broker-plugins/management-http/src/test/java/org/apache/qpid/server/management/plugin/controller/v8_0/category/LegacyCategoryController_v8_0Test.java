@@ -33,11 +33,10 @@ import static org.mockito.AdditionalMatchers.not;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,7 +76,7 @@ public class LegacyCategoryController_v8_0Test
                                                         TEST_CATEGORY,
                                                         PARENT_CATEGORY,
                                                         DEFAULT_TYPE,
-                                                        Collections.emptySet());
+                                                        Set.of());
 
         _root = mock(ConfiguredObject.class);
     }
@@ -85,8 +84,8 @@ public class LegacyCategoryController_v8_0Test
     @Test
     public void getExistingPortWithSetAllowDenyTlsProtocolSettings()
     {
-        final List<String> path = Arrays.asList("port", PORT_NAME);
-        final Map<String, List<String>> parameters = Collections.emptyMap();
+        final List<String> path = List.of("port", PORT_NAME);
+        final Map<String, List<String>> parameters = Map.of();
         final LegacyConfiguredObject nextVersionPort = createNewVersionPortMock();
 
         when(_nextVersionManagementController.get(_root,
@@ -104,7 +103,7 @@ public class LegacyCategoryController_v8_0Test
     @Test
     public void testCreatePortWithSetAllowDenyTlsProtocolSettings()
     {
-        final List<String> path = Arrays.asList("port", PORT_NAME);
+        final List<String> path = List.of("port", PORT_NAME);
 
         final Map<String, String> oldContext = new HashMap<>();
         oldContext.put(OLD_CONTEXT_TLS_PROTOCOL_WHITE_LIST,PROTOCOL_ALLOW_LIST);

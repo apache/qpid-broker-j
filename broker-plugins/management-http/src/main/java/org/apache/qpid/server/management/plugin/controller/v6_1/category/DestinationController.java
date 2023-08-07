@@ -23,7 +23,6 @@ package org.apache.qpid.server.management.plugin.controller.v6_1.category;
 import static org.apache.qpid.server.management.plugin.ManagementException.createBadRequestManagementException;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,8 +74,7 @@ public class DestinationController extends LegacyCategoryController
             if (exchange != null)
             {
                 converted.put(ALTERNATE_BINDING,
-                              Collections.singletonMap("destination",
-                                                       exchange.getAttribute(LegacyConfiguredObject.NAME)));
+                              Map.of("destination", exchange.getAttribute(LegacyConfiguredObject.NAME)));
             }
             else
             {
@@ -99,7 +97,7 @@ public class DestinationController extends LegacyCategoryController
         final Object result = getNextVersionManagementController().get(root,
                                                                        ExchangeController.TYPE,
                                                                        exchangePath,
-                                                                       Collections.emptyMap());
+                                                                       Map.of());
         if (result instanceof Collection)
         {
             final Collection<?> exchanges = (Collection<?>) result;

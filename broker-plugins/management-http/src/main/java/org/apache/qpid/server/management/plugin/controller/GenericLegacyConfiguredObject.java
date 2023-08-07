@@ -21,9 +21,9 @@
 package org.apache.qpid.server.management.plugin.controller;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.qpid.server.management.plugin.ManagementResponse;
@@ -71,7 +71,7 @@ public class GenericLegacyConfiguredObject implements LegacyConfiguredObject
         {
             return children.stream().map(_managementController::convertFromNextVersion).collect(Collectors.toSet());
         }
-        return Collections.emptySet();
+        return Set.of();
     }
 
     @Override

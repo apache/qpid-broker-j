@@ -61,7 +61,7 @@ public class LegacyCategoryControllerFactory implements CategoryControllerFactor
     private static final String CATEGORY_SESSION = "Session";
     static final String CATEGORY_SYSTEM_CONFIG = "SystemConfig";
     public static final Map<String, String> SUPPORTED_CATEGORIES =
-            Collections.unmodifiableMap(new HashMap<String, String>()
+            Collections.unmodifiableMap(new HashMap<>()
             {
                 {
                     put(CATEGORY_BROKER_LOGGER, CATEGORY_BROKER);
@@ -92,18 +92,13 @@ public class LegacyCategoryControllerFactory implements CategoryControllerFactor
                 }
             });
 
-    public static final Map<String, String> DEFAULT_TYPES = Collections.unmodifiableMap(new HashMap<String, String>()
-    {
-        {
-            put(CATEGORY_BROKER_LOGGER, "Broker");
-            put(CATEGORY_TRUST_STORE, "FileTrustStore");
-            put(CATEGORY_KEY_STORE, "FileKeyStore");
-            put(CATEGORY_GROUP, "ManagedGroup");
-            put(CATEGORY_GROUP_MEMBER, "ManagedGroupMember");
-            put(CATEGORY_VIRTUAL_HOST, "ProvidedStore");
-            put(CATEGORY_QUEUE, "standard");
-        }
-    });
+    public static final Map<String, String> DEFAULT_TYPES = Map.of(CATEGORY_BROKER_LOGGER, "Broker",
+            CATEGORY_TRUST_STORE, "FileTrustStore",
+            CATEGORY_KEY_STORE, "FileKeyStore",
+            CATEGORY_GROUP, "ManagedGroup",
+            CATEGORY_GROUP_MEMBER, "ManagedGroupMember",
+            CATEGORY_VIRTUAL_HOST, "ProvidedStore",
+            CATEGORY_QUEUE, "standard");
 
     @Override
     public CategoryController createController(final String type,

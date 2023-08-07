@@ -29,12 +29,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,24 +73,24 @@ public class DestinationControllerTest extends UnitTestBase
                                           "Queue",
                                           new String[]{"VirtualHost"},
                                           null,
-                                          Collections.emptySet());
+                                          Set.of());
         assertThat(controller.getCategory(), is(equalTo("Queue")));
         assertThat(controller.getParentCategories(), is(equalTo(new String[]{"VirtualHost"})));
 
         final ConfiguredObject root = mock(ConfiguredObject.class);
-        final List<String> exchangePath = Arrays.asList("vhn", "vh");
+        final List<String> exchangePath = List.of("vhn", "vh");
         final LegacyConfiguredObject exchange = mock(LegacyConfiguredObject.class);
         when(exchange.getAttribute(LegacyConfiguredObject.NAME)).thenReturn(alternateExchangeName);
         when(exchange.getCategory()).thenReturn(ExchangeController.TYPE);
-        final Collection<LegacyConfiguredObject> exchanges = Collections.singletonList(exchange);
+        final Collection<LegacyConfiguredObject> exchanges = List.of(exchange);
         when(_nextVersionManagementController.get(eq(root),
                                                   eq(ExchangeController.TYPE),
                                                   eq(exchangePath),
-                                                  eq(Collections.emptyMap()))).thenReturn(exchanges);
+                                                  eq(Map.of()))).thenReturn(exchanges);
 
-        final Collection<String> hierarchy = Arrays.asList("virtualhostnode", "virtualhost", "exchange");
+        final Collection<String> hierarchy = List.of("virtualhostnode", "virtualhost", "exchange");
         when(_nextVersionManagementController.getCategoryHierarchy(eq(root), eq(ExchangeController.TYPE))).thenReturn(hierarchy);
-        final List<String> path = Arrays.asList("vhn", "vh", queueName);
+        final List<String> path = List.of("vhn", "vh", queueName);
         final Map<String, Object> converted = controller.convertAttributesToNextVersion(root,
                                                                                         path,
                                                                                         attributes);
@@ -120,7 +119,7 @@ public class DestinationControllerTest extends UnitTestBase
         final LegacyConfiguredObject alternateExchange = mock(LegacyConfiguredObject.class);
         when(alternateExchange.getCategory()).thenReturn(ExchangeController.TYPE);
         when(alternateExchange.getAttribute(LegacyConfiguredObject.NAME)).thenReturn(alternateExchangeName);
-        final Collection<LegacyConfiguredObject> exchanges = Collections.singletonList(alternateExchange);
+        final Collection<LegacyConfiguredObject> exchanges = List.of(alternateExchange);
         when(vh.getChildren(ExchangeController.TYPE)).thenReturn(exchanges);
 
         final LegacyConfiguredObject converted = mock(LegacyConfiguredObject.class);

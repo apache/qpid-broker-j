@@ -117,7 +117,7 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
     {
         Map<String, Object> sessionAttributes = new HashMap<>();
         HttpServletRequest mockRequest = createMockRequest(TEST_REQUEST_HOST, TEST_REQUEST_PATH,
-                                                           Collections.singletonMap("baz", "fnord"), sessionAttributes);
+                                                           Map.of("baz", "fnord"), sessionAttributes);
         HttpRequestInteractiveAuthenticator.AuthenticationHandler authenticationHandler = _authenticator.getAuthenticationHandler(mockRequest,
                                                                                                                                   _mockConfiguration);
 
@@ -310,17 +310,17 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
         SubjectAuthenticationResult mockSuccessfulSubjectAuthenticationResult = mock(SubjectAuthenticationResult.class);
         SubjectAuthenticationResult mockUnauthorizedSubjectAuthenticationResult = mock(SubjectAuthenticationResult.class);
         final Subject successfulSubject = new Subject(true,
-                                                      Collections.singleton(new AuthenticatedPrincipal(new UsernamePrincipal(
+                                                      Set.of(new AuthenticatedPrincipal(new UsernamePrincipal(
                                                               TEST_AUTHORIZED_USER,
                                                               null))),
-                                                      Collections.emptySet(),
-                                                      Collections.emptySet());
+                                                      Set.of(),
+                                                      Set.of());
         final Subject unauthorizedSubject = new Subject(true,
-                                                        Collections.singleton(new AuthenticatedPrincipal(new UsernamePrincipal(
+                                                        Set.of(new AuthenticatedPrincipal(new UsernamePrincipal(
                                                                 TEST_UNAUTHORIZED_USER,
                                                                 null))),
-                                                        Collections.emptySet(),
-                                                        Collections.emptySet());
+                                                        Set.of(),
+                                                        Set.of());
         AuthenticationResult mockSuccessfulAuthenticationResult = mock(AuthenticationResult.class);
         AuthenticationResult mockUnauthorizedAuthenticationResult = mock(AuthenticationResult.class);
         AuthenticationResult failedAuthenticationResult = new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR,

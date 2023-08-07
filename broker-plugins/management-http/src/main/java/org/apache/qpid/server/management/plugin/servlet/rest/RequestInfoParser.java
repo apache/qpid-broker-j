@@ -249,7 +249,7 @@ public class RequestInfoParser
             }
             if (!query.containsKey(key))
             {
-                query.put(key, new ArrayList<String>());
+                query.put(key, new ArrayList<>());
             }
             query.get(key).add(value);
         }

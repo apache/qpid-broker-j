@@ -33,8 +33,6 @@ import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.returnsC
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -81,20 +79,18 @@ public class LatestManagementController extends AbstractManagementController
     private static final String EXTRACT_INITIAL_CONFIG_PARAM = "extractInitialConfig";
     private static final String EXCLUDE_INHERITED_CONTEXT_PARAM = "excludeInheritedContext";
     private static final String SINGLETON_MODEL_OBJECT_RESPONSE_AS_LIST = "singletonModelObjectResponseAsList";
-    private static final Set<String> RESERVED_PARAMS =
-            new HashSet<>(Arrays.asList(DEPTH_PARAM,
-                                        SORT_PARAM,
-                                        OVERSIZE_PARAM,
-                                        ACTUALS_PARAM,
-                                        EXTRACT_INITIAL_CONFIG_PARAM,
-                                        CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM,
-                                        EXCLUDE_INHERITED_CONTEXT_PARAM,
-                                        SINGLETON_MODEL_OBJECT_RESPONSE_AS_LIST));
+    private static final Set<String> RESERVED_PARAMS = Set.of(DEPTH_PARAM,
+            SORT_PARAM,
+            OVERSIZE_PARAM,
+            ACTUALS_PARAM,
+            EXTRACT_INITIAL_CONFIG_PARAM,
+            CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM,
+            EXCLUDE_INHERITED_CONTEXT_PARAM,
+            SINGLETON_MODEL_OBJECT_RESPONSE_AS_LIST);
 
     private static final int DEFAULT_DEPTH = 0;
     private static final int DEFAULT_OVERSIZE = 120;
     private static final Class<? extends ConfiguredObject>[] EMPTY_HIERARCHY = new Class[0];
-
 
     private final ConcurrentMap<ConfiguredObject<?>, ConfiguredObjectFinder> _configuredObjectFinders =
             new ConcurrentHashMap<>();
@@ -111,11 +107,11 @@ public class LatestManagementController extends AbstractManagementController
         _userPreferenceHandler = new RestUserPreferenceHandler(preferenceOperationTimeout == null
                                                                        ? DEFAULT_PREFERENCE_OPERATION_TIMEOUT
                                                                        : preferenceOperationTimeout);
-        _supportedCategories = Collections.unmodifiableSet(httpManagement.getModel()
-                                                                         .getSupportedCategories()
-                                                                         .stream()
-                                                                         .map(Class::getSimpleName)
-                                                                         .collect(Collectors.toSet()));
+        _supportedCategories = httpManagement.getModel()
+                .getSupportedCategories()
+                .stream()
+                .map(Class::getSimpleName)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
@@ -149,7 +145,7 @@ public class LatestManagementController extends AbstractManagementController
         Class<? extends ConfiguredObject>[] hierarchy = finder.getHierarchy(category.toLowerCase());
         if (hierarchy == null)
         {
-            return Collections.emptyList();
+            return List.of();
         }
         return Arrays.stream(hierarchy).map(Class::getSimpleName).collect(Collectors.toList());
     }
@@ -559,7 +555,7 @@ public class LatestManagementController extends AbstractManagementController
                     oversizeThreshold,
                     isSecureOrAllowedOnInsecureChannel,
                     excludeInheritedContext);
-            return responseAsList ? Collections.singletonList(object) : object;
+            return responseAsList ? List.of(object) : object;
         }
         else if (content instanceof Collection)
         {
@@ -652,7 +648,7 @@ public class LatestManagementController extends AbstractManagementController
 
         if (targetObjects == null)
         {
-            targetObjects = Collections.emptySet();
+            targetObjects = Set.of();
         }
         else if (filterPredicate != null)
         {

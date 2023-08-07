@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.management.plugin.controller;
 
-import java.util.Collections;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,7 +36,7 @@ public class ControllerManagementResponse implements ManagementResponse
 
     public ControllerManagementResponse(final ResponseType type, final Object body)
     {
-        this(type, body, HttpServletResponse.SC_OK, Collections.emptyMap());
+        this(type, body, HttpServletResponse.SC_OK, Map.of());
     }
 
     public ControllerManagementResponse(final ResponseType type,

@@ -278,7 +278,7 @@ public class RestUserPreferenceHandler
                     final String type = preference.getType();
                     if (!preferences.containsKey(type))
                     {
-                        preferences.put(type, new ArrayList<Map<String, Object>>());
+                        preferences.put(type, new ArrayList<>());
                     }
 
                     preferences.get(type).add(preference.getAttributes());

@@ -29,7 +29,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +57,7 @@ public class SessionControllerTest extends UnitTestBase
         final ManagementController nextVersionManagementController = mock(ManagementController.class);
         when(_legacyManagementController.getNextVersionManagementController()).thenReturn(
                 nextVersionManagementController);
-        _sessionController = new SessionController(_legacyManagementController, Collections.emptySet());
+        _sessionController = new SessionController(_legacyManagementController, Set.of());
     }
 
     @Test
@@ -70,9 +72,8 @@ public class SessionControllerTest extends UnitTestBase
         when(nextVersionSession.getAttribute(LegacyConfiguredObject.ID)).thenReturn(sessionID);
 
         final ManagementResponse operationResult = new ControllerManagementResponse(ResponseType.MODEL_OBJECT,
-                                                                                    Collections.singletonList(
-                                                                                            nextVersionConsumer));
-        when(nextVersionSession.invoke(eq("getConsumers"), eq(Collections.emptyMap()), eq(true))).thenReturn(
+                List.of(nextVersionConsumer));
+        when(nextVersionSession.invoke(eq("getConsumers"), eq(Map.of()), eq(true))).thenReturn(
                 operationResult);
 
         final LegacyConfiguredObject convertedConsumer = mock(LegacyConfiguredObject.class);

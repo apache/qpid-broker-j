@@ -27,7 +27,6 @@ import org.apache.qpid.server.management.plugin.controller.GenericLegacyConfigur
 import org.apache.qpid.server.management.plugin.controller.LegacyConfiguredObject;
 import org.apache.qpid.server.management.plugin.controller.LegacyManagementController;
 import org.apache.qpid.server.management.plugin.controller.TypeController;
-import org.apache.qpid.server.management.plugin.controller.latest.LatestManagementControllerAdapter;
 
 public class LegacyCategoryController extends GenericCategoryController
 {

@@ -23,8 +23,6 @@ package org.apache.qpid.server.management.plugin.controller.v6_1;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.ManagementController;
 import org.apache.qpid.server.management.plugin.ManagementControllerFactory;
-import org.apache.qpid.server.management.plugin.controller.CategoryControllerFactory;
-import org.apache.qpid.server.management.plugin.controller.TypeControllerFactory;
 import org.apache.qpid.server.plugin.PluggableService;
 
 @PluggableService

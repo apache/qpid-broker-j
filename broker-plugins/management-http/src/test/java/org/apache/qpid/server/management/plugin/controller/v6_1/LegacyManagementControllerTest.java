@@ -30,9 +30,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -61,10 +59,10 @@ public class LegacyManagementControllerTest extends UnitTestBase
     @Test
     public void convertQueryParameters()
     {
-        final Map<String, List<String>> parameters = Collections.singletonMap("actuals", Collections.singletonList("true"));
+        final Map<String, List<String>> parameters = Map.of("actuals", List.of("true"));
         final Map<String, List<String>> converted = _controller.convertQueryParameters(parameters);
         assertThat(converted, is(notNullValue()));
-        assertThat(converted.get("excludeInheritedContext"), is(equalTo(Collections.singletonList("true"))));
+        assertThat(converted.get("excludeInheritedContext"), is(equalTo(List.of("true"))));
     }
 
     @Test
@@ -72,17 +70,15 @@ public class LegacyManagementControllerTest extends UnitTestBase
     {
         final String objectName = "test-object";
         final String hostName = "test-vhn";
-        final Map<String, List<String>> parameters = Collections.emptyMap();
+        final Map<String, List<String>> parameters = Map.of();
         final LegacyConfiguredObject object = mock(LegacyConfiguredObject.class);
         final LegacyConfiguredObject vhn = mock(LegacyConfiguredObject.class);
-        when(object.getAttributeNames()).thenReturn(Arrays.asList(LegacyConfiguredObject.NAME,
-                                                                  LegacyConfiguredObject.TYPE));
+        when(object.getAttributeNames()).thenReturn(List.of(LegacyConfiguredObject.NAME, LegacyConfiguredObject.TYPE));
         when(object.getAttribute(LegacyConfiguredObject.NAME)).thenReturn(objectName);
         when(object.getAttribute(LegacyConfiguredObject.TYPE)).thenReturn("Broker");
         when(object.getCategory()).thenReturn("Broker");
-        when(object.getChildren("VirtualHostNode")).thenReturn(Collections.singletonList(vhn));
-        when(vhn.getAttributeNames()).thenReturn(Arrays.asList(LegacyConfiguredObject.NAME,
-                                                               LegacyConfiguredObject.TYPE));
+        when(object.getChildren("VirtualHostNode")).thenReturn(List.of(vhn));
+        when(vhn.getAttributeNames()).thenReturn(List.of(LegacyConfiguredObject.NAME, LegacyConfiguredObject.TYPE));
         when(vhn.getAttribute(LegacyConfiguredObject.NAME)).thenReturn(hostName);
         when(vhn.getAttribute(LegacyConfiguredObject.TYPE)).thenReturn("VirtualHostNode");
         when(vhn.getCategory()).thenReturn("VirtualHostNode");
@@ -113,9 +109,9 @@ public class LegacyManagementControllerTest extends UnitTestBase
     @Test
     public void get()
     {
-        final List<String> path = Collections.emptyList();
+        final List<String> path = List.of();
         final LegacyConfiguredObject object = mock(LegacyConfiguredObject.class);
-        final Map<String, List<String>> parameters = Collections.emptyMap();
+        final Map<String, List<String>> parameters = Map.of();
 
         final ConfiguredObject<?> root = mock(ConfiguredObject.class);
         when(_nextVersionManagementController.get(eq(root), eq(BrokerController.TYPE), eq(path), any())).thenReturn(object);

@@ -150,14 +150,10 @@ public class AuthenticationCheckFilter implements Filter
     {
         try
         {
-            Subject.doAs(subject, new PrivilegedExceptionAction<Void>()
+            Subject.doAs(subject, (PrivilegedExceptionAction<Void>) () ->
             {
-                @Override
-                public Void run() throws IOException, ServletException
-                {
-                    chain.doFilter(request, response);
-                    return null;
-                }
+                chain.doFilter(request, response);
+                return null;
             });
         }
         catch (PrivilegedActionException e)
