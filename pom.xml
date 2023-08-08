@@ -78,8 +78,8 @@
   <properties>
     <minimum-maven-version>3.0.0</minimum-maven-version>
     <minimum-java-version>11</minimum-java-version>
-    <java.source>11</java.source>
-    <java.target>11</java.target>
+    <maven.compiler.source>${minimum-java-version}</maven.compiler.source>
+    <maven.compiler.target>${minimum-java-version}</maven.compiler.target>
     <skipTests>false</skipTests>
 
     <!-- enforcer plugin config properties -->
@@ -990,8 +990,6 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven-compiler-plugin-version}</version>
           <configuration>
-            <source>${java.source}</source>
-            <target>${java.target}</target>
             <optimize>true</optimize>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>
