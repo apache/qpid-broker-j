@@ -37,7 +37,7 @@ import org.apache.qpid.server.logging.messages.ManagementConsoleMessages;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 
 /**
- * Logs {@link ManagementConsoleMessages#OPEN(String)} and {@link ManagementConsoleMessages#CLOSE(String)}
+ * Logs {@link ManagementConsoleMessages#OPEN(CharSequence)} and {@link ManagementConsoleMessages#CLOSE(CharSequence)}
  * messages.  A single instance of this class must be placed in the {@link HttpSession} immediately after
  * the user has successfully logged-in, and removed (or the whole session invalidated) as the user logs out.
  */
