@@ -967,12 +967,7 @@
         <version>${bcpkix-version}</version>
       </dependency>
 
-      <!-- prometheus client dependencies -->
-      <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient</artifactId>
-        <version>${prometheus-client-version}</version>
-      </dependency>
+      <!-- prometheus client dependency -->
       <dependency>
         <groupId>io.prometheus</groupId>
         <artifactId>simpleclient_common</artifactId>
@@ -990,7 +985,6 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven-compiler-plugin-version}</version>
           <configuration>
-            <optimize>true</optimize>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>
             <useIncrementalCompilation>false</useIncrementalCompilation>
@@ -1136,6 +1130,7 @@
           <systemPropertyVariables>
             <!-- Defaults -->
             <qpid.dest_syntax>BURL</qpid.dest_syntax>
+            <derby.stream.error.file>target/derby.log</derby.stream.error.file>
 
             <!-- Profile Based Values -->
             <profile>${profile}</profile>
@@ -1150,12 +1145,6 @@
             <qpid.tests.mms.messagestore.persistence>${profile.qpid.tests.mms.messagestore.persistence}</qpid.tests.mms.messagestore.persistence>
             <java.io.tmpdir>${java.io.tmpdir}</java.io.tmpdir>
           </systemPropertyVariables>
-          <systemProperties>
-            <property>
-              <name>derby.stream.error.file</name>
-              <value>target/derby.log</value>
-            </property>
-          </systemProperties>
         </configuration>
       </plugin>
 
@@ -1680,7 +1669,8 @@
             <artifactId>license-maven-plugin</artifactId>
             <!-- version specified in pluginManagement -->
             <configuration>
-              <failIfWarning>true</failIfWarning>
+              <failOnMissing>true</failOnMissing>
+              <failOnBlacklist>true</failOnBlacklist>
               <excludedScopes>provided,test</excludedScopes>
               <outputDirectory>${license-maven-plugin-output-dir}</outputDirectory>
               <!-- Exclude logback from being checked, it is dual licensed and lists both licenses in META-INF Bundle-License   -->
