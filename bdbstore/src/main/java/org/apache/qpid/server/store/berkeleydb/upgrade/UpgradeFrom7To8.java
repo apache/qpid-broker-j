@@ -69,10 +69,10 @@ public class UpgradeFrom7To8 extends AbstractStoreUpgrade
                 setWrap(true).
                 setCacheSize(100000);
 
-    private final Map<String, String> _defaultExchanges = Map.of("amq.direct", "direct",
+    private final Map<String, String> _defaultExchanges = new HashMap<>(Map.of("amq.direct", "direct",
             "amq.topic", "topic",
             "amq.fanout", "fanout",
-            "amq.match", "headers");
+            "amq.match", "headers"));
 
     @Override
     public void performUpgrade(Environment environment, UpgradeInteractionHandler handler, ConfiguredObject<?> parent)
