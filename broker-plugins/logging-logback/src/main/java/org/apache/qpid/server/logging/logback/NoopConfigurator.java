@@ -20,16 +20,16 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import ch.qos.logback.core.Context;
-import ch.qos.logback.core.spi.Configurator;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.Configurator;
 import ch.qos.logback.core.spi.ContextAwareBase;
 
 public class NoopConfigurator extends ContextAwareBase implements Configurator
 {
     @Override
-    public ExecutionStatus configure(Context loggerContext)
+    public ExecutionStatus configure(LoggerContext loggerContext)
     {
         // no-op
-        return ExecutionStatus.NEUTRAL;
+        return ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY;
     }
 }
