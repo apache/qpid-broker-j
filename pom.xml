@@ -1694,7 +1694,7 @@
                 <licenseMerge>Eclipse Public License - Version 1.0|Eclipse Public License - v 1.0|Eclipse Public License, Version 1.0|Eclipse Public License 1.0|MPL 2.0 or EPL 1.0</licenseMerge>
                 <licenseMerge>Eclipse Public License - Version 2.0|Eclipse Public License - v 2.0|Eclipse Public License, Version 2.0|Eclipse Public License 2.0|Eclipse Public License v2.0|MPL 2.0 or EPL 2.0|EPL 2.0</licenseMerge>
                 <licenseMerge>Academic Free License v2.1|AFL-2.1</licenseMerge>
-                <licenseMerge>COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0|CDDL + GPLv2 with classpath exception|GPL2 w/ CPE</licenseMerge>
+                <licenseMerge>COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0|CDDL + GPLv2 with classpath exception</licenseMerge>
               </licenseMerges>
             </configuration>
             <executions>
