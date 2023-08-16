@@ -46,13 +46,15 @@ public class ProducerImpl<X extends Producer<X>>
 
     private final String _remoteAddress;
 
-    private final String _destination;
-
-    private final DestinationType _destinationType;
+    private final DeliveryType _deliveryType;
 
     private final AtomicInteger _messagesOut = new AtomicInteger();
 
     private final AtomicLong _bytesOut = new AtomicLong();
+
+    private DestinationType _destinationType;
+
+    private String _destination;
 
     public ProducerImpl(final AbstractAMQPSession<?, ?> session,
                         final PublishingLink publishingLink,
@@ -63,8 +65,17 @@ public class ProducerImpl<X extends Producer<X>>
         _sessionName = session.getName();
         _principal = session.getAMQPConnection().getPrincipal();
         _remoteAddress = session.getAMQPConnection().getRemoteAddress();
-        _destination = messageDestination.getName();
-        _destinationType = messageDestination instanceof Exchange ? DestinationType.EXCHANGE : DestinationType.QUEUE;
+        _destination = messageDestination == null ? null : messageDestination.getName();
+        if (messageDestination == null)
+        {
+            _deliveryType = DeliveryType.DELAYED_DELIVERY;
+            _destinationType = null;
+        }
+        else
+        {
+            _deliveryType = DeliveryType.STANDARD_DELIVERY;
+            _destinationType = messageDestination instanceof Exchange ? DestinationType.EXCHANGE : DestinationType.QUEUE;
+        }
 
         registerWithParents();
         open();
@@ -133,9 +144,27 @@ public class ProducerImpl<X extends Producer<X>>
     }
 
     @Override
+    public void setDestination(String destination)
+    {
+        _destination = destination;
+    }
+
+    @Override
     public DestinationType getDestinationType()
     {
         return _destinationType;
+    }
+
+    @Override
+    public void setDestinationType(DestinationType destinationType)
+    {
+        _destinationType = destinationType;
+    }
+
+    @Override
+    public DeliveryType getDeliveryType()
+    {
+        return _deliveryType;
     }
 
     @Override
