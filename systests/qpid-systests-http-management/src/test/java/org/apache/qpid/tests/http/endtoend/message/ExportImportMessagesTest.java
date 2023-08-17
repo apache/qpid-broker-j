@@ -37,6 +37,7 @@ import javax.jms.TextMessage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -54,7 +55,14 @@ public class ExportImportMessagesTest extends HttpTestBase
     @BeforeEach
     public void setUp() throws Exception
     {
-        getHelper().setTls(true);
+        getHelper().createKeyStoreAndSetItOnPort(getFullTestName());
+    }
+
+    @AfterEach
+    public void afterEach() throws Exception
+    {
+        getHelper().setAcceptEncoding("Identity");
+        getHelper().removeKeyStoreFromPort(getFullTestName());
     }
 
     @Test

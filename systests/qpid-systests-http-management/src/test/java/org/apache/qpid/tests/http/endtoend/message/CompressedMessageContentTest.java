@@ -45,6 +45,7 @@ import javax.jms.TextMessage;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -63,8 +64,16 @@ public class CompressedMessageContentTest extends HttpTestBase
     public void setUp() throws Exception
     {
         assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()));
-        getHelper().setTls(true);
         getBrokerAdmin().createQueue(TEST_QUEUE);
+        getHelper().createKeyStoreAndSetItOnPort(getFullTestName());
+    }
+
+    @AfterEach
+    public void afterEach() throws Exception
+    {
+        assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()));
+        getHelper().setAcceptEncoding("Identity");
+        getHelper().removeKeyStoreFromPort(getFullTestName());
     }
 
     @Test
