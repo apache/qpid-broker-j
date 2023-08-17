@@ -36,28 +36,26 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.TestInstance;
 
 import org.apache.qpid.systests.ConnectionBuilder;
 import org.apache.qpid.systests.JmsProvider;
 import org.apache.qpid.systests.Utils;
-import org.apache.qpid.test.utils.UnitTestBase;
 
-public class GroupJmsTestBase extends UnitTestBase
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
+public class GroupJmsTestBase
 {
     private static final int FAILOVER_CYCLECOUNT = 40;
     private static final int FAILOVER_CONNECTDELAY = 1000;
     static final int SHORT_FAILOVER_CYCLECOUNT = 2;
     static final int SHORT_FAILOVER_CONNECTDELAY = 200;
+    private static final AtomicReference<Class<?>> _testClass = new AtomicReference<>();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GroupJmsTestBase.class);
     private static JmsProvider _jmsProvider;
     private static GroupBrokerAdmin _groupBrokerAdmin;
-    private static AtomicReference<Class<?>> _testClass = new AtomicReference<>();
+
+    private String _testName;
 
     @BeforeAll
     public static void setUpTestBase()
@@ -78,26 +76,24 @@ public class GroupJmsTestBase extends UnitTestBase
         }
     }
 
-    @RegisterExtension
-    public final BeforeAllCallback resource = (ExtensionContext ctx) ->
+    @BeforeEach
+    public void beforeTestMethod(final TestInfo testInfo) throws Exception
     {
         if (_testClass.compareAndSet(null, GroupJmsTestBase.this.getClass() ))
         {
             _groupBrokerAdmin = new GroupBrokerAdmin();
             _groupBrokerAdmin.beforeTestClass(GroupJmsTestBase.this.getClass());
         }
-    };
-
-    @BeforeEach
-    public void beforeTestMethod() throws Exception
-    {
-        _groupBrokerAdmin.beforeTestMethod(getClass(), getClass().getMethod(getTestName()));
+        _testName = testInfo.getTestMethod()
+                .orElseThrow(() -> new RuntimeException("Failed to resolve test method"))
+                .getName();
+        _groupBrokerAdmin.beforeTestMethod(getClass(), getClass().getMethod(_testName));
     }
 
     @AfterEach
     public void afterTestMethod() throws Exception
     {
-        _groupBrokerAdmin.afterTestMethod(getClass(), getClass().getMethod(getTestName()));
+        _groupBrokerAdmin.afterTestMethod(getClass(), getClass().getMethod(_testName));
     }
 
     GroupBrokerAdmin getBrokerAdmin()
@@ -108,7 +104,7 @@ public class GroupJmsTestBase extends UnitTestBase
     ConnectionBuilder getConnectionBuilder()
     {
         final ConnectionBuilder connectionBuilder = _jmsProvider.getConnectionBuilder()
-                                                                    .setClientId(getTestName())
+                                                                    .setClientId(_testName)
                                                                     .setFailoverReconnectDelay(FAILOVER_CONNECTDELAY)
                                                                     .setFailoverReconnectAttempts(FAILOVER_CYCLECOUNT)
                                                                     .setVirtualHost("test")
@@ -154,7 +150,7 @@ public class GroupJmsTestBase extends UnitTestBase
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         try
         {
-            return getJmsProvider().createQueue(session, getTestName());
+            return getJmsProvider().createQueue(session, _testName);
         }
         finally
         {

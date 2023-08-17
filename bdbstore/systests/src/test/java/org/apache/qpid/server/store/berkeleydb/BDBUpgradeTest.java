@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collection;
@@ -68,13 +69,11 @@ import org.apache.qpid.tests.utils.ConfigItem;
  * <p>
  * Store prepared using old client/broker with BDBStoreUpgradeTestPreparer.
  */
-@ConfigItem(name = "qpid.initialConfigurationLocation", value = DEFAULT_BROKER_CONFIG )
+@ConfigItem(name = "qpid.initialConfigurationLocation", value = DEFAULT_BROKER_CONFIG)
 public class BDBUpgradeTest extends UpgradeTestBase
 {
-
     private static final String STRING_1024 = generateString(1024);
     private static final String STRING_1024_256 = generateString(1024 * 256);
-
     private static final String TOPIC_NAME = "myUpgradeTopic";
     private static final String SUB_NAME = "myDurSubName";
     private static final String SELECTOR_SUB_NAME = "mySelectorDurSubName";
@@ -88,7 +87,7 @@ public class BDBUpgradeTest extends UpgradeTestBase
     {
         assumeTrue("BDB".equals(System.getProperty("virtualhostnode.type", "BDB")),
                 "System property 'virtualhostnode.type' should be 'BDB'");
-        assumeTrue(Objects.equal(getProtocol(), Protocol.AMQP_1_0), "AMQP protocol should be 1.0");
+        assumeFalse(Objects.equal(getProtocol(), Protocol.AMQP_1_0), "AMQP protocol should be 1.0");
     }
 
     /**
