@@ -197,9 +197,7 @@
                             <goal>test</goal>
                         </goals>
                         <configuration>
-                            <excludes>
-                                <exclude>**</exclude>
-                            </excludes>
+                            <skipTests>true</skipTests>
                         </configuration>
                     </execution>
                 </executions>

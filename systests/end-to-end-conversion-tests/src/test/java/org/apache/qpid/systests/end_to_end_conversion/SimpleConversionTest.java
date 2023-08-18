@@ -51,6 +51,12 @@ import org.apache.qpid.systests.end_to_end_conversion.client.MessageDescription;
 import org.apache.qpid.systests.end_to_end_conversion.client.SerializableTestClass;
 import org.apache.qpid.systests.end_to_end_conversion.client.VerificationException;
 
+/**
+ * When running behind the proxy, test may hang due to maven resolver plugin failing to establish connection with the
+ * central repository. To run the test behind the proxy either declare an environment variable named "https_proxy" in
+ * form "export https_proxy=hostname:port" or supply a system property with the same name in form
+ * -Dhttps_proxy=hostname:port
+ */
 public class SimpleConversionTest extends EndToEndConversionTestBase
 {
     private static final long TEST_TIMEOUT = 30000L;
