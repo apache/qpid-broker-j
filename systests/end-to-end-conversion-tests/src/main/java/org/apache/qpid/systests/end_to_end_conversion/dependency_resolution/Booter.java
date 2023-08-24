@@ -25,25 +25,24 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.repository.Proxy;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 
 public class Booter
 {
-    private static final String FALLBACK_LOCAL_REPO_URL = Stream.of(System.getProperty("user.home"),
-                                                                    ".m2", "repository")
-                                                                .collect(Collectors.joining(File.pathSeparator));
+    private static final String FALLBACK_LOCAL_REPO_URL =
+            String.join(File.pathSeparator, System.getProperty("user.home"), ".m2", "repository");
     private static final String REMOTE_REPO_URL = System.getProperty(
             "qpid.systests.end_to_end_conversion.remoteRepository",
             "https://repo.maven.apache.org/maven2/");
     private static final String LOCAL_REPO =
             System.getProperty("qpid.systests.end_to_end_conversion.localRepository", FALLBACK_LOCAL_REPO_URL);
+    private static final String HTTPS_PROXY = "https_proxy";
 
     public static RepositorySystem newRepositorySystem()
     {
@@ -73,7 +72,37 @@ public class Booter
 
     private static RemoteRepository newCentralRepository()
     {
-        return new RemoteRepository.Builder("central", "default", REMOTE_REPO_URL).build();
+        final RemoteRepository.Builder builder = new RemoteRepository.Builder("central", "default", REMOTE_REPO_URL);
+        // resolve HTTPS proxy either from environment variable or from system property
+        final String environmentVariable = System.getenv(HTTPS_PROXY);
+        final String systemProperty = System.getProperty(HTTPS_PROXY);
+        Proxy proxy = null;
+        if (systemProperty != null)
+        {
+            proxy = getProxy(systemProperty);
+        }
+        else if (environmentVariable != null)
+        {
+            proxy = getProxy(environmentVariable);
+        }
+        if (proxy != null)
+        {
+            builder.setProxy(proxy);
+        }
+        return builder.build();
+    }
+
+    private static Proxy getProxy(final String proxy)
+    {
+        if (proxy == null)
+        {
+            return null;
+        }
+        final String httpsProxy = proxy.replace("http://", "").replace("https://", "");
+        final String[] tokens = httpsProxy.split(":");
+        final String host = tokens[0];
+        final int port = Integer.parseInt(tokens[1]);
+        return new Proxy(Proxy.TYPE_HTTPS, host, port);
     }
 
     private static RemoteRepository newLocalRepository()
