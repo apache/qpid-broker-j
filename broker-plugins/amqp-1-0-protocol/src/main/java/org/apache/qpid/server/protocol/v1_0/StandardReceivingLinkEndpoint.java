@@ -39,10 +39,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.logging.messages.SenderMessages;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.DestinationAddress;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Producer;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.plugin.MessageFormat;
@@ -285,6 +289,24 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                             if (_producer != null)
                             {
                                 _producer.registerMessageDelivered(serverMessage.getSizeIncludingHeader());
+                                if (Producer.DeliveryType.DELAYED_DELIVERY.equals(_producer.getDeliveryType()))
+                                {
+                                    final String to = serverMessage.getTo();
+                                    if (!Objects.equals(to, _producer.getDestination()))
+                                    {
+                                        final MessageDestination messageDestination = getAddressSpace()
+                                                .getAttainedMessageDestination(serverMessage.getTo(), false);
+                                        if (messageDestination != null)
+                                        {
+                                            final Producer.DestinationType destinationType =
+                                                    messageDestination instanceof Exchange
+                                                            ? Producer.DestinationType.EXCHANGE
+                                                            : Producer.DestinationType.QUEUE;
+                                            _producer.setDestinationType(destinationType);
+                                        }
+                                        _producer.setDestination(to);
+                                    }
+                                }
                             }
                         }
                         catch (UnroutableMessageException e)
@@ -497,19 +519,37 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
     public void setDestination(final ReceivingDestination receivingDestination)
     {
-        if(_receivingDestination != receivingDestination)
+        if (_receivingDestination != receivingDestination)
         {
-            if (_receivingDestination != null && _receivingDestination.getMessageDestination() != null)
+            if (_receivingDestination != null)
             {
                 getSession().removeProducer(_publishingLink);
+                if (_receivingDestination.getMessageDestination() != null)
+                {
+                    _receivingDestination.getMessageDestination().linkRemoved(_messageSender, _publishingLink);
+                }
+                else
+                {
+                    final LogMessage logMessage = SenderMessages.CLOSE(_publishingLink.getName(), _producer.getDeliveryType() +
+                            ":" + _producer.getDestinationType() + ":" + _producer.getDestination());
+                    getSession().getEventLogger().message(logMessage);
+                }
                 _producer = null;
-                _receivingDestination.getMessageDestination().linkRemoved(_messageSender, _publishingLink);
             }
             _receivingDestination = receivingDestination;
-            if (receivingDestination != null && receivingDestination.getMessageDestination() != null)
+            if (receivingDestination != null)
             {
                 _producer = getSession().addProducer(_publishingLink, receivingDestination.getMessageDestination());
-                receivingDestination.getMessageDestination().linkAdded(_messageSender, _publishingLink);
+                if (receivingDestination.getMessageDestination() != null)
+                {
+                    receivingDestination.getMessageDestination().linkAdded(_messageSender, _publishingLink);
+                }
+                else
+                {
+                    final String deliveryType = String.valueOf(_producer.getDeliveryType());
+                    final LogMessage logMessage = SenderMessages.CREATE(_publishingLink.getName(), deliveryType);
+                    getSession().getEventLogger().message(logMessage);
+                }
             }
         }
     }
@@ -518,10 +558,19 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
     public void destroy()
     {
         super.destroy();
-        if (_receivingDestination != null && _receivingDestination.getMessageDestination() != null)
+        if (_receivingDestination != null)
         {
             getSession().removeProducer(_publishingLink);
-            _receivingDestination.getMessageDestination().linkRemoved(_messageSender, _publishingLink);
+            if (_receivingDestination.getMessageDestination() != null)
+            {
+                _receivingDestination.getMessageDestination().linkRemoved(_messageSender, _publishingLink);
+            }
+            else
+            {
+                final LogMessage logMessage = SenderMessages.CLOSE(_publishingLink.getName(), _producer.getDeliveryType() +
+                        ":" + _producer.getDestinationType() + ":" + _producer.getDestination());
+                getSession().getEventLogger().message(logMessage);
+            }
             _receivingDestination = null;
         }
     }

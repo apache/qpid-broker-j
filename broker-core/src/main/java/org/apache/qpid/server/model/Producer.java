@@ -25,6 +25,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 @ManagedObject(creatable = false, amqpName = "org.apache.qpid.Producer")
 public interface Producer<X extends Producer<X>> extends ConfiguredObject<X>
 {
+    enum DeliveryType { DELAYED_DELIVERY, STANDARD_DELIVERY }
+
     enum DestinationType { EXCHANGE, QUEUE }
 
     void registerMessageDelivered(long messageSize);
@@ -44,8 +46,15 @@ public interface Producer<X extends Producer<X>> extends ConfiguredObject<X>
     @DerivedAttribute(description = "Destination name")
     String getDestination();
 
+    void setDestination(String destination);
+
+    @DerivedAttribute(description = "DeliveryType type (standard or delayed)")
+    DeliveryType getDeliveryType();
+
     @DerivedAttribute(description = "Destination type (exchange or queue)")
     DestinationType getDestinationType();
+
+    void setDestinationType(DestinationType destinationType);
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, resettable = true)
     int getMessagesOut();
