@@ -27,6 +27,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
@@ -39,7 +41,7 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 public class MimeContentConverterRegistry
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(MimeContentConverterRegistry.class);
-
+    private static final String SEQUENCED_MAP = "java.util.SequencedMap";
     private static final Map<String, MimeContentToObjectConverter> _mimeContentToObjectConverters;
     private static final Multimap<Class, ObjectToMimeContentConverter> _classToMimeContentConverters;
 
@@ -105,7 +107,10 @@ public class MimeContentConverterRegistry
         ObjectToMimeContentConverter converter = null;
         if (object != null)
         {
-            final List<Class<?>> classes = new ArrayList<>(Arrays.asList(object.getClass().getInterfaces()));
+            final List<Class<?>> classes = Stream.of(object.getClass().getInterfaces())
+                    // Java 21 compatibility fix
+                    .flatMap(anInterface -> SEQUENCED_MAP.equals(anInterface.getName()) ? Stream.of(anInterface.getInterfaces()) : Stream.of(anInterface))
+                    .collect(Collectors.toList());
             classes.add(object.getClass());
             for (Class<?> i : classes)
             {
