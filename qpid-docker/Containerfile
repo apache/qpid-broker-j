@@ -1,0 +1,79 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+ARG OS_NAME=alpine
+
+#
+# Builder images
+#
+
+# Alpine
+FROM docker.io/library/eclipse-temurin:17-jre-alpine AS builder-alpine
+RUN adduser -u 1001 -G root qpid --disabled-password
+
+# Ubuntu
+FROM docker.io/library/eclipse-temurin:17-jre AS builder-ubuntu
+RUN useradd -u 1001 -G root qpid
+
+#
+# Final image
+#
+FROM builder-${OS_NAME}
+
+ARG BROKER_VERSION="unknown"
+
+# Labels
+LABEL description="Apache Qpid Broker-J ${BROKER_VERSION}"
+LABEL io.k8s.display-name="qpid-broker-j ${BROKER_VERSION}"
+LABEL io.k8s.description="Apache Qpid Broker-J ${BROKER_VERSION} using BDB as a message storage"
+LABEL maintainer="Apache Qpid Team, users@qpid.apache.org"
+LABEL name="Apache Qpid Broker-J"
+LABEL summary="Apache Qpid Broker-J ${BROKER_VERSION} using BDB as a message storage"
+LABEL version="${BROKER_VERSION}"
+LABEL url="https://qpid.apache.org/components/broker-j/index.html"
+
+# Java environment variables
+ENV JAVA_GC="-XX:+UseG1GC"
+ENV JAVA_MEM="-Xmx300m -XX:MaxDirectMemorySize=200m"
+ENV JAVA_OPTS=""
+
+# Create work folder and subfolders
+RUN mkdir -p /qpid-broker-j/etc && \
+    mkdir -p /qpid-broker-j/work && \
+    chmod -R 770 /qpid-broker-j && \
+    chown -R 1001:root /qpid-broker-j
+
+# Declare volume
+VOLUME ["/qpid-broker-j/work"]
+
+# Copy jar files
+COPY --chown=1001:root --chmod=770 ./lib /qpid-broker-j/lib
+
+# Copy configuration files
+COPY --chown=1001:root --chmod=660 broker.acl /qpid-broker-j/work
+COPY --chown=1001:root --chmod=660 config.json /qpid-broker-j/work
+COPY --chown=1001:root --chmod=660 default.json /qpid-broker-j/work/default.json
+COPY --chown=1001:root --chmod=660 preferences.json /qpid-broker-j/work
+COPY --chown=1001:root --chmod=660 userPreferences.json /qpid-broker-j/work
+
+WORKDIR /qpid-broker-j
+
+EXPOSE 5672 8080
+
+USER 1001:root
+
+ENTRYPOINT java -server $JAVA_GC $JAVA_MEM $JAVA_OPTS -DQPID_HOME=/qpid-broker-j -DQPID_WORK=/qpid-broker-j/work -cp "/qpid-broker-j/lib/*" org.apache.qpid.server.Main

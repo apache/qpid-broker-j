@@ -62,7 +62,11 @@ public class FileHelper
 
         if (permissions != null)
         {
-            Files.setPosixFilePermissions(backupFile, permissions);
+            final Set<PosixFilePermission> backupPermissions = Files.getPosixFilePermissions(backupFile);
+            if (!backupPermissions.equals(permissions))
+            {
+                Files.setPosixFilePermissions(backupFile, permissions);
+            }
         }
 
         atomicFileMoveOrReplace(tmpFile, targetFile);

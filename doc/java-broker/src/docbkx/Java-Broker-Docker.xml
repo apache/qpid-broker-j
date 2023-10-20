@@ -1,0 +1,141 @@
+<?xml version="1.0"?>
+<!--
+
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+
+-->
+
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Docker">
+    <title>Docker Images</title>
+
+    <section xml:id="Java-Broker-Docker-Docker-Image">
+
+        <title>Docker Image</title>
+
+        <para>
+            By default broker images is built with BDB message storage.
+        </para>
+
+    </section>
+
+    <section xml:id="Java-Broker-Docker-Running-The-Container">
+
+        <title>Running the Container</title>
+
+        <section xml:id="Java-Broker-Docker-Container-Start">
+
+            <title>Container Start</title>
+
+            <para>
+                Before starting the container a volume should be created:
+            </para>
+
+            <para>
+                <programlisting>
+                    docker volume create --driver local --opt device=&lt;PATH_TO_FOLDER> --opt type=none --opt o=bind qpid_volume
+                </programlisting>
+            </para>
+
+            <para>
+                Then container using created volume can be started:
+            </para>
+
+            <para>
+                <programlisting>
+                    docker run -d -p 5672:5672 -p 8080:8080 -v qpid_volume:/qpid-broker-j/work --name qpid &lt;IMAGE_NAME>
+                </programlisting>
+            </para>
+
+            <para>
+                or
+            </para>
+
+            <para>
+                <programlisting>
+                    podman run -d -p 5672:5672 -p 8080:8080 -v qpid_volume:/qpid-broker-j/work:Z --name qpid &lt;IMAGE_NAME>
+                </programlisting>
+            </para>
+
+            <para>
+                There are two ports exposed: 5672 for AMQP connections and 8080 for HTTP connections.
+            </para>
+
+            <para>
+                There are following environment variables available when running the container:
+            </para>
+
+            <table>
+                <title>Environment Variables</title>
+                <tgroup cols="2">
+                    <colspec colnum="1" colname="variable" colwidth="1*"/>
+                    <colspec colnum="2" colname="description" colwidth="1*"/>
+                    <thead>
+                        <row>
+                            <entry>Environment Variable</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>JAVA_GC</entry>
+                            <entry>JVM Garbage Collector parameters, default value "-XX:+UseG1GC"</entry>
+                        </row>
+                        <row>
+                            <entry>JAVA_MEM</entry>
+                            <entry>JVM memory parameters, default value "-Xmx300m -XX:MaxDirectMemorySize=200m"</entry>
+                        </row>
+                        <row>
+                            <entry>JAVA_OPTS</entry>
+                            <entry>Further JVM parameters, default value is an empty string</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+
+        </section>
+
+    </section>
+
+    <section xml:id="Java-Broker-Docker-Broker-Users">
+
+        <title>Broker Users</title>
+
+        <para>
+            Container has two preconfigured broker users:
+        </para>
+
+        <para>
+            <itemizedlist>
+                <listitem><para>admin (password 'admin')</para></listitem>
+                <listitem><para>guest (password 'guest')</para></listitem>
+            </itemizedlist>
+        </para>
+
+        <para>
+            User 'admin' has read and write access to all broker objects. User 'guest' has read-only access to all broker
+            objects, can not send or consume messages.
+        </para>
+
+        <para>
+            Further broker users as well as other broker objects (queues, exchanges, keystores, truststore, ports etc.)
+            can be created via HTTP management interface.
+        </para>
+
+    </section>
+
+</chapter>

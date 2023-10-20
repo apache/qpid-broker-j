@@ -42,4 +42,5 @@
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Appendix-Miscellaneous.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Appendix-Queue-Declaration-Arguments.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Appendix-BDB-HA-Initial-Configuration.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Docker.xml"/>
 </book>
