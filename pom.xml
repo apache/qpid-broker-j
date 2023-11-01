@@ -159,7 +159,7 @@
     <maven-surefire-plugin-version>3.1.2</maven-surefire-plugin-version>
     <maven-surefire-report-plugin-version>3.1.2</maven-surefire-report-plugin-version>
     <h2.version>2.2.220</h2.version>
-    <apache-directory-version>2.0.0.AM25</apache-directory-version>
+    <apache-directory-version>2.0.0.AM27</apache-directory-version>
     <kerby-version>2.0.3</kerby-version>
     <bcprov-version>1.76</bcprov-version>
     <bcpkix-version>1.76</bcpkix-version>
@@ -864,12 +864,6 @@
         <artifactId>apacheds-core-annotations</artifactId>
         <version>${apache-directory-version}</version>
         <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
@@ -888,28 +882,7 @@
 
       <dependency>
         <groupId>org.apache.directory.server</groupId>
-        <artifactId>apacheds-kerberos-codec</artifactId>
-        <version>${apache-directory-version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.directory.server</groupId>
-        <artifactId>apacheds-protocol-kerberos</artifactId>
-        <version>${apache-directory-version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.directory.server</groupId>
         <artifactId>apacheds-protocol-ldap</artifactId>
-        <version>${apache-directory-version}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.apache.directory.server</groupId>
-        <artifactId>apacheds-protocol-shared</artifactId>
         <version>${apache-directory-version}</version>
         <scope>test</scope>
       </dependency>
@@ -919,12 +892,6 @@
         <artifactId>apacheds-server-annotations</artifactId>
         <version>${apache-directory-version}</version>
         <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
@@ -939,12 +906,6 @@
         <artifactId>apacheds-test-framework</artifactId>
         <version>${apache-directory-version}</version>
         <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <!-- kerby test dependency -->
