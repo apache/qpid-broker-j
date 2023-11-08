@@ -48,6 +48,7 @@ import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5Negotiator;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
 import org.apache.qpid.tests.http.HttpTestBase;
 
+// TestInstance.Lifecycle.PER_METHOD fixes rare race conditions
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class SaslTest extends HttpTestBase
 {
