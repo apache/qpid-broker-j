@@ -16,8 +16,4 @@
 # under the License.
 
 # account 'admin' - enabled all actions
-ACL ALLOW-LOG admin ALL ALL
-
-# account 'guest' - enabled read-only access, cannot read/send messages
-ACL DENY-LOG guest ACCESS VIRTUALHOST
-ACL ALLOW-LOG guest ACCESS ALL
+ACL ALLOW-LOG QPID_ADMIN_USER ALL ALL

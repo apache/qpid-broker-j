@@ -29,8 +29,8 @@ Usage: $MY_NAME [OPTION]...
 
  options:
 
-  --local-dist-path  Path to the local Apache Qpid Broker-J distribution
-  --qpid-version     Apache Qpid Broker-J version
+  --release          Apache Qpid Broker-J release version to build with
+  --local-dist-path  Path to the local Apache Qpid Broker-J distribution to build with
   --help, -h, -?     Print this help and exit
 
 END_OF_HELP
@@ -41,10 +41,10 @@ parse_parameters()
   while [ $# -gt 0 ]; do
     case $1 in
       --local-dist-path)
-          from_local=true
+          from_local_dist=true
           local_dist_path=$2
           shift;;
-      --qpid-version)
+      --release)
           from_release=true
           qpid_version=$2
           shift;;
@@ -125,7 +125,7 @@ install()
 
     fi
 
-  elif [ -n "${from_local}" ]; then
+  elif [ -n "${from_local_dist}" ]; then
 
     qpid_dist_file_name=$(basename ${local_dist_path})
     qpid_version=$(echo "$qpid_dist_file_name" | sed -e 's/apache-qpid-broker-j-\(.*\)-bin.tar.gz/\1/')
@@ -151,6 +151,7 @@ install()
   cp ./*.json "$qpid_dist_dir/${qpid_version}/docker/"
   cp ./Containerfile "$qpid_dist_dir/${qpid_version}/docker/"
   cp -r $qpid_dist_dir/${qpid_version}/lib "$qpid_dist_dir/${qpid_version}/docker/"
+  cp ./entrypoint.sh "$qpid_dist_dir/${qpid_version}/docker/"
 }
 
 print_instruction()
@@ -161,11 +162,16 @@ Well done! Now you can continue with building the Docker image:
 
   # Go to $qpid_dist_dir/${qpid_version}/docker/
   $ cd $qpid_dist_dir/${qpid_version}/docker/
-  $ docker build -f ./Containerfile -t qpid-alpine .
 
-Note: -t qpid-alpine is just a tag name for the purpose of this guide
+  # For Ubuntu with JRE 17
+  $ docker build -f ./Containerfile -t qpid-ubuntu .
 
-For more info see readme.md
+  # For Alpine with JRE 17
+  $ docker build -f ./Containerfile --build-arg OS_NAME=alpine -t qpid-alpine .
+
+Note: -t qpid-ubuntu and -t qpid-alpine are just a tag names for the purpose of this guide
+
+For more info see README.md
 
 HERE
   exit 0

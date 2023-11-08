@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-ARG OS_NAME=alpine
+ARG OS_NAME=ubuntu
 
 #
 # Builder images
@@ -39,10 +39,10 @@ ARG BROKER_VERSION="unknown"
 # Labels
 LABEL description="Apache Qpid Broker-J ${BROKER_VERSION}"
 LABEL io.k8s.display-name="qpid-broker-j ${BROKER_VERSION}"
-LABEL io.k8s.description="Apache Qpid Broker-J ${BROKER_VERSION} using BDB as a message storage"
+LABEL io.k8s.description="Apache Qpid Broker-J ${BROKER_VERSION}"
 LABEL maintainer="Apache Qpid Team, users@qpid.apache.org"
 LABEL name="Apache Qpid Broker-J"
-LABEL summary="Apache Qpid Broker-J ${BROKER_VERSION} using BDB as a message storage"
+LABEL summary="Apache Qpid Broker-J ${BROKER_VERSION}"
 LABEL version="${BROKER_VERSION}"
 LABEL url="https://qpid.apache.org/components/broker-j/index.html"
 
@@ -51,9 +51,15 @@ ENV JAVA_GC="-XX:+UseG1GC"
 ENV JAVA_MEM="-Xmx300m -XX:MaxDirectMemorySize=200m"
 ENV JAVA_OPTS=""
 
+# Broker-J admin user credentials
+ENV QPID_ADMIN_USER="admin"
+ENV QPID_ADMIN_PASSWORD="admin"
+
 # Create work folder and subfolders
 RUN mkdir -p /qpid-broker-j/etc && \
     mkdir -p /qpid-broker-j/work && \
+    mkdir -p /qpid-broker-j/work-init && \
+    mkdir -p /qpid-broker-j/work-override && \
     chmod -R 770 /qpid-broker-j && \
     chown -R 1001:root /qpid-broker-j
 
@@ -63,12 +69,15 @@ VOLUME ["/qpid-broker-j/work"]
 # Copy jar files
 COPY --chown=1001:root --chmod=770 ./lib /qpid-broker-j/lib
 
+# Copy entrypoint script
+COPY --chown=1001:root --chmod=770 entrypoint.sh /qpid-broker-j
+
 # Copy configuration files
-COPY --chown=1001:root --chmod=660 broker.acl /qpid-broker-j/work
-COPY --chown=1001:root --chmod=660 config.json /qpid-broker-j/work
-COPY --chown=1001:root --chmod=660 default.json /qpid-broker-j/work/default.json
-COPY --chown=1001:root --chmod=660 preferences.json /qpid-broker-j/work
-COPY --chown=1001:root --chmod=660 userPreferences.json /qpid-broker-j/work
+COPY --chown=1001:root --chmod=660 broker.acl /qpid-broker-j/work-init
+COPY --chown=1001:root --chmod=660 config.json /qpid-broker-j/work-init
+COPY --chown=1001:root --chmod=660 default.json /qpid-broker-j/work-init
+COPY --chown=1001:root --chmod=660 preferences.json /qpid-broker-j/work-init
+COPY --chown=1001:root --chmod=660 userPreferences.json /qpid-broker-j/work-init
 
 WORKDIR /qpid-broker-j
 
@@ -76,4 +85,4 @@ EXPOSE 5672 8080
 
 USER 1001:root
 
-ENTRYPOINT java -server $JAVA_GC $JAVA_MEM $JAVA_OPTS -DQPID_HOME=/qpid-broker-j -DQPID_WORK=/qpid-broker-j/work -cp "/qpid-broker-j/lib/*" org.apache.qpid.server.Main
+ENTRYPOINT exec /qpid-broker-j/entrypoint.sh

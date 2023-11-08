@@ -23,12 +23,68 @@
 <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Docker">
     <title>Docker Images</title>
 
-    <section xml:id="Java-Broker-Docker-Docker-Image">
+    <section xml:id="Java-Broker-Docker-Building-Image">
 
-        <title>Docker Image</title>
+        <title>Building Container Image</title>
 
         <para>
-            By default broker images is built with BDB message storage.
+            To use an official Apache release in your image run the following command from the qpid-docker directory where
+            &lt;QPID_RELEASE_VERSION> is the release version you wish to use (e.g. 9.1.0):
+        </para>
+
+        <para>
+            <programlisting>
+                cd qpid-docker
+            </programlisting>
+        </para>
+
+        <para>
+            <programlisting>
+                docker-build.sh --release &lt;QPID_RELEASE_VERSION>
+            </programlisting>
+        </para>
+
+        <para>
+            This will download the Qpid Broker-J release and copy all the files necessary to build the pre-configured
+            Docker image and provide you with additional instructions. Follow these instructions to finish building
+            the image you want based on the provided Docker file or even one of your own.
+        </para>
+
+        <para>
+            If you would rather prefer to build the docker image from local Broker-J distribution, build the parent
+            project using the command
+        </para>
+
+        <para>
+            <programlisting>
+                mvn clean install -DskipTests=true
+            </programlisting>
+        </para>
+
+        <para>
+            Navigate to the module 'qpid-docker':
+        </para>
+
+        <para>
+            <programlisting>
+                cd qpid-docker
+            </programlisting>
+        </para>
+
+        <para>
+            Execute the command:
+        </para>
+
+        <para>
+            <programlisting>
+                docker-build.sh --local-dist-path &lt;PATH_TO_LOCAL_QPID_DISTRIBUTION>
+            </programlisting>
+        </para>
+
+        <para>
+            This will copy all the files necessary to build the pre-configured Docker image and provide you with additional
+            instructions. Follow these instructions to finish building the image you want based on one of the provided
+            Docker file or even one of your own.
         </para>
 
     </section>
@@ -42,22 +98,12 @@
             <title>Container Start</title>
 
             <para>
-                Before starting the container a volume should be created:
+                Container can be started using following command:
             </para>
 
             <para>
                 <programlisting>
-                    docker volume create --driver local --opt device=&lt;PATH_TO_FOLDER> --opt type=none --opt o=bind qpid_volume
-                </programlisting>
-            </para>
-
-            <para>
-                Then container using created volume can be started:
-            </para>
-
-            <para>
-                <programlisting>
-                    docker run -d -p 5672:5672 -p 8080:8080 -v qpid_volume:/qpid-broker-j/work --name qpid &lt;IMAGE_NAME>
+                    docker run -d -p 5672:5672 -p 8080:8080 --name qpid &lt;IMAGE_NAME>
                 </programlisting>
             </para>
 
@@ -109,6 +155,50 @@
 
         </section>
 
+        <section xml:id="Java-Broker-Docker-Container-Volume">
+
+            <title>Container Volume</title>
+
+            <para>
+                The image will use the directory /qpid-broker-j/work to hold the configuration and the data of the
+                running broker. To persist the broker configuration and the data outside the container, start container
+                with the volume mapping:
+            </para>
+
+            <para>
+                <programlisting>
+                    docker run -d -p 5672:5672 -p 8080:8080 -v &lt;BROKER_DIRECTOR_ON_HOST>:/qpid-broker-j/work --name qpid &lt;IMAGE_NAME>
+                </programlisting>
+            </para>
+
+            <para>
+                or
+            </para>
+
+            <para>
+                <programlisting>
+                    podman run -d -p 5672:5672 -p 8080:8080 -v &lt;BROKER_DIRECTOR_ON_HOST>:/qpid-broker-j/work:Z --name qpid &lt;IMAGE_NAME>
+                </programlisting>
+            </para>
+
+        </section>
+
+    <section xml:id="Java-Broker-Docker-Container-Stop">
+
+        <title>Stopping the Container</title>
+
+        <para>
+            Running container can be stopped using following command:
+        </para>
+
+        <para>
+            <programlisting>
+                docker stop &lt;CONTAINER_NAME>
+            </programlisting>
+        </para>
+
+    </section>
+
     </section>
 
     <section xml:id="Java-Broker-Docker-Broker-Users">
@@ -116,25 +206,265 @@
         <title>Broker Users</title>
 
         <para>
-            Container has two preconfigured broker users:
+            Default configuration provides a preconfigured broker user, having read and write access to all broker objects:
         </para>
 
         <para>
             <itemizedlist>
-                <listitem><para>admin (password 'admin')</para></listitem>
-                <listitem><para>guest (password 'guest')</para></listitem>
+                <listitem><para>admin (default password 'admin')</para></listitem>
             </itemizedlist>
         </para>
 
         <para>
-            User 'admin' has read and write access to all broker objects. User 'guest' has read-only access to all broker
-            objects, can not send or consume messages.
+            Username of the 'admin' user can be overridden be providing the variable QPID_ADMIN_USER on start, and the default
+            password of the 'admin' user can be overridden be providing the variable QPID_ADMIN_PASSWORD on start:
+        </para>
+
+        <para>
+            <programlisting>
+                docker run -d -p 5672:5672 -p 8080:8080 -v qpid_volume:/qpid-broker-j/work -e QPID_ADMIN_USER=myuser -e QPID_ADMIN_PASSWORD=mypassword --name qpid &lt;IMAGE_NAME>
+            </programlisting>
         </para>
 
         <para>
             Further broker users as well as other broker objects (queues, exchanges, keystores, truststore, ports etc.)
-            can be created via HTTP management interface.
+            can be created via HTTP management interface. Description of the broker REST API can be found in broker book
+            (<link linkend="Java-Broker-Management-Channel-REST-API">chapter 6.3</link>).
         </para>
+
+    </section>
+
+    <section xml:id="Java-Broker-Docker-Broker-Customization">
+
+        <title>Broker Customization</title>
+
+        <para>
+            To customize broker before building the container image, its configuration files may be edited to start
+            broker with queues, exchanges, users or other objects.
+        </para>
+
+        <para>
+            The file config.json contains definitions of the broker objects and references a file containing definitions
+            of virtualhost objects (exchanges and queues).
+        </para>
+
+        <para>
+            It may be helpful first to create broker objects needed via broker web GUI or via REST API, and then
+            investigate the configuration files and copy the appropriate definitions to the configuration files used
+            for container image creation.
+        </para>
+
+        <para>
+            An example of the default initial configuration JSON file is provided in broker book
+            (<link linkend="Java-Broker-Initial-Configuration">chapter 5.7</link>).
+        </para>
+
+        <section xml:id="Java-Broker-Docker-Broker-Customization-Exchanges">
+
+            <title>Exchanges</title>
+
+            <para>
+                To create exchanges a JSON element "exchanges" should be created containing an array of single
+                exchange definitions:
+            </para>
+
+            <para>
+                <programlisting>
+    "exchanges" : [ {
+        "name" : "amq.direct",
+        "type" : "direct"
+      }, {
+        "name" : "amq.fanout",
+        "type" : "fanout"
+      }, {
+        "name" : "amq.match",
+        "type" : "headers"
+      }, {
+        "name" : "amq.topic",
+        "type" : "topic"
+      }, {
+        "name" : "request.QUEUE1",
+        "type" : "topic",
+        "durable" : true,
+        "durableBindings" : [ {
+        "arguments" : { },
+        "destination" : "QUEUE1",
+        "bindingKey" : "#"
+      } ],
+      "unroutableMessageBehaviour" : "REJECT"
+    } ]
+                </programlisting>
+            </para>
+
+            <para>
+                Information about exchanges, their types and properties can be found in broker book
+                (<link linkend="Java-Broker-Concepts-Exchanges">chapter 4.6</link>).
+            </para>
+
+            <para>
+                Please note that each virtualhost pre-declares several exchanges, described in the broker book
+                (<link linkend="Java-Broker-Concepts-Exchanges-Predeclared">chapter 4.6.1</link>).
+            </para>
+
+        </section>
+
+        <section xml:id="Java-Broker-Docker-Broker-Customization-Queues">
+
+            <title>Queues</title>
+
+            <para>
+                To create queue a JSON element "queues" should be created containing an array of single queue definitions:
+            </para>
+
+            <para>
+                <programlisting>
+    "queues" : [ {
+        "name" : "QUEUE1",
+        "type" : "standard",
+        "durable" : true,
+        "maximumQueueDepthBytes" : 6144000,
+        "maximumQueueDepthMessages" : 6000,
+        "messageDurability" : "ALWAYS",
+        "overflowPolicy" : "REJECT"
+      }, {
+        "name" : "QUEUE2",
+        "type" : "standard",
+        "durable" : true,
+        "maximumQueueDepthBytes" : 6144000,
+        "maximumQueueDepthMessages" : 6000,
+        "messageDurability" : "ALWAYS",
+        "overflowPolicy" : "REJECT"
+      } ]
+                </programlisting>
+            </para>
+
+            <para>
+                Information about queues, their types and properties can be found in broker book
+                (<link linkend="Java-Broker-Concepts-Queues">chapter 4.7</link>).
+            </para>
+
+        </section>
+
+        <section xml:id="Java-Broker-Docker-Broker-Customization-Users">
+
+            <title>Users</title>
+
+            <para>
+                Users can be defined in an authentication provider. Authentication providers are defined on broker
+                level (file config.json).
+            </para>
+
+            <para>
+                Information about authentication providers, their types and properties can be found in broker book
+                (<link linkend="Java-Broker-Security-Authentication-Providers">chapter 8.1</link>).
+            </para>
+
+            <para>
+                Examples for most commonly used authentication providers can be found below.
+            </para>
+
+            <section xml:id="Java-Broker-Docker-Broker-Customization-Users-Anonymous">
+
+                <title>Anonymous Authentication Provider</title>
+
+                <para>
+                    <programlisting>
+    "authenticationproviders" : [ {
+        "name" : "anon",
+        "type" : "Anonymous"
+    } ]
+                    </programlisting>
+                </para>
+
+                <para>
+                    For additional details see broker book
+                    (<link linkend="Java-Broker-Security-Anonymous-Provider">chapter 8.1.5</link>).
+                </para>
+
+            </section>
+
+            <section xml:id="Java-Broker-Docker-Broker-Customization-Users-Plain">
+
+                <title>Plain Authentication Provider</title>
+
+                <para>
+                    <programlisting>
+    "authenticationproviders" : [{
+        "name" : "plain",
+        "type" : "Plain",
+        "secureOnlyMechanisms" : [],
+        "users" : [ {
+            "name" : "admin",
+            "type" : "managed",
+            "password" : "&lt;PASSWORD>"
+        } ]
+    } ]
+                    </programlisting>
+                </para>
+
+                <para>
+                    For additional details see broker book
+                    (<link linkend="Java-Broker-Security-Plain-Provider">chapter 8.1.7</link>).
+                </para>
+
+            </section>
+
+            <section xml:id="Java-Broker-Docker-Broker-Customization-Users-ACL">
+
+                <title>ACL Rules</title>
+
+                <para>
+                    The ACL rules for users are defined in file broker.acl following the syntax:
+                </para>
+
+                <para>
+                    <programlisting>
+                        ACL {permission} {&lt;group-name>|&lt;user-name>|ALL} {action|ALL} [object|ALL] [property=&lt;property-values>]
+                    </programlisting>
+                </para>
+
+                <para>
+                    The predefined broker.acl file contains permissions for the 'admin' user:
+                </para>
+
+                <para>
+                    <programlisting>
+    # account 'admin' - enabled all actions
+    ACL ALLOW-LOG admin ALL ALL
+                    </programlisting>
+                </para>
+
+                <para>
+                    For additional details see broker book
+                    (<link linkend="Java-Broker-Security-AccessControlProviders-ACLRules">chapter 8.3.2</link>).
+                </para>
+
+            </section>
+
+        </section>
+
+    <section xml:id="Java-Broker-Docker-Broker-Customization-Override">
+
+        <title>Overriding Broker Configuration</title>
+
+        <para>
+            Customized configuration for the Broker-J instance can be used by replacing the files residing in the work
+            folder with the custom ones, e.g. config.json or default.json. Put the replacement files inside a folder
+            and map it as a volume to:
+        </para>
+
+        <para>
+            <programlisting>
+    docker run -d -p 5672:5672 -p 8080:8080 -v &lt;DIRECTORY_ON_HOST>:/qpid-broker-j/work-override:Z --name qpid &lt;IMAGE_NAME>
+            </programlisting>
+        </para>
+
+        <para>
+            The contents of work-override folder will be copied over to work folder first time after the instance creation so that
+            the broker will start with user-supplied configuration.
+        </para>
+
+    </section>
 
     </section>
 

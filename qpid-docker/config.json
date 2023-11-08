@@ -31,13 +31,9 @@
     "type" : "Plain",
     "secureOnlyMechanisms" : [],
     "users" : [ {
-      "name" : "admin",
+      "name" : "${QPID_ADMIN_USER}",
       "type" : "managed",
-      "password" : "admin"
-    }, {
-      "name" : "guest",
-      "type" : "managed",
-      "password" : "guest"
+      "password" : "${QPID_ADMIN_PASSWORD}"
     }]
   } ],
   "brokerloggers" : [ {

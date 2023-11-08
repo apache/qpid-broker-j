@@ -184,4 +184,3 @@ Sources are kept in a Git repository. Thus a git client is required.
     when a new one is announced.
 15. Update jenkins jobs if required.
 16. Docker images can be build and pushed to the container registry according to the qpid-docker [README.md](https://github.com/apache/qpid-broker-j/tree/main/qpid-docker#readme).
-16. Docker images can be build and pushed to the container registry according to the qpid-docker [README.md](https://github.com/apache/qpid-broker-j/tree/main/qpid-docker#readme).
