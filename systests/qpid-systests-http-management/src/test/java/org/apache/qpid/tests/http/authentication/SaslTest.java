@@ -40,6 +40,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import org.apache.qpid.server.security.auth.manager.ScramSHA1AuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
@@ -47,6 +48,8 @@ import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5Negotiator;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
 import org.apache.qpid.tests.http.HttpTestBase;
 
+// TestInstance.Lifecycle.PER_METHOD fixes rare race conditions
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class SaslTest extends HttpTestBase
 {
     private static final String SASL_SERVICE = "/service/sasl";

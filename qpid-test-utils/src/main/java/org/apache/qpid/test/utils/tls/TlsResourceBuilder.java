@@ -138,48 +138,35 @@ public class TlsResourceBuilder
                                                     final String dn,
                                                     final Instant from,
                                                     final Instant to,
-                                                    final AlternativeName... alternativeName)
+                                                    final AlternativeName... alternativeNames)
             throws CertificateException
     {
-        return createCertificate(keyPair,
-                                 ca,
-                                 dn,
-                                 new ValidityPeriod(from, to),
-                                 createKeyUsageExtension(),
-                                 createAlternateNamesExtension(alternativeName));
+        return createCertificate(keyPair, ca, dn, new ValidityPeriod(from, to), alternativeNames, createKeyUsageExtension());
     }
 
 
     public static X509Certificate createCertificateForClientAuthorization(final KeyPair keyPair,
                                                                           final KeyCertificatePair ca,
                                                                           final String dn,
-                                                                          final AlternativeName... alternativeName)
+                                                                          final AlternativeName... alternativeNames)
             throws CertificateException
     {
-        return createCertificate(keyPair,
-                                 ca,
-                                 dn,
-                                 createValidityPeriod(),
-                                 createExtendedUsageExtension(new ExtendedKeyUsage(new KeyPurposeId[]{KeyPurposeId.id_kp_clientAuth})),
-                                 createAuthorityKeyExtension(ca.getCertificate().getPublicKey()),
-                                 createSubjectKeyExtension(keyPair.getPublic()),
-                                 createAlternateNamesExtension(alternativeName));
+        return createCertificate(keyPair, ca, dn, createValidityPeriod(), alternativeNames,
+                createExtendedUsageExtension(new ExtendedKeyUsage(new KeyPurposeId[]{KeyPurposeId.id_kp_clientAuth})),
+                createAuthorityKeyExtension(ca.getCertificate().getPublicKey()),
+                createSubjectKeyExtension(keyPair.getPublic()));
     }
 
     public static X509Certificate createCertificateForServerAuthorization(final KeyPair keyPair,
                                                                           final KeyCertificatePair ca,
                                                                           final String dn,
-                                                                          final AlternativeName... alternativeName)
+                                                                          final AlternativeName... alternativeNames)
             throws CertificateException
     {
-        return createCertificate(keyPair,
-                                 ca,
-                                 dn,
-                                 createValidityPeriod(),
-                                 createExtendedUsageExtension(new ExtendedKeyUsage(new KeyPurposeId[]{KeyPurposeId.id_kp_serverAuth})),
-                                 createAuthorityKeyExtension(ca.getCertificate().getPublicKey()),
-                                 createSubjectKeyExtension(keyPair.getPublic()),
-                                 createAlternateNamesExtension(alternativeName));
+        return createCertificate(keyPair, ca, dn, createValidityPeriod(), alternativeNames,
+                createExtendedUsageExtension(new ExtendedKeyUsage(new KeyPurposeId[]{KeyPurposeId.id_kp_serverAuth})),
+                createAuthorityKeyExtension(ca.getCertificate().getPublicKey()),
+                createSubjectKeyExtension(keyPair.getPublic()));
     }
 
     public static X509Certificate createCertificateWithCrlDistributionPoint(final KeyPair keyPair,
@@ -192,6 +179,7 @@ public class TlsResourceBuilder
                                  caPair,
                                  dn,
                                  createValidityPeriod(),
+                                 null,
                                  createKeyUsageExtension(),
                                  createDistributionPointExtension(crlUri));
     }
@@ -200,6 +188,7 @@ public class TlsResourceBuilder
                                                      final KeyCertificatePair ca,
                                                      final String dn,
                                                      final ValidityPeriod validityPeriod,
+                                                     final AlternativeName[] alternativeNames,
                                                      final Extension... extensions)
             throws CertificateException
     {
@@ -217,6 +206,10 @@ public class TlsResourceBuilder
             for (Extension e : extensions)
             {
                 builder.addExtension(e);
+            }
+            if (alternativeNames != null && alternativeNames.length > 0)
+            {
+                builder.addExtension(createAlternateNamesExtension(alternativeNames));
             }
             return buildX509Certificate(builder, ca.getPrivateKey());
         }
@@ -244,7 +237,10 @@ public class TlsResourceBuilder
             builder.addExtension(Extension.basicConstraints, false, new BasicConstraints(false));
             builder.addExtension(createKeyUsageExtension());
             builder.addExtension(createSubjectKeyExtension(keyPair.getPublic()));
-            builder.addExtension(createAlternateNamesExtension(alternativeName));
+            if (alternativeName != null && alternativeName.length > 0)
+            {
+                builder.addExtension(createAlternateNamesExtension(alternativeName));
+            }
             return buildX509Certificate(builder, keyPair.getPrivate());
         }
         catch (OperatorException | IOException e)
@@ -330,7 +326,6 @@ public class TlsResourceBuilder
                     new Date(validityPeriod.getTo().toEpochMilli()),
                     new X500Name(RFC4519Style.INSTANCE, dn),
                     keyPair.getPublic());
-            //builder.addExtension(Extension.keyUsage, false, new KeyUsage(KeyUsage.keyCertSign));
             builder.addExtension(Extension.basicConstraints, false, new BasicConstraints(true));
             builder.addExtension(createSubjectKeyExtension(keyPair.getPublic()));
             builder.addExtension(createAuthorityKeyExtension(rootCA.getCertificate().getPublicKey()));
@@ -382,15 +377,10 @@ public class TlsResourceBuilder
                                                      final KeyCertificatePair ca,
                                                      final String dn,
                                                      final ValidityPeriod validityPeriod,
-                                                     final AlternativeName... alternativeName)
+                                                     final AlternativeName... alternativeNames)
             throws CertificateException
     {
-        return createCertificate(keyPair,
-                                 ca,
-                                 dn,
-                                 validityPeriod,
-                                 createKeyUsageExtension(),
-                                 createAlternateNamesExtension(alternativeName));
+        return createCertificate(keyPair, ca, dn, validityPeriod, alternativeNames, createKeyUsageExtension());
     }
 
     private static KeyCertificatePair createSelfSigned(final String dn,

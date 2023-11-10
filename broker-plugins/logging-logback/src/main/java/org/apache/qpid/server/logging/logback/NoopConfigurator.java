@@ -30,6 +30,6 @@ public class NoopConfigurator extends ContextAwareBase implements Configurator
     public ExecutionStatus configure(LoggerContext loggerContext)
     {
         // no-op
-        return ExecutionStatus.DO_NOT_INVOKE_NEXT_IF_ANY;
+        return ExecutionStatus.NEUTRAL;
     }
 }
