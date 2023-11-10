@@ -34,15 +34,16 @@ import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
+import javax.security.auth.kerberos.KerberosKey;
 import javax.security.auth.kerberos.KerberosPrincipal;
 
 import org.apache.directory.api.ldap.model.constants.SupportedSaslMechanisms;
@@ -50,7 +51,6 @@ import org.apache.directory.api.ldap.model.entry.DefaultEntry;
 import org.apache.directory.api.ldap.model.entry.Entry;
 import org.apache.directory.api.ldap.model.exception.LdapException;
 import org.apache.directory.api.util.Strings;
-import org.apache.directory.server.annotations.CreateKdcServer;
 import org.apache.directory.server.annotations.CreateLdapServer;
 import org.apache.directory.server.annotations.CreateTransport;
 import org.apache.directory.server.annotations.SaslMechanism;
@@ -59,17 +59,19 @@ import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.api.DirectoryService;
 import org.apache.directory.server.core.kerberos.KeyDerivationInterceptor;
-import org.apache.directory.server.factory.ServerAnnotationProcessor;
-import org.apache.directory.server.kerberos.kdc.KdcServer;
-import org.apache.directory.server.kerberos.shared.crypto.encryption.KerberosKeyFactory;
-import org.apache.directory.server.kerberos.shared.keytab.Keytab;
-import org.apache.directory.server.kerberos.shared.keytab.KeytabEntry;
 import org.apache.directory.server.ldap.LdapServer;
 import org.apache.directory.server.ldap.handlers.sasl.gssapi.GssapiMechanismHandler;
 import org.apache.directory.server.ldap.handlers.sasl.plain.PlainMechanismHandler;
-import org.apache.directory.shared.kerberos.KerberosTime;
-import org.apache.directory.shared.kerberos.codec.types.EncryptionType;
-import org.apache.directory.shared.kerberos.components.EncryptionKey;
+import org.apache.kerby.kerberos.kerb.KrbException;
+import org.apache.kerby.kerberos.kerb.keytab.Keytab;
+import org.apache.kerby.kerberos.kerb.keytab.KeytabEntry;
+import org.apache.kerby.kerberos.kerb.server.KdcConfigKey;
+import org.apache.kerby.kerberos.kerb.server.SimpleKdcServer;
+import org.apache.kerby.kerberos.kerb.type.KerberosTime;
+import org.apache.kerby.kerberos.kerb.type.base.EncryptionKey;
+import org.apache.kerby.kerberos.kerb.type.base.EncryptionType;
+import org.apache.kerby.kerberos.kerb.type.base.PrincipalName;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -117,14 +119,6 @@ import org.apache.qpid.test.utils.UnitTestBase;
         @SaslMechanism(name = SupportedSaslMechanisms.GSSAPI, implClass = GssapiMechanismHandler.class)
     }
 )
-@CreateKdcServer(
-    transports =
-    {
-        @CreateTransport(protocol = "TCP", port = 0)
-    },
-    kdcPrincipal="krbtgt/QPID.ORG@QPID.ORG",
-    primaryRealm="QPID.ORG",
-    searchBaseDn = "ou=users,dc=qpid,dc=org")
 @ApplyLdifFiles("users.ldif")
 public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
 {
@@ -157,6 +151,7 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     public static final SystemPropertySetter SYSTEM_PROPERTY_SETTER = new SystemPropertySetter();
 
     private SimpleLDAPAuthenticationManager<?> _authenticationProvider;
+    private SimpleKdcServer kerbyServer;
 
     @BeforeEach
     public void setUp()
@@ -170,6 +165,32 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         if (_authenticationProvider != null)
         {
             _authenticationProvider.close();
+        }
+    }
+
+    @AfterAll
+    public void afterAll()
+    {
+        final Path targetDir = FileSystems.getDefault().getPath("target");
+        final File file = new File(targetDir.toFile(), "kerberos.keytab");
+        if (file.exists())
+        {
+            if (!file.delete())
+            {
+                throw new RuntimeException("Failed to delete keytab file:" + file.getAbsolutePath());
+            }
+        }
+        if (kerbyServer != null)
+        {
+            try
+            {
+                kerbyServer.stop();
+                kerbyServer = null;
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException("Failed to stop kerberos server", e);
+            }
         }
     }
 
@@ -364,11 +385,19 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     private void setUpKerberos() throws Exception
     {
         final LdapServer ldapServer = LDAP.getLdapServer();
-        final KdcServer kdcServer =
-                ServerAnnotationProcessor.getKdcServer(LDAP.getDirectoryService(), ldapServer.getPort() + 1);
-        kdcServer.getConfig().setPaEncTimestampRequired(false);
+        final int port = ldapServer.getPort() + 1;
 
-        final int port = kdcServer.getTransports()[0].getPort();
+        kerbyServer = new SimpleKdcServer();
+        kerbyServer.setKdcHost("localhost");
+        kerbyServer.setKdcRealm("QPID.ORG");
+        kerbyServer.setAllowTcp(true);
+        kerbyServer.setAllowUdp(false);
+        kerbyServer.setKdcTcpPort(port);
+        kerbyServer.setWorkDir(FileSystems.getDefault().getPath("target").toFile());
+        kerbyServer.getKdcConfig().setBoolean(KdcConfigKey.PA_ENC_TIMESTAMP_REQUIRED, false);
+        kerbyServer.init();
+        kerbyServer.start();
+
         final String krb5confPath = createKrb5Conf(port);
         SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.krb5.conf", krb5confPath);
         SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.krb5.realm", null);
@@ -378,13 +407,16 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
                 new KerberosPrincipal(LDAP_SERVICE_NAME + "/" + HOSTNAME + "@" + REALM,
                                       KerberosPrincipal.KRB_NT_SRV_HST);
         final String servicePrincipalName = servicePrincipal.getName();
-        ldapServer.setSaslHost(servicePrincipalName.substring(servicePrincipalName.indexOf("/") + 1,
-                                                              servicePrincipalName.indexOf("@")));
+        final String saslHost = servicePrincipalName.substring(servicePrincipalName.indexOf("/") + 1, servicePrincipalName.indexOf("@"));
+        ldapServer.setSaslHost(saslHost);
         ldapServer.setSaslPrincipal(servicePrincipalName);
+        ldapServer.setSaslRealms(List.of(REALM));
         ldapServer.setSearchBaseDn(USERS_DN);
 
+        final String pwd = randomUUID().toString();
         createPrincipal("KDC", "KDC", "krbtgt", randomUUID().toString(), "krbtgt/" + REALM + "@" + REALM);
-        createPrincipal("Service", "LDAP Service", "ldap", randomUUID().toString(), servicePrincipalName);
+        createPrincipal("Service", "LDAP Service", "ldap", pwd, servicePrincipalName);
+        createKerberosPrincipal(servicePrincipalName, pwd);
     }
 
     private void setUpJaas() throws Exception
@@ -445,22 +477,19 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     private void createPrincipal(final File keyTabFile, final String... principals) throws LdapException, IOException
     {
         final Keytab keytab = new Keytab();
-        final List<KeytabEntry> entries = new ArrayList<>();
         final String password = randomUUID().toString();
         for (final String principal : principals)
         {
             createPrincipal(principal, password);
             final String principalName = principal + "@" + REALM;
             final KerberosTime timestamp = new KerberosTime();
-            final Map<EncryptionType, EncryptionKey> keys = KerberosKeyFactory.getKerberosKeys(principalName, password);
-            keys.forEach((type, key) -> entries.add(new KeytabEntry(principalName,
-                                                                    1,
-                                                                    timestamp,
-                                                                    (byte) key.getKeyVersion(),
-                                                                    key)));
-        }
-        keytab.setEntries(entries);
-        keytab.write(keyTabFile);
+            final List<KeytabEntry> entries = getKerberosKeys(principalName, password).stream()
+                    .map(key -> new KeytabEntry(new PrincipalName(principalName), timestamp, key.getKvno(), key))
+                    .collect(Collectors.toList());
+            keytab.addKeytabEntries(entries);
+            createKerberosPrincipal(principalName, password);
+         }
+        keytab.store(keyTabFile);
     }
 
     private void createKeyTab(final String... principals) throws LdapException, IOException
@@ -485,5 +514,32 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
             throw new IOException(String.format("Cannot create file '%s'", file.getAbsolutePath()));
         }
         return file;
+    }
+
+    private void createKerberosPrincipal(final String principalName, final String password)
+    {
+        try
+        {
+            if (kerbyServer.getIdentityService().getIdentity(principalName) == null)
+            {
+                kerbyServer.createPrincipal(principalName, password);
+            }
+        }
+        catch (KrbException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private List<EncryptionKey> getKerberosKeys(final String principalName, final String passPhrase)
+    {
+        return Map.of(EncryptionType.DES_CBC_MD5, "DES",
+                    EncryptionType.DES3_CBC_SHA1_KD, "DESede",
+                    EncryptionType.RC4_HMAC, "ArcFourHmac",
+                    EncryptionType.AES128_CTS_HMAC_SHA1_96, "AES128",
+                    EncryptionType.AES256_CTS_HMAC_SHA1_96, "AES256")
+                .entrySet().stream()
+                .map(entry -> new EncryptionKey(entry.getKey(), new KerberosKey(new KerberosPrincipal(principalName), passPhrase.toCharArray(), entry.getValue()).getEncoded(), 0))
+                .collect(Collectors.toList());
     }
 }
