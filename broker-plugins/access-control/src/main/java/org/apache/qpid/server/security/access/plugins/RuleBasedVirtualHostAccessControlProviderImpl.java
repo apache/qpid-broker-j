@@ -36,40 +36,37 @@ public class RuleBasedVirtualHostAccessControlProviderImpl
         implements RuleBasedVirtualHostAccessControlProvider<RuleBasedVirtualHostAccessControlProviderImpl>
 {
     private static final EnumSet<ObjectType> ALLOWED_OBJECT_TYPES = EnumSet.of(ObjectType.ALL,
-                                                                               ObjectType.QUEUE,
-                                                                               ObjectType.EXCHANGE,
-                                                                               ObjectType.VIRTUALHOST,
-                                                                               ObjectType.METHOD);
+            ObjectType.QUEUE,
+            ObjectType.EXCHANGE,
+            ObjectType.VIRTUALHOST,
+            ObjectType.METHOD);
 
     static
     {
         Handler.register();
     }
 
-
-
     @ManagedObjectFactoryConstructor
-    public RuleBasedVirtualHostAccessControlProviderImpl(Map<String, Object> attributes, QueueManagingVirtualHost<?> virtualHost)
+    public RuleBasedVirtualHostAccessControlProviderImpl(final Map<String, Object> attributes,
+                                                         final QueueManagingVirtualHost<?> virtualHost)
     {
         super(attributes, virtualHost);
     }
-
 
     @Override
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
-        if(changedAttributes.contains(RULES))
+        if (changedAttributes.contains(RULES))
         {
-            for(AclRule rule : ((RuleBasedVirtualHostAccessControlProvider<?>)proxyForValidation).getRules())
+            for (AclRule rule : ((RuleBasedVirtualHostAccessControlProvider<?>) proxyForValidation).getRules())
             {
-                if(!ALLOWED_OBJECT_TYPES.contains(rule.getObjectType()))
+                if (!ALLOWED_OBJECT_TYPES.contains(rule.getObjectType()))
                 {
                     throw new IllegalArgumentException("Cannot use the object type " + rule.getObjectType() + " only the following object types are allowed: " + ALLOWED_OBJECT_TYPES);
                 }
+                rule.getAttributes();
             }
         }
     }
-
-
 }
