@@ -142,7 +142,6 @@ public class TokenMgrError extends Error
    *
    * from this method for such cases in the release version of your parser.
    */
-  @Override
   public String getMessage() {
     return super.getMessage();
   }
@@ -166,4 +165,4 @@ public class TokenMgrError extends Error
     this(LexicalError(EOFSeen, lexState, errorLine, errorColumn, errorAfter, curChar), reason);
   }
 }
-/* JavaCC - OriginalChecksum=795daaee93a15e0081e60f73df35399f (do not edit this line) */
+/* JavaCC - OriginalChecksum=dbdd2965cdf45ffc1a6fe0e4cb1331df (do not edit this line) */
