@@ -73,8 +73,8 @@ public class RuleBasedVirtualHostAccessControlProviderImplTest extends UnitTestB
                 "attributes", Map.of("FOO", "bar", "ROUTING_KEY", "routing_key", "NAME", "xxx")));
         final Map<String, Object> attributes = Map.of("name", "changed", "rules", rules);
 
-        final IllegalArgumentException exception =  assertThrows(IllegalArgumentException.class,
-            () -> _aclProvider.setAttributes(attributes), "Expected exception not thrown");
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> _aclProvider.setAttributes(attributes), "Expected exception not thrown");
 
         assertEquals("No enum constant org.apache.qpid.server.security.access.config.Property.FOO", exception.getMessage());
     }
