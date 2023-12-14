@@ -36,6 +36,10 @@ import javax.crypto.spec.IvParameterSpec;
 
 import org.apache.qpid.server.util.Strings;
 
+/**
+ * Class is deprecated in favor of AESGCMKeyFileEncrypter, it will be deleted in one of the next releases
+ */
+@Deprecated(since = "9.1.1", forRemoval = true)
 class AESKeyFileEncrypter implements ConfigurationSecretEncrypter
 {
     private static final String CIPHER_NAME = "AES/CBC/PKCS5Padding";

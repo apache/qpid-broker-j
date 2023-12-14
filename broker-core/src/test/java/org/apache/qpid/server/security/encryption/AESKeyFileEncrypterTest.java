@@ -42,6 +42,10 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
+/**
+ * Unit test is deprecated due to deprecation of AESGCMKeyFileEncrypter, it will be deleted in one of the next releases
+ */
+@Deprecated(since = "9.1.1", forRemoval = true)
 public class AESKeyFileEncrypterTest extends UnitTestBase
 {
     private final SecureRandom _random = new SecureRandom();
