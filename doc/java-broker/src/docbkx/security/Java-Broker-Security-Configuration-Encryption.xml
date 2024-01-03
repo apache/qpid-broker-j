@@ -24,33 +24,39 @@
   <title>Configuration Encryption</title>
   <para> The Broker is capable of encrypting passwords and other security items stored in the
     Broker's configuration. This is means that items such as keystore/truststore passwords, JDBC
-    passwords, and LDAP passwords can be stored in the configure in a form that is difficult to
+    passwords, and LDAP passwords can be stored in the configuration in a form that is difficult to
     read.</para>
-  <para>The Broker ships with an encryptor implementation called <literal>AESKeyFile</literal>. This
-    uses a securely generated random key of 256bit<footnote><para>Java Cryptography Extension (JCE)
-        Unlimited Strength required</para></footnote> to encrypt the secrets stored within a key
-    file. Of course, the key itself must be guarded carefully, otherwise the passwords encrypted
-    with it may be compromised. For this reason, the Broker ensures that the file's permissions
-    allow the file to be read exclusively by the user account used for running the Broker.</para>
+  <para>The Broker ships with an encryptor implementations called <literal>AESGCMKeyFile</literal> and
+    <literal>AESKeyFile</literal>. This uses a securely generated random key of 256bit
+    <footnote><para>Java Cryptography Extension (JCE) Unlimited Strength required</para></footnote>
+    to encrypt the secrets stored within a key file. Of course, the key itself must be guarded carefully,
+    otherwise the passwords encrypted with it may be compromised. For this reason, the Broker ensures
+    that the file's permissions allow the file to be read exclusively by the user account used for running
+    the Broker.</para>
+  <important>
+    <para>AESKeyFile encryptor is considered as not safe, it is deprecated and will be removed in one of the
+      next releases. AESGCMKeyFile encryptor should be used instead.</para>
+  </important>
   <important>
     <para>If the keyfile is lost or corrupted, the secrets will be irrecoverable.</para>
   </important>
   <section xml:id="Java-Broker-Security-Configuration-Encryption-Configuration">
     <title>Configuration</title>
-    <para>The <literal>AESKeyFile</literal> encyptor provider is enabled/disabled via the <link linkend="Java-Broker-Management-Managing-Broker">Broker attributes</link> within the
-      Web Management Console.  On enabling the provider, any existing passwords within the
+    <para>The <literal>AESGCMKeyFile</literal> or <literal>AESKeyFile</literal> encryptor providers are
+      enabled/disabled via the <link linkend="Java-Broker-Management-Managing-Broker">Broker attributes</link>
+      within the Web Management Console.  On enabling the provider, any existing passwords within the
       configuration will be automatically rewritten in the encrypted form.</para>
     <para>Note that passwords stored by the Authentication Providers <link linkend="Java-Broker-Security-PlainPasswordFile-Provider">PlainPasswordFile</link> and.
-        <link linkend="Java-Broker-Security-Base64MD5PasswordFile-Provider">PlainPasswordFile</link>
+      <link linkend="Java-Broker-Security-Base64MD5PasswordFile-Provider">PlainPasswordFile</link>
       with the external password files are <emphasis>not</emphasis> encrypted by the key. Use the
       Scram Authentication Managers instead; these make use of the Configuration Encryption when
       storing the users' passwords. </para>
   </section>
   <section xml:id="Java-Broker-Security-Configuration-Encryption-Alternate-Implementations">
     <title>Alternate Implementations</title>
-    <para>If the <literal>AESKeyFile</literal> encryptor implementation does not meet the needs of
+    <para>If the <literal>AESGCMKeyFile</literal> encryptor implementation does not meet the needs of
       the user, perhaps owing to the security standards of their institution, the
-        <literal>ConfigurationSecretEncrypter</literal> interface is designed as an extension point.
+      <literal>ConfigurationSecretEncrypter</literal> interface is designed as an extension point.
       Users may implement their own implementation of ConfigurationSecretEncrypter perhaps to employ
       stronger encryption or delegating the storage of the key to an Enterprise Password
       Safe.</para>
