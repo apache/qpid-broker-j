@@ -243,39 +243,63 @@ public class QuerySettingsTest
     @Test()
     public void customizeZoneIdViaQuerySettings()
     {
-        DateTimeFormatter formatter = new DateTimeFormatterBuilder().appendPattern(DefaultQuerySettings.DATE_TIME_PATTERN)
-            .appendFraction(ChronoField.NANO_OF_SECOND, 0, 6, true)
-            .toFormatter().withZone(ZoneId.of(DefaultQuerySettings.ZONE_ID));
+        final List<ZoneId> zoneIds = List.of(ZoneId.of("UTC"), ZoneId.of("GMT+1"), ZoneId.of("GMT+2"),  ZoneId.of("GMT+3"),
+                ZoneId.of("GMT+4"), ZoneId.of("GMT+5"), ZoneId.of("GMT+6"), ZoneId.of("GMT+7"), ZoneId.of("GMT+8"),
+                ZoneId.of("GMT+9"), ZoneId.of("GMT+10"), ZoneId.of("GMT+11"), ZoneId.of("GMT+12"));
 
-        QueryEvaluator queryEvaluator = new QueryEvaluator(_broker);
-        QuerySettings querySettings = new QuerySettingsBuilder().zoneId(ZoneId.of(DefaultQuerySettings.ZONE_ID)).build();
+        zoneIds.forEach(zoneId ->
+        {
+            DateTimeFormatter formatter =
+                    new DateTimeFormatterBuilder().appendPattern(DefaultQuerySettings.DATE_TIME_PATTERN)
+                            .appendFraction(ChronoField.NANO_OF_SECOND, 0, 6, true)
+                            .toFormatter().withZone(zoneId);
 
-        String query = "select current_timestamp() as result";
-        List<Map<String, Object>> result = queryEvaluator.execute(query, querySettings).getResults();
-        assertEquals(1, result.size());
-        formatter.parse((String)result.get(0).get("result"));
+            QueryEvaluator queryEvaluator = new QueryEvaluator(_broker);
+            QuerySettings querySettings = new QuerySettingsBuilder().zoneId(zoneId).build();
+
+            String query = "select current_timestamp() as result";
+            List<Map<String, Object>> result = queryEvaluator.execute(query, querySettings).getResults();
+
+            Instant expected = Instant.now();
+            Instant actual = LocalDateTime.parse((String) result.get(0).get("result"), formatter)
+                    .atZone(zoneId)
+                    .toInstant();
+
+            assertEquals(1, result.size());
+            assertTrue(expected.toEpochMilli() - actual.toEpochMilli() < 1000);
+        });
     }
 
     @Test()
     public void customizeZoneIdViaQueryEngine()
     {
-        QueryEngine queryEngine = new QueryEngine(_broker);
-        queryEngine.setZoneId(ZoneId.of("GMT+2"));
-        queryEngine.setMaxQueryDepth(DefaultQuerySettings.MAX_QUERY_DEPTH);
-        QueryEvaluator queryEvaluator = queryEngine.createEvaluator();
-        QuerySettings querySettings = new QuerySettings();
+        final List<ZoneId> zoneIds = List.of(ZoneId.of("UTC"), ZoneId.of("GMT+1"), ZoneId.of("GMT+2"),  ZoneId.of("GMT+3"),
+                ZoneId.of("GMT+4"), ZoneId.of("GMT+5"), ZoneId.of("GMT+6"), ZoneId.of("GMT+7"), ZoneId.of("GMT+8"),
+                ZoneId.of("GMT+9"), ZoneId.of("GMT+10"), ZoneId.of("GMT+11"), ZoneId.of("GMT+12"));
 
-        Instant expected = LocalDateTime.now().atZone(ZoneId.of("GMT+2")).toInstant();
-        DateTimeFormatter formatter = new DateTimeFormatterBuilder().appendPattern(DefaultQuerySettings.DATE_TIME_PATTERN)
-           .appendFraction(ChronoField.NANO_OF_SECOND, 0, 6, true)
-           .toFormatter().withZone(ZoneId.of("GMT+2")).withResolverStyle(ResolverStyle.STRICT);
+        zoneIds.forEach(zoneId ->
+        {
+            QueryEngine queryEngine = new QueryEngine(_broker);
+            queryEngine.setZoneId(zoneId);
+            queryEngine.setMaxQueryDepth(DefaultQuerySettings.MAX_QUERY_DEPTH);
+            QueryEvaluator queryEvaluator = queryEngine.createEvaluator();
 
-        String query = "select current_timestamp() as result";
-        List<Map<String,Object>> result = queryEvaluator.execute(query, querySettings).getResults();
-        Instant actual = LocalDateTime.parse((String)result.get(0).get("result"), formatter).atZone(ZoneId.of("GMT+2")).toInstant();
+            Instant expected = Instant.now();
+            DateTimeFormatter formatter =
+                    new DateTimeFormatterBuilder().appendPattern(DefaultQuerySettings.DATE_TIME_PATTERN)
+                            .appendFraction(ChronoField.NANO_OF_SECOND, 0, 6, true)
+                            .toFormatter()
+                            .withResolverStyle(ResolverStyle.STRICT);
 
-        assertEquals(1, result.size());
-        assertTrue(actual.toEpochMilli() - expected.toEpochMilli() < 1000);
+            String query = "select current_timestamp() as result";
+            List<Map<String, Object>> result = queryEvaluator.execute(query).getResults();
+            Instant actual = LocalDateTime.parse((String) result.get(0).get("result"), formatter)
+                    .atZone(zoneId)
+                    .toInstant();
+
+            assertEquals(1, result.size());
+            assertTrue(expected.toEpochMilli() - actual.toEpochMilli() < 1000);
+        });
     }
 
     @Test()
@@ -307,7 +331,6 @@ public class QuerySettingsTest
     @Test()
     public void customizeMaxQueryCacheSize()
     {
-
         QueryEngine queryEngine = new QueryEngine(_broker);
         queryEngine.setMaxQueryCacheSize(10);
         queryEngine.setMaxQueryDepth(DefaultQuerySettings.MAX_QUERY_DEPTH);
