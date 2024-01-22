@@ -137,7 +137,16 @@ public class QueryEvaluator
         {
             throw QueryValidationException.of(Errors.VALIDATION.QUERY_EMPTY);
         }
-        return execute(sql, new QuerySettings());
+        final QuerySettings querySettings = new QuerySettings();
+        querySettings.setDatePattern(_defaultQuerySettings.getDatePattern());
+        querySettings.setDateTimeFormat(_defaultQuerySettings.getDateTimeFormat());
+        querySettings.setDecimalDigits(_defaultQuerySettings.getDecimalDigits());
+        querySettings.setMaxBigDecimalValue(_defaultQuerySettings.getMaxBigDecimalValue());
+        querySettings.setMaxQueryCacheSize(_defaultQuerySettings.getMaxQueryCacheSize());
+        querySettings.setMaxQueryDepth(_defaultQuerySettings.getMaxQueryDepth());
+        querySettings.setRoundingMode(_defaultQuerySettings.getRoundingMode());
+        querySettings.setZoneId(_defaultQuerySettings.getZoneId());
+        return execute(sql, querySettings);
     }
 
     /**
