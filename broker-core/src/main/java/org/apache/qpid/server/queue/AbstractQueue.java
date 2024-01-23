@@ -766,15 +766,17 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public String getOwner()
     {
-        if(_exclusiveOwner != null)
+        if (_exclusiveOwner instanceof String)
         {
-            switch(_exclusive)
-            {
-                case CONTAINER:
-                    return (String) _exclusiveOwner;
-                case PRINCIPAL:
-                    return ((Principal)_exclusiveOwner).getName();
-            }
+            return (String) _exclusiveOwner;
+        }
+        else if (_exclusiveOwner instanceof ConfiguredObject)
+        {
+            return ((ConfiguredObject<?>) _exclusiveOwner).getName();
+        }
+        else if (_exclusiveOwner instanceof Principal)
+        {
+            return ((Principal) _exclusiveOwner).getName();
         }
         return null;
     }
