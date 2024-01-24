@@ -24,11 +24,12 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.PrivilegedAction;
+import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -38,6 +39,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.Futures;
@@ -48,6 +55,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.SystemLauncher;
 import org.apache.qpid.server.SystemLauncherListener;
 import org.apache.qpid.server.logging.logback.LogbackLoggingSystemLauncherListener;
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
@@ -58,20 +66,25 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
+import org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry.CloudFoundryOAuth2IdentityResolverService;
 import org.apache.qpid.server.store.MemoryConfigurationStore;
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
+import org.apache.qpid.test.utils.tls.TlsResource;
 
-@SuppressWarnings("unused")
+@SuppressWarnings({"java:S116", "unchecked", "unused"})
+// sonar complains about variable names
 @PluggableService
 public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmbeddedBrokerPerClassAdminImpl.class);
     public static final String TYPE = "EMBEDDED_BROKER_PER_CLASS";
     private final Map<String, Integer> _ports = new HashMap<>();
+    private String _tempAuthProvider;
     private SystemLauncher _systemLauncher;
     private Broker<?> _broker;
     private VirtualHostNode<?> _currentVirtualHostNode;
@@ -89,7 +102,8 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             _currentWorkDirectory = Files.createTempDirectory(String.format("qpid-work-%s-%s-", timestamp, testClass.getSimpleName())).toString();
 
             ConfigItem[] configItems = (ConfigItem[]) testClass.getAnnotationsByType(ConfigItem.class);
-            Arrays.stream(configItems).filter(ConfigItem::jvm).forEach(i -> {
+            Arrays.stream(configItems).filter(ConfigItem::jvm).forEach(i ->
+            {
                 _preservedProperties.put(i.name(), System.getProperty(i.name()));
                 System.setProperty(i.name(), i.value());
             });
@@ -97,10 +111,8 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             context.put("qpid.work_dir", _currentWorkDirectory);
             context.put("qpid.port.protocol_handshake_timeout", "1000000");
             context.putAll(Arrays.stream(configItems)
-                                 .filter(i -> !i.jvm())
-                                 .collect(Collectors.toMap(ConfigItem::name,
-                                                           ConfigItem::value,
-                                                           (name, value) -> value)));
+                    .filter(i -> !i.jvm())
+                    .collect(Collectors.toMap(ConfigItem::name, ConfigItem::value, (name, value) -> value)));
 
             Map<String,Object> systemConfigAttributes = new HashMap<>();
             systemConfigAttributes.put(ConfiguredObject.CONTEXT, context);
@@ -118,7 +130,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             systemLauncherListeners.add(new LogbackLoggingSystemLauncherListener());
             systemLauncherListeners.add(new ShutdownLoggingSystemLauncherListener());
             systemLauncherListeners.add(new PortExtractingLauncherListener());
-            _systemLauncher = new SystemLauncher(systemLauncherListeners.toArray(new SystemLauncherListener[systemLauncherListeners.size()]));
+            _systemLauncher = new SystemLauncher(systemLauncherListeners.toArray(new SystemLauncherListener[0]));
 
             _systemLauncher.startup(systemConfigAttributes);
         }
@@ -148,9 +160,9 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         String blueprint = System.getProperty("virtualhostnode.context.blueprint");
 
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(VirtualHostNode.NAME, virtualHostNodeName);
-        attributes.put(VirtualHostNode.TYPE, storeType);
-        attributes.put(VirtualHostNode.CONTEXT, Collections.singletonMap("virtualhostBlueprint", blueprint));
+        attributes.put(ConfiguredObject.NAME, virtualHostNodeName);
+        attributes.put(ConfiguredObject.TYPE, storeType);
+        attributes.put(ConfiguredObject.CONTEXT, Collections.singletonMap("virtualhostBlueprint", blueprint));
         attributes.put(VirtualHostNode.DEFAULT_VIRTUAL_HOST_NODE, true);
         attributes.put(VirtualHostNode.VIRTUALHOST_INITIAL_CONFIGURATION, blueprint);
         if (storeDir != null)
@@ -158,8 +170,12 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             attributes.put(JsonVirtualHostNode.STORE_PATH, storeDir);
         }
 
-        _currentVirtualHostNode = _broker.createChild(VirtualHostNode.class, attributes);
+        if (method.getAnnotation(AddOAuth2MockProvider.class) != null)
+        {
+            createOAuth2AuthenticationManager();
+        }
 
+        _currentVirtualHostNode = _broker.createChild(VirtualHostNode.class, attributes);
     }
 
     @Override
@@ -182,6 +198,16 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             }
             return null;
         });
+
+        if (method.getAnnotation(AddOAuth2MockProvider.class) != null)
+        {
+            final AmqpPort<?> port = (AmqpPort<?>) _broker.getPorts().stream().filter(p -> "AMQP".equals(p.getName()))
+                    .findFirst().orElse(null);
+            if (port != null)
+            {
+                port.setAttributes(Map.of(Port.AUTHENTICATION_PROVIDER, _tempAuthProvider));
+            }
+        }
     }
 
     @Override
@@ -221,10 +247,10 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     public void createQueue(final String queueName)
     {
         final Map<String, Object> attributes = new HashMap<>();
-        attributes.put(Queue.NAME, queueName);
-        attributes.put(Queue.TYPE, "standard");
-        final Queue queue = _currentVirtualHostNode.getVirtualHost().createChild(Queue.class, attributes);
-        final Exchange exchange = _currentVirtualHostNode.getVirtualHost().getChildByName(Exchange.class, "amq.direct");
+        attributes.put(ConfiguredObject.NAME, queueName);
+        attributes.put(ConfiguredObject.TYPE, "standard");
+        final Queue<?> queue = _currentVirtualHostNode.getVirtualHost().createChild(Queue.class, attributes);
+        final Exchange<?> exchange = _currentVirtualHostNode.getVirtualHost().getChildByName(Exchange.class, "amq.direct");
         exchange.bind(queueName, queueName, Collections.emptyMap(), false);
     }
 
@@ -310,7 +336,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
                 @Override
                 public Map<String, Object> getHeaders()
                 {
-                    return null;
+                    return Map.of();
                 }
 
                 @Override
@@ -332,7 +358,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     @Override
     public int getQueueDepthMessages(final String testQueueName)
     {
-        Queue queue = _currentVirtualHostNode.getVirtualHost().getChildByName(Queue.class, testQueueName);
+        Queue<?> queue = _currentVirtualHostNode.getVirtualHost().getChildByName(Queue.class, testQueueName);
         return queue.getQueueDepthMessages();
     }
 
@@ -432,17 +458,89 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         return TYPE;
     }
 
-    private Queue getQueue(final String queueName)
+    private Queue<?> getQueue(final String queueName)
     {
-        Collection<Queue> queues = _currentVirtualHostNode.getVirtualHost().getChildren(Queue.class);
-        for (Queue queue : queues)
+        return _currentVirtualHostNode.getVirtualHost().getChildren(Queue.class).stream()
+                .filter(queue -> queue.getName().equals(queueName))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException(String.format("Queue '%s' not found", queueName)));
+    }
+
+    private void createOAuth2AuthenticationManager()
+    {
+        final String TEST_CLIENT_ID = "testClientId";
+        final String TEST_CLIENT_SECRET = "testClientSecret";
+        final String TEST_IDENTITY_RESOLVER_TYPE = CloudFoundryOAuth2IdentityResolverService.TYPE;
+        final String TEST_URI_PATTERN = "https://%s:%d%s";
+        final String TEST_AUTHORIZATION_ENDPOINT_NEEDS_AUTH = "true";
+        final String TEST_SCOPE = "testScope";
+        final String TEST_TRUST_STORE_NAME = null;
+        final String TEST_ENDPOINT_HOST = "localhost";
+        final String TEST_AUTHORIZATION_ENDPOINT_PATH = "/testauth";
+        final String TEST_TOKEN_ENDPOINT_PATH = "/testtoken";
+        final String TEST_IDENTITY_RESOLVER_ENDPOINT_PATH = "/testidresolver";
+        final String TEST_POST_LOGOUT_PATH = "/testpostlogout";
+
+        OAuth2MockEndpointHolder server;
+        try
         {
-            if (queue.getName().equals(queueName))
-            {
-                return queue;
-            }
+            final TlsResource tlsResource = new TlsResource();
+            tlsResource.beforeAll(null);
+            final Path keyStore = tlsResource.createSelfSignedKeyStore("CN=127.0.0.1");
+            server = new OAuth2MockEndpointHolder(keyStore.toFile().getAbsolutePath(), tlsResource.getSecret(), tlsResource.getKeyStoreType());
+            final OAuth2MockEndpoint identityResolverEndpoint = new OAuth2MockEndpoint();
+            identityResolverEndpoint.putExpectedParameter("token", "A".repeat(10_0000));
+            identityResolverEndpoint.setExpectedMethod("POST");
+            identityResolverEndpoint.setNeedsAuth(true);
+            identityResolverEndpoint.setResponse(200, String.format("{\"user_name\":\"%s\"}", "xxx"));
+
+            server.start();
+            server.setEndpoints(Map.of(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH, identityResolverEndpoint));
+
+            final TrustManager[] trustingTrustManager = new TrustManager[]{new TrustingTrustManager()};
+
+            final SSLContext sc = SSLContext.getInstance("TLSv1.3");
+            sc.init(null, trustingTrustManager, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            HttpsURLConnection.setDefaultHostnameVerifier(new BlindHostnameVerifier());
         }
-        throw new NotFoundException(String.format("Queue '%s' not found", queueName));
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+
+        final Map<String, Object> authProviderAttributes = new HashMap<>();
+        String testOAuthProvider = "testOAuthProvider";
+        authProviderAttributes.put(ConfiguredObject.NAME, testOAuthProvider);
+        authProviderAttributes.put(ConfiguredObject.TYPE, "OAuth2");
+        authProviderAttributes.put("clientId", TEST_CLIENT_ID);
+        authProviderAttributes.put("clientSecret", TEST_CLIENT_SECRET);
+        authProviderAttributes.put("identityResolverType", TEST_IDENTITY_RESOLVER_TYPE);
+        authProviderAttributes.put("authorizationEndpointURI",
+                String.format(TEST_URI_PATTERN, TEST_ENDPOINT_HOST, server.getPort(), TEST_AUTHORIZATION_ENDPOINT_PATH));
+        authProviderAttributes.put("tokenEndpointURI",
+                String.format(TEST_URI_PATTERN, TEST_ENDPOINT_HOST, server.getPort(), TEST_TOKEN_ENDPOINT_PATH));
+        authProviderAttributes.put("tokenEndpointNeedsAuth", TEST_AUTHORIZATION_ENDPOINT_NEEDS_AUTH);
+        authProviderAttributes.put("identityResolverEndpointURI",
+                String.format(TEST_URI_PATTERN, TEST_ENDPOINT_HOST, server.getPort(), TEST_IDENTITY_RESOLVER_ENDPOINT_PATH));
+        authProviderAttributes.put("postLogoutURI",
+                String.format(TEST_URI_PATTERN, TEST_ENDPOINT_HOST, server.getPort(), TEST_POST_LOGOUT_PATH));
+        authProviderAttributes.put("scope", TEST_SCOPE);
+        authProviderAttributes.put("trustStore", TEST_TRUST_STORE_NAME);
+        authProviderAttributes.put("secureOnlyMechanisms", List.of());
+        final AuthenticationProvider<?> auth = _broker.createChild(AuthenticationProvider.class, authProviderAttributes);
+        final AmqpPort<?> port = (AmqpPort<?>) _broker.getPorts().stream().filter(p -> "AMQP".equals(p.getName()))
+                .findFirst().orElse(null);
+        if (port != null)
+        {
+            final AuthenticationProvider<?> authProvider = (AuthenticationProvider<?>) port
+                    .getAttribute(Port.AUTHENTICATION_PROVIDER);
+            if (authProvider != null)
+            {
+                _tempAuthProvider = authProvider.getName();
+            }
+            port.setAttributes(Map.of(Port.AUTHENTICATION_PROVIDER, testOAuthProvider));
+        }
     }
 
     private class PortExtractingLauncherListener implements SystemLauncherListener
@@ -452,30 +550,25 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         @Override
         public void beforeStartup()
         {
-
+            // logic not used in tests
         }
 
         @Override
         public void errorOnStartup(final RuntimeException e)
         {
-
+            // logic not used in tests
         }
 
         @Override
         public void afterStartup()
         {
-
             if (_systemConfig == null)
             {
                 throw new IllegalStateException("System config is required");
             }
 
             _broker = (Broker<?>) _systemConfig.getContainer();
-            Collection<Port> ports = _broker.getChildren(Port.class);
-            for (Port port : ports)
-            {
-                _ports.put(port.getName(), port.getBoundPort());
-            }
+            _broker.getChildren(Port.class).forEach(port -> _ports.put(port.getName(), port.getBoundPort()));
         }
 
         @Override
@@ -487,22 +580,21 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         @Override
         public void onContainerClose(final SystemConfig<?> systemConfig)
         {
-
+            // logic not used in tests
         }
 
         @Override
         public void onShutdown(final int exitCode)
         {
-
+            // logic not used in tests
         }
 
         @Override
         public void exceptionOnShutdown(final Exception e)
         {
-
+            // logic not used in tests
         }
     }
-
 
     private static class UncaughtExceptionHandler implements Thread.UncaughtExceptionHandler
     {
@@ -541,13 +633,44 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         @Override
         public void exceptionOnShutdown(final Exception e)
         {
-            if (e instanceof IllegalStateException
-                || e instanceof IllegalStateTransitionException)
+            if (e instanceof IllegalStateException || e instanceof IllegalStateTransitionException)
             {
-                System.out.println(
-                        "IllegalStateException occurred on broker shutdown in test ");
+                LOGGER.error("IllegalStateException occurred on broker shutdown in test");
             }
         }
     }
 
+    // sonar: hostname verifier is used for test purposes
+    @SuppressWarnings("java:S4830")
+    private static final class TrustingTrustManager implements X509TrustManager
+    {
+        @Override
+        public void checkClientTrusted(final X509Certificate[] certs, final String authType)
+        {
+            // trust manager is used for test purposes, always trusts client
+        }
+
+        @Override
+        public void checkServerTrusted(final X509Certificate[] certs, final String authType)
+        {
+            // trust manager is used for test purposes, always trusts server
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers()
+        {
+            return new X509Certificate[0];
+        }
+    }
+
+    // sonar: hostname verifier is used for test purposes
+    @SuppressWarnings("java:S5527")
+    private static final class BlindHostnameVerifier implements HostnameVerifier
+    {
+        @Override
+        public boolean verify(final String arg0, final SSLSession arg1)
+        {
+            return true;
+        }
+    }
 }
