@@ -84,12 +84,6 @@ From: 'FasterXML' (http://fasterxml.com/)
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 
-From: 'JolBox' (http://jolbox.com)
-
-  - BoneCP :: Core Library (http://jolbox.com/bonecp) com.jolbox:bonecp:bundle:0.8.0.RELEASE
-    License: Apache v2  (http://www.apache.org/licenses/LICENSE-2.0.html)
-
-
 From: 'Mort Bay Consulting' (http://www.mortbay.com)
 
   - Jetty :: Jakarta Servlet API and Schemas for JPMS and OSGi (https://eclipse.org/jetty/jetty-jakarta-servlet-api) org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:jar:5.0.2
@@ -187,7 +181,7 @@ From: 'The Apache Software Foundation' (https://www.apache.org/)
   - Apache Qpid Broker-J LogBack JDBC Logging Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-logging-logback) org.apache.qpid:qpid-broker-plugins-jdbc-logging-logback:jar
     License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Apache Qpid Broker-J JDBC Message Store Connection Pooling Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-provider-bone) org.apache.qpid:qpid-broker-plugins-jdbc-provider-bone:jar
+  - Apache Qpid Broker-J JDBC Message Store Connection Pooling Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-provider-hikari) org.apache.qpid:qpid-broker-plugins-jdbc-provider-hikari:jar
     License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
   - Apache Qpid Broker-J JDBC Message Store Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-store) org.apache.qpid:qpid-broker-plugins-jdbc-store:jar
@@ -287,6 +281,12 @@ From: 'Webtide' (https://webtide.com)
   - Jetty :: Websocket :: Servlet (https://eclipse.dev/jetty/websocket-parent/websocket-servlet) org.eclipse.jetty.websocket:websocket-servlet:jar:11.0.18
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+
+
+From: 'Zaxxer.com' (https://github.com/brettwooldridge)
+
+  - HikariCP (https://github.com/brettwooldridge/HikariCP) com.zaxxer:HikariCP:bundle:5.1.0
+    License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 
 

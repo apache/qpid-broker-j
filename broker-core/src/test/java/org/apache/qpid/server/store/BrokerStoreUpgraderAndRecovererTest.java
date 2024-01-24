@@ -90,18 +90,17 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
     }
 
     @Test
-    public void testUpgradeVirtualHostWithJDBCStoreAndBoneCPPool()
+    public void testUpgradeVirtualHostWithJDBCStoreAndHikariCPPool()
     {
         final Map<String, Object> hostAttributes = ImmutableMap.<String, Object>builder()
                 .put("name", VIRTUALHOST_NAME)
                 .put("modelVersion", "0.4")
-                .put("connectionPool", "BONECP")
+                .put("connectionPool", "HIKARICP")
                 .put("connectionURL", "jdbc:derby://localhost:1527/tmp/vh/test;create=true")
                 .put("createdBy", VIRTUALHOST_CREATED_BY)
                 .put("createdTime", VIRTUALHOST_CREATE_TIME)
-                .put("maxConnectionsPerPartition", 7)
-                .put("minConnectionsPerPartition", 6)
-                .put("partitionCount", 2)
+                .put("maximumPoolSize", 7)
+                .put("minimumIdle", 6)
                 .put("storeType", "jdbc")
                 .put("type", "STANDARD")
                 .put("jdbcBigIntType", "mybigint")
@@ -122,10 +121,9 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
                 "qpid.jdbcstore.varBinaryType", "myvarbinary",
                 "qpid.jdbcstore.blobType", "myblob",
                 "qpid.jdbcstore.useBytesForBlob", true,
-                "qpid.jdbcstore.bonecp.maxConnectionsPerPartition", 7,
-                "qpid.jdbcstore.bonecp.minConnectionsPerPartition", 6,
-                "qpid.jdbcstore.bonecp.partitionCount", 2);
-        final Map<String,Object> expectedAttributes = Map.of("connectionPoolType", "BONECP",
+                "qpid.jdbcstore.hikaricp.maximumPoolSize", 7,
+                "qpid.jdbcstore.hikaricp.minimumIdle", 6);
+        final Map<String,Object> expectedAttributes = Map.of("connectionPoolType", "HIKARICP",
                 "connectionUrl", "jdbc:derby://localhost:1527/tmp/vh/test;create=true",
                 "createdBy", VIRTUALHOST_CREATED_BY,
                 "createdTime", VIRTUALHOST_CREATE_TIME,
