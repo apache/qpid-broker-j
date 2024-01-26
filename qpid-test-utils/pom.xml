@@ -101,6 +101,12 @@
       <groupId>org.apache.directory.server</groupId>
       <artifactId>apacheds-core-annotations</artifactId>
       <scope>compile</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-collections</groupId>
+          <artifactId>commons-collections</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.kerby</groupId>

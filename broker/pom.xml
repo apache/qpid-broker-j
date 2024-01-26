@@ -111,7 +111,7 @@
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-broker-plugins-jdbc-provider-bone</artifactId>
+      <artifactId>qpid-broker-plugins-jdbc-provider-hikari</artifactId>
       <scope>runtime</scope>
     </dependency>
 
