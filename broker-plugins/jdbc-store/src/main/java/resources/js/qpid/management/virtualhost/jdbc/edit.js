@@ -20,18 +20,18 @@ define(["qpid/common/util",
         "dojo/_base/array",
         "dojo/json",
         "dojo/string",
+        "dojo/request/xhr",
         "dojo/store/Memory",
         "dojo/dom",
         "dojo/dom-construct",
         "dijit/registry",
-        "dojo/domReady!"], function (util, array, json, string, Memory, dom, domConstruct, registry)
+        "dojo/domReady!"], function (util, array, json, string, xhr, Memory, dom, domConstruct, registry)
 {
-
     return {
         show: function (data)
         {
-            var that = this;
-            util.parseHtmlIntoDiv(data.containerNode, "virtualhost/jdbc/edit.html", function ()
+            const that = this;
+            util.parseHtmlIntoDiv(data.containerNode, "virtualhost/jdbc/edit.html", () =>
             {
                 that._postParse(data)
             });
@@ -43,10 +43,10 @@ define(["qpid/common/util",
             registry.byId("editVirtualHost.username")
                 .set("regExpGen", util.nameOrContextVarRegexp);
 
-            var typeMetaData = data.metadata.getMetaData("VirtualHost", "JDBC");
-            var poolTypes = typeMetaData.attributes.connectionPoolType.validValues;
-            var poolTypesData = [];
-            array.forEach(poolTypes, function (item)
+            const typeMetaData = data.metadata.getMetaData("VirtualHost", "JDBC");
+            const poolTypes = typeMetaData.attributes.connectionPoolType.validValues;
+            const poolTypesData = [];
+            array.forEach(poolTypes, (item) =>
             {
                 poolTypesData.push({
                     id: item,
@@ -54,23 +54,23 @@ define(["qpid/common/util",
                 });
             });
 
-            var poolTypesStore = new Memory({data: poolTypesData});
-            var poolTypeControl = registry.byId("editVirtualHost.connectionPoolType");
+            const poolTypesStore = new Memory({data: poolTypesData});
+            const poolTypeControl = registry.byId("editVirtualHost.connectionPoolType");
             poolTypeControl.set("store", poolTypesStore);
             poolTypeControl.set("value", data.data.connectionPoolType);
 
-            var passwordControl = registry.byId("editVirtualHost.password");
+            const passwordControl = registry.byId("editVirtualHost.password");
             if (data.data.password)
             {
                 passwordControl.set("placeHolder", "*******");
             }
 
-            var poolTypeFieldsDiv = dom.byId("editVirtualHost.poolSpecificDiv");
+            const poolTypeFieldsDiv = dom.byId("editVirtualHost.poolSpecificDiv");
             poolTypeControl.on("change", function (type)
             {
-                if (type && string.trim(type) != "")
+                if (type && string.trim(type) !== "")
                 {
-                    var widgets = registry.findWidgets(poolTypeFieldsDiv);
+                    const widgets = registry.findWidgets(poolTypeFieldsDiv);
                     array.forEach(widgets, function (item)
                     {
                         item.destroyRecursive();
@@ -88,6 +88,39 @@ define(["qpid/common/util",
                 }
             });
 
+            const keystoreWidget = registry.byId("editVirtualHost.keyStore");
+            xhr("/api/latest/keystore", {handleAs: "json"}).then((keystores) =>
+            {
+                const keystoresStore = new Memory({
+                    data: keystores.map(keystore => ({ id: keystore.name, name: keystore.name }))
+                });
+                keystoreWidget.set("store", keystoresStore);
+                keystoreWidget.setValue(data.data.keyStore);
+                keystoreWidget.startup();
+            });
+
+            const keyStorePathPropertyNameWidget = registry.byId("editVirtualHost.keyStorePathPropertyName");
+            keyStorePathPropertyNameWidget.setValue(data.data.keyStorePathPropertyName);
+
+            const keyStorePasswordPropertyNameWidget = registry.byId("editVirtualHost.keyStorePasswordPropertyName");
+            keyStorePasswordPropertyNameWidget.setValue(data.data.keyStorePasswordPropertyName);
+
+            const truststoreWidget = registry.byId("editVirtualHost.trustStore");
+            xhr("/api/latest/truststore", {handleAs: "json"}).then((truststores) =>
+            {
+                const truststoresStore = new Memory({
+                    data: truststores.map(truststore => ({ id: truststore.name, name: truststore.name }))
+                });
+                truststoreWidget.set("store", truststoresStore);
+                truststoreWidget.setValue(data.data.trustStore);
+                truststoreWidget.startup();
+            });
+
+            const trustStorePathPropertyNameWidget = registry.byId("editVirtualHost.keyStorePathPropertyName");
+            trustStorePathPropertyNameWidget.setValue(data.data.keyStorePathPropertyName);
+
+            const trustStorePasswordPropertyNameWidget = registry.byId("editVirtualHost.trustStorePasswordPropertyName");
+            trustStorePasswordPropertyNameWidget.setValue(data.data.trustStorePasswordPropertyName);
 
             util.applyToWidgets(data.containerNode, "VirtualHost", data.data.type, data.data, data.metadata);
         }

@@ -29,6 +29,8 @@ import java.util.stream.Collectors;
 
 import com.zaxxer.hikari.HikariConfig;
 
+import org.apache.qpid.server.model.KeyStore;
+import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.store.jdbc.ConnectionProvider;
 import org.apache.qpid.server.store.jdbc.JDBCConnectionProviderFactory;
@@ -64,9 +66,20 @@ public class HikariCPConnectionProviderFactory implements JDBCConnectionProvider
     }
 
     @Override
-    public ConnectionProvider getConnectionProvider(String connectionUrl, String username, String password, Map<String, String> providerAttributes)
+    public ConnectionProvider getConnectionProvider(
+            final String connectionUrl,
+            final String username,
+            final String password,
+            final KeyStore<?> keyStore,
+            final String keyStorePathPropertyName,
+            final String keyStorePasswordPropertyName,
+            final TrustStore<?> trustStore,
+            final String trustStorePathPropertyName,
+            final String trustStorePasswordPropertyName,
+            final Map<String, String> providerAttributes)
     {
-        return new HikariCPConnectionProvider(connectionUrl, username, password, providerAttributes);
+        return new HikariCPConnectionProvider(connectionUrl, username, password, keyStore, keyStorePathPropertyName,
+                keyStorePasswordPropertyName, trustStore, trustStorePathPropertyName, trustStorePasswordPropertyName, providerAttributes);
     }
 
     @Override

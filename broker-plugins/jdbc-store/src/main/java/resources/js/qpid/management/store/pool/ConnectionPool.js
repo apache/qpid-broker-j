@@ -22,8 +22,10 @@ define(["qpid/common/util",
         "dojo/_base/array",
         "dojo/dom-construct",
         "dojo/dom",
+        "dojo/request/xhr",
+        "dojo/store/Memory",
         "dojo/string"],
-    function (util, registry, array, domConstruct, dom, string) {
+    function (util, registry, array, domConstruct, dom, xhr, Memory, string) {
 
         function ConnectionPool(container, management, modelObj)
         {
@@ -38,7 +40,7 @@ define(["qpid/common/util",
             if (data && data.hasOwnProperty("connectionPoolType")
                 && (!this.poolDetails || this.previousConnectionPoolType !== data.connectionPoolType))
             {
-                var that = this;
+                const that = this;
                 require(["qpid/management/store/pool/" + data.connectionPoolType.toLowerCase() + "/show"],
                     function (PoolDetails) {
                         that.poolDetails = that._createPoolDetails(PoolDetails);
@@ -53,7 +55,7 @@ define(["qpid/common/util",
         };
 
         ConnectionPool.prototype._createPoolDetails = function (PoolDetails) {
-            var widgets = registry.findWidgets(this.containerNode);
+            const widgets = registry.findWidgets(this.containerNode);
             array.forEach(widgets, function (item) {
                 item.destroyRecursive();
             });
@@ -72,27 +74,26 @@ define(["qpid/common/util",
             registry.byId(dialogIdPrefix + ".username")
                 .set("regExpGen", util.nameOrContextVarRegexp);
 
-            var passwordControl = registry.byId(dialogIdPrefix + ".password");
-            passwordControl.set("required", !data.data);
+            const passwordControl = registry.byId(dialogIdPrefix + ".password");
 
-            var poolTypeControl = registry.byId(dialogIdPrefix + ".connectionPoolType");
+            const poolTypeControl = registry.byId(dialogIdPrefix + ".connectionPoolType");
 
-            var typeMetaData = data.metadata.getMetaData(data.category, data.type);
-            var values = ["NONE"];
+            const typeMetaData = data.metadata.getMetaData(data.category, data.type);
+            let values = ["NONE"];
             if (typeMetaData.attributes.hasOwnProperty("connectionPoolType")
                 && typeMetaData.attributes.connectionPoolType.hasOwnProperty("validValues"))
             {
                 values = typeMetaData.attributes.connectionPoolType.validValues;
             }
-            var store = util.makeTypeStore(values);
+            const store = util.makeTypeStore(values);
             poolTypeControl.set("store", store);
             poolTypeControl.set("value", "NONE");
 
-            var poolTypeFieldsDiv = dom.byId(dialogIdPrefix + ".poolSpecificDiv");
+            const poolTypeFieldsDiv = dom.byId(dialogIdPrefix + ".poolSpecificDiv");
             poolTypeControl.on("change", function (type) {
                 if (type && string.trim(type) !== "")
                 {
-                    var widgets = registry.findWidgets(poolTypeFieldsDiv);
+                    const widgets = registry.findWidgets(poolTypeFieldsDiv);
                     array.forEach(widgets, function (item) {
                         item.destroyRecursive();
                     });
@@ -108,6 +109,38 @@ define(["qpid/common/util",
                     });
                 }
             });
+
+            const keystoreWidget = registry.byId(dialogIdPrefix + ".keyStore");
+            if (keystoreWidget)
+            {
+                xhr("/api/latest/keystore", {handleAs: "json"})
+                    .then((keystores) => {
+                        const keystoresStore = new Memory({
+                            data: keystores.map(keystore => ({
+                                id: keystore.name,
+                                name: keystore.name
+                            }))
+                        });
+                        keystoreWidget.set("store", keystoresStore);
+                        keystoreWidget.startup();
+                    });
+            }
+
+            const truststoreWidget = registry.byId(dialogIdPrefix + ".trustStore");
+            if (truststoreWidget)
+            {
+                xhr("/api/latest/truststore", {handleAs: "json"})
+                    .then((truststores) => {
+                        const truststoresStore = new Memory({
+                            data: truststores.map(truststore => ({
+                                id: truststore.name,
+                                name: truststore.name
+                            }))
+                        });
+                        truststoreWidget.set("store", truststoresStore);
+                        truststoreWidget.startup();
+                    });
+            }
         };
         return ConnectionPool;
     });

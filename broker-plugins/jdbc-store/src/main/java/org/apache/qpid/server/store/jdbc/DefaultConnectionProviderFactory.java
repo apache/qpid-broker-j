@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.store.jdbc;
 
+import org.apache.qpid.server.model.KeyStore;
+import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.PluggableService;
 
@@ -43,7 +45,17 @@ public class DefaultConnectionProviderFactory implements JDBCConnectionProviderF
     }
 
     @Override
-    public ConnectionProvider getConnectionProvider(String connectionUrl, String username, String password, Map<String, String> providerAttributes)
+    public ConnectionProvider getConnectionProvider(
+            String connectionUrl,
+            String username,
+            String password,
+            KeyStore<?> keyStore,
+            String keyStorePathPropertyName,
+            String keyStorePasswordPropertyName,
+            TrustStore<?> trustStore,
+            String trustStorePathPropertyName,
+            String trustStorePasswordPropertyName,
+            Map<String, String> providerAttributes)
     {
         return new DefaultConnectionProvider(connectionUrl, username, password);
     }

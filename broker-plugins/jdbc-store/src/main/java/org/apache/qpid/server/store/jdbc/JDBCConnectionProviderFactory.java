@@ -24,6 +24,8 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.qpid.server.model.KeyStore;
+import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.plugin.Pluggable;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 
@@ -32,12 +34,22 @@ public interface JDBCConnectionProviderFactory extends Pluggable
     @Override
     String getType();
 
-    ConnectionProvider getConnectionProvider(String connectionUrl, String username, String password, Map<String, String> providerAttributes)
+    ConnectionProvider getConnectionProvider(
+            String connectionUrl,
+            String username,
+            String password,
+            KeyStore<?> keyStore,
+            String keyStorePathPropertyName,
+            String keyStorePasswordPropertyName,
+            TrustStore<?> trustStore,
+            String trustStorePathPropertyName,
+            String trustStorePasswordPropertyName,
+            Map<String, String> providerAttributes)
             throws SQLException;
 
     Set<String> getProviderAttributeNames();
 
-    static final class FACTORIES
+    final class FACTORIES
     {
         private FACTORIES()
         {

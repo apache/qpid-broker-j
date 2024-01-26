@@ -108,6 +108,12 @@ public class JdbcUtils
         return connectionProviderFactory.getConnectionProvider(settings.getConnectionUrl(),
                                                                settings.getUsername(),
                                                                settings.getPassword(),
+                                                               settings.getKeyStore(),
+                                                               settings.getKeyStorePathPropertyName(),
+                                                               settings.getKeyStorePasswordPropertyName(),
+                                                               settings.getTrustStore(),
+                                                               settings.getTrustStorePathPropertyName(),
+                                                               settings.getTrustStorePasswordPropertyName(),
                                                                providerAttributes);
     }
 

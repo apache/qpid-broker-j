@@ -33,12 +33,21 @@ import java.util.stream.Collectors;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.KeyStore;
+import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.security.FileKeyStore;
+import org.apache.qpid.server.security.FileTrustStore;
 import org.apache.qpid.server.store.jdbc.ConnectionProvider;
 
 public class HikariCPConnectionProvider implements ConnectionProvider
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HikariCPConnectionProvider.class);
+    private static final String ADDING_DATASOURCE_PROPERTY = "Adding dataSource property '{}' with value '{}'";
+
     public static final int DEFAULT_MIN_IDLE = 20;
     public static final int DEFAULT_MAX_POOLSIZE = 40;
 
@@ -47,15 +56,28 @@ public class HikariCPConnectionProvider implements ConnectionProvider
     public HikariCPConnectionProvider(final String connectionUrl,
                                       final String username,
                                       final String password,
+                                      final KeyStore<?> keyStore,
+                                      final String keyStorePathPropertyName,
+                                      final String keyStorePasswordPropertyName,
+                                      final TrustStore<?> trustStore,
+                                      final String trustStorePathPropertyName,
+                                      final String trustStorePasswordPropertyName,
                                       final Map<String, String> providerAttributes)
     {
-        final HikariConfig config = createHikariCPConfig(connectionUrl, username, password, providerAttributes);
+        final HikariConfig config = createHikariCPConfig(connectionUrl, username, password, keyStore, keyStorePathPropertyName,
+                keyStorePasswordPropertyName, trustStore, trustStorePathPropertyName, trustStorePasswordPropertyName, providerAttributes);
         _dataSource = new HikariDataSource(config);
     }
 
     static HikariConfig createHikariCPConfig(final String connectionUrl,
                                              final String username,
                                              final String password,
+                                             final KeyStore<?> keyStore,
+                                             final String keyStorePathPropertyName,
+                                             final String keyStorePasswordPropertyName,
+                                             final TrustStore<?> trustStore,
+                                             final String trustStorePathPropertyName,
+                                             final String trustStorePasswordPropertyName,
                                              final Map<String, String> providerAttributes)
     {
         final Map<String, String> attributes = new HashMap<>(providerAttributes);
@@ -77,7 +99,40 @@ public class HikariCPConnectionProvider implements ConnectionProvider
             if (username != null)
             {
                 config.setUsername(username);
+            }
+            if (password != null)
+            {
                 config.setPassword(password);
+            }
+            if (keyStore instanceof FileKeyStore)
+            {
+                if (keyStorePathPropertyName != null)
+                {
+                    final String path = ((FileKeyStore) keyStore).getPath();
+                    LOGGER.debug(ADDING_DATASOURCE_PROPERTY, keyStorePathPropertyName, path);
+                    config.addDataSourceProperty(keyStorePathPropertyName, path);
+                }
+                if (keyStorePasswordPropertyName != null)
+                {
+                    final String pwd = ((FileKeyStore) keyStore).getPassword() == null ? "null" : "******";
+                    LOGGER.debug(ADDING_DATASOURCE_PROPERTY, keyStorePasswordPropertyName, pwd);
+                    config.addDataSourceProperty(keyStorePasswordPropertyName, ((FileKeyStore) keyStore).getPassword());
+                }
+            }
+            if (trustStore instanceof FileTrustStore)
+            {
+                if (trustStorePathPropertyName != null)
+                {
+                    final String path = ((FileTrustStore) trustStore).getPath();
+                    LOGGER.debug(ADDING_DATASOURCE_PROPERTY, trustStorePathPropertyName, path);
+                    config.addDataSourceProperty(trustStorePathPropertyName, ((FileTrustStore) trustStore).getPath());
+                }
+                if (trustStorePasswordPropertyName != null)
+                {
+                    final String pwd = ((FileTrustStore) trustStore).getPassword() == null ? "null" : "******";
+                    LOGGER.debug(ADDING_DATASOURCE_PROPERTY, trustStorePasswordPropertyName, pwd);
+                    config.addDataSourceProperty(trustStorePasswordPropertyName, ((FileTrustStore) trustStore).getPassword());
+                }
             }
             return config;
         }

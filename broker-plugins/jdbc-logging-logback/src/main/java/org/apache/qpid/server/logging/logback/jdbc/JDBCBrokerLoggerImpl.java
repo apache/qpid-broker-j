@@ -37,6 +37,8 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.security.FileKeyStore;
+import org.apache.qpid.server.security.FileTrustStore;
 import org.apache.qpid.server.store.jdbc.JDBCSettings;
 
 @SuppressWarnings("unused")
@@ -65,6 +67,24 @@ public class JDBCBrokerLoggerImpl extends AbstractBrokerLogger<JDBCBrokerLoggerI
 
     @ManagedAttributeField(afterSet = "restartAppenderIfExists")
     private String _tableNamePrefix;
+
+    @ManagedAttributeField(afterSet = "restartConnectionSourceIfExists")
+    private FileKeyStore<?> _keyStore;
+
+    @ManagedAttributeField(afterSet = "restartConnectionSourceIfExists")
+    private String _keyStorePathPropertyName;
+
+    @ManagedAttributeField(afterSet = "restartConnectionSourceIfExists")
+    private String _keyStorePasswordPropertyName;
+
+    @ManagedAttributeField(afterSet = "restartConnectionSourceIfExists")
+    private FileTrustStore<?> _trustStore;
+
+    @ManagedAttributeField(afterSet = "restartConnectionSourceIfExists")
+    private String _trustStorePathPropertyName;
+
+    @ManagedAttributeField(afterSet = "restartConnectionSourceIfExists")
+    private String _trustStorePasswordPropertyName;
 
     @ManagedObjectFactoryConstructor
     protected JDBCBrokerLoggerImpl(final Map<String, Object> attributes, Broker<?> broker)
@@ -101,6 +121,42 @@ public class JDBCBrokerLoggerImpl extends AbstractBrokerLogger<JDBCBrokerLoggerI
     public String getTableNamePrefix()
     {
         return _tableNamePrefix;
+    }
+
+    @Override
+    public FileKeyStore<?> getKeyStore()
+    {
+        return _keyStore;
+    }
+
+    @Override
+    public String getKeyStorePathPropertyName()
+    {
+        return _keyStorePathPropertyName;
+    }
+
+    @Override
+    public String getKeyStorePasswordPropertyName()
+    {
+        return _keyStorePasswordPropertyName;
+    }
+
+    @Override
+    public FileTrustStore<?> getTrustStore()
+    {
+        return _trustStore;
+    }
+
+    @Override
+    public String getTrustStorePathPropertyName()
+    {
+        return _trustStorePathPropertyName;
+    }
+
+    @Override
+    public String getTrustStorePasswordPropertyName()
+    {
+        return _trustStorePasswordPropertyName;
     }
 
     @Override

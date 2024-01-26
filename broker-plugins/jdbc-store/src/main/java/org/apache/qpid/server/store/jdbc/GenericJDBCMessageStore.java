@@ -99,7 +99,10 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
     {
         try
         {
-            _connectionProvider.close();
+            if (_connectionProvider != null)
+            {
+                _connectionProvider.close();
+            }
         }
         catch (SQLException e)
         {

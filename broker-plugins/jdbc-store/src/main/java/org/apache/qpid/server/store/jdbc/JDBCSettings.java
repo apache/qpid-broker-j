@@ -19,6 +19,8 @@
 
 package org.apache.qpid.server.store.jdbc;
 
+import org.apache.qpid.server.model.KeyStore;
+import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.store.Settings;
 
 public interface JDBCSettings extends Settings
@@ -38,4 +40,16 @@ public interface JDBCSettings extends Settings
     String getPassword();
 
     String getTableNamePrefix();
+
+    KeyStore<?> getKeyStore();
+
+    String getKeyStorePathPropertyName();
+
+    String getKeyStorePasswordPropertyName();
+
+    TrustStore<?> getTrustStore();
+
+    String getTrustStorePathPropertyName();
+
+    String getTrustStorePasswordPropertyName();
 }
