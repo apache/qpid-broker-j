@@ -37,7 +37,6 @@ public class HikariCPConnectionProviderTest extends UnitTestBase
     @Test
     public void testCreateHikariCPConfig()
     {
-
         final Map<String, String> attributes = new HashMap<>();
         attributes.put("qpid.jdbcstore.hikaricp.idleTimeout", "123");
         attributes.put("qpid.jdbcstore.hikaricp.connectionTimeout", "1234");
