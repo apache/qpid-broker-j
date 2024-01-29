@@ -185,7 +185,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     private final SubjectCreator _subjectCreator;
 
     private int _channelMax = 0;
-    private int _maxFrameSize = 4096;
+    private int _maxFrameSize;
     private String _remoteContainerId;
 
     private SocketAddress _remoteAddress;
@@ -262,6 +262,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         _incomingIdleTimeout = 1000L * port.getHeartbeatDelay();
 
         _frameWriter = new FrameWriter(getDescribedTypeRegistry(), getSender());
+
+        _maxFrameSize = getBroker().getNetworkBufferSize();
     }
 
     @Override

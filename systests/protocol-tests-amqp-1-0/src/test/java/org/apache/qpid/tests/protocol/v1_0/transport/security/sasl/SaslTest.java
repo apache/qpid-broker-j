@@ -45,6 +45,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
+import org.apache.qpid.tests.utils.AddOAuth2MockProvider;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
@@ -52,6 +53,7 @@ public class SaslTest extends BrokerAdminUsingTestBase
 {
     private static final Symbol CRAM_MD5 = Symbol.getSymbol("CRAM-MD5");
     private static final Symbol PLAIN = Symbol.getSymbol("PLAIN");
+    private static final Symbol OAUTH2 = Symbol.getSymbol("XOAUTH2");
 
     private static final byte[] SASL_AMQP_HEADER_BYTES = "AMQP\3\1\0\0".getBytes(StandardCharsets.UTF_8);
     private static final byte[] AMQP_HEADER_BYTES = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
@@ -327,6 +329,41 @@ public class SaslTest extends BrokerAdminUsingTestBase
                      .sync();
 
             transport.assertNoMoreResponsesAndChannelClosed();
+        }
+    }
+
+    @Test
+    @AddOAuth2MockProvider()
+    @SpecificationTest(section = "5.3.2", description = "SASL Negotiation")
+    public void veryLongOauth2Token() throws Exception
+    {
+        final byte[] TOKEN = ("user=xxx\1auth=Bearer " + "A".repeat(10_0000) + "\1host=localhost\1\1")
+                .getBytes(StandardCharsets.US_ASCII);
+
+        try (final FrameTransport transport = new FrameTransport(getBrokerAdmin(), BrokerAdmin.PortType.AMQP).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            final byte[] saslHeaderResponse = interaction.protocolHeader(SASL_AMQP_HEADER_BYTES)
+                    .negotiateProtocol().consumeResponse()
+                    .getLatestResponse(byte[].class);
+            assertThat(saslHeaderResponse, is(equalTo(SASL_AMQP_HEADER_BYTES)));
+
+            final SaslMechanisms saslMechanismsResponse = interaction.consumeResponse().getLatestResponse(SaslMechanisms.class);
+            assumeTrue(hasItem(OAUTH2).matches(Arrays.asList(saslMechanismsResponse.getSaslServerMechanisms())));
+
+            final Binary initialResponse = new Binary(TOKEN);
+            final SaslOutcome saslOutcome = interaction.saslMechanism(OAUTH2)
+                    .saslInitialResponse(initialResponse)
+                    .saslInit().consumeResponse()
+                    .getLatestResponse(SaslOutcome.class);
+            assertThat(saslOutcome.getCode(), equalTo(SaslCode.OK));
+
+            final byte[] headerResponse = interaction.protocolHeader(AMQP_HEADER_BYTES)
+                    .negotiateProtocol().consumeResponse()
+                    .getLatestResponse(byte[].class);
+            assertThat(headerResponse, is(equalTo(AMQP_HEADER_BYTES)));
+
+            transport.assertNoMoreResponses();
         }
     }
 }
