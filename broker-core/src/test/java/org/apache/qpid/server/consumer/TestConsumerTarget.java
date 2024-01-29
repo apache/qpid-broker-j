@@ -24,6 +24,7 @@ package org.apache.qpid.server.consumer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.security.Principal;
 import java.util.ArrayList;
 
 import com.google.common.util.concurrent.Futures;
@@ -52,8 +53,18 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
 
     public TestConsumerTarget()
     {
+        when(_sessionModel.getName()).thenReturn("mock session");
+
+        final Principal principal = mock(Principal.class);
+        when(principal.getName()).thenReturn("mock principal");
+
+        final AMQPConnection amqpConnection = mock(AMQPConnection.class);
+        when(amqpConnection.getAuthorizedPrincipal()).thenReturn(principal);
+        when(amqpConnection.getName()).thenReturn("mock connection");
+        when(amqpConnection.getRemoteContainerName()).thenReturn("mock container");
+
         when(_sessionModel.getChannelId()).thenReturn(0);
-        when(_sessionModel.getAMQPConnection()).thenReturn(mock(AMQPConnection.class));
+        when(_sessionModel.getAMQPConnection()).thenReturn(amqpConnection);
     }
 
     @Override

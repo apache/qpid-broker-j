@@ -78,6 +78,7 @@ import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
@@ -555,6 +556,37 @@ abstract class AbstractQueueTestBase extends UnitTestBase
                 "releasedEntry should be cleared after requeue processed");
         assertNull(consumer2.getQueueContext().getReleasedEntry(),
                 "releasedEntry should be cleared after requeue processed");
+    }
+
+    @Test
+    public void testExclusivePolicy() throws Exception
+    {
+        final ServerMessage<?> messageA = createMessage(24L);
+        _consumer = (QueueConsumer<?,?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
+                EnumSet.of(ConsumerOption.EXCLUSIVE, ConsumerOption.ACQUIRES, ConsumerOption.SEES_REQUEUES), 0);
+
+        _queue.setAttributes(Map.of(Queue.EXCLUSIVE, ExclusivityPolicy.CONNECTION));
+        assertEquals("mock connection", _queue.getOwner());
+
+        _queue.setAttributes(Map.of(Queue.EXCLUSIVE, ExclusivityPolicy.SESSION));
+        assertEquals("mock session", _queue.getOwner());
+
+        _queue.setAttributes(Map.of(Queue.EXCLUSIVE, ExclusivityPolicy.PRINCIPAL));
+        assertEquals("mock principal", _queue.getOwner());
+
+        _queue.setAttributes(Map.of(Queue.EXCLUSIVE, ExclusivityPolicy.CONTAINER));
+        assertEquals("mock container", _queue.getOwner());
+
+        _queue.setAttributes(Map.of(Queue.EXCLUSIVE, ExclusivityPolicy.LINK));
+        assertNull(_queue.getOwner());
+
+        _queue.setAttributes(Map.of(Queue.EXCLUSIVE, ExclusivityPolicy.SHARED_SUBSCRIPTION));
+        assertNull(_queue.getOwner());
+
+        _queue.setAttributes(Map.of(Queue.EXCLUSIVE, ExclusivityPolicy.NONE));
+        assertNull(_queue.getOwner());
+
+        _consumer.close();
     }
 
     @Test
