@@ -23,6 +23,7 @@ define(["dojo/_base/xhr",
         "dojo/dom-construct",
         "dojo/json",
         "dojo/string",
+        "dojo/request/xhr",
         "dojo/store/Memory",
         "dijit/registry",
         "dojo/text!virtualhost/jdbc/add.html",
@@ -30,31 +31,27 @@ define(["dojo/_base/xhr",
         "dijit/form/ValidationTextBox",
         "dijit/form/CheckBox",
         "dojo/domReady!"],
-    function (xhr, array, parser, dom, domConstruct, json, string, Memory, registry, template, util)
+    function (xhr, array, parser, dom, domConstruct, json, string, _xhr, Memory, registry, template, util)
     {
         return {
             show: function (data)
             {
-                var that = this;
+                const that = this;
                 this.containerNode = domConstruct.create("div", {innerHTML: template}, data.containerNode);
-                parser.parse(this.containerNode)
-                    .then(function (instances)
-                    {
-                        that._postParse(data);
-                    });
+                parser.parse(this.containerNode).then((instances) => that._postParse(data));
             },
             _postParse: function (data)
             {
-                var that = this;
+                const that = this;
                 registry.byId("addVirtualHost.connectionUrl")
                     .set("regExpGen", util.jdbcUrlOrContextVarRegexp);
                 registry.byId("addVirtualHost.username")
                     .set("regExpGen", util.nameOrContextVarRegexp);
 
-                var typeMetaData = data.metadata.getMetaData("VirtualHost", "JDBC");
-                var poolTypes = typeMetaData.attributes.connectionPoolType.validValues;
-                var poolTypesData = [];
-                array.forEach(poolTypes, function (item)
+                const typeMetaData = data.metadata.getMetaData("VirtualHost", "JDBC");
+                const poolTypes = typeMetaData.attributes.connectionPoolType.validValues;
+                const poolTypesData = [];
+                array.forEach(poolTypes, (item) =>
                 {
                     poolTypesData.push({
                         id: item,
@@ -62,21 +59,18 @@ define(["dojo/_base/xhr",
                     });
                 });
 
-                var poolTypesStore = new Memory({data: poolTypesData});
-                var poolTypeControl = registry.byId("addVirtualHost.connectionPoolType");
+                const poolTypesStore = new Memory({data: poolTypesData});
+                const poolTypeControl = registry.byId("addVirtualHost.connectionPoolType");
                 poolTypeControl.set("store", poolTypesStore);
                 poolTypeControl.set("value", "NONE");
 
-                var poolTypeFieldsDiv = dom.byId("addVirtualHost.poolSpecificDiv");
-                poolTypeControl.on("change", function (type)
+                const poolTypeFieldsDiv = dom.byId("addVirtualHost.poolSpecificDiv");
+                poolTypeControl.on("change", (type) =>
                 {
-                    if (type && string.trim(type) != "")
+                    if (type && string.trim(type) !== "")
                     {
-                        var widgets = registry.findWidgets(poolTypeFieldsDiv);
-                        array.forEach(widgets, function (item)
-                        {
-                            item.destroyRecursive();
-                        });
+                        const widgets = registry.findWidgets(poolTypeFieldsDiv);
+                        array.forEach(widgets, (item) => item.destroyRecursive());
                         domConstruct.empty(poolTypeFieldsDiv);
                         require(["qpid/management/store/pool/" + type.toLowerCase() + "/add"], function (poolType)
                         {
@@ -88,6 +82,26 @@ define(["dojo/_base/xhr",
                     }
                 });
                 util.applyMetadataToWidgets(data.containerNode, "VirtualHost", data.type, data.metadata);
+
+                const keystoreWidget = registry.byId("addVirtualHost.keyStore");
+                _xhr("/api/latest/keystore", {handleAs: "json"}).then((keystores) =>
+                {
+                    const keystoresStore = new Memory({
+                        data: keystores.map(keystore => ({ id: keystore.name, name: keystore.name }))
+                    });
+                    keystoreWidget.set("store", keystoresStore);
+                    keystoreWidget.startup();
+                });
+
+                const truststoreWidget = registry.byId("addVirtualHost.trustStore");
+                _xhr("/api/latest/truststore", {handleAs: "json"}).then((truststores) =>
+                {
+                    const truststoresStore = new Memory({
+                        data: truststores.map(truststore => ({ id: truststore.name, name: truststore.name }))
+                    });
+                    truststoreWidget.set("store", truststoresStore);
+                    truststoreWidget.startup();
+                });
             }
         };
     });

@@ -23,6 +23,8 @@ package org.apache.qpid.server.virtualhostnode.jdbc;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.security.FileKeyStore;
+import org.apache.qpid.server.security.FileTrustStore;
 import org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory;
 import org.apache.qpid.server.store.jdbc.JDBCSettings;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
@@ -64,4 +66,32 @@ public interface JDBCVirtualHostNode<X extends JDBCVirtualHostNode<X>> extends V
             validValuePattern = "[a-zA-Z_0-9]*",
             immutable = true)
     String getTableNamePrefix();
+
+    @Override
+    @ManagedAttribute(description = "Optional keystore holding the key for secure database connection")
+    FileKeyStore<?> getKeyStore();
+
+    @Override
+    @ManagedAttribute(description = "Name of the database vendor specific keystore path property, " +
+            "property value is taken from the keystore")
+    String getKeyStorePathPropertyName();
+
+    @Override
+    @ManagedAttribute(description = "Name of the database vendor specific keystore password property, " +
+            "property value is taken from the keystore")
+    String getKeyStorePasswordPropertyName();
+
+    @Override
+    @ManagedAttribute(description = "Optional truststore holding the certificate for secure database connection")
+    FileTrustStore<?> getTrustStore();
+
+    @Override
+    @ManagedAttribute(description = "Name of the database vendor specific truststore path property, " +
+            "property value is taken from the truststore")
+    String getTrustStorePathPropertyName();
+
+    @Override
+    @ManagedAttribute(description = "Name of the database vendor specific truststore password property, " +
+            "property value is taken from the truststore")
+    String getTrustStorePasswordPropertyName();
 }

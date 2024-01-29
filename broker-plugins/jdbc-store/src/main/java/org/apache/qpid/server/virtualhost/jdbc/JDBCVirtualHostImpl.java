@@ -28,6 +28,8 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.security.FileKeyStore;
+import org.apache.qpid.server.security.FileTrustStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.jdbc.AbstractJDBCMessageStore;
 import org.apache.qpid.server.store.jdbc.GenericJDBCMessageStore;
@@ -57,6 +59,24 @@ public class JDBCVirtualHostImpl extends AbstractVirtualHost<JDBCVirtualHostImpl
 
     @ManagedAttributeField
     private String _tableNamePrefix;
+
+    @ManagedAttributeField
+    private FileKeyStore<?> _keyStore;
+
+    @ManagedAttributeField
+    private String _keyStorePathPropertyName;
+
+    @ManagedAttributeField
+    private String _keyStorePasswordPropertyName;
+
+    @ManagedAttributeField
+    private FileTrustStore<?> _trustStore;
+
+    @ManagedAttributeField
+    private String _trustStorePathPropertyName;
+
+    @ManagedAttributeField
+    private String _trustStorePasswordPropertyName;
 
     @ManagedObjectFactoryConstructor
     public JDBCVirtualHostImpl(final Map<String, Object> attributes,
@@ -99,6 +119,42 @@ public class JDBCVirtualHostImpl extends AbstractVirtualHost<JDBCVirtualHostImpl
     public String getTableNamePrefix()
     {
         return _tableNamePrefix;
+    }
+
+    @Override
+    public FileKeyStore<?> getKeyStore()
+    {
+        return _keyStore;
+    }
+
+    @Override
+    public String getKeyStorePathPropertyName()
+    {
+        return _keyStorePathPropertyName;
+    }
+
+    @Override
+    public String getKeyStorePasswordPropertyName()
+    {
+        return _keyStorePasswordPropertyName;
+    }
+
+    @Override
+    public FileTrustStore<?> getTrustStore()
+    {
+        return _trustStore;
+    }
+
+    @Override
+    public String getTrustStorePathPropertyName()
+    {
+        return _trustStorePathPropertyName;
+    }
+
+    @Override
+    public String getTrustStorePasswordPropertyName()
+    {
+        return _trustStorePasswordPropertyName;
     }
 
     @Override

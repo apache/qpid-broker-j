@@ -65,11 +65,10 @@ define(["dojo/_base/event",
               util,
               template)
     {
-
-        var addVirtualHostNodeAndVirtualHost = {
+        const addVirtualHostNodeAndVirtualHost = {
             init: function ()
             {
-                var that = this;
+                const that = this;
                 this.containerNode = domConstruct.create("div", {innerHTML: template});
                 parser.parse(this.containerNode)
                     .then(function (instances)
@@ -79,8 +78,8 @@ define(["dojo/_base/event",
             },
             _postParse: function ()
             {
-                var that = this;
-                var virtualHostNodeName = registry.byId("addVirtualHostNode.nodeName");
+                const that = this;
+                const virtualHostNodeName = registry.byId("addVirtualHostNode.nodeName");
                 virtualHostNodeName.set("regExpGen", util.virtualHostNameOrContextVarRegexp);
 
                 // Readers are HTML5
@@ -164,10 +163,10 @@ define(["dojo/_base/event",
                 this.virtualHostForm.reset();
                 this.virtualHostType.set("value", null);
 
-                var supportedVirtualHostNodeTypes = management.metadata.getTypesForCategory("VirtualHostNode");
+                const supportedVirtualHostNodeTypes = management.metadata.getTypesForCategory("VirtualHostNode");
                 supportedVirtualHostNodeTypes.sort();
 
-                var virtualHostNodeTypeStore = util.makeTypeStore(supportedVirtualHostNodeTypes);
+                const virtualHostNodeTypeStore = util.makeTypeStore(supportedVirtualHostNodeTypes);
                 this.virtualHostNodeType.set("store", virtualHostNodeTypeStore);
 
                 if (!this.virtualHostNodeContext)
@@ -177,21 +176,21 @@ define(["dojo/_base/event",
                         title: 'Context variables'
                     });
                     this.virtualHostNodeContext.placeAt(dom.byId("addVirtualHostNode.context"));
-                    var that = this;
+                    const that = this;
                     this.virtualHostNodeContext.on("change", function (value)
                     {
-                        var inherited = that.virtualHostContext.inheritedActualValues;
-                        var effective = that.virtualHostContext.effectiveValues;
-                        var actuals = that.virtualHostContext.value;
-                        for (var key in value)
+                        const inherited = that.virtualHostContext.inheritedActualValues;
+                        const effective = that.virtualHostContext.effectiveValues;
+                        const actuals = that.virtualHostContext.value;
+                        for (let key in value)
                         {
                             if (!actuals || !(key in actuals))
                             {
-                                var val = value[key];
+                                const val = value[key];
                                 inherited[key] = val;
                                 if (!(key in effective))
                                 {
-                                    effective[key] = val.indexOf("${") == -1 ? val : "";
+                                    effective[key] = val.indexOf("${") === -1 ? val : "";
                                 }
                             }
                         }
@@ -208,7 +207,7 @@ define(["dojo/_base/event",
 
                 }
 
-                var that = this;
+                const that = this;
                 util.loadEffectiveAndInheritedActualData(management, {type: "broker"}, function(data)
                 {
                     that.virtualHostNodeContext.setData({},
@@ -243,16 +242,16 @@ define(["dojo/_base/event",
             },
             _vhnTypeChanged: function (type, typeFieldsContainer, urlStem)
             {
-                var validChildTypes = this.management ? this.management.metadata.validChildTypes("VirtualHostNode",
+                const validChildTypes = this.management ? this.management.metadata.validChildTypes("VirtualHostNode",
                     type,
                     "VirtualHost") : [];
                 validChildTypes.sort();
 
-                var virtualHostTypeStore = util.makeTypeStore(validChildTypes);
+                const virtualHostTypeStore = util.makeTypeStore(validChildTypes);
 
                 this.virtualHostType.set("store", virtualHostTypeStore);
                 this.virtualHostType.set("disabled", validChildTypes.length <= 1);
-                if (validChildTypes.length == 1)
+                if (validChildTypes.length === 1)
                 {
                     this.virtualHostType.set("value", validChildTypes[0]);
                 }
@@ -261,7 +260,7 @@ define(["dojo/_base/event",
                     this.virtualHostType.reset();
                 }
 
-                var vhnTypeSelected = !(type == '');
+                const vhnTypeSelected = !(type == '');
                 this.virtualHostNodeUploadFields.style.display = vhnTypeSelected ? "block" : "none";
 
                 if (!vhnTypeSelected)
@@ -280,7 +279,7 @@ define(["dojo/_base/event",
                 this._destroyContainerWidgets(typeFieldsContainer);
                 if (category)
                 {
-                    var context = this["v" + category.substring(1) + "Context"];
+                    const context = this["v" + category.substring(1) + "Context"];
                     if (context)
                     {
                         context.removeDynamicallyAddedInheritedContext();
@@ -288,12 +287,12 @@ define(["dojo/_base/event",
                 }
                 if (type)
                 {
-                    var that = this;
+                    const that = this;
                     require([urlStem + type.toLowerCase() + "/add"], function (typeUI)
                     {
                         try
                         {
-                            var metadata = that.management.metadata;
+                            const metadata = that.management.metadata;
                             typeUI.show({
                                 containerNode: typeFieldsContainer,
                                 parent: that,
@@ -312,7 +311,7 @@ define(["dojo/_base/event",
             {
                 if (typeFieldsContainer)
                 {
-                    var widgets = registry.findWidgets(typeFieldsContainer);
+                    const widgets = registry.findWidgets(typeFieldsContainer);
                     array.forEach(widgets, function (item)
                     {
                         item.destroyRecursive();
@@ -333,7 +332,7 @@ define(["dojo/_base/event",
             _vhnFileChanged: function (evt)
             {
                 // We only ever expect a single file
-                var file = this.virtualHostNodeFile.domNode.children[0].files[0];
+                const file = this.virtualHostNodeFile.domNode.children[0].files[0];
 
                 this.addButton.set("disabled", true);
                 this.virtualHostNodeSelectedFileContainer.innerHTML = file.name;
@@ -344,8 +343,8 @@ define(["dojo/_base/event",
             },
             _vhnUploadFileComplete: function (evt)
             {
-                var reader = evt.target;
-                var result = reader.result;
+                const reader = evt.target;
+                const result = reader.result;
                 console.log("File read complete, contents " + result);
                 this.virtualHostInitialConfiguration = result;
                 this.addButton.set("disabled", false);
@@ -365,16 +364,15 @@ define(["dojo/_base/event",
             },
             _submit: function ()
             {
-
-                var uploadVHConfig = this.virtualHostNodeFileCheck.get("checked");
-                var virtualHostNodeData = undefined;
+                const uploadVHConfig = this.virtualHostNodeFileCheck.get("checked");
+                let virtualHostNodeData = undefined;
 
                 if (uploadVHConfig && this.virtualHostNodeFile.getFileList().length > 0
                     && this.virtualHostNodeForm.validate())
                 {
                     // VH config is being uploaded
                     virtualHostNodeData = util.getFormWidgetValues(this.virtualHostNodeForm);
-                    var virtualHostNodeContext = this.virtualHostNodeContext.get("value");
+                    const virtualHostNodeContext = this.virtualHostNodeContext.get("value");
                     if (virtualHostNodeContext)
                     {
                         virtualHostNodeData["context"] = virtualHostNodeContext;
@@ -386,17 +384,53 @@ define(["dojo/_base/event",
                 else if (!uploadVHConfig && this.virtualHostNodeForm.validate() && this.virtualHostForm.validate())
                 {
                     virtualHostNodeData = util.getFormWidgetValues(this.virtualHostNodeForm);
-                    var virtualHostNodeContext = this.virtualHostNodeContext.get("value");
+                    const virtualHostNodeContext = this.virtualHostNodeContext.get("value");
                     if (virtualHostNodeContext)
                     {
                         virtualHostNodeData["context"] = virtualHostNodeContext;
                     }
 
-                    var virtualHostData = util.getFormWidgetValues(this.virtualHostForm);
-                    var virtualHostContext = this.virtualHostContext.get("value");
+                    const virtualHostData = util.getFormWidgetValues(this.virtualHostForm);
+                    const virtualHostContext = this.virtualHostContext.get("value");
                     if (virtualHostContext)
                     {
                         virtualHostData["context"] = virtualHostContext;
+                    }
+
+                    const keystore = dijit.registry.byId('addVirtualHost.keyStore').get('value');
+                    if (keystore)
+                    {
+                        virtualHostData["keyStore"] = keystore;
+                    }
+
+                    const keystorePathPropertyName = dijit.registry.byId("addVirtualHost.keyStorePathPropertyName").get("value");
+                    if (keystorePathPropertyName)
+                    {
+                        virtualHostData["keystorePathPropertyName"] = keystorePathPropertyName;
+                    }
+
+                    const keystorePasswordPropertyName = dijit.registry.byId("addVirtualHost.keyStorePasswordPropertyName").get("value");
+                    if (keystorePasswordPropertyName)
+                    {
+                        virtualHostData["keystorePasswordPropertyName"] = keystorePasswordPropertyName;
+                    }
+
+                    const truststore = dijit.registry.byId("addVirtualHost.trustStore").get("value");
+                    if (truststore)
+                    {
+                        virtualHostData["trustStore"] = truststore;
+                    }
+
+                    const truststorePathPropertyName = dijit.registry.byId("addVirtualHost.trustStorePathPropertyName").get("value");
+                    if (truststorePathPropertyName)
+                    {
+                        virtualHostData["truststorePathPropertyName"] = truststorePathPropertyName;
+                    }
+
+                    const truststorePasswordPropertyName = dijit.registry.byId("addVirtualHost.trustStorePasswordPropertyName").get("value");
+                    if (truststorePasswordPropertyName)
+                    {
+                        virtualHostData["truststorePasswordPropertyName"] = truststorePasswordPropertyName;
                     }
 
                     //Default the VH name to be the same as the VHN name.
@@ -411,12 +445,9 @@ define(["dojo/_base/event",
                     return;
                 }
 
-                var that = this;
+                const that = this;
                 that.management.create("virtualhostnode", {type: "broker"}, virtualHostNodeData)
-                    .then(function (x)
-                    {
-                        that.dialog.hide();
-                    });
+                    .then((x) => that.dialog.hide());
             }
         };
 
