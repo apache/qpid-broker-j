@@ -34,6 +34,10 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
+/**
+ * Unit test is deprecated due to deprecation of AESKeyFileEncrypterFactory, it will be deleted in one of the next releases
+ */
+@Deprecated(since = "9.2.0", forRemoval = true)
 public class AESKeyFileEncrypterFactoryTest extends UnitTestBase
 {
     private AESKeyFileEncrypterFactory _factory;

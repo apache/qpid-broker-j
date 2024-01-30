@@ -28,7 +28,7 @@ import org.apache.qpid.server.plugin.PluggableService;
  * Class is deprecated in favor of AESGCMKeyFileEncrypterFactory, it will be deleted in one of the next releases
  */
 @PluggableService
-@Deprecated(since = "9.1.1", forRemoval = true)
+@Deprecated(since = "9.2.0", forRemoval = true)
 public class AESKeyFileEncrypterFactory extends AbstractAESKeyFileEncrypterFactory
 {
     public static final String TYPE = "AESKeyFile";
