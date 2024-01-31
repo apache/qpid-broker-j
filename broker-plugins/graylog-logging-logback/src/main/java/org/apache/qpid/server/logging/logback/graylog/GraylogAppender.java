@@ -118,6 +118,7 @@ final class GraylogAppender extends AsyncAppender
         encoder.setIncludeCallerData(settings.isCallerDataIncluded());
         encoder.setIncludeRootCauseData(settings.hasRootExceptionDataIncluded());
         encoder.setIncludeLevelName(settings.isLogLevelNameIncluded());
+        encoder.setNumbersAsString(true);
         settings.getStaticFields().forEach(encoder::addStaticField);
         return encoder;
     }
