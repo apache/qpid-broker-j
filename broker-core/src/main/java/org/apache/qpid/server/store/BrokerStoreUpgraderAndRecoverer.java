@@ -70,6 +70,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         register(new Upgrader_7_0_to_7_1());
         register(new Upgrader_7_1_to_8_0());
         register(new Upgrader_8_0_to_9_0());
+        register(new Upgrader_9_0_to_9_1());
     }
 
     private static final class Upgrader_1_0_to_1_1 extends StoreUpgraderPhase
@@ -761,6 +762,47 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         }
     }
 
+    private static class Upgrader_9_0_to_9_1 extends StoreUpgraderPhase
+    {
+        public Upgrader_9_0_to_9_1()
+        {
+            super("modelVersion", "9.0", "9.1");
+        }
+
+        @Override
+        public void configuredObject(final ConfiguredObjectRecord record)
+        {
+            if (BROKER.equals(record.getType()))
+            {
+                upgradeRootRecord(record);
+            }
+
+            final Map<String, Object> attributes = record.getAttributes();
+
+            if (attributes == null)
+            {
+                return;
+            }
+
+            if (!(VIRTUALHOST.equals(record.getType()) && JDBC_VIRTUALHOST_TYPE.equals(attributes.get("type"))))
+            {
+                return;
+            }
+
+            if (attributes.containsKey(CONTEXT))
+            {
+                final ConfiguredObjectRecord updatedRecord = UpgraderHelper.upgradeConnectionPool(record);
+                getUpdateMap().put(updatedRecord.getId(), updatedRecord);
+            }
+        }
+
+        @Override
+        public void complete()
+        {
+
+        }
+    }
+
     private static class VirtualHostEntryUpgrader
     {
         Map<String, AttributesTransformer> _messageStoreToNodeTransformers = Map.of("DERBY", new AttributesTransformer().
@@ -805,10 +847,11 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                     addAttributeTransformer("jdbcBytesForBlob", addContextVar("qpid.jdbcstore.useBytesForBlob")).
                     addAttributeTransformer("jdbcBlobType", addContextVar("qpid.jdbcstore.blobType")).
                     addAttributeTransformer("jdbcVarbinaryType", addContextVar("qpid.jdbcstore.varBinaryType")).
-                    addAttributeTransformer("maximumPoolSize",
-                                            addContextVar("qpid.jdbcstore.hikaricp.maximumPoolSize")).
-                    addAttributeTransformer("minimumIdle",
-                                            addContextVar("qpid.jdbcstore.hikaricp.minimumIdle")),
+                    addAttributeTransformer("partitionCount", addContextVar("qpid.jdbcstore.bonecp.partitionCount")).
+                    addAttributeTransformer("maxConnectionsPerPartition",
+                                            addContextVar("qpid.jdbcstore.bonecp.maxConnectionsPerPartition")).
+                    addAttributeTransformer("minConnectionsPerPartition",
+                                            addContextVar("qpid.jdbcstore.bonecp.minConnectionsPerPartition")),
                 "BDB_HA", new AttributesTransformer().
                     addAttributeTransformer("id", copyAttribute()).
                     addAttributeTransformer("createdTime", copyAttribute()).

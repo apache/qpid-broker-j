@@ -26,6 +26,22 @@ import java.util.stream.Collectors;
 
 public class UpgraderHelper
 {
+    static final String CONTEXT = "context";
+
+    static final String CP_TYPE = "connectionPoolType";
+    static final String BONECP = "BONECP";
+    static final String HIKARICP = "HIKARICP";
+
+    static final String PARTITION_COUNT_PARAM = "qpid.jdbcstore.bonecp.partitionCount";
+    static final String MAX_POOL_SIZE_OLD_PARAM = "qpid.jdbcstore.bonecp.maxConnectionsPerPartition";
+    static final String MIN_IDLE_OLD_PARAM = "qpid.jdbcstore.bonecp.minConnectionsPerPartition";
+
+    static final String MAX_POOL_SIZE_PARAM = "qpid.jdbcstore.hikaricp.maximumPoolSize";
+    static final String MIN_IDLE_PARAM = "qpid.jdbcstore.hikaricp.minimumIdle";
+
+    static final Map<String, String> RENAME_MAPPING = Map.of(MAX_POOL_SIZE_OLD_PARAM, MAX_POOL_SIZE_PARAM,
+            MIN_IDLE_OLD_PARAM, MIN_IDLE_PARAM);
+
     public static final Map<String, String> MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES = new HashMap<>();
     static
     {
@@ -56,5 +72,39 @@ public class UpgraderHelper
     public static Map<String, String> reverse(Map<String, String> map)
     {
         return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+    }
+
+    /** Upgrades connection pool from BoneCP to HikariCP (model version 9.0 to 9.1) */
+    public static ConfiguredObjectRecord upgradeConnectionPool(final ConfiguredObjectRecord record)
+    {
+        final Map<String, Object> attributes = record.getAttributes();
+
+        final Object contextObject = attributes.get(CONTEXT);
+
+        if (contextObject instanceof Map)
+        {
+            final Map <String, String> context = (Map<String, String>) contextObject;
+            final Map<String, String> newContext = UpgraderHelper.renameContextVariables(context, RENAME_MAPPING);
+
+            if (BONECP.equals(attributes.get(CP_TYPE)))
+            {
+                final int partitionCount = newContext.get(PARTITION_COUNT_PARAM) != null
+                        ? Integer.parseInt(newContext.remove(PARTITION_COUNT_PARAM)) : 0;
+                final int maximumPoolSize = newContext.get(MAX_POOL_SIZE_PARAM) != null && partitionCount != 0
+                        ? Integer.parseInt(newContext.get(MAX_POOL_SIZE_PARAM)) * partitionCount : 40;
+                final int minIdle = newContext.get(MIN_IDLE_PARAM) != null && partitionCount != 0
+                        ? Integer.parseInt(newContext.get(MIN_IDLE_PARAM)) * partitionCount : 20;
+                newContext.put(MAX_POOL_SIZE_PARAM, String.valueOf(maximumPoolSize));
+                newContext.put(MIN_IDLE_PARAM, String.valueOf(minIdle));
+            }
+            final Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
+            if (BONECP.equals(attributes.get(CP_TYPE)))
+            {
+                updatedAttributes.put(CP_TYPE, HIKARICP);
+            }
+            updatedAttributes.put(CONTEXT, newContext);
+            return new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
+        }
+        return record;
     }
 }

@@ -74,6 +74,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         register(new Upgrader_7_0_to_7_1());
         register(new Upgrader_7_1_to_8_0());
         register(new Upgrader_8_0_to_9_0());
+        register(new Upgrader_9_0_to_9_1());
 
         Map<String, UUID> defaultExchangeIds = new HashMap<>();
         for (String exchangeName : DEFAULT_EXCHANGES.keySet())
@@ -1100,6 +1101,42 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
             renameContextVariables(record,
                                    "context",
                                    UpgraderHelper.MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES);
+        }
+
+        @Override
+        public void complete()
+        {
+
+        }
+    }
+
+    private static class Upgrader_9_0_to_9_1 extends StoreUpgraderPhase
+    {
+        public Upgrader_9_0_to_9_1()
+        {
+            super("modelVersion", "9.0", "9.1");
+        }
+
+        @Override
+        public void configuredObject(final ConfiguredObjectRecord record)
+        {
+            final Map<String, Object> attributes = record.getAttributes();
+
+            if (attributes == null)
+            {
+                return;
+            }
+
+            if (!(VIRTUALHOST.equals(record.getType()) && JDBC_VIRTUALHOST_TYPE.equals(attributes.get("type"))))
+            {
+                return;
+            }
+
+            if (attributes.containsKey(CONTEXT))
+            {
+                final ConfiguredObjectRecord updatedRecord = UpgraderHelper.upgradeConnectionPool(record);
+                getUpdateMap().put(updatedRecord.getId(), updatedRecord);
+            }
         }
 
         @Override
