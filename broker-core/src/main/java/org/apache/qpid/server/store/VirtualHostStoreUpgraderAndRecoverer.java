@@ -193,7 +193,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
             ConfiguredObjectRecord newRecord = new ConfiguredObjectRecordImpl(record.getId(), type, record.getAttributes(), record.getParents());
             getUpdateMap().put(record.getId(), newRecord);
 
-            if ("VirtualHost".equals(type))
+            if (VIRTUALHOST.equals(type))
             {
                 upgradeRootRecord(newRecord);
             }
@@ -257,7 +257,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if ("VirtualHost".equals(record.getType()))
+            if (VIRTUALHOST.equals(record.getType()))
             {
                 upgradeRootRecord(record);
             }
@@ -363,7 +363,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if("VirtualHost".equals(record.getType()))
+            if(VIRTUALHOST.equals(record.getType()))
             {
                 upgradeRootRecord(record);
             }
@@ -420,13 +420,13 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if("VirtualHost".equals(record.getType()))
+            if(VIRTUALHOST.equals(record.getType()))
             {
                 record = upgradeRootRecord(record);
                 Map<String, Object> virtualHostAttributes = new HashMap<>(record.getAttributes());
                 virtualHostAttributes.put("name", _virtualHostNode.getName());
                 virtualHostAttributes.put("modelVersion", getToVersion());
-                record = new ConfiguredObjectRecordImpl(record.getId(), "VirtualHost", virtualHostAttributes, Map.of());
+                record = new ConfiguredObjectRecordImpl(record.getId(), VIRTUALHOST, virtualHostAttributes, Map.of());
                 _virtualHostRecord = record;
             }
             else if("Exchange".equals(record.getType()))
@@ -544,7 +544,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         public void configuredObject(ConfiguredObjectRecord record)
         {
 
-            if("VirtualHost".equals(record.getType()))
+            if(VIRTUALHOST.equals(record.getType()))
             {
                 upgradeRootRecord(record);
             }
@@ -567,7 +567,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         public void configuredObject(ConfiguredObjectRecord record)
         {
 
-            if("VirtualHost".equals(record.getType()))
+            if(VIRTUALHOST.equals(record.getType()))
             {
                 upgradeRootRecord(record);
             }
@@ -591,7 +591,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         public void configuredObject(ConfiguredObjectRecord record)
         {
 
-            if("VirtualHost".equals(record.getType()))
+            if(VIRTUALHOST.equals(record.getType()))
             {
                 upgradeRootRecord(record);
             }
@@ -624,12 +624,12 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if("VirtualHost".equals(record.getType()))
+            if(VIRTUALHOST.equals(record.getType()))
             {
                 record = upgradeRootRecord(record);
                 Map<String, Object> attributes = new HashMap<>(record.getAttributes());
                 boolean modified = attributes.remove("queue_deadLetterQueueEnabled") != null;
-                Object context = attributes.get("context");
+                Object context = attributes.get(CONTEXT);
                 Map<String,Object> contextMap = null;
                 if(context instanceof Map)
                 {
@@ -637,7 +637,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                     modified |= contextMap.remove("queue.deadLetterQueueEnabled") != null;
                     if (modified)
                     {
-                        attributes.put("context", contextMap);
+                        attributes.put(CONTEXT, contextMap);
                     }
                 }
 
@@ -651,7 +651,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                     }
 
                     contextMap.put("qpid.virtualhost.statisticsReportPattern", "${ancestor:virtualhost:name}: messagesIn=${messagesIn}, bytesIn=${bytesIn:byteunit}, messagesOut=${messagesOut}, bytesOut=${bytesOut:byteunit}");
-                    attributes.put("context", contextMap);
+                    attributes.put(CONTEXT, contextMap);
                     modified = true;
                 }
 
@@ -726,7 +726,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                                            / ((double) queueFlowControlSizeBytesValue);
                             String flowResumeLimit = String.format("%.2f", ratio * 100.0);
 
-                            Object context = attributes.get("context");
+                            Object context = attributes.get(CONTEXT);
                             Map<String, String> contextMap;
                             if (context instanceof Map)
                             {
@@ -735,7 +735,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                             else
                             {
                                 contextMap = new HashMap<>();
-                                attributes.put("context", contextMap);
+                                attributes.put(CONTEXT, contextMap);
                             }
                             contextMap.put("queue.queueFlowResumeLimit", flowResumeLimit);
                         }
@@ -1047,7 +1047,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         @Override
         public void configuredObject(final ConfiguredObjectRecord record)
         {
-            if("VirtualHost".equals(record.getType()))
+            if(VIRTUALHOST.equals(record.getType()))
             {
                 upgradeRootRecord(record);
             }
@@ -1071,7 +1071,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         @Override
         public void configuredObject(final ConfiguredObjectRecord record)
         {
-            if("VirtualHost".equals(record.getType()))
+            if(VIRTUALHOST.equals(record.getType()))
             {
                 upgradeRootRecord(record);
             }
@@ -1094,12 +1094,12 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if ("VirtualHost".equals(record.getType()))
+            if (VIRTUALHOST.equals(record.getType()))
             {
                 record = upgradeRootRecord(record);
             }
             renameContextVariables(record,
-                                   "context",
+                                   CONTEXT,
                                    UpgraderHelper.MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES);
         }
 
