@@ -22,6 +22,7 @@ package org.apache.qpid.server.store;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,6 +35,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.model.Broker;
@@ -300,6 +303,80 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
                 getContextForRecordWithGivenId(accessControlProviderRecord.getId(), upgradedRecords);
         assertEquals(".*", newContext.get(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST));
         assertEquals("Ssl.*", newContext.get(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST));
+    }
+
+    @ParameterizedTest
+    @CsvSource(value =
+    {
+            "4,20,5,80,20", "0,20,5,40,20", "null,20,5,40,20", "4,null,null,40,20", "null,null,null,40,20"
+    }, nullValues = { "null" })
+    public void testContextVariableUpgradeFromBoneCPToHikariCPProvider(final String partitionCount,
+                                                                       final String maxConnectionsPerPartition,
+                                                                       final String minConnectionsPerPartition,
+                                                                       final String maximumPoolSize,
+                                                                       final String minimumIdle)
+    {
+        final Map<String, Object> rootAttributes = Map.of("modelVersion", "9.0", "name", "root");
+        final ConfiguredObjectRecord rootRecord = new ConfiguredObjectRecordImpl(randomUUID(), "VirtualHost", rootAttributes);
+
+        final Map<String, String> context = new HashMap<>();
+        context.put("qpid.jdbcstore.bonecp.partitionCount", partitionCount);
+        context.put("qpid.jdbcstore.bonecp.maxConnectionsPerPartition", maxConnectionsPerPartition);
+        context.put("qpid.jdbcstore.bonecp.minConnectionsPerPartition", minConnectionsPerPartition);
+        final Map<String, Object> attributes = Map.of("name", getTestName(),
+                "modelVersion", "9.0",
+                "type", "JDBC",
+                "connectionPoolType", "BONECP",
+                "context", context);
+        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);;
+        when(virtualHostRecord.getId()).thenReturn(randomUUID());
+        when(virtualHostRecord.getType()).thenReturn("VirtualHost");
+        when(virtualHostRecord.getAttributes()).thenReturn(attributes);
+
+        final List<ConfiguredObjectRecord> records = List.of(rootRecord, virtualHostRecord);
+        final List<ConfiguredObjectRecord> upgradedRecords =
+                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
+
+        final ConfiguredObjectRecord upgradedVirtualHost = upgradedRecords.stream()
+                .filter(record -> record.getId().equals(virtualHostRecord.getId())).findFirst()
+                .orElse(null);
+        final Map<String, String> contextMap = (Map<String, String>) upgradedVirtualHost.getAttributes().get("context");
+
+        assertNotNull(upgradedVirtualHost);
+        assertEquals(maximumPoolSize, contextMap.get("qpid.jdbcstore.hikaricp.maximumPoolSize"));
+        assertEquals(minimumIdle, contextMap.get("qpid.jdbcstore.hikaricp.minimumIdle"));
+        assertEquals("HIKARICP", upgradedVirtualHost.getAttributes().get("connectionPoolType"));
+    }
+
+    @Test
+    public void testContextVariableUpgradeFromDefaultCPToHikariCPProvider()
+    {
+        final Map<String, Object> rootAttributes = Map.of("modelVersion", "9.0", "name", "root");
+        final ConfiguredObjectRecord rootRecord = new ConfiguredObjectRecordImpl(randomUUID(), "VirtualHost", rootAttributes);
+
+        final Map<String, Object> attributes = Map.of("name", getTestName(),
+                "modelVersion", "9.0",
+                "type", "JDBC",
+                "connectionPoolType", "NONE",
+                "context", new HashMap<>());
+        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);;
+        when(virtualHostRecord.getId()).thenReturn(randomUUID());
+        when(virtualHostRecord.getType()).thenReturn("VirtualHost");
+        when(virtualHostRecord.getAttributes()).thenReturn(attributes);
+
+        final List<ConfiguredObjectRecord> records = List.of(rootRecord, virtualHostRecord);
+        final List<ConfiguredObjectRecord> upgradedRecords =
+                _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
+
+        final ConfiguredObjectRecord upgradedVirtualHost = upgradedRecords.stream()
+                .filter(record -> record.getId().equals(virtualHostRecord.getId())).findFirst()
+                .orElse(null);
+        final Map<String, String> contextMap = (Map<String, String>) upgradedVirtualHost.getAttributes().get("context");
+
+        assertNotNull(upgradedVirtualHost);
+        assertNull(contextMap.get("qpid.jdbcstore.hikaricp.maximumPoolSize"));
+        assertNull(contextMap.get("qpid.jdbcstore.hikaricp.minimumIdle"));
+        assertEquals("NONE", virtualHostRecord.getAttributes().get("connectionPoolType"));
     }
 
     private ConfiguredObjectRecord findRecordById(final UUID id, final List<ConfiguredObjectRecord> records)

@@ -41,6 +41,8 @@ import org.apache.qpid.server.configuration.CommonProperties;
 import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -90,17 +92,18 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
     }
 
     @Test
-    public void testUpgradeVirtualHostWithJDBCStoreAndHikariCPPool()
+    public void testUpgradeVirtualHostWithJDBCStoreAndBoneCPPool()
     {
         final Map<String, Object> hostAttributes = ImmutableMap.<String, Object>builder()
                 .put("name", VIRTUALHOST_NAME)
                 .put("modelVersion", "0.4")
-                .put("connectionPool", "HIKARICP")
+                .put("connectionPool", "BONECP")
                 .put("connectionURL", "jdbc:derby://localhost:1527/tmp/vh/test;create=true")
                 .put("createdBy", VIRTUALHOST_CREATED_BY)
                 .put("createdTime", VIRTUALHOST_CREATE_TIME)
-                .put("maximumPoolSize", 7)
-                .put("minimumIdle", 6)
+                .put("maxConnectionsPerPartition", 7)
+                .put("minConnectionsPerPartition", 6)
+                .put("partitionCount", 2)
                 .put("storeType", "jdbc")
                 .put("type", "STANDARD")
                 .put("jdbcBigIntType", "mybigint")
@@ -121,9 +124,10 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
                 "qpid.jdbcstore.varBinaryType", "myvarbinary",
                 "qpid.jdbcstore.blobType", "myblob",
                 "qpid.jdbcstore.useBytesForBlob", true,
-                "qpid.jdbcstore.hikaricp.maximumPoolSize", 7,
-                "qpid.jdbcstore.hikaricp.minimumIdle", 6);
-        final Map<String,Object> expectedAttributes = Map.of("connectionPoolType", "HIKARICP",
+                "qpid.jdbcstore.bonecp.maxConnectionsPerPartition", 7,
+                "qpid.jdbcstore.bonecp.minConnectionsPerPartition", 6,
+                "qpid.jdbcstore.bonecp.partitionCount", 2);
+        final Map<String,Object> expectedAttributes = Map.of("connectionPoolType", "BONECP",
                 "connectionUrl", "jdbc:derby://localhost:1527/tmp/vh/test;create=true",
                 "createdBy", VIRTUALHOST_CREATED_BY,
                 "createdTime", VIRTUALHOST_CREATE_TIME,
@@ -875,6 +879,71 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
 
         assertEquals(".*", contextMap.get(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_ALLOW_LIST));
         assertEquals("Ssl.*", contextMap.get(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_DENY_LIST));
+    }
+
+    @ParameterizedTest
+    @CsvSource(value =
+    {
+            "4,20,5,80,20", "0,20,5,40,20", "null,20,5,40,20", "4,null,null,40,20", "null,null,null,40,20"
+    }, nullValues = { "null" })
+    public void testContextVariableUpgradeFromBoneCPToHikariCPProvider(final String partitionCount,
+                                                                       final String maxConnectionsPerPartition,
+                                                                       final String minConnectionsPerPartition,
+                                                                       final String maximumPoolSize,
+                                                                       final String minimumIdle)
+    {
+        _brokerRecord.getAttributes().put("modelVersion", "9.0");
+
+        final Map<String, String> context = new HashMap<>();
+        context.put("qpid.jdbcstore.bonecp.partitionCount", partitionCount);
+        context.put("qpid.jdbcstore.bonecp.maxConnectionsPerPartition", maxConnectionsPerPartition);
+        context.put("qpid.jdbcstore.bonecp.minConnectionsPerPartition", minConnectionsPerPartition);
+        final Map<String, Object> attributes = Map.of("name", getTestName(),
+                "type", "JDBC",
+                "connectionPoolType", "BONECP",
+                "context", context);
+        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);;
+        when(virtualHostRecord.getId()).thenReturn(randomUUID());
+        when(virtualHostRecord.getType()).thenReturn("VirtualHost");
+        when(virtualHostRecord.getAttributes()).thenReturn(attributes);
+
+        final DurableConfigurationStore dcs = new DurableConfigurationStoreStub(virtualHostRecord, _brokerRecord);
+        final BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        final List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
+        final Map<String, String> contextMap = findCategoryRecordAndGetContext("VirtualHost", records);
+
+        final ConfiguredObjectRecord upgradedVirtualHost = records.stream()
+                .filter(record -> record.getType().equals("VirtualHost")).findFirst()
+                .orElse(null);
+
+        assertNotNull(upgradedVirtualHost);
+        assertEquals(maximumPoolSize, contextMap.get("qpid.jdbcstore.hikaricp.maximumPoolSize"));
+        assertEquals(minimumIdle, contextMap.get("qpid.jdbcstore.hikaricp.minimumIdle"));
+        assertEquals("HIKARICP", upgradedVirtualHost.getAttributes().get("connectionPoolType"));
+    }
+
+    @Test
+    public void testContextVariableUpgradeFromDefaultCPToHikariCPProvider()
+    {
+        _brokerRecord.getAttributes().put("modelVersion", "9.0");
+
+        final Map<String, Object> attributes = Map.of("name", getTestName(),
+                "type", "JDBC",
+                "connectionPoolType", "NONE",
+                "context", new HashMap<>());
+        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);;
+        when(virtualHostRecord.getId()).thenReturn(randomUUID());
+        when(virtualHostRecord.getType()).thenReturn("VirtualHost");
+        when(virtualHostRecord.getAttributes()).thenReturn(attributes);
+
+        final DurableConfigurationStore dcs = new DurableConfigurationStoreStub(virtualHostRecord, _brokerRecord);
+        final BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        final List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
+        final Map<String, String> contextMap = findCategoryRecordAndGetContext("VirtualHost", records);
+
+        assertNull(contextMap.get("qpid.jdbcstore.hikaricp.maximumPoolSize"));
+        assertNull(contextMap.get("qpid.jdbcstore.hikaricp.minimumIdle"));
+        assertEquals("NONE", virtualHostRecord.getAttributes().get("connectionPoolType"));
     }
 
     private ConfiguredObjectRecord createMockRecordForGivenCategoryTypeAndContext(final String category,
