@@ -31,7 +31,6 @@ import org.apache.qpid.server.util.Action;
 
 abstract class AbstractConfigurationStoreUpgraderAndRecoverer
 {
-    protected static final String BROKER = "Broker";
     protected static final String VIRTUALHOST = "VirtualHost";
     protected static final String JDBC_VIRTUALHOST_TYPE = "JDBC";
     protected static final String CONTEXT = "context";

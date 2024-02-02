@@ -48,7 +48,9 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerStoreUpgraderAndRecoverer.class);
 
-    public static final String VIRTUALHOSTS = "virtualhosts";
+    private static final String BROKER = "Broker";
+    private static final String VIRTUALHOSTS = "virtualhosts";
+
     private final SystemConfig<?> _systemConfig;
 
     // Note: don't use externally defined constants in upgraders in case they change, the values here MUST stay the same
