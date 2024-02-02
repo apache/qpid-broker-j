@@ -83,12 +83,12 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if (record.getType().equals("Broker"))
+            if (record.getType().equals(BROKER))
             {
                 record = upgradeRootRecord(record);
                 createVirtualHostsRecordsFromBrokerRecordForModel_1_x(record, this);
             }
-            else if (record.getType().equals("VirtualHost") && record.getAttributes().containsKey("storeType"))
+            else if (record.getType().equals(VIRTUALHOST) && record.getAttributes().containsKey("storeType"))
             {
                 Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
                 updatedAttributes.put("type", "STANDARD");
@@ -115,7 +115,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if (record.getType().equals("Broker"))
+            if (record.getType().equals(BROKER))
             {
                 record = upgradeRootRecord(record);
                 createVirtualHostsRecordsFromBrokerRecordForModel_1_x(record, this);
@@ -155,7 +155,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                 getUpdateMap().put(record.getId(), record);
 
             }
-            else if (record.getType().equals("Broker"))
+            else if (record.getType().equals(BROKER))
             {
                 record = upgradeRootRecord(record);
                 createVirtualHostsRecordsFromBrokerRecordForModel_1_x(record, this);
@@ -182,7 +182,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if (record.getType().equals("VirtualHost"))
+            if (record.getType().equals(VIRTUALHOST))
             {
                 Map<String, Object> attributes = record.getAttributes();
                 if (attributes.containsKey("configPath"))
@@ -201,7 +201,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                 getUpdateMap().put(record.getId(), record);
 
             }
-            else if (record.getType().equals("Broker"))
+            else if (record.getType().equals(BROKER))
             {
                 record = upgradeRootRecord(record);
                 createVirtualHostsRecordsFromBrokerRecordForModel_1_x(record, this);
@@ -239,7 +239,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                 record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
                 getUpdateMap().put(record.getId(), record);
             }
-            else if (record.getType().equals("Broker"))
+            else if (record.getType().equals(BROKER))
             {
                 upgradeRootRecord(record);
             }
@@ -317,7 +317,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if (record.getType().equals("Broker"))
+            if (record.getType().equals(BROKER))
             {
                 record = upgradeRootRecord(record);
 
@@ -371,7 +371,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
             final ConfiguredObjectRecord logger = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
                     "BrokerLogger",
                     attributes,
-                    Collections.singletonMap("Broker",
+                    Collections.singletonMap(BROKER,
                             record.getId()));
             addNameValueFilter("Root", logger, LogLevel.WARN, "ROOT");
             addNameValueFilter("Qpid", logger, LogLevel.INFO, "org.apache.qpid.*");
@@ -455,7 +455,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if (record.getType().equals("Broker"))
+            if (record.getType().equals(BROKER))
             {
                 record = upgradeRootRecord(record);
                 _rootRecordId = record.getId();
@@ -544,7 +544,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                 attrs.put(ConfiguredObject.TYPE, "AllowAll");
                 attrs.put("priority", 9999);
                 ConfiguredObjectRecord allowAllAclRecord =
-                        new ConfiguredObjectRecordImpl(allowAllACLId, "AccessControlProvider", attrs, Collections.singletonMap("Broker", _rootRecordId));
+                        new ConfiguredObjectRecordImpl(allowAllACLId, "AccessControlProvider", attrs, Collections.singletonMap(BROKER, _rootRecordId));
                 getUpdateMap().put(allowAllAclRecord.getId(), allowAllAclRecord);
 
             }
@@ -570,7 +570,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if (record.getType().equals("Broker"))
+            if (record.getType().equals(BROKER))
             {
                 boolean rebuildRecord = false;
                 Map<String, Object> attributes = new HashMap<>(record.getAttributes());
@@ -602,12 +602,12 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                 if (!additionalContext.isEmpty())
                 {
                     Map<String, String> newContext = new HashMap<>();
-                    if (attributes.containsKey("context"))
+                    if (attributes.containsKey(CONTEXT))
                     {
-                        newContext.putAll((Map<String, String>) attributes.get("context"));
+                        newContext.putAll((Map<String, String>) attributes.get(CONTEXT));
                     }
                     newContext.putAll(additionalContext);
-                    attributes.put("context", newContext);
+                    attributes.put(CONTEXT, newContext);
 
                     rebuildRecord = true;
                 }
@@ -654,9 +654,9 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         private void upgradeHttpPortIfRequired(final ConfiguredObjectRecord record)
         {
             Map<String, Object> attributes = record.getAttributes();
-            if (attributes.containsKey("context"))
+            if (attributes.containsKey(CONTEXT))
             {
-                Map<String, String> context = (Map<String, String>) attributes.get("context");
+                Map<String, String> context = (Map<String, String>) attributes.get(CONTEXT);
                 if (context != null
                     && (context.containsKey("port.http.additionalInternalThreads")
                         || context.containsKey("port.http.maximumQueuedRequests")))
@@ -669,7 +669,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                         updatedContext.put("qpid.port.http.acceptBacklog", acceptorsBacklog);
                     }
                     Map<String, Object> updatedAttributes = new LinkedHashMap<>(attributes);
-                    updatedAttributes.put("context", updatedContext);
+                    updatedAttributes.put(CONTEXT, updatedContext);
 
                     ConfiguredObjectRecord upgradedRecord = new ConfiguredObjectRecordImpl(record.getId(),
                                                                                            record.getType(),
@@ -698,7 +698,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         @Override
         public void configuredObject(final ConfiguredObjectRecord record)
         {
-            if("Broker".equals(record.getType()))
+            if(BROKER.equals(record.getType()))
             {
                 upgradeRootRecord(record);
             }
@@ -722,7 +722,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         @Override
         public void configuredObject(final ConfiguredObjectRecord record)
         {
-            if("Broker".equals(record.getType()))
+            if(BROKER.equals(record.getType()))
             {
                 upgradeRootRecord(record);
             }
@@ -746,12 +746,12 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         @Override
         public void configuredObject(ConfiguredObjectRecord record)
         {
-            if ("Broker".equals(record.getType()))
+            if (BROKER.equals(record.getType()))
             {
                 record = upgradeRootRecord(record);
             }
             renameContextVariables(record,
-                                   "context",
+                                   CONTEXT,
                                    UpgraderHelper.MODEL9_MAPPING_FOR_RENAME_TO_ALLOW_DENY_CONTEXT_VARIABLES);
         }
 
@@ -826,8 +826,8 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                     addAttributeTransformer("storePath", copyAttribute()).
                     addAttributeTransformer("storeUnderfullSize", copyAttribute()).
                     addAttributeTransformer("storeOverfullSize", copyAttribute()).
-                    addAttributeTransformer("bdbEnvironmentConfig", mutateAttributeName("context")),
-                "JDBC", new AttributesTransformer().
+                    addAttributeTransformer("bdbEnvironmentConfig", mutateAttributeName(CONTEXT)),
+                JDBC_VIRTUALHOST_TYPE, new AttributesTransformer().
                     addAttributeTransformer("id", copyAttribute()).
                     addAttributeTransformer("name", copyAttribute()).
                     addAttributeTransformer("createdTime", copyAttribute()).
@@ -864,8 +864,8 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                     addAttributeTransformer("haHelperAddress", mutateAttributeName("helperAddress")).
                     addAttributeTransformer("haNodeAddress", mutateAttributeName("address")).
                     addAttributeTransformer("haDesignatedPrimary", mutateAttributeName("designatedPrimary")).
-                    addAttributeTransformer("haReplicationConfig", mutateAttributeName("context")).
-                    addAttributeTransformer("bdbEnvironmentConfig", mutateAttributeName("context")));
+                    addAttributeTransformer("haReplicationConfig", mutateAttributeName(CONTEXT)).
+                    addAttributeTransformer("bdbEnvironmentConfig", mutateAttributeName(CONTEXT)));
 
         public ConfiguredObjectRecord upgrade(ConfiguredObjectRecord vhost)
         {
@@ -1015,7 +1015,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         @Override
         public MutableEntry transform(MutableEntry entry)
         {
-            return new MutableEntry("context", Collections.singletonMap(_newName, entry.getValue()));
+            return new MutableEntry(CONTEXT, Collections.singletonMap(_newName, entry.getValue()));
         }
     }
 
@@ -1104,7 +1104,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                         }
                     }
 
-                    ConfiguredObjectRecord nodeRecord = new ConfiguredObjectRecordImpl(id, "VirtualHost", virtualHostAttributes, Collections.singletonMap("Broker", brokerRecord.getId()));
+                    ConfiguredObjectRecord nodeRecord = new ConfiguredObjectRecordImpl(id, VIRTUALHOST, virtualHostAttributes, Collections.singletonMap(BROKER, brokerRecord.getId()));
 
                     upgrader.getUpdateMap().put(nodeRecord.getId(), nodeRecord);
                     upgrader.configuredObject(nodeRecord);
