@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.store;
 
+import static org.apache.qpid.server.test.AttributesUtils.createAttributesMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -327,18 +328,17 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
         final Map<String, Object> attributes = Map.of("name", getTestName(),
                 "modelVersion", "9.0",
                 "type", "JDBC",
-                "connectionPoolType", "BONECP",
-                "context", context);
+                "connectionPoolType", "BONECP");
 
-        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);;
+        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);
         when(virtualHostRecord.getId()).thenReturn(randomUUID());
         when(virtualHostRecord.getType()).thenReturn("VirtualHost");
-        when(virtualHostRecord.getAttributes()).thenReturn(attributes);
+        when(virtualHostRecord.getAttributes()).thenReturn(createAttributesMap(attributes, context));
 
-        final ConfiguredObjectRecord virtualHostLoggerRecord = mock(ConfiguredObjectRecord.class);;
+        final ConfiguredObjectRecord virtualHostLoggerRecord = mock(ConfiguredObjectRecord.class);
         when(virtualHostLoggerRecord.getId()).thenReturn(randomUUID());
         when(virtualHostLoggerRecord.getType()).thenReturn("VirtualHostLogger");
-        when(virtualHostLoggerRecord.getAttributes()).thenReturn(attributes);
+        when(virtualHostLoggerRecord.getAttributes()).thenReturn(createAttributesMap(attributes, context));
 
         final List<ConfiguredObjectRecord> records = List.of(rootRecord, virtualHostRecord, virtualHostLoggerRecord);
         final List<ConfiguredObjectRecord> upgradedRecords =
@@ -364,12 +364,11 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
         final Map<String, Object> attributes = Map.of("name", getTestName(),
                 "modelVersion", "9.0",
                 "type", "JDBC",
-                "connectionPoolType", "NONE",
-                "context", new HashMap<>());
-        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);;
+                "connectionPoolType", "NONE");
+        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);
         when(virtualHostRecord.getId()).thenReturn(randomUUID());
         when(virtualHostRecord.getType()).thenReturn("VirtualHost");
-        when(virtualHostRecord.getAttributes()).thenReturn(attributes);
+        when(virtualHostRecord.getAttributes()).thenReturn(createAttributesMap(attributes, new HashMap<>()));
 
         final List<ConfiguredObjectRecord> records = List.of(rootRecord, virtualHostRecord);
         final List<ConfiguredObjectRecord> upgradedRecords =

@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.store;
 
+import static org.apache.qpid.server.test.AttributesUtils.createAttributesMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -903,35 +904,34 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
 
         final Map<String, Object> attributes = Map.of("name", getTestName(),
                 "type", "JDBC",
-                "connectionPoolType", "BONECP",
-                "context", context);
+                "connectionPoolType", "BONECP");
 
-        _brokerRecord.getAttributes().put("context", context);
+        _brokerRecord.getAttributes().put("context", new HashMap<>(context));
 
-        final ConfiguredObjectRecord systemConfigRecord = mock(ConfiguredObjectRecord.class);;
+        final ConfiguredObjectRecord systemConfigRecord = mock(ConfiguredObjectRecord.class);
         when(systemConfigRecord.getId()).thenReturn(randomUUID());
         when(systemConfigRecord.getType()).thenReturn("SystemConfig");
-        when(systemConfigRecord.getAttributes()).thenReturn(Map.copyOf(attributes));
+        when(systemConfigRecord.getAttributes()).thenReturn(createAttributesMap(attributes, context));
 
-        final ConfiguredObjectRecord virtualHostNodeRecord = mock(ConfiguredObjectRecord.class);;
+        final ConfiguredObjectRecord virtualHostNodeRecord = mock(ConfiguredObjectRecord.class);
         when(virtualHostNodeRecord.getId()).thenReturn(randomUUID());
         when(virtualHostNodeRecord.getType()).thenReturn("VirtualHostNode");
-        when(virtualHostNodeRecord.getAttributes()).thenReturn(Map.copyOf(attributes));
+        when(virtualHostNodeRecord.getAttributes()).thenReturn(createAttributesMap(attributes, context));
 
-        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);;
+        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);
         when(virtualHostRecord.getId()).thenReturn(randomUUID());
         when(virtualHostRecord.getType()).thenReturn("VirtualHost");
-        when(virtualHostRecord.getAttributes()).thenReturn(Map.copyOf(attributes));
+        when(virtualHostRecord.getAttributes()).thenReturn(createAttributesMap(attributes, context));
 
-        final ConfiguredObjectRecord jdbcBrokerLoggerRecord = mock(ConfiguredObjectRecord.class);;
+        final ConfiguredObjectRecord jdbcBrokerLoggerRecord = mock(ConfiguredObjectRecord.class);
         when(jdbcBrokerLoggerRecord.getId()).thenReturn(randomUUID());
         when(jdbcBrokerLoggerRecord.getType()).thenReturn("BrokerLogger");
-        when(jdbcBrokerLoggerRecord.getAttributes()).thenReturn(Map.copyOf(attributes));
+        when(jdbcBrokerLoggerRecord.getAttributes()).thenReturn(createAttributesMap(attributes, context));
 
-        final ConfiguredObjectRecord jdbcVirtualHostLoggerRecord = mock(ConfiguredObjectRecord.class);;
+        final ConfiguredObjectRecord jdbcVirtualHostLoggerRecord = mock(ConfiguredObjectRecord.class);
         when(jdbcVirtualHostLoggerRecord.getId()).thenReturn(randomUUID());
         when(jdbcVirtualHostLoggerRecord.getType()).thenReturn("VirtualHostLogger");
-        when(jdbcVirtualHostLoggerRecord.getAttributes()).thenReturn(Map.copyOf(attributes));
+        when(jdbcVirtualHostLoggerRecord.getAttributes()).thenReturn(createAttributesMap(attributes, context));
 
         final DurableConfigurationStore dcs =
                 new DurableConfigurationStoreStub(jdbcVirtualHostLoggerRecord, jdbcBrokerLoggerRecord, virtualHostRecord,
@@ -964,12 +964,11 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
 
         final Map<String, Object> attributes = Map.of("name", getTestName(),
                 "type", "JDBC",
-                "connectionPoolType", "BONECP",
-                "context", new HashMap<>());
-        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);;
+                "connectionPoolType", "BONECP");
+        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);
         when(virtualHostRecord.getId()).thenReturn(randomUUID());
         when(virtualHostRecord.getType()).thenReturn("VirtualHost");
-        when(virtualHostRecord.getAttributes()).thenReturn(attributes);
+        when(virtualHostRecord.getAttributes()).thenReturn(createAttributesMap(attributes, new HashMap<>()));
 
         final DurableConfigurationStore dcs = new DurableConfigurationStoreStub(virtualHostRecord, _brokerRecord);
         final BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
@@ -990,12 +989,11 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
 
         final Map<String, Object> attributes = Map.of("name", getTestName(),
                 "type", "JDBC",
-                "connectionPoolType", "NONE",
-                "context", new HashMap<>());
-        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);;
+                "connectionPoolType", "NONE");
+        final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);
         when(virtualHostRecord.getId()).thenReturn(randomUUID());
         when(virtualHostRecord.getType()).thenReturn("VirtualHost");
-        when(virtualHostRecord.getAttributes()).thenReturn(attributes);
+        when(virtualHostRecord.getAttributes()).thenReturn(createAttributesMap(attributes, new HashMap<>()));
 
         final DurableConfigurationStore dcs = new DurableConfigurationStoreStub(virtualHostRecord, _brokerRecord);
         final BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
