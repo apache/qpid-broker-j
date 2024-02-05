@@ -323,29 +323,36 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
         context.put("qpid.jdbcstore.bonecp.partitionCount", partitionCount);
         context.put("qpid.jdbcstore.bonecp.maxConnectionsPerPartition", maxConnectionsPerPartition);
         context.put("qpid.jdbcstore.bonecp.minConnectionsPerPartition", minConnectionsPerPartition);
+
         final Map<String, Object> attributes = Map.of("name", getTestName(),
                 "modelVersion", "9.0",
                 "type", "JDBC",
                 "connectionPoolType", "BONECP",
                 "context", context);
+
         final ConfiguredObjectRecord virtualHostRecord = mock(ConfiguredObjectRecord.class);;
         when(virtualHostRecord.getId()).thenReturn(randomUUID());
         when(virtualHostRecord.getType()).thenReturn("VirtualHost");
         when(virtualHostRecord.getAttributes()).thenReturn(attributes);
 
-        final List<ConfiguredObjectRecord> records = List.of(rootRecord, virtualHostRecord);
+        final ConfiguredObjectRecord virtualHostLoggerRecord = mock(ConfiguredObjectRecord.class);;
+        when(virtualHostLoggerRecord.getId()).thenReturn(randomUUID());
+        when(virtualHostLoggerRecord.getType()).thenReturn("VirtualHostLogger");
+        when(virtualHostLoggerRecord.getAttributes()).thenReturn(attributes);
+
+        final List<ConfiguredObjectRecord> records = List.of(rootRecord, virtualHostRecord, virtualHostLoggerRecord);
         final List<ConfiguredObjectRecord> upgradedRecords =
                 _upgraderAndRecoverer.upgrade(_store, records, "VirtualHost", "modelVersion");
 
-        final ConfiguredObjectRecord upgradedVirtualHost = upgradedRecords.stream()
-                .filter(record -> record.getId().equals(virtualHostRecord.getId())).findFirst()
-                .orElse(null);
-        final Map<String, String> contextMap = (Map<String, String>) upgradedVirtualHost.getAttributes().get("context");
+        upgradedRecords.stream().filter(record -> !"root".equals(record.getAttributes().get("name"))).forEach(record ->
+        {
+            final Map<String, String> upgradedContext =
+                    (Map<String, String>) record.getAttributes().get("context");
 
-        assertNotNull(upgradedVirtualHost);
-        assertEquals(maximumPoolSize, contextMap.get("qpid.jdbcstore.hikaricp.maximumPoolSize"));
-        assertEquals(minimumIdle, contextMap.get("qpid.jdbcstore.hikaricp.minimumIdle"));
-        assertEquals("HIKARICP", upgradedVirtualHost.getAttributes().get("connectionPoolType"));
+            assertEquals(maximumPoolSize, upgradedContext.get("qpid.jdbcstore.hikaricp.maximumPoolSize"));
+            assertEquals(minimumIdle, upgradedContext.get("qpid.jdbcstore.hikaricp.minimumIdle"));
+            assertEquals("HIKARICP", record.getAttributes().get("connectionPoolType"));
+        });
     }
 
     @Test
@@ -374,6 +381,7 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends UnitTestBase
         final Map<String, String> contextMap = (Map<String, String>) upgradedVirtualHost.getAttributes().get("context");
 
         assertNotNull(upgradedVirtualHost);
+        assertNull(contextMap.get("qpid.jdbcstore.bonecp.partitionCount"));
         assertNull(contextMap.get("qpid.jdbcstore.hikaricp.maximumPoolSize"));
         assertNull(contextMap.get("qpid.jdbcstore.hikaricp.minimumIdle"));
         assertEquals("NONE", virtualHostRecord.getAttributes().get("connectionPoolType"));

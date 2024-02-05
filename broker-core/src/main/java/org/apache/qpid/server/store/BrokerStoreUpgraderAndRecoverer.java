@@ -772,11 +772,13 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
         }
 
         @Override
-        public void configuredObject(final ConfiguredObjectRecord record)
+        public void configuredObject(ConfiguredObjectRecord record)
         {
             if (BROKER.equals(record.getType()))
             {
-                upgradeRootRecord(record);
+                record = upgradeRootRecord(UpgraderHelper.upgradeConnectionPool(record));
+                getUpdateMap().put(record.getId(), record);
+                return;
             }
 
             final Map<String, Object> attributes = record.getAttributes();
@@ -786,16 +788,13 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                 return;
             }
 
-            if (!(VIRTUALHOST.equals(record.getType()) && JDBC_VIRTUALHOST_TYPE.equals(attributes.get("type"))))
+            if (!JDBC.equals(attributes.get("type")))
             {
                 return;
             }
 
-            if (attributes.containsKey(CONTEXT))
-            {
-                final ConfiguredObjectRecord updatedRecord = UpgraderHelper.upgradeConnectionPool(record);
-                getUpdateMap().put(updatedRecord.getId(), updatedRecord);
-            }
+            final ConfiguredObjectRecord updatedRecord = UpgraderHelper.upgradeConnectionPool(record);
+            getUpdateMap().put(updatedRecord.getId(), updatedRecord);
         }
 
         @Override
@@ -829,7 +828,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
                     addAttributeTransformer("storeUnderfullSize", copyAttribute()).
                     addAttributeTransformer("storeOverfullSize", copyAttribute()).
                     addAttributeTransformer("bdbEnvironmentConfig", mutateAttributeName(CONTEXT)),
-                JDBC_VIRTUALHOST_TYPE, new AttributesTransformer().
+                JDBC, new AttributesTransformer().
                     addAttributeTransformer("id", copyAttribute()).
                     addAttributeTransformer("name", copyAttribute()).
                     addAttributeTransformer("createdTime", copyAttribute()).

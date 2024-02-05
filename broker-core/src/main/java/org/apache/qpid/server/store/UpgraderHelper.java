@@ -62,7 +62,8 @@ public class UpgraderHelper
         oldToNewNameMapping.forEach((oldName, newName) -> {
             if (newContext.containsKey(oldName))
             {
-                final String value = newContext.remove(oldName);
+                final Object object = newContext.remove(oldName);
+                final String value = object == null ? null : String.valueOf(object);
                 newContext.put(newName, value);
             }
         });
@@ -79,6 +80,12 @@ public class UpgraderHelper
     {
         final Map<String, Object> attributes = record.getAttributes();
 
+        final Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
+        if (BONECP.equals(attributes.get(CP_TYPE)))
+        {
+            updatedAttributes.put(CP_TYPE, HIKARICP);
+        }
+
         final Object contextObject = attributes.get(CONTEXT);
 
         if (contextObject instanceof Map)
@@ -86,25 +93,32 @@ public class UpgraderHelper
             final Map <String, String> context = (Map<String, String>) contextObject;
             final Map<String, String> newContext = UpgraderHelper.renameContextVariables(context, RENAME_MAPPING);
 
+            final int partitionCount = newContext.get(PARTITION_COUNT_PARAM) != null
+                    ? Integer.parseInt(String.valueOf(newContext.remove(PARTITION_COUNT_PARAM))) : 0;
+            final int maximumPoolSize = newContext.get(MAX_POOL_SIZE_PARAM) != null && partitionCount != 0
+                    ? Integer.parseInt(String.valueOf(newContext.get(MAX_POOL_SIZE_PARAM))) * partitionCount : 40;
+            final int minIdle = newContext.get(MIN_IDLE_PARAM) != null && partitionCount != 0
+                    ? Integer.parseInt(String.valueOf(newContext.get(MIN_IDLE_PARAM))) * partitionCount : 20;
+
             if (BONECP.equals(attributes.get(CP_TYPE)))
             {
-                final int partitionCount = newContext.get(PARTITION_COUNT_PARAM) != null
-                        ? Integer.parseInt(newContext.remove(PARTITION_COUNT_PARAM)) : 0;
-                final int maximumPoolSize = newContext.get(MAX_POOL_SIZE_PARAM) != null && partitionCount != 0
-                        ? Integer.parseInt(newContext.get(MAX_POOL_SIZE_PARAM)) * partitionCount : 40;
-                final int minIdle = newContext.get(MIN_IDLE_PARAM) != null && partitionCount != 0
-                        ? Integer.parseInt(newContext.get(MIN_IDLE_PARAM)) * partitionCount : 20;
                 newContext.put(MAX_POOL_SIZE_PARAM, String.valueOf(maximumPoolSize));
                 newContext.put(MIN_IDLE_PARAM, String.valueOf(minIdle));
             }
-            final Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
-            if (BONECP.equals(attributes.get(CP_TYPE)))
+            else if ("Broker".equals(record.getType()))
             {
-                updatedAttributes.put(CP_TYPE, HIKARICP);
+                if (newContext.containsKey(MAX_POOL_SIZE_PARAM))
+                {
+                    newContext.put(MAX_POOL_SIZE_PARAM, String.valueOf(maximumPoolSize));
+                }
+                if (newContext.containsKey(MIN_IDLE_PARAM))
+                {
+                    newContext.put(MIN_IDLE_PARAM, String.valueOf(minIdle));
+                }
             }
+
             updatedAttributes.put(CONTEXT, newContext);
-            return new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
         }
-        return record;
+        return new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
     }
 }

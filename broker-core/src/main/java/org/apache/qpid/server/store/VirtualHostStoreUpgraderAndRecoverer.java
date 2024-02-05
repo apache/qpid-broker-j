@@ -1127,16 +1127,13 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
                 return;
             }
 
-            if (!(VIRTUALHOST.equals(record.getType()) && JDBC_VIRTUALHOST_TYPE.equals(attributes.get("type"))))
+            if (!JDBC.equals(attributes.get("type")))
             {
                 return;
             }
 
-            if (attributes.containsKey(CONTEXT))
-            {
-                final ConfiguredObjectRecord updatedRecord = UpgraderHelper.upgradeConnectionPool(record);
-                getUpdateMap().put(updatedRecord.getId(), updatedRecord);
-            }
+            final ConfiguredObjectRecord updatedRecord = UpgraderHelper.upgradeConnectionPool(record);
+            getUpdateMap().put(updatedRecord.getId(), updatedRecord);
         }
 
         @Override
