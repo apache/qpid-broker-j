@@ -977,8 +977,8 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
                 .filter(record -> "VirtualHost".equals(record.getType())).findFirst().orElse(null);
         final Map<String, String> contextMap = findCategoryRecordAndGetContext("VirtualHost", records);
 
-        assertEquals("40", contextMap.get("qpid.jdbcstore.hikaricp.maximumPoolSize"));
-        assertEquals("20", contextMap.get("qpid.jdbcstore.hikaricp.minimumIdle"));
+        assertNull(contextMap.get("qpid.jdbcstore.hikaricp.maximumPoolSize"));
+        assertNull(contextMap.get("qpid.jdbcstore.hikaricp.minimumIdle"));
         assertEquals("HIKARICP", upgradedVirtualHost.getAttributes().get("connectionPoolType"));
     }
 

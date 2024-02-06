@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.store.jdbc.hikaricp;
 
-import static org.apache.qpid.server.store.jdbc.hikaricp.HikariCPConnectionProviderFactory.MAX_POOLSIZE;
-import static org.apache.qpid.server.store.jdbc.hikaricp.HikariCPConnectionProviderFactory.MIN_IDLE;
+import static org.apache.qpid.server.store.jdbc.hikaricp.HikariCPConnectionProviderFactory.MAXIMUM_POOLSIZE;
+import static org.apache.qpid.server.store.jdbc.hikaricp.HikariCPConnectionProviderFactory.MINIMUM_IDLE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,7 +40,7 @@ public class HikariCPConnectionProviderFactoryTest extends UnitTestBase
         Set<String> supported = factory.getProviderAttributeNames();
         assertFalse(supported.isEmpty(), "Supported settings cannot be empty");
 
-        assertTrue(supported.contains(MAX_POOLSIZE), "maximumPoolSize is not found");
-        assertTrue(supported.contains(MIN_IDLE), "minimumIdle is not found");
+        assertTrue(supported.contains(MAXIMUM_POOLSIZE), "maximumPoolSize is not found");
+        assertTrue(supported.contains(MINIMUM_IDLE), "minimumIdle is not found");
     }
 }

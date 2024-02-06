@@ -100,12 +100,7 @@ public class UpgraderHelper
             final int minIdle = newContext.get(MIN_IDLE_PARAM) != null && partitionCount != 0
                     ? Integer.parseInt(String.valueOf(newContext.get(MIN_IDLE_PARAM))) * partitionCount : 20;
 
-            if (BONECP.equals(attributes.get(CP_TYPE)))
-            {
-                newContext.put(MAX_POOL_SIZE_PARAM, String.valueOf(maximumPoolSize));
-                newContext.put(MIN_IDLE_PARAM, String.valueOf(minIdle));
-            }
-            else if ("Broker".equals(record.getType()))
+            if (BONECP.equals(attributes.get(CP_TYPE)) || "Broker".equals(record.getType()))
             {
                 if (newContext.containsKey(MAX_POOL_SIZE_PARAM))
                 {

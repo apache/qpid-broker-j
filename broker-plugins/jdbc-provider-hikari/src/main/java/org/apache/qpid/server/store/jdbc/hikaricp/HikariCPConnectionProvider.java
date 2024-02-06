@@ -21,8 +21,8 @@
 package org.apache.qpid.server.store.jdbc.hikaricp;
 
 import static org.apache.qpid.server.store.jdbc.hikaricp.HikariCPConnectionProviderFactory.JDBC_STORE_PREFIX;
-import static org.apache.qpid.server.store.jdbc.hikaricp.HikariCPConnectionProviderFactory.MAX_POOLSIZE;
-import static org.apache.qpid.server.store.jdbc.hikaricp.HikariCPConnectionProviderFactory.MIN_IDLE;
+import static org.apache.qpid.server.store.jdbc.hikaricp.HikariCPConnectionProviderFactory.MAXIMUM_POOLSIZE;
+import static org.apache.qpid.server.store.jdbc.hikaricp.HikariCPConnectionProviderFactory.MINIMUM_IDLE;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -48,8 +48,8 @@ public class HikariCPConnectionProvider implements ConnectionProvider
     private static final Logger LOGGER = LoggerFactory.getLogger(HikariCPConnectionProvider.class);
     private static final String ADDING_DATASOURCE_PROPERTY = "Adding dataSource property '{}' with value '{}'";
 
-    public static final int DEFAULT_MIN_IDLE = 20;
-    public static final int DEFAULT_MAX_POOLSIZE = 40;
+    public static final int DEFAULT_MINIMUM_IDLE = 20;
+    public static final int DEFAULT_MAXIMUM_POOLSIZE = 40;
 
     private final HikariDataSource _dataSource;
 
@@ -81,8 +81,8 @@ public class HikariCPConnectionProvider implements ConnectionProvider
                                              final Map<String, String> providerAttributes)
     {
         final Map<String, String> attributes = new HashMap<>(providerAttributes);
-        attributes.putIfAbsent(MIN_IDLE, String.valueOf(DEFAULT_MIN_IDLE));
-        attributes.putIfAbsent(MAX_POOLSIZE, String.valueOf(DEFAULT_MAX_POOLSIZE));
+        attributes.putIfAbsent(MINIMUM_IDLE, String.valueOf(DEFAULT_MINIMUM_IDLE));
+        attributes.putIfAbsent(MAXIMUM_POOLSIZE, String.valueOf(DEFAULT_MAXIMUM_POOLSIZE));
 
         final int prefixLength = (JDBC_STORE_PREFIX + "hikaricp.").length();
         final Map<String, String> propertiesMap = attributes.entrySet()
