@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.store.jdbc.hikaricp;
 
-import static org.apache.qpid.server.store.jdbc.hikaricp.HikariCPConnectionProvider.DEFAULT_MAX_POOLSIZE;
-import static org.apache.qpid.server.store.jdbc.hikaricp.HikariCPConnectionProvider.DEFAULT_MIN_IDLE;
+import static org.apache.qpid.server.store.jdbc.hikaricp.HikariCPConnectionProvider.DEFAULT_MAXIMUM_POOLSIZE;
+import static org.apache.qpid.server.store.jdbc.hikaricp.HikariCPConnectionProvider.DEFAULT_MINIMUM_IDLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -73,7 +73,7 @@ public class HikariCPConnectionProviderTest extends UnitTestBase
         assertEquals("12345678", config.getDataSourceProperties().get("sslpassword"), "Unexpected sslpassword");
         assertEquals("/etc/cert/trust.p12", config.getDataSourceProperties().get("sslcert"), "Unexpected sslcert");
         assertEquals("12345678", config.getDataSourceProperties().get("certpassword"), "Unexpected certpassword");
-        assertEquals(DEFAULT_MAX_POOLSIZE, config.getMaximumPoolSize(), "Unexpected maximumPoolSize");
-        assertEquals(DEFAULT_MIN_IDLE, config.getMinimumIdle(), "Unexpected minimumIdle");
+        assertEquals(DEFAULT_MAXIMUM_POOLSIZE, config.getMaximumPoolSize(), "Unexpected maximumPoolSize");
+        assertEquals(DEFAULT_MINIMUM_IDLE, config.getMinimumIdle(), "Unexpected minimumIdle");
     }
 }

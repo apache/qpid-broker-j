@@ -37,8 +37,8 @@ define(["dojo/_base/xhr",
             show: function (data)
             {
                 data.context.addInheritedContext({
-                    "qpid.jdbcstore.hikaricp.minIdle": "5",
-                    "qpid.jdbcstore.hikaricp.maxPoolsize": "10"
+                    "qpid.jdbcstore.hikaricp.minimumIdle": "20",
+                    "qpid.jdbcstore.hikaricp.maximumPoolSize": "40"
                 });
             }
         };

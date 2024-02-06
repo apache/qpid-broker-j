@@ -21,7 +21,7 @@
 define(["dojo/_base/xhr", "dojo/parser", "dojox/html/entities", "dojo/query", "dojo/_base/lang", "dojo/domReady!"],
     function (xhr, parser, entities, query, lang)
     {
-        var fieldNames = ["maxPoolsize", "minIdle"];
+        var fieldNames = ["maximumPoolSize", "minimumIdle"];
 
         function HikariCP(data)
         {

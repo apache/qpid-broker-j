@@ -40,8 +40,8 @@ public class HikariCPConnectionProviderFactory implements JDBCConnectionProvider
 {
     static final String JDBC_STORE_PREFIX = "qpid.jdbcstore.";
     static final String HIKARICP_SETTING_PREFIX = JDBC_STORE_PREFIX + "hikaricp.";
-    static final String MAX_POOLSIZE = HIKARICP_SETTING_PREFIX + "maximumPoolSize";
-    static final String MIN_IDLE = HIKARICP_SETTING_PREFIX + "minimumIdle";
+    static final String MAXIMUM_POOLSIZE = HIKARICP_SETTING_PREFIX + "maximumPoolSize";
+    static final String MINIMUM_IDLE = HIKARICP_SETTING_PREFIX + "minimumIdle";
 
     private final Set<String> _supportedAttributes;
 
