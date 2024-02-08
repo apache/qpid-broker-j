@@ -397,37 +397,37 @@ define(["dojo/_base/event",
                         virtualHostData["context"] = virtualHostContext;
                     }
 
-                    const keystore = dijit.registry.byId('addVirtualHost.keyStore').get('value');
+                    const keystore = dijit.registry.byId("addVirtualHost.keyStore")?.get('value');
                     if (keystore)
                     {
                         virtualHostData["keyStore"] = keystore;
                     }
 
-                    const keystorePathPropertyName = dijit.registry.byId("addVirtualHost.keyStorePathPropertyName").get("value");
+                    const keystorePathPropertyName = dijit.registry.byId("addVirtualHost.keyStorePathPropertyName")?.get("value");
                     if (keystorePathPropertyName)
                     {
                         virtualHostData["keystorePathPropertyName"] = keystorePathPropertyName;
                     }
 
-                    const keystorePasswordPropertyName = dijit.registry.byId("addVirtualHost.keyStorePasswordPropertyName").get("value");
+                    const keystorePasswordPropertyName = dijit.registry.byId("addVirtualHost.keyStorePasswordPropertyName")?.get("value");
                     if (keystorePasswordPropertyName)
                     {
                         virtualHostData["keystorePasswordPropertyName"] = keystorePasswordPropertyName;
                     }
 
-                    const truststore = dijit.registry.byId("addVirtualHost.trustStore").get("value");
+                    const truststore = dijit.registry.byId("addVirtualHost.trustStore")?.get("value");
                     if (truststore)
                     {
                         virtualHostData["trustStore"] = truststore;
                     }
 
-                    const truststorePathPropertyName = dijit.registry.byId("addVirtualHost.trustStorePathPropertyName").get("value");
+                    const truststorePathPropertyName = dijit.registry.byId("addVirtualHost.trustStorePathPropertyName")?.get("value");
                     if (truststorePathPropertyName)
                     {
                         virtualHostData["truststorePathPropertyName"] = truststorePathPropertyName;
                     }
 
-                    const truststorePasswordPropertyName = dijit.registry.byId("addVirtualHost.trustStorePasswordPropertyName").get("value");
+                    const truststorePasswordPropertyName = dijit.registry.byId("addVirtualHost.trustStorePasswordPropertyName")?.get("value");
                     if (truststorePasswordPropertyName)
                     {
                         virtualHostData["truststorePasswordPropertyName"] = truststorePasswordPropertyName;
