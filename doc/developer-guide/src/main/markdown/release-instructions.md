@@ -57,11 +57,11 @@ Sources are kept in a Git repository. Thus a git client is required.
     * For bugfix release
         * if support branch exists (e.g as there are changes on main not to be included), check it out instead
 
-                git clone -b 9.0.x https://gitbox.apache.org/repos/asf/qpid-broker-j.git 9.0.x
-                cd 9.0.x
+              git clone -b 9.0.x https://gitbox.apache.org/repos/asf/qpid-broker-j.git 9.0.x
+              cd 9.0.x
 2.  Run RAT tool to verify that all source files have license headers
 
-        mvn  apache-rat:check
+        mvn apache-rat:check
 3.  Add license headers to the files which do not have licenses. Update RAT excludes if required.
 4.  Check that images don't have a non-free ICC profile.
 
@@ -82,19 +82,19 @@ Sources are kept in a Git repository. Thus a git client is required.
 8.  Build RC
     * If it is not a first RC, remove previous tag from git
 
-            git push --delete origin x.y.z
-            git tag --delete x.y.z # deletes local tag
+          git push --delete origin x.y.z
+          git tag --delete x.y.z # deletes local tag
     * Cut the tag using maven:prepare
 
-            mvn release:clean
-            mvn release:prepare -Papache-release,java-mms.1-0  -DautoVersionSubmodules=true -DpreparationGoals=test
+          mvn release:clean
+          mvn release:prepare -Papache-release,java-mms.1-0 -DautoVersionSubmodules=true -DpreparationGoals=test
       Release plugin will ask about new release version, tag name and new development version.
       Enter the same values for version and tag.
       On successful execution a tag with a provided name will be created, the tag version will be set to the specified
       release version and development version on the branch will be changed to the provided one.
     * Build the RC and publish release artifacts into maven staging repo
 
-            mvn release:perform -Papache-release,java-mms.1-0 -Darguments="-DskipTests"
+          mvn release:perform -Papache-release,java-mms.1-0 -Darguments="-DskipTests"
     * The staging maven repository needs to be closed. Log into
       [Apache Nexus UI](https://repository.apache.org/#stagingRepositories), select the repository under
       **Staging Repository** and click `Close` button to close staging repository for any publishing of artifacts.
@@ -105,38 +105,31 @@ Sources are kept in a Git repository. Thus a git client is required.
       with name binaries. (Not doing so would break the site). Manually rename the source artifact to keep with
       the source artifact name consistent.
 
-            version=x.y.z
-            root=https://repository.apache.org/content/repositories/orgapacheqpid-####
-            mkdir binaries
-
-            for i in "" ".asc"; do
-                curl -O $root/org/apache/qpid/apache-qpid-broker-j/${version}/apache-qpid-broker-j-$version-src.tar.gz$i
-                if [[ "$i" == "" ]]; then
-                    sha512sum apache-qpid-broker-j-$version-src.tar.gz > apache-qpid-broker-j-$version-src.tar.gz.sha512
-                fi
-            done
-
-            cd binaries
-
-            for i in "" ".asc"; do
-                for j in "tar.gz" "zip"; do
-                    curl -O $root/org/apache/qpid/apache-qpid-broker-j/${version}/apache-qpid-broker-j-$version-bin.$j$i
-                done
-            done
-
-            for j in "zip" "tar.gz"; do
-              sha512sum apache-qpid-broker-j-$version-bin.$j > apache-qpid-broker-j-$version-bin.$j.sha512
-            done
-
-            for j in "zip" "tar.gz"; do
-               sha512sum -c apache-qpid-broker-j-$version-bin.$j.sha512
-               gpg --verify apache-qpid-broker-j-$version-bin.$j.asc
-            done
-
-            cd ..
-
-            sha512sum -c apache-qpid-broker-j-$version-src.tar.gz.sha512
-            gpg --verify apache-qpid-broker-j-$version-src.tar.gz.asc
+          version=x.y.z
+          root=https://repository.apache.org/content/repositories/orgapacheqpid-####
+          mkdir binaries
+          for i in "" ".asc"; do
+              curl -O $root/org/apache/qpid/apache-qpid-broker-j/${version}/apache-qpid-broker-j-$version-src.tar.gz$i
+              if [[ "$i" == "" ]]; then
+                  sha512sum apache-qpid-broker-j-$version-src.tar.gz > apache-qpid-broker-j-$version-src.tar.gz.sha512
+              fi
+          done
+          cd binaries
+          for i in "" ".asc"; do
+              for j in "tar.gz" "zip"; do
+                  curl -O $root/org/apache/qpid/apache-qpid-broker-j/${version}/apache-qpid-broker-j-$version-bin.$j$i
+              done
+          done
+          for j in "zip" "tar.gz"; do
+            sha512sum apache-qpid-broker-j-$version-bin.$j > apache-qpid-broker-j-$version-bin.$j.sha512
+          done
+          for j in "zip" "tar.gz"; do
+             sha512sum -c apache-qpid-broker-j-$version-bin.$j.sha512
+             gpg --verify apache-qpid-broker-j-$version-bin.$j.asc
+          done
+          cd ..
+          sha512sum -c apache-qpid-broker-j-$version-src.tar.gz.sha512
+          gpg --verify apache-qpid-broker-j-$version-src.tar.gz.asc
     * Send an email into **users@qpid.apache.org** about RC availability with links to the maven staging repository
       and qpid dev staging area folder containing source and binary bundles.
 9.  If RC is OK and voting passes (minimum 3 PMC/binding +1 votes, as well as net +ve overall), publish release artifacts:
@@ -147,8 +140,8 @@ Sources are kept in a Git repository. Thus a git client is required.
     * copy source and binary bundles and their signatures/checksum files form dev staging are into
       release distribution area.
 
-            svn cp -m "Publish x.y.z release artifacts" https://dist.apache.org/repos/dist/dev/qpid/broker-j/x.y.z-rc \
-             https://dist.apache.org/repos/dist/release/qpid/broker-j/x.y.z
+          svn cp -m "Publish Apache Qpid Broker-J x.y.z release artifacts" https://dist.apache.org/repos/dist/dev/qpid/broker-j/x.y.z-rc \
+           https://dist.apache.org/repos/dist/release/qpid/broker-j/x.y.z
       If voting does not pass, resolve found issues, drop staging repository, delete git tag and repeat instructions
       from step 8 until voting passes.
 10. Wait until release is visible on the CDN and Maven Central after closing the vote.
@@ -183,4 +176,15 @@ Sources are kept in a Git repository. Thus a git client is required.
 14. Remove the previous release binaries from <https://dist.apache.org/repos/dist/release/qpid/broker-j>
     when a new one is announced.
 15. Update jenkins jobs if required.
-16. Docker images can be build and pushed to the container registry according to the qpid-docker [README.md](https://github.com/apache/qpid-broker-j/tree/main/qpid-docker#readme).
+16. Upload docker images to Docker Hub
+
+        cd qpid-docker
+        ./docker-build.sh --release 9.0.0                         # prepare input files
+        cd ./qpid-broker-j/9.0.0/docker/
+        docker login -u username docker.io                        # login to Docker Hub
+        docker build -f ./Containerfile -t qpid-broker-j:9.0.0 .
+        docker build -f ./Containerfile --build-arg OS_NAME=alpine -t qpid-broker-j:9.0.0-alpine .
+        docker push localhost/qpid-broker-j:9.0.0-alpine docker://docker.io/apache/qpid-broker-j:9.0.0-alpine
+        docker push localhost/qpid-broker-j:9.0.0 docker://docker.io/apache/qpid-broker-j:9.0.0
+        docker push localhost/qpid-broker-j:9.0.0-alpine docker://docker.io/apache/qpid-broker-j:latest-alpine
+        docker push localhost/qpid-broker-j:9.0.0 docker://docker.io/apache/qpid-broker-j:latest
