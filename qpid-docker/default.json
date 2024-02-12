@@ -1,6 +1,6 @@
 {
   "name" : "default",
-  "modelVersion" : "9.0",
+  "modelVersion" : "9.1",
   "type" : "BDB",
   "storePath" : "/qpid-broker-j/work/messages",
   "storeUnderfullSize" : "0",
