@@ -20,9 +20,15 @@
  */
 package org.apache.qpid.server.util;
 
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.BitSet;
+import java.util.Comparator;
+import java.util.Map;
 import java.util.Random;
 import java.security.SecureRandom;
 
@@ -33,9 +39,22 @@ public class StringUtil
     private static final String OTHERS = "_-";
     private static final char[] CHARACTERS = (NUMBERS + LETTERS + LETTERS.toUpperCase() + OTHERS).toCharArray();
     private static final char[] HEX = "0123456789ABCDEF".toCharArray();
+    private static final Map<CharSequence, CharSequence> HTML_ESCAPE = Map.of("\"", "&quot;",
+            "&", "&amp;",
+            "<", "&lt;",
+            ">", "&gt;",
+            "'", "&#x27;");
+    private static final BitSet HTML_ESCAPE_PREFIX_SET = new BitSet();
+    private static final int LONGEST_HTML_ESCAPE_ENTRY = HTML_ESCAPE.values().stream()
+            .max(Comparator.comparingInt(CharSequence::length))
+            .get().length();
+    private static final Random RANDOM = new SecureRandom();
 
-   
-    private final Random _random = new SecureRandom();
+    static
+    {
+        HTML_ESCAPE.keySet().forEach(key -> HTML_ESCAPE_PREFIX_SET.set(key.charAt(0)));
+
+    }
 
     public static String elideDataUrl(final String path)
     {
@@ -57,7 +76,7 @@ public class StringUtil
         char[] result = new char[maxLength];
         for (int i = 0; i < maxLength; i++)
         {
-            result[i] = (char) CHARACTERS[_random.nextInt(CHARACTERS.length)];
+            result[i] = CHARACTERS[RANDOM.nextInt(CHARACTERS.length)];
         }
         return new String(result);
     }
@@ -69,9 +88,9 @@ public class StringUtil
      * @param managerName
      * @return unique java name
      */
-    public String createUniqueJavaName(String managerName)
+    public String createUniqueJavaName(final String managerName)
     {
-        StringBuilder builder = new StringBuilder();
+        final StringBuilder builder = new StringBuilder();
         boolean initialChar = true;
         for (int i = 0; i < managerName.length(); i++)
         {
@@ -89,7 +108,7 @@ public class StringUtil
         }
         try
         {
-            byte[] digest = MessageDigest.getInstance("MD5").digest(managerName.getBytes(StandardCharsets.UTF_8));
+            final byte[] digest = MessageDigest.getInstance("MD5").digest(managerName.getBytes(StandardCharsets.UTF_8));
             builder.append(toHex(digest).toLowerCase());
         }
         catch (NoSuchAlgorithmException e)
@@ -99,4 +118,78 @@ public class StringUtil
         return builder.toString();
     }
 
+    public static String escapeHtml4(final String input)
+    {
+        if (input == null)
+        {
+            return null;
+        }
+        try
+        {
+            final StringWriter writer = new StringWriter(input.length() * 2);
+            translate(input, writer);
+            return writer.toString();
+        }
+        catch (IOException e)
+        {
+            throw new ConnectionScopedRuntimeException(e);
+        }
+    }
+
+    private static void translate(final CharSequence input, final Writer writer) throws IOException
+    {
+        int pos = 0;
+        int len = input.length();
+
+        while (pos < len)
+        {
+            int consumed = translate(input, pos, writer);
+            if (consumed == 0)
+            {
+                char c1 = input.charAt(pos);
+                writer.write(c1);
+                ++pos;
+                if (Character.isHighSurrogate(c1) && pos < len)
+                {
+                    char c2 = input.charAt(pos);
+                    if (Character.isLowSurrogate(c2))
+                    {
+                        writer.write(c2);
+                        ++pos;
+                    }
+                }
+            }
+            else
+            {
+                for (int pt = 0; pt < consumed; ++pt)
+                {
+                    pos += Character.charCount(Character.codePointAt(input, pos));
+                }
+            }
+        }
+    }
+
+    private static int translate(final CharSequence input, final int index, final Writer writer) throws IOException
+    {
+        if (HTML_ESCAPE_PREFIX_SET.get(input.charAt(index)))
+        {
+            int max = LONGEST_HTML_ESCAPE_ENTRY;
+            if (index + LONGEST_HTML_ESCAPE_ENTRY > input.length())
+            {
+                max = input.length() - index;
+            }
+
+            for (int i = max; i >= 1; --i)
+            {
+                final CharSequence subSeq = input.subSequence(index, index + i);
+                final String result = (String) HTML_ESCAPE.get(subSeq.toString());
+                if (result != null)
+                {
+                    writer.write(result);
+                    return Character.codePointCount(subSeq, 0, subSeq.length());
+                }
+            }
+        }
+        return 0;
+    }
 }

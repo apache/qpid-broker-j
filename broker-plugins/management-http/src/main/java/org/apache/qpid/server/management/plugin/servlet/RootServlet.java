@@ -27,6 +27,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
+import org.apache.qpid.server.util.StringUtil;
 
 public class RootServlet extends HttpServlet
 {
@@ -37,7 +38,7 @@ public class RootServlet extends HttpServlet
     private final String _filename;
 
 
-    public RootServlet(String expectedPath, String apiDocsPath, String filename)
+    public RootServlet(final String expectedPath, final String apiDocsPath, final String filename)
     {
         _expectedPath = expectedPath;
         _apiDocsPath = apiDocsPath;
@@ -47,48 +48,45 @@ public class RootServlet extends HttpServlet
     @Override
     public void init() throws ServletException
     {
-
+        // currently no initialization logic needed
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet(final HttpServletRequest request, final HttpServletResponse response)
+            throws ServletException, IOException
     {
         final String path = request.getServletPath();
-        if(_expectedPath == null || _expectedPath.equals(path == null ? "" : path))
+        if (_expectedPath == null || _expectedPath.equals(path == null ? "" : path))
         {
-            try (OutputStream output = HttpManagementUtil.getOutputStream(request, response))
+            try (final OutputStream output = HttpManagementUtil.getOutputStream(request, response);
+                 final InputStream fileInput = getClass().getResourceAsStream("/resources/" + _filename))
             {
-                try (InputStream fileInput = getClass().getResourceAsStream("/resources/" + _filename))
+                if (fileInput == null)
                 {
-                    if (fileInput != null)
-                    {
-                        byte[] buffer = new byte[1024];
-                        response.setStatus(HttpServletResponse.SC_OK);
-                        int read = 0;
+                    final String fileName = StringUtil.escapeHtml4(_filename);
+                    response.sendError(HttpServletResponse.SC_NOT_FOUND, "unknown file: " + fileName);
+                    return;
+                }
 
-                        while ((read = fileInput.read(buffer)) > 0)
-                        {
-                            output.write(buffer, 0, read);
-                        }
-                    }
-                    else
-                    {
-                        response.sendError(HttpServletResponse.SC_NOT_FOUND, "unknown file: " + _filename);
-                    }
+                final byte[] buffer = new byte[1024];
+                response.setStatus(HttpServletResponse.SC_OK);
+                int read;
+
+                while ((read = fileInput.read(buffer)) > 0)
+                {
+                    output.write(buffer, 0, read);
                 }
             }
         }
         else
         {
-
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            try (OutputStream output = HttpManagementUtil.getOutputStream(request, response))
+            try (final OutputStream output = HttpManagementUtil.getOutputStream(request, response))
             {
-                final String notFoundMessage = "Unknown path '"
-                                 + request.getServletPath()
-                                 + "'. Please read the api docs at "
-                                 + request.getScheme()
-                                 + "://" + request.getServerName() + ":" + request.getServerPort() + _apiDocsPath + "\n";
+                final String servletPath = StringUtil.escapeHtml4(request.getServletPath());
+                final String notFoundMessage = "Unknown path \"" + servletPath +
+                        "\". Please read the api docs at " + request.getScheme() + "://" + request.getServerName() +
+                        ":" + request.getServerPort() + "/" + _apiDocsPath + "\n";
                 output.write(notFoundMessage.getBytes(StandardCharsets.UTF_8));
             }
         }
