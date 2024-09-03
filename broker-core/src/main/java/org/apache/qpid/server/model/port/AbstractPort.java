@@ -279,25 +279,22 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
         super.validateChange(proxyForValidation, changedAttributes);
         Port<?> updated = (Port<?>)proxyForValidation;
 
-
-        if(!getName().equals(updated.getName()))
+        if (!getName().equals(updated.getName()))
         {
             throw new IllegalConfigurationException("Changing the port name is not allowed");
         }
 
-        if(changedAttributes.contains(PORT))
+        if (changedAttributes.contains(PORT))
         {
             int newPort = updated.getPort();
             if (getPort() != newPort && newPort != 0)
             {
-                for (Port p : _container.getChildren(Port.class))
+                for (Port<?> p : _container.getChildren(Port.class))
                 {
                     if (p.getBoundPort() == newPort || p.getPort() == newPort)
                     {
-                        throw new IllegalConfigurationException("Port number "
-                                                                + newPort
-                                                                + " is already in use by port "
-                                                                + p.getName());
+                        throw new IllegalConfigurationException("Port number " + newPort +
+                                " is already in use by port " + p.getName());
                     }
                 }
             }
@@ -310,40 +307,42 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
 
 
         boolean usesSsl = isUsingTLSTransport(transports);
-        if (usesSsl)
+        if (usesSsl && changedAttributes.contains(KEY_STORE) && updated.getKeyStore() == null)
         {
-            if (updated.getKeyStore() == null)
-            {
-                throw new IllegalConfigurationException("Can't create port which requires SSL but has no key store configured.");
-            }
+            throw new IllegalConfigurationException("Can't create port which requires SSL but has no key store configured.");
         }
 
-        if(changedAttributes.contains(Port.AUTHENTICATION_PROVIDER) || changedAttributes.contains(Port.TRANSPORTS))
+        if (changedAttributes.contains(Port.AUTHENTICATION_PROVIDER) || changedAttributes.contains(Port.TRANSPORTS))
         {
             validateAuthenticationMechanisms(updated.getAuthenticationProvider(), updated.getTransports());
         }
 
         boolean requiresCertificate = updated.getNeedClientAuth() || updated.getWantClientAuth();
 
-        if (usesSsl)
+        if (changedAttributes.contains(TRANSPORTS) || changedAttributes.contains(TRUST_STORES) ||
+                changedAttributes.contains(NEED_CLIENT_AUTH) || changedAttributes.contains(WANT_CLIENT_AUTH))
         {
-            if ((updated.getTrustStores() == null || updated.getTrustStores().isEmpty() ) && requiresCertificate)
+            if (usesSsl)
             {
-                throw new IllegalConfigurationException("Can't create port which requests SSL client certificates but has no trust store configured.");
+                if ((updated.getTrustStores() == null || updated.getTrustStores().isEmpty()) && requiresCertificate)
+                {
+                    throw new IllegalConfigurationException(
+                            "Can't create port which requests SSL client certificates but has no trust store configured.");
+                }
             }
-        }
-        else
-        {
-            if (requiresCertificate)
+            else
             {
-                throw new IllegalConfigurationException("Can't create port which requests SSL client certificates but doesn't use SSL transport.");
+                if (requiresCertificate)
+                {
+                    throw new IllegalConfigurationException(
+                            "Can't create port which requests SSL client certificates but doesn't use SSL transport.");
+                }
             }
         }
 
-
-        if(requiresCertificate && updated.getClientCertRecorder() != null)
+        if (requiresCertificate && updated.getClientCertRecorder() != null)
         {
-            if(!(updated.getClientCertRecorder() instanceof ManagedPeerCertificateTrustStore))
+            if (!(updated.getClientCertRecorder() instanceof ManagedPeerCertificateTrustStore))
             {
                 throw new IllegalConfigurationException("Only trust stores of type " + ManagedPeerCertificateTrustStore.TYPE_NAME + " may be used as the client certificate recorder");
             }
