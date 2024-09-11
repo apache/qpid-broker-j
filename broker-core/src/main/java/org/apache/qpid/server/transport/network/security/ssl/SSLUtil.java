@@ -932,14 +932,14 @@ public class SSLUtil
         };
     }
 
-    public static Map<String, Certificate> getCertificates(final KeyStore ks) throws KeyStoreException
+    public static Map<String, Certificate> getCertificates(final KeyStore ks, final boolean keyCertificates) throws KeyStoreException
     {
         final Map<String ,Certificate> certificates = new HashMap<>();
         final Enumeration<String> aliases = ks.aliases();
         while (aliases.hasMoreElements())
         {
             final String alias = aliases.nextElement();
-            if (ks.isCertificateEntry(alias))
+            if ((keyCertificates && ks.isKeyEntry(alias)) || (!keyCertificates && ks.isCertificateEntry(alias)))
             {
                 certificates.put(alias, ks.getCertificate(alias));
             }

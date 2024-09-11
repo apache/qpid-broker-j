@@ -27,8 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -39,7 +37,6 @@ import java.security.cert.CertificateExpiredException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Enumeration;
 import java.util.Map;
 import java.util.Objects;
 
@@ -358,8 +355,9 @@ public class FileTrustStoreTest extends UnitTestBase
         final FileTrustStore<?> trustStore = createFileTrustStore(attributes);
         final Certificate[] certificates = trustStore.getCertificates();
 
-        assertEquals(getNumberOfCertificates(keyStoreFile, keyStoreType), (long) certificates.length,
-                     "Unexpected number of certificates");
+        final int numberOfCertificates = KeyStoreTestHelper
+                .getNumberOfCertificates(keyStoreFile, keyStoreType, TLS_RESOURCE.getSecret().toCharArray(), false);
+        assertEquals(numberOfCertificates, (long) certificates.length, "Unexpected number of certificates");
     }
 
     @Test
@@ -373,8 +371,9 @@ public class FileTrustStoreTest extends UnitTestBase
         final FileTrustStore<?> trustStore = createFileTrustStore(attributes);
         final Certificate[] certificates = trustStore.getCertificates();
 
-        assertEquals(getNumberOfCertificates(keyStoreFile, TLS_RESOURCE.getKeyStoreType()), (long) certificates.length,
-                     "Unexpected number of certificates");
+        final int numberOfCertificates = KeyStoreTestHelper
+                .getNumberOfCertificates(keyStoreFile, "PKCS12", TLS_RESOURCE.getSecret().toCharArray(), false);
+        assertEquals(numberOfCertificates, (long) certificates.length, "Unexpected number of certificates");
     }
 
     @Test
@@ -413,27 +412,6 @@ public class FileTrustStoreTest extends UnitTestBase
         final Certificate certificate = certificates[0];
         assertTrue(certificate instanceof X509Certificate);
         return (X509Certificate) certificate;
-    }
-
-    private int getNumberOfCertificates(Path keystore, String type) throws Exception
-    {
-        final KeyStore ks = KeyStore.getInstance(type);
-        try (final InputStream is = new FileInputStream(keystore.toFile()))
-        {
-            ks.load(is, TLS_RESOURCE.getSecret().toCharArray());
-        }
-
-        int result = 0;
-        final Enumeration<String> aliases = ks.aliases();
-        while (aliases.hasMoreElements())
-        {
-            final String alias = aliases.nextElement();
-            if (ks.isCertificateEntry(alias))
-            {
-                result++;
-            }
-        }
-        return result;
     }
 
     private Path createTrustStoreWithExpiredCertificate() throws Exception

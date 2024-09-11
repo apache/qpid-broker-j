@@ -90,13 +90,11 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
         Handler.register();
     }
 
-
     @ManagedObjectFactoryConstructor
     public FileKeyStoreImpl(Map<String, Object> attributes, Broker<?> broker)
     {
         super(attributes, broker);
     }
-
 
     @Override
     public void onValidate()
@@ -137,7 +135,7 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
     {
         try
         {
-            _certificates = Collections.unmodifiableMap(SSLUtil.getCertificates(getInitializedKeyStore(this)));
+            _certificates = Collections.unmodifiableMap(SSLUtil.getCertificates(getInitializedKeyStore(this), true));
         }
         catch (GeneralSecurityException | IOException e)
         {

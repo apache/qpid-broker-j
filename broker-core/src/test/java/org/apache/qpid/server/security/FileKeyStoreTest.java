@@ -65,7 +65,7 @@ public class FileKeyStoreTest extends UnitTestBase
     private static final String SECRET_KEY_ALIAS = "secret-key-alias";
 
     @Test
-    public void testCreateKeyStoreFromFile_Success() throws Exception
+    void testCreateKeyStoreFromFile_Success() throws Exception
     {
         final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
@@ -81,7 +81,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateKeyStoreWithAliasFromFile_Success() throws Exception
+    void testCreateKeyStoreWithAliasFromFile_Success() throws Exception
     {
         final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
@@ -97,7 +97,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateKeyStoreFromFile_WrongPassword() throws Exception
+    void testCreateKeyStoreFromFile_WrongPassword() throws Exception
     {
         final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
@@ -109,7 +109,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateKeyStoreFromFile_UnknownAlias() throws Exception
+    void testCreateKeyStoreFromFile_UnknownAlias() throws Exception
     {
         final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStore(DN_FOO);
         final String unknownAlias = TLS_RESOURCE.getPrivateKeyAlias() + "_";
@@ -124,7 +124,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateKeyStoreFromFile_NonKeyAlias() throws Exception
+    void testCreateKeyStoreFromFile_NonKeyAlias() throws Exception
     {
         final Path keyStoreFile = TLS_RESOURCE.createSelfSignedTrustStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
@@ -138,7 +138,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateKeyStoreFromDataUrl_Success() throws Exception
+    void testCreateKeyStoreFromDataUrl_Success() throws Exception
     {
         final String keyStoreAsDataUrl = TLS_RESOURCE.createSelfSignedKeyStoreAsDataUrl(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
@@ -153,7 +153,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateKeyStoreWithAliasFromDataUrl_Success() throws Exception
+    void testCreateKeyStoreWithAliasFromDataUrl_Success() throws Exception
     {
         final String keyStoreAsDataUrl = TLS_RESOURCE.createSelfSignedKeyStoreAsDataUrl(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
@@ -169,7 +169,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateKeyStoreFromDataUrl_WrongPassword() throws Exception
+    void testCreateKeyStoreFromDataUrl_WrongPassword() throws Exception
     {
         final String keyStoreAsDataUrl = TLS_RESOURCE.createSelfSignedKeyStoreAsDataUrl(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
@@ -181,7 +181,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateKeyStoreFromDataUrl_BadKeystoreBytes()
+    void testCreateKeyStoreFromDataUrl_BadKeystoreBytes()
     {
         final String keyStoreAsDataUrl = DataUrlUtils.getDataUrlForBytes("notatruststore".getBytes());
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
@@ -193,7 +193,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateKeyStoreFromDataUrl_UnknownAlias() throws Exception
+    void testCreateKeyStoreFromDataUrl_UnknownAlias() throws Exception
     {
         final String keyStoreAsDataUrl = TLS_RESOURCE.createSelfSignedKeyStoreAsDataUrl(DN_FOO);
         final String unknownAlias = TLS_RESOURCE.getPrivateKeyAlias() + "_";
@@ -208,7 +208,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testEmptyKeystoreRejected() throws Exception
+    void testEmptyKeystoreRejected() throws Exception
     {
         final Path keyStoreFile = TLS_RESOURCE.createKeyStore();
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
@@ -220,7 +220,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testKeystoreWithNoPrivateKeyRejected() throws Exception
+    void testKeystoreWithNoPrivateKeyRejected() throws Exception
     {
         final Path keyStoreFile = TLS_RESOURCE.createSelfSignedTrustStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, getTestName(),
@@ -233,7 +233,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testSymmetricKeysIgnored() throws Exception
+    void testSymmetricKeysIgnored() throws Exception
     {
         final String keyStoreType = "jceks"; // or jks
         final Path keyStoreFile = createSelfSignedKeyStoreWithSecretKeyAndCertificate(keyStoreType, DN_FOO);
@@ -246,7 +246,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testUpdateKeyStore_Success() throws Exception
+    void testUpdateKeyStore_Success() throws Exception
     {
         final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
@@ -276,7 +276,7 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testReloadKeystore() throws Exception
+    void testReloadKeystore() throws Exception
     {
         final Path keyStorePath = TLS_RESOURCE.createSelfSignedKeyStoreWithCertificate(DN_FOO);
         final Path keyStorePath2 = TLS_RESOURCE.createSelfSignedKeyStoreWithCertificate(DN_BAR);
@@ -293,6 +293,23 @@ public class FileKeyStoreTest extends UnitTestBase
 
         final CertificateDetails certificate2 = getCertificate(keyStoreObject);
         assertEquals(DN_BAR, certificate2.getIssuerName());
+    }
+
+    @Test
+    void privateKeyEntryCertificate() throws Exception
+    {
+        final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStoreWithCertificate(DN_FOO);
+        final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, getTestName(),
+                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileKeyStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
+                FileKeyStore.KEY_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+        final FileKeyStore<?> keyStore = createFileKeyStore(attributes);
+        final List<CertificateDetails> certificateDetails = keyStore.getCertificateDetails();
+
+        final int keyCertificates = KeyStoreTestHelper
+                .getNumberOfCertificates(keyStoreFile, "PKCS12", TLS_RESOURCE.getSecret().toCharArray(), true);
+        assertEquals(keyCertificates, certificateDetails.size(), "Unexpected number of certificates");
+        assertEquals("private-key-alias", certificateDetails.get(0).getAlias(), "Unexpected alias name");
     }
 
     @SuppressWarnings("unchecked")

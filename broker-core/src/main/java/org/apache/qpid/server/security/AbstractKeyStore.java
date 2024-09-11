@@ -197,13 +197,13 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
     @Override
     public List<CertificateDetails> getCertificateDetails()
     {
-        Collection<Certificate> certificates = getCertificates();
+        final Collection<Certificate> certificates = getCertificates();
         if (!certificates.isEmpty())
         {
             return certificates.stream()
-                               .filter(cert -> cert instanceof X509Certificate)
-                               .map(x509cert -> new CertificateDetailsImpl((X509Certificate) x509cert))
-                               .collect(Collectors.toList());
+                    .filter(X509Certificate.class::isInstance)
+                    .map(x509cert -> new CertificateDetailsImpl((X509Certificate) x509cert))
+                    .collect(Collectors.toList());
         }
         return Collections.emptyList();
     }

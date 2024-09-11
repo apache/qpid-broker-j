@@ -38,6 +38,7 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -90,7 +91,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreationOfTrustStoreFromValidPrivateKeyAndCertificateInDERFormat() throws Exception
+    void testCreationOfTrustStoreFromValidPrivateKeyAndCertificateInDERFormat() throws Exception
     {
         final Path privateKeyFile = TLS_RESOURCE.savePrivateKeyAsDer(_keyCertPair.getPrivateKey());
         final Path certificateFile = TLS_RESOURCE.saveCertificateAsDer(_keyCertPair.getCertificate());
@@ -98,7 +99,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreationOfTrustStoreFromValidPrivateKeyAndCertificateInPEMFormat() throws Exception
+    void testCreationOfTrustStoreFromValidPrivateKeyAndCertificateInPEMFormat() throws Exception
     {
         final Path privateKeyFile = TLS_RESOURCE.savePrivateKeyAsPem(_keyCertPair.getPrivateKey());
         final Path certificateFile = TLS_RESOURCE.saveCertificateAsPem(_keyCertPair.getCertificate());
@@ -120,7 +121,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreationOfTrustStoreFromValidPrivateKeyAndInvalidCertificate()throws Exception
+    void testCreationOfTrustStoreFromValidPrivateKeyAndInvalidCertificate()throws Exception
     {
         final Path privateKeyFile = TLS_RESOURCE.savePrivateKeyAsPem(_keyCertPair.getPrivateKey());
         final Path certificateFile = TLS_RESOURCE.createFile(".cer");
@@ -134,7 +135,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreationOfTrustStoreFromInvalidPrivateKeyAndValidCertificate()throws Exception
+    void testCreationOfTrustStoreFromInvalidPrivateKeyAndValidCertificate()throws Exception
     {
         final Path privateKeyFile =  TLS_RESOURCE.createFile(".pk");
         final Path certificateFile = TLS_RESOURCE.saveCertificateAsPem(_keyCertPair.getCertificate());
@@ -149,14 +150,14 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testExpiryCheckingFindsExpired() throws Exception
+    void testExpiryCheckingFindsExpired() throws Exception
     {
         doCertExpiryChecking(1);
         verify(_messageLogger, times(1)).message(argThat(new LogMessageArgumentMatcher()));
     }
 
     @Test
-    public void testExpiryCheckingIgnoresValid() throws Exception
+    void testExpiryCheckingIgnoresValid() throws Exception
     {
         doCertExpiryChecking(-1);
         verify(_messageLogger, never()).message(argThat(new LogMessageArgumentMatcher()));
@@ -179,7 +180,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreationOfKeyStoreWithNonMatchingPrivateKeyAndCertificate()throws Exception
+    void testCreationOfKeyStoreWithNonMatchingPrivateKeyAndCertificate()throws Exception
     {
         final KeyCertificatePair keyCertPair2 = generateSelfSignedCertificate();
         final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, NAME,
@@ -192,7 +193,7 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testUpdateKeyStoreToNonMatchingCertificate()throws Exception
+    void testUpdateKeyStoreToNonMatchingCertificate()throws Exception
     {
         final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, getTestName(),
                 NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.getPrivateKey()),
@@ -201,10 +202,23 @@ public class NonJavaKeyStoreTest extends UnitTestBase
         final KeyStore<?> trustStore = createTestKeyStore(attributes);
         final KeyCertificatePair keyCertPair2 = generateSelfSignedCertificate();
         final String certUrl = getCertificateAsDataUrl(keyCertPair2.getCertificate());
+        final Map<String,Object> newAttributes = Map.of("certificateUrl", certUrl);
 
-        assertThrows(IllegalConfigurationException.class,
-                () -> trustStore.setAttributes(Map.of("certificateUrl", certUrl)),
+        assertThrows(IllegalConfigurationException.class, () -> trustStore.setAttributes(newAttributes),
                 "Created key store from invalid certificate");
+    }
+
+    @Test
+    void privateKeyEntryCertificate() throws Exception
+    {
+        final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, getTestName(),
+                NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.getPrivateKey()),
+                NonJavaKeyStore.CERTIFICATE_URL, getCertificateAsDataUrl(_keyCertPair.getCertificate()),
+                NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
+        final KeyStore<?> keyStore = createTestKeyStore(attributes);
+        final List<CertificateDetails> certificateDetails = keyStore.getCertificateDetails();
+
+        assertEquals(1, certificateDetails.size(), "Unexpected number of certificates");
     }
 
     @SuppressWarnings("unchecked")
