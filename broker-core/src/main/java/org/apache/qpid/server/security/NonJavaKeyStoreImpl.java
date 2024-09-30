@@ -322,4 +322,10 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
         final Collection<Certificate> certificates = _certificates;
         return certificates == null ? List.of() : certificates;
     }
+
+    @Override
+    public List<CertificateDetails> getCertificateDetails()
+    {
+        return _certificate == null ? List.of() : List.of(new CertificateDetailsImpl(_certificate));
+    }
 }

@@ -22,6 +22,11 @@ package org.apache.qpid.server.security;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.security.KeyStore;
+import java.util.Enumeration;
 import java.util.Map;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -42,5 +47,29 @@ public class KeyStoreTestHelper
                 "Exception not thrown");
         final String message = thrown.getMessage();
         assertTrue(message.contains(expectedExceptionMessage), "Exception text not as expected:" + message);
+    }
+
+    public static int getNumberOfCertificates(final Path keystore,
+                                              final String type,
+                                              final char[] password,
+                                              final boolean keyCertificates) throws Exception
+    {
+        final KeyStore ks = KeyStore.getInstance(type);
+        try (final InputStream is = new FileInputStream(keystore.toFile()))
+        {
+            ks.load(is, password);
+        }
+
+        int result = 0;
+        final Enumeration<String> aliases = ks.aliases();
+        while (aliases.hasMoreElements())
+        {
+            final String alias = aliases.nextElement();
+            if ((keyCertificates && ks.isKeyEntry(alias)) || (!keyCertificates && ks.isCertificateEntry(alias)))
+            {
+                result++;
+            }
+        }
+        return result;
     }
 }

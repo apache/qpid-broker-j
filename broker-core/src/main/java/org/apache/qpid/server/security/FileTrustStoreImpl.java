@@ -295,7 +295,7 @@ public class FileTrustStoreImpl extends AbstractTrustStore<FileTrustStoreImpl> i
         {
             final KeyStore ts = initializeKeyStore(this);
             trustManagers = createTrustManagers(ts);
-            certificates = Collections.unmodifiableMap(SSLUtil.getCertificates(ts));
+            certificates = Collections.unmodifiableMap(SSLUtil.getCertificates(ts, false));
         }
         catch (Exception e)
         {
