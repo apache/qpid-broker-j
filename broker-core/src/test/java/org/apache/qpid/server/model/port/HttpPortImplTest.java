@@ -20,11 +20,13 @@
 
 package org.apache.qpid.server.model.port;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,24 +40,31 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerImpl;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.JsonSystemConfigImpl;
+import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class HttpPortImplTest extends UnitTestBase
+class HttpPortImplTest extends UnitTestBase
 {
     private static final String AUTHENTICATION_PROVIDER_NAME = "test";
 
     private Broker _broker;
 
     @BeforeEach
-    public void setUp() throws Exception
+    public void setUp()
     {
         final TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         final Model model = BrokerModel.getInstance();
         final SystemConfig systemConfig = mock(SystemConfig.class);
+        when(systemConfig.getCategoryClass()).thenReturn(SystemConfig.class);
+        when(systemConfig.getTypeClass()).thenReturn(JsonSystemConfigImpl.class);
         _broker = mock(Broker.class);
         when(_broker.getParent()).thenReturn(systemConfig);
         when(_broker.getTaskExecutor()).thenReturn(taskExecutor);
@@ -63,6 +72,7 @@ public class HttpPortImplTest extends UnitTestBase
         when(_broker.getModel()).thenReturn(model);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
+        when(_broker.getTypeClass()).thenReturn(BrokerImpl.class);
 
         final AuthenticationProvider<?> provider = mock(AuthenticationProvider.class);
         when(provider.getName()).thenReturn(AUTHENTICATION_PROVIDER_NAME);
@@ -74,7 +84,7 @@ public class HttpPortImplTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateWithIllegalThreadPoolValues()
+    void testCreateWithIllegalThreadPoolValues()
     {
         final int threadPoolMinimumSize = 37;
         final int invalidThreadPoolMaximumSize = threadPoolMinimumSize - 1;
@@ -88,7 +98,7 @@ public class HttpPortImplTest extends UnitTestBase
     }
 
     @Test
-    public void testIllegalChangeWithMaxThreadPoolSizeSmallerThanMinThreadPoolSize()
+    void testIllegalChangeWithMaxThreadPoolSizeSmallerThanMinThreadPoolSize()
     {
         final int threadPoolMinimumSize = 37;
         final int invalidThreadPoolMaximumSize = threadPoolMinimumSize - 1;
@@ -105,7 +115,7 @@ public class HttpPortImplTest extends UnitTestBase
     }
 
     @Test
-    public void testIllegalChangeWithNegativeThreadPoolSize()
+    void testIllegalChangeWithNegativeThreadPoolSize()
     {
         final int illegalThreadPoolMinimumSize = -1;
         final int threadPoolMaximumSize = 1;
@@ -122,7 +132,7 @@ public class HttpPortImplTest extends UnitTestBase
     }
 
     @Test
-    public void testChangeWithLegalThreadPoolValues()
+    void testChangeWithLegalThreadPoolValues()
     {
         final int threadPoolMinimumSize = 37;
         final int threadPoolMaximumSize = threadPoolMinimumSize + 1;
@@ -140,5 +150,101 @@ public class HttpPortImplTest extends UnitTestBase
 
         assertEquals(port.getThreadPoolMaximum(), (long) threadPoolMaximumSize,
                 "Port did not pickup changes to maximum thread pool size");
+    }
+
+    @Test
+    void deletePort()
+    {
+        final Map<String, Object> attributes = Map.of(HttpPort.PORT, 0,
+                HttpPort.NAME, getTestName(),
+                HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME,
+                HttpPort.WANT_CLIENT_AUTH, true,
+                HttpPort.NEED_CLIENT_AUTH, true,
+                HttpPort.PROTOCOLS, List.of("HTTP"),
+                HttpPort.TRANSPORTS, List.of("SSL"),
+                HttpPort.KEY_STORE, mock(KeyStore.class),
+                HttpPort.TRUST_STORES, List.of(mock(TrustStore.class)));
+
+        final HttpPortImpl port = new HttpPortImpl(attributes, _broker);
+
+        assertEquals(State.UNINITIALIZED, port.getState());
+
+        port.create();
+
+        assertEquals(State.QUIESCED, port.getState());
+
+        port.delete();
+
+        assertEquals(State.DELETED, port.getState());
+    }
+
+    /** Checks the deletion of an invalid port */
+    @Test
+    void deleteUninitializedInvalidPort()
+    {
+        final Map<String, Object> attributes = Map.of(HttpPort.PORT, 0,
+                HttpPort.NAME, getTestName(),
+                HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME,
+                HttpPort.WANT_CLIENT_AUTH, true,
+                HttpPort.NEED_CLIENT_AUTH, true,
+                HttpPort.PROTOCOLS, List.of("HTTP"),
+                HttpPort.TRANSPORTS, List.of("SSL"),
+                HttpPort.KEY_STORE, mock(KeyStore.class),
+                HttpPort.TRUST_STORES, List.of());
+
+        final HttpPortImpl port = new HttpPortImpl(attributes, _broker);
+
+        assertEquals(State.UNINITIALIZED, port.getState());
+
+        port.delete();
+
+        assertEquals(State.DELETED, port.getState());
+    }
+
+    /** Checks the update of an invalid port */
+    @Test
+    void updateUninitializedInvalidPort()
+    {
+        final Map<String, Object> attributes = Map.of(HttpPort.PORT, 0,
+                HttpPort.NAME, getTestName(),
+                HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME,
+                HttpPort.WANT_CLIENT_AUTH, true,
+                HttpPort.NEED_CLIENT_AUTH, true,
+                HttpPort.PROTOCOLS, List.of("HTTP"),
+                HttpPort.TRANSPORTS, List.of("SSL"),
+                HttpPort.KEY_STORE, mock(KeyStore.class),
+                HttpPort.TRUST_STORES, List.of());
+
+        final HttpPortImpl port = new HttpPortImpl(attributes, _broker);
+
+        assertEquals(State.UNINITIALIZED, port.getState());
+
+        final Map<String, Object> args1 = Map.of(HttpPort.NAME, "changed");
+        IllegalConfigurationException exception = assertThrows(IllegalConfigurationException.class, () -> port.setAttributes(args1));
+        assertEquals("Changing the port name is not allowed", exception.getMessage());
+
+        final Map<String, Object> args2 = Map.of(HttpPort.WANT_CLIENT_AUTH, false);
+        exception = assertThrows(IllegalConfigurationException.class, () -> port.setAttributes(args2));
+        assertEquals("Can't create port which requests SSL client certificates but has no trust store configured.",
+                exception.getMessage());
+
+        final Map<String, Object> args3 = Map.of(HttpPort.NEED_CLIENT_AUTH, false);
+        exception = assertThrows(IllegalConfigurationException.class, () -> port.setAttributes(args3));
+        assertEquals("Can't create port which requests SSL client certificates but has no trust store configured.",
+                exception.getMessage());
+
+        final Map<String, Object> args4 = Map.of(HttpPort.TRANSPORTS, List.of("TCP"));
+        exception = assertThrows(IllegalConfigurationException.class, () -> port.setAttributes(args4));
+        assertEquals("Can't create port which requests SSL client certificates but doesn't use SSL transport.",
+                exception.getMessage());
+
+        final Map<String, Object> args5 = new HashMap<>();
+        args5.put(HttpPort.KEY_STORE, null);
+        exception = assertThrows(IllegalConfigurationException.class, () -> port.setAttributes(args5));
+        assertEquals("Can't create port which requires SSL but has no key store configured.",
+                exception.getMessage());
+
+        final Map<String, Object> args6 = Map.of(HttpPort.TRUST_STORES, List.of(mock(TrustStore.class)));
+        assertDoesNotThrow(() -> port.setAttributes(args6));
     }
 }
