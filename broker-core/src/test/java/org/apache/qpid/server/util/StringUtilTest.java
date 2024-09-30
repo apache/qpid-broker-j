@@ -21,6 +21,7 @@
 package org.apache.qpid.server.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -69,5 +70,20 @@ public class StringUtilTest extends UnitTestBase
                 _util.createUniqueJavaName("9StartsWithIllegalInitial"));
         assertEquals("97b247ba19ff869340d3797cc73ca065", _util.createUniqueJavaName("1++++----"));
         assertEquals("d41d8cd98f00b204e9800998ecf8427e", _util.createUniqueJavaName(""));
+    }
+
+    @Test
+    public void escapeHtml4()
+    {
+        assertNull(StringUtil.escapeHtml4(null));
+        assertEquals("", StringUtil.escapeHtml4(""));
+        assertEquals("test", StringUtil.escapeHtml4("test"));
+        assertEquals("&lt;test&gt;", StringUtil.escapeHtml4("<test>"));
+        assertEquals("&quot;test&quot;", StringUtil.escapeHtml4("\"test\""));
+        assertEquals("&amp;", StringUtil.escapeHtml4("&"));
+        assertEquals("&amp; &amp; &lt; &quot; &gt; &amp; &amp;", StringUtil.escapeHtml4("& & < \" > & &"));
+        assertEquals("&gt;&gt;&gt;", StringUtil.escapeHtml4(">>>"));
+        assertEquals("&lt;&lt;&lt;", StringUtil.escapeHtml4("<<<"));
+        assertEquals("&#x27;&#x27;&#x27;", StringUtil.escapeHtml4("'''"));
     }
 }
