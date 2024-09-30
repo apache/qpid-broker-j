@@ -23,11 +23,11 @@ set -e
 
 if ! [ -f ./work/config.json ]; then
   if [ -d ./work-init ]; then
-      for file in `ls ./work-init`; do echo copying file to work folder: $file; cp ./work-init/$file ./work || :; done
+      for file in `ls ./work-init`; do echo copying file to work folder: $file; cp -r ./work-init/$file ./work || :; done
   fi
   sed -i "s/QPID_ADMIN_USER/${QPID_ADMIN_USER}/g" /qpid-broker-j/work/broker.acl
   if [ -d ./work-override ]; then
-    for file in `ls ./work-override`; do echo copying file to work folder: $file; cp ./work-override/$file ./work || :; done
+    for file in `ls ./work-override`; do echo copying file to work folder: $file; cp -r ./work-override/$file ./work || :; done
   fi
 else
   echo "skipping broker instance creation; instance already exists"
