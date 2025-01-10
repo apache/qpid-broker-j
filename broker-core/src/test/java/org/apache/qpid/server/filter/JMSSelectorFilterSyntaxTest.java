@@ -25,36 +25,77 @@ import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
 
-public class JMSSelectorFilterSyntaxTest
+class JMSSelectorFilterSyntaxTest
 {
     @Test
-    public void equality() throws Exception
+    void equality() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("color")).thenReturn("red");
+        when(message.getHeader("size")).thenReturn("small");
         when(message.getHeader("price")).thenReturn(100);
 
         assertTrue(new JMSSelectorFilter("color = 'red'").matches(message));
+        assertTrue(new JMSSelectorFilter("size = 'small'").matches(message));
         assertTrue(new JMSSelectorFilter("price = 100").matches(message));
         assertFalse(new JMSSelectorFilter("color = 'blue'").matches(message));
+        assertFalse(new JMSSelectorFilter("size = 'big'").matches(message));
         assertFalse(new JMSSelectorFilter("price = 200").matches(message));
     }
 
     @Test
-    public void inequality() throws Exception
+    void notEquality() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("color")).thenReturn("red");
+        when(message.getHeader("size")).thenReturn("small");
+        when(message.getHeader("price")).thenReturn(100);
+
+        assertFalse(new JMSSelectorFilter("not color = 'red'").matches(message));
+        assertFalse(new JMSSelectorFilter("not size = 'small'").matches(message));
+        assertFalse(new JMSSelectorFilter("not price = 100").matches(message));
+        assertTrue(new JMSSelectorFilter("not color = 'blue'").matches(message));
+        assertTrue(new JMSSelectorFilter("not size = 'big'").matches(message));
+        assertTrue(new JMSSelectorFilter("not price = 200").matches(message));
+
+        assertFalse(new JMSSelectorFilter("not (color = 'red') and not (price = 100) and not (size = 'small')").matches(message));
+        assertFalse(new JMSSelectorFilter("not color = 'red' and not price = 100 and not size = 'small'").matches(message));
+        assertTrue(new JMSSelectorFilter("not (color = 'blue') and not (price = 200) and not (size = 'big')").matches(message));
+        assertTrue(new JMSSelectorFilter("not color = 'blue' and not price = 200 and not size = 'big'").matches(message));
+    }
+
+    @Test
+    void inequality() throws Exception
+    {
+        final Filterable message = mock(Filterable.class);
+        when(message.getHeader("color")).thenReturn("red");
+        when(message.getHeader("size")).thenReturn("small");
         when(message.getHeader("price")).thenReturn(100);
 
         assertTrue(new JMSSelectorFilter("color <> 'blue'").matches(message));
+        assertTrue(new JMSSelectorFilter("size <> 'big'").matches(message));
         assertTrue(new JMSSelectorFilter("price <> 200").matches(message));
         assertFalse(new JMSSelectorFilter("color <> 'red'").matches(message));
+        assertFalse(new JMSSelectorFilter("size <> 'small'").matches(message));
         assertFalse(new JMSSelectorFilter("price <> 100").matches(message));
     }
 
     @Test
-    public void greaterThan() throws Exception
+    void notInequality() throws Exception
+    {
+        final Filterable message = mock(Filterable.class);
+        when(message.getHeader("color")).thenReturn("red");
+        when(message.getHeader("size")).thenReturn("small");
+        when(message.getHeader("price")).thenReturn(100);
+
+        assertTrue(new JMSSelectorFilter("not (color <> 'red') and not (price <> 100) and not (size <> 'small')").matches(message));
+        assertTrue(new JMSSelectorFilter("not color <> 'red' and not price <> 100 and not size <> 'small'").matches(message));
+        assertFalse(new JMSSelectorFilter("not (color <> 'blue') and not (price <> 200) and not (size <> 'big')").matches(message));
+        assertFalse(new JMSSelectorFilter("not color <> 'blue' and not price <> 200 and not size <> 'big'").matches(message));
+    }
+
+    @Test
+    void greaterThan() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("price")).thenReturn(100);
@@ -64,7 +105,17 @@ public class JMSSelectorFilterSyntaxTest
     }
 
     @Test
-    public void greaterThanOrEquals() throws Exception
+    void notGreaterThan() throws Exception
+    {
+        final Filterable message = mock(Filterable.class);
+        when(message.getHeader("price")).thenReturn(100);
+
+        assertFalse(new JMSSelectorFilter("not price > 10").matches(message));
+        assertTrue(new JMSSelectorFilter("not price > 100").matches(message));
+    }
+
+    @Test
+    void greaterThanOrEquals() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("price")).thenReturn(100);
@@ -75,7 +126,18 @@ public class JMSSelectorFilterSyntaxTest
     }
 
     @Test
-    public void lessThan() throws Exception
+    void notGreaterThanOrEquals() throws Exception
+    {
+        final Filterable message = mock(Filterable.class);
+        when(message.getHeader("price")).thenReturn(100);
+
+        assertFalse(new JMSSelectorFilter("not price >= 10").matches(message));
+        assertFalse(new JMSSelectorFilter("not price >= 100").matches(message));
+        assertTrue(new JMSSelectorFilter("not price >= 200").matches(message));
+    }
+
+    @Test
+    void lessThan() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("price")).thenReturn(100);
@@ -85,7 +147,17 @@ public class JMSSelectorFilterSyntaxTest
     }
 
     @Test
-    public void lessThanOrEquals() throws Exception
+    void notLessThan() throws Exception
+    {
+        final Filterable message = mock(Filterable.class);
+        when(message.getHeader("price")).thenReturn(100);
+
+        assertFalse(new JMSSelectorFilter("not price < 110").matches(message));
+        assertTrue(new JMSSelectorFilter("not price < 100").matches(message));
+    }
+
+    @Test
+    void lessThanOrEquals() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("price")).thenReturn(100);
@@ -96,7 +168,18 @@ public class JMSSelectorFilterSyntaxTest
     }
 
     @Test
-    public void and() throws Exception
+    void notLessThanOrEquals() throws Exception
+    {
+        final Filterable message = mock(Filterable.class);
+        when(message.getHeader("price")).thenReturn(100);
+
+        assertFalse(new JMSSelectorFilter("not price <= 110").matches(message));
+        assertFalse(new JMSSelectorFilter("not price <= 100").matches(message));
+        assertTrue(new JMSSelectorFilter("not price <= 10").matches(message));
+    }
+
+    @Test
+    void and() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("color")).thenReturn("red");
@@ -109,7 +192,73 @@ public class JMSSelectorFilterSyntaxTest
     }
 
     @Test
-    public void or() throws Exception
+    void multipleAnd() throws Exception
+    {
+        final Filterable message = mock(Filterable.class);
+        when(message.getHeader("color")).thenReturn("red");
+        when(message.getHeader("price")).thenReturn(100);
+        when(message.getHeader("size")).thenReturn("large");
+        when(message.getHeader("height")).thenReturn(10);
+        when(message.getHeader("width")).thenReturn(5);
+        when(message.getHeader("depth")).thenReturn(2);
+        when(message.getHeader("length")).thenReturn(8);
+
+        assertTrue(new JMSSelectorFilter("color = 'red' and price = 100 and size = 'large' and height = 10 and width = 5 and depth = 2 and length = 8").matches(message));
+        assertFalse(new JMSSelectorFilter("color = 'blue' and price = 100 and size = 'large' and height = 10 and width = 5 and depth = 2 and length = 8").matches(message));
+        assertFalse(new JMSSelectorFilter("color = 'red' and price = 200 and size = 'large' and height = 10 and width = 5 and depth = 2 and length = 8").matches(message));
+        assertFalse(new JMSSelectorFilter("color = 'red' and price = 100 and size = 'small' and height = 10 and width = 5 and depth = 2 and length = 8").matches(message));
+        assertFalse(new JMSSelectorFilter("color = 'red' and price = 100 and size = 'large' and height = 11 and width = 5 and depth = 2 and length = 8").matches(message));
+        assertFalse(new JMSSelectorFilter("color = 'red' and price = 100 and size = 'large' and height = 10 and width = 4 and depth = 2 and length = 8").matches(message));
+        assertFalse(new JMSSelectorFilter("color = 'red' and price = 100 and size = 'large' and height = 10 and width = 5 and depth = 3 and length = 8").matches(message));
+        assertFalse(new JMSSelectorFilter("color = 'red' and price = 100 and size = 'large' and height = 10 and width = 5 and depth = 2 and length = 9").matches(message));
+
+        assertFalse(new JMSSelectorFilter("color = 'red' and not price = 100").matches(message));
+        assertFalse(new JMSSelectorFilter("not color = 'red' and price = 100").matches(message));
+        assertFalse(new JMSSelectorFilter("not color = 'red' and not price = 100").matches(message));
+        assertFalse(new JMSSelectorFilter("not (color = 'red' and price = 100)").matches(message));
+        assertTrue(new JMSSelectorFilter("not color <> 'red' and not price <> 100").matches(message));
+
+        assertTrue(new JMSSelectorFilter("color = 'red' and price = 100 and size = 'large'").matches(message));
+        assertFalse(new JMSSelectorFilter("color = 'red' and price = 100 and not size = 'large'").matches(message));
+        assertFalse(new JMSSelectorFilter("color = 'red' and not price = 100 and size = 'large'").matches(message));
+        assertFalse(new JMSSelectorFilter("not color = 'red' and price = 100 and size = 'large'").matches(message));
+        assertFalse(new JMSSelectorFilter("not color = 'red' and not price = 100 and size = 'large'").matches(message));
+        assertFalse(new JMSSelectorFilter("not color = 'red' and not price = 100 and not size = 'large'").matches(message));
+        assertFalse(new JMSSelectorFilter("not color = 'red' and price = 100 and not size = 'large'").matches(message));
+        assertFalse(new JMSSelectorFilter("color = 'red' and not price = 100 and not size = 'large'").matches(message));
+
+        assertTrue(new JMSSelectorFilter("not color <> 'red' and not price <> 100 and not size <> 'large'").matches(message));
+    }
+
+    @Test
+    public void chainedNot() throws Exception
+    {
+        final Filterable message = mock(Filterable.class);
+        when(message.getHeader("color")).thenReturn("red");
+        when(message.getHeader("price")).thenReturn(100);
+        when(message.getHeader("size")).thenReturn("large");
+
+        assertFalse(new JMSSelectorFilter("not(true)").matches(message));
+        assertTrue(new JMSSelectorFilter("not not(true)").matches(message));
+        assertFalse(new JMSSelectorFilter("not not not(true)").matches(message));
+        assertTrue(new JMSSelectorFilter("not not not not(true)").matches(message));
+
+        assertFalse(new JMSSelectorFilter("true and not (false) and not (true)").matches(message));
+        assertFalse(new JMSSelectorFilter("true and (not false) and (not true)").matches(message));
+        assertFalse(new JMSSelectorFilter("color = 'red' and not (price = 200) and not (size = 'large')").matches(message));
+        assertTrue(new JMSSelectorFilter("color = 'red' and not (price = 200) and not (size = 'small')").matches(message));
+
+        when(message.getHeader("entry")).thenReturn("bbb");
+        when(message.getHeader("fruit")).thenReturn("apple");
+
+        assertTrue(new JMSSelectorFilter("not (((true and true) or (false or true)) and (not (price not between 90 and 110) and not (not (fruit in ('apple', 'banana', 'cherry')) or (entry NOT LIKE '%aaa%'))))").matches(message));
+
+        when(message.getHeader("entry")).thenReturn("aaa");
+        assertFalse(new JMSSelectorFilter("not (((true and true) or (false or true)) and (not (price not between 90 and 110) and not (not (fruit in ('apple', 'banana', 'cherry')) or (entry NOT LIKE '%aaa%'))))").matches(message));
+    }
+
+    @Test
+    void or() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("color")).thenReturn("red");
@@ -122,7 +271,29 @@ public class JMSSelectorFilterSyntaxTest
     }
 
     @Test
-    public void in() throws Exception
+    void multipleOr() throws Exception
+    {
+        final Filterable message = mock(Filterable.class);
+        when(message.getHeader("color")).thenReturn("red");
+        when(message.getHeader("price")).thenReturn(100);
+        when(message.getHeader("size")).thenReturn("large");
+        when(message.getHeader("height")).thenReturn(10);
+        when(message.getHeader("width")).thenReturn(5);
+        when(message.getHeader("depth")).thenReturn(2);
+        when(message.getHeader("length")).thenReturn(8);
+
+        assertFalse(new JMSSelectorFilter("color = 'blue' or price = 200 or size = 'small' or height = 11 or width = 4 or depth = 1 or length = 9").matches(message));
+        assertTrue(new JMSSelectorFilter("color = 'red' or price = 200 or size = 'small' or height = 11 or width = 4 or depth = 1 or length = 9").matches(message));
+        assertTrue(new JMSSelectorFilter("color = 'blue' or price = 100 or size = 'small' or height = 11 or width = 4 or depth = 1 or length = 9").matches(message));
+        assertTrue(new JMSSelectorFilter("color = 'blue' or price = 200 or size = 'large' or height = 11 or width = 4 or depth = 1 or length = 9").matches(message));
+        assertTrue(new JMSSelectorFilter("color = 'blue' or price = 200 or size = 'small' or height = 10 or width = 4 or depth = 1 or length = 9").matches(message));
+        assertTrue(new JMSSelectorFilter("color = 'blue' or price = 200 or size = 'small' or height = 11 or width = 5 or depth = 1 or length = 9").matches(message));
+        assertTrue(new JMSSelectorFilter("color = 'blue' or price = 200 or size = 'small' or height = 11 or width = 4 or depth = 2 or length = 9").matches(message));
+        assertTrue(new JMSSelectorFilter("color = 'blue' or price = 200 or size = 'small' or height = 11 or width = 4 or depth = 1 or length = 8").matches(message));
+    }
+
+    @Test
+    void in() throws Exception
     {
         final Filterable message = mock(Filterable.class);
 
@@ -140,7 +311,7 @@ public class JMSSelectorFilterSyntaxTest
     }
 
     @Test
-    public void notIn() throws Exception
+    void notIn() throws Exception
     {
         final Filterable message = mock(Filterable.class);
 
@@ -153,20 +324,23 @@ public class JMSSelectorFilterSyntaxTest
         assertFalse(new JMSSelectorFilter("fruit not in ('apple', 'banana', 'cherry')").matches(message));
         assertFalse(new JMSSelectorFilter("not (fruit in ('apple', 'banana', 'cherry'))").matches(message));
         assertFalse(new JMSSelectorFilter("not fruit in ('apple', 'banana', 'cherry')").matches(message));
+        assertTrue(new JMSSelectorFilter("not fruit not in ('apple', 'banana', 'cherry')").matches(message));
 
         when(message.getHeader("fruit")).thenReturn("cherry");
         assertFalse(new JMSSelectorFilter("fruit not in ('apple', 'banana', 'cherry')").matches(message));
         assertFalse(new JMSSelectorFilter("not (fruit in ('apple', 'banana', 'cherry'))").matches(message));
         assertFalse(new JMSSelectorFilter("not fruit in ('apple', 'banana', 'cherry')").matches(message));
+        assertTrue(new JMSSelectorFilter("not fruit not in ('apple', 'banana', 'cherry')").matches(message));
 
         when(message.getHeader("fruit")).thenReturn("mango");
         assertTrue(new JMSSelectorFilter("fruit not in ('apple', 'banana', 'cherry')").matches(message));
         assertTrue(new JMSSelectorFilter("not (fruit in ('apple', 'banana', 'cherry'))").matches(message));
         assertTrue(new JMSSelectorFilter("not fruit in ('apple', 'banana', 'cherry')").matches(message));
+        assertFalse(new JMSSelectorFilter("not fruit not in ('apple', 'banana', 'cherry')").matches(message));
     }
 
     @Test
-    public void between() throws Exception
+    void between() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("price")).thenReturn(100);
@@ -178,7 +352,7 @@ public class JMSSelectorFilterSyntaxTest
     }
 
     @Test
-    public void notBetween() throws Exception
+    void notBetween() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("price")).thenReturn(100);
@@ -187,11 +361,13 @@ public class JMSSelectorFilterSyntaxTest
         assertFalse(new JMSSelectorFilter("price not between 100 and 110").matches(message));
         assertFalse(new JMSSelectorFilter("price not between 90 and 100").matches(message));
         assertTrue(new JMSSelectorFilter("price not between 110 and 120").matches(message));
+        assertFalse(new JMSSelectorFilter("not price not between 110 and 120").matches(message));
 
         assertFalse(new JMSSelectorFilter("not (price between 90 and 110)").matches(message));
         assertFalse(new JMSSelectorFilter("not (price between 100 and 110)").matches(message));
         assertFalse(new JMSSelectorFilter("not (price between 90 and 100)").matches(message));
         assertTrue(new JMSSelectorFilter("not (price between 110 and 120)").matches(message));
+        assertFalse(new JMSSelectorFilter("not (price not between 110 and 120)").matches(message));
 
         assertFalse(new JMSSelectorFilter("not price between 90 and 110").matches(message));
         assertFalse(new JMSSelectorFilter("not price between 100 and 110").matches(message));
@@ -200,7 +376,7 @@ public class JMSSelectorFilterSyntaxTest
     }
 
     @Test
-    public void like() throws Exception
+    void like() throws Exception
     {
         final Filterable message = mock(Filterable.class);
 
@@ -212,7 +388,7 @@ public class JMSSelectorFilterSyntaxTest
     }
 
     @Test
-    public void notLike() throws Exception
+    void notLike() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("entry")).thenReturn("bbb");
@@ -230,10 +406,12 @@ public class JMSSelectorFilterSyntaxTest
 
         assertFalse(new JMSSelectorFilter("NOT (entry LIKE '%aaa%')").matches(message));
         assertFalse(new JMSSelectorFilter("NOT entry LIKE '%aaa%'").matches(message));
+        assertTrue(new JMSSelectorFilter("NOT (entry NOT LIKE '%aaa%')").matches(message));
+        assertTrue(new JMSSelectorFilter("NOT entry NOT LIKE '%aaa%'").matches(message));
     }
 
     @Test
-    public void isNull() throws Exception
+    void isNull() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("entry")).thenReturn("aaa");
@@ -243,7 +421,7 @@ public class JMSSelectorFilterSyntaxTest
     }
 
     @Test
-    public void isNotNull() throws Exception
+    void isNotNull() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("entry")).thenReturn("aaa");
@@ -251,13 +429,16 @@ public class JMSSelectorFilterSyntaxTest
         assertTrue(new JMSSelectorFilter("entry is not null").matches(message));
         assertTrue(new JMSSelectorFilter("not (entry is null)").matches(message));
         assertTrue(new JMSSelectorFilter("not entry is null").matches(message));
+        assertFalse(new JMSSelectorFilter("not entry is not null").matches(message));
+
         assertFalse(new JMSSelectorFilter("another_entry is not null").matches(message));
         assertFalse(new JMSSelectorFilter("not (another_entry is null)").matches(message));
         assertFalse(new JMSSelectorFilter("not another_entry is null").matches(message));
+        assertTrue(new JMSSelectorFilter("not another_entry is not null").matches(message));
     }
 
     @Test
-    public void arithmetic() throws Exception
+    void arithmetic() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("size")).thenReturn(10);
@@ -276,7 +457,37 @@ public class JMSSelectorFilterSyntaxTest
     }
 
     @Test
-    public void arithmeticOperatorsPrecedence() throws Exception
+    void notArithmetic() throws Exception
+    {
+        final Filterable message = mock(Filterable.class);
+        when(message.getHeader("size")).thenReturn(10);
+        when(message.getHeader("price")).thenReturn(100);
+
+        assertTrue(new JMSSelectorFilter("not (size + price = 111)").matches(message));
+        assertTrue(new JMSSelectorFilter("not (price - size = 91)").matches(message));
+        assertTrue(new JMSSelectorFilter("not (price / size = 11)").matches(message));
+        assertTrue(new JMSSelectorFilter("not (price * size = 1001)").matches(message));
+
+        assertTrue(new JMSSelectorFilter("not size + price = 111").matches(message));
+        assertTrue(new JMSSelectorFilter("not price - size = 91").matches(message));
+        assertTrue(new JMSSelectorFilter("not price / size = 11").matches(message));
+        assertTrue(new JMSSelectorFilter("not price * size = 1001").matches(message));
+
+        assertTrue(new JMSSelectorFilter("not (size / 4 = 3.5)").matches(message));
+        assertTrue(new JMSSelectorFilter("not (size / 4.0 = 3.5)").matches(message));
+
+        assertTrue(new JMSSelectorFilter("not size / 4 = 3.5").matches(message));
+        assertTrue(new JMSSelectorFilter("not size / 4.0 = 3.5").matches(message));
+
+        assertTrue(new JMSSelectorFilter("not (size * 2 = 21.0)").matches(message));
+        assertTrue(new JMSSelectorFilter("not (size * 2.0 = 21.0)").matches(message));
+
+        assertTrue(new JMSSelectorFilter("not size * 2 = 21.0").matches(message));
+        assertTrue(new JMSSelectorFilter("not size * 2.0 = 21.0").matches(message));
+    }
+
+    @Test
+    void arithmeticOperatorsPrecedence() throws Exception
     {
         final Filterable message = mock(Filterable.class);
         when(message.getHeader("size")).thenReturn(10);
@@ -290,13 +501,23 @@ public class JMSSelectorFilterSyntaxTest
     }
 
     @Test
-    public void logicOperatorsPrecedence() throws Exception
+    void logicOperatorsPrecedence() throws Exception
     {
         final Filterable message = mock(Filterable.class);
 
         when(message.getHeader("a")).thenReturn(1);
         when(message.getHeader("b")).thenReturn(2);
         when(message.getHeader("c")).thenReturn(3);
+
+        assertTrue(new JMSSelectorFilter("True or True and False").matches(message));
+        assertTrue(new JMSSelectorFilter("False and True or True").matches(message));
+
+        assertFalse(new JMSSelectorFilter("(True or True) and False").matches(message));
+        assertTrue(new JMSSelectorFilter("True or (True and False)").matches(message));
+
+        assertFalse(new JMSSelectorFilter("False and (True or True)").matches(message));
+        assertTrue(new JMSSelectorFilter("(False and True) or True").matches(message));
+
         assertTrue(new JMSSelectorFilter("a = 1 and b = 2 or c = 3").matches(message));
         assertFalse(new JMSSelectorFilter("not a = 1 and b = 2").matches(message));
         assertTrue(new JMSSelectorFilter("a = 1 and (b = 2 or c = 3)").matches(message));
@@ -309,11 +530,28 @@ public class JMSSelectorFilterSyntaxTest
         when(message.getHeader("a")).thenReturn(1);
         when(message.getHeader("b")).thenReturn(2);
         when(message.getHeader("c")).thenReturn(4);
+
         assertTrue(new JMSSelectorFilter("a = 1 and b = 2 or c = 3").matches(message));
 
         when(message.getHeader("a")).thenReturn(1);
         when(message.getHeader("b")).thenReturn(1);
         when(message.getHeader("c")).thenReturn(3);
+
         assertTrue(new JMSSelectorFilter("a = 1 and b = 2 or c = 3").matches(message));
+
+        when(message.getHeader("a")).thenReturn(1);
+        when(message.getHeader("b")).thenReturn(2);
+        when(message.getHeader("c")).thenReturn(3);
+
+        assertTrue(new JMSSelectorFilter("a = 1 and not b = 2 or c = 3").matches(message));
+        assertTrue(new JMSSelectorFilter("(a = 1 and not b = 2) or c = 3").matches(message));
+        assertFalse(new JMSSelectorFilter("a = 1 and not (b = 2 or c = 3)").matches(message));
+        assertTrue(new JMSSelectorFilter("not (a = 1 and not b = 2) or c = 3").matches(message));
+
+        assertTrue(new JMSSelectorFilter("a = 1 or not b = 2 and c = 3").matches(message));
+        assertTrue(new JMSSelectorFilter("(a = 1 or not b = 2) and c = 3").matches(message));
+        assertTrue(new JMSSelectorFilter("a = 1 or (not b = 2 and c = 3)").matches(message));
+        assertTrue(new JMSSelectorFilter("a = 1 or not (b = 2 and c = 3)").matches(message));
+        assertFalse(new JMSSelectorFilter("not (a = 1 or not b = 2) and c = 3").matches(message));
     }
 }

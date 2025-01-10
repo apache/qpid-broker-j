@@ -114,8 +114,6 @@ public class SelectorParser<E>
         }
         throw new ParseException("Expression will not result in a boolean value: " + value);
     }
-
-
 }
 
 PARSER_END(SelectorParser)
@@ -202,21 +200,17 @@ Expression orExpression() :
     Expression right;
 }
 {
+    left = andExpression()
     (
-        left = andExpression()
-        (
-            <OR> right = andExpression()
-            {
-                left = LogicExpression.createOR(asBooleanExpression(left), asBooleanExpression(right));
-            }
-        )*
-    )
+        <OR> right = andExpression()
+        {
+            left = LogicExpression.createOR(asBooleanExpression(left), asBooleanExpression(right));
+        }
+    )*
     {
         return left;
     }
-
 }
-
 
 Expression andExpression() :
 {
@@ -224,15 +218,13 @@ Expression andExpression() :
     Expression right;
 }
 {
+    left = equalityExpression()
     (
-        left = equalityExpression()
-        (
-            <AND> right = equalityExpression()
-            {
-                left = LogicExpression.createAND(asBooleanExpression(left), asBooleanExpression(right));
-            }
-        )*
-    )
+        <AND> right = equalityExpression()
+        {
+            left = LogicExpression.createAND(asBooleanExpression(left), asBooleanExpression(right));
+        }
+    )*
     {
         return left;
     }
@@ -244,32 +236,28 @@ Expression equalityExpression() :
     Expression right;
 }
 {
+    left = comparisonExpression()
     (
-        left = comparisonExpression()
-        (
-
-            "=" right = comparisonExpression()
-            {
-                left = ComparisonExpression.createEqual(left, right);
-            }
-            |
-            "<>" right = comparisonExpression()
-            {
-                left = ComparisonExpression.createNotEqual(left, right);
-            }
-            |
-            LOOKAHEAD(2)
-            <IS> <NULL>
-            {
-                left = ComparisonExpression.createIsNull(left);
-            }
-            |
-            <IS> <NOT> <NULL>
-            {
-                left = ComparisonExpression.createIsNotNull(left);
-            }
-        )*
-    )
+        LOOKAHEAD(2) "=" right = comparisonExpression()
+        {
+            left = ComparisonExpression.createEqual(left, right);
+        }
+        |
+        "<>" right = comparisonExpression()
+        {
+            left = ComparisonExpression.createNotEqual(left, right);
+        }
+        |
+        LOOKAHEAD(2) <IS> <NULL>
+        {
+            left = ComparisonExpression.createIsNull(left);
+        }
+        |
+        <IS> <NOT> <NULL>
+        {
+            left = ComparisonExpression.createIsNotNull(left);
+        }
+    )*
     {
         return left;
     }
@@ -286,102 +274,83 @@ Expression comparisonExpression() :
 	ArrayList list;
 }
 {
+    left = addExpression()
     (
-        left = addExpression()
-        (
-
-                ">" right = addExpression()
-                {
-                    left = ComparisonExpression.createGreaterThan(left, right);
-                }
-            |
-                ">=" right = addExpression()
-                {
-                    left = ComparisonExpression.createGreaterThanEqual(left, right);
-                }
-            |
-                "<" right = addExpression()
-                {
-                    left = ComparisonExpression.createLessThan(left, right);
-                }
-            |
-                "<=" right = addExpression()
-                {
-                    left = ComparisonExpression.createLessThanEqual(left, right);
-                }
-           |
-				{
-					u=null;
-				}
-		        <LIKE> t = stringLiteral()
-		        	[ <ESCAPE> u = stringLiteral() ]
-		        {
-                    left = ComparisonExpression.createLike(left, t, u);
-		        }
-           |
-	        	LOOKAHEAD(2)
-				{
-					u=null;
-				}
-		        <NOT> <LIKE> t = stringLiteral() [ <ESCAPE> u = stringLiteral() ]
-		        {
-                    left = ComparisonExpression.createNotLike(left, t, u);
-		        }
-            |
-		        <BETWEEN> low = addExpression() <AND> high = addExpression()
-		        {
-					left = ComparisonExpression.createBetween(left, low, high);
-		        }
-	        |
-	        	LOOKAHEAD(2)
-		        <NOT> <BETWEEN> low = addExpression() <AND> high = addExpression()
-		        {
-					left = ComparisonExpression.createNotBetween(left, low, high);
-		        }
-            |
-				<IN>
-		        "("
-		            t = stringLiteral()
-		            {
-			            list = new ArrayList();
-			            list.add( t );
-		            }
-			        (
-			        	","
-			            t = stringLiteral()
-			            {
-				            list.add( t );
-			            }
-
-			        )*
-		        ")"
-		        {
-		           left = ComparisonExpression.createInFilter(left, list, false );
-		        }
-            |
-	        	LOOKAHEAD(2)
-	            <NOT> <IN>
-		        "("
-		            t = stringLiteral()
-		            {
-			            list = new ArrayList();
-			            list.add( t );
-		            }
-			        (
-			        	","
-			            t = stringLiteral()
-			            {
-				            list.add( t );
-			            }
-
-			        )*
-		        ")"
-		        {
-		           left = ComparisonExpression.createNotInFilter(left, list, false);
-		        }
-
-        )*
-    )
+        LOOKAHEAD(2) ">" right = addExpression()
+        {
+            left = ComparisonExpression.createGreaterThan(left, right);
+        }
+        |
+        ">=" right = addExpression()
+        {
+            left = ComparisonExpression.createGreaterThanEqual(left, right);
+        }
+        |
+        "<" right = addExpression()
+        {
+            left = ComparisonExpression.createLessThan(left, right);
+        }
+        |
+        "<=" right = addExpression()
+        {
+            left = ComparisonExpression.createLessThanEqual(left, right);
+        }
+        |
+        {
+            u=null;
+        }
+        <LIKE> t = stringLiteral() [ <ESCAPE> u = stringLiteral() ]
+        {
+            left = ComparisonExpression.createLike(left, t, u);
+        }
+        |
+        LOOKAHEAD(2)
+        {
+            u=null;
+        }
+        <NOT> <LIKE> t = stringLiteral() [ <ESCAPE> u = stringLiteral() ]
+        {
+            left = ComparisonExpression.createNotLike(left, t, u);
+        }
+        |
+        <BETWEEN> low = addExpression() <AND> high = addExpression()
+        {
+            left = ComparisonExpression.createBetween(left, low, high);
+        }
+        |
+        LOOKAHEAD(2) <NOT> <BETWEEN> low = addExpression() <AND> high = addExpression()
+        {
+            left = ComparisonExpression.createNotBetween(left, low, high);
+        }
+        |
+        <IN> "(" t = stringLiteral()
+        {
+            list = new ArrayList();
+            list.add( t );
+        }
+        ( "," t = stringLiteral()
+            {
+                list.add( t );
+            }
+        )* ")"
+        {
+            left = ComparisonExpression.createInFilter(left, list, false );
+        }
+        |
+        LOOKAHEAD(2) <NOT> <IN> "(" t = stringLiteral()
+        {
+            list = new ArrayList();
+            list.add( t );
+        }
+        ( "," t = stringLiteral()
+        {
+            list.add( t );
+        }
+        )* ")"
+        {
+            left = ComparisonExpression.createNotInFilter(left, list, false);
+        }
+    )*
     {
         return left;
     }
@@ -407,7 +376,6 @@ Expression addExpression() :
 	            left = ArithmeticExpression.createMinus(left, right);
 	        }
         )
-
     )*
     {
         return left;
@@ -422,7 +390,7 @@ Expression multExpr() :
 {
     left = unaryExpr()
     (
-        "*" right = unaryExpr()
+        LOOKAHEAD(2) "*" right = unaryExpr()
         {
 	        left = ArithmeticExpression.createMultiply(left, right);
         }
@@ -436,13 +404,11 @@ Expression multExpr() :
         {
 	        left = ArithmeticExpression.createMod(left, right);
         }
-
     )*
     {
         return left;
     }
 }
-
 
 Expression unaryExpr() :
 {
@@ -451,15 +417,19 @@ Expression unaryExpr() :
 }
 {
 	(
-		LOOKAHEAD( "+" unaryExpr() )
-	    "+" left=unaryExpr()
+	    LOOKAHEAD("+" unaryExpr()) "+" left = unaryExpr()
 	    |
-	    "-" left=unaryExpr()
+	    "-" left = unaryExpr()
 	    {
 	        left = UnaryExpression.createNegate(left);
 	    }
 	    |
-	    <NOT> left=orExpression()
+        LOOKAHEAD(<NOT> equalityExpression()) <NOT> left = equalityExpression()
+        {
+            left = UnaryExpression.createNOT( asBooleanExpression(left) );
+        }
+        |
+	    LOOKAHEAD(<NOT> unaryExpr()) <NOT> left = unaryExpr()
 	    {
 		    left = UnaryExpression.createNOT( asBooleanExpression(left) );
 	    }
@@ -469,7 +439,6 @@ Expression unaryExpr() :
     {
         return left;
     }
-
 }
 
 Expression primaryExpr() :
@@ -482,14 +451,12 @@ Expression primaryExpr() :
         |
         left = variable()
         |
-        "(" left = orExpression() ")"
+        LOOKAHEAD(2) "(" left = orExpression() ")"
     )
     {
         return left;
     }
 }
-
-
 
 ConstantExpression literal() :
 {
@@ -610,8 +577,6 @@ PropertyExpression variable() :
             }
             return _factory.createPropertyExpression(rc.toString());
         }
-
-
     )
     {
         return left;
