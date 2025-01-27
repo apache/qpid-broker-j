@@ -31,16 +31,7 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimeZone;
+import java.util.*;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
@@ -293,10 +284,12 @@ public class ConfiguredObjectExpressionFactory
     {
 
         private final String _propertyName;
+        private final List<String> _propertyNameAsList;
 
         public ConfiguredObjectPropertyExpression(final String propertyName)
         {
             _propertyName = propertyName;
+            _propertyNameAsList = Collections.singletonList(propertyName);
         }
 
         @Override
@@ -323,7 +316,7 @@ public class ConfiguredObjectExpressionFactory
             {
                 return object.getAttributeNames().contains(_propertyName)
                         ? object.getAttribute(_propertyName)
-                        : object.getStatistics().get(_propertyName);
+                        : object.getStatistics(_propertyNameAsList).get(_propertyName);
             }
         }
 
