@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.Collections;
 
 import javax.xml.bind.DatatypeConverter;
 import javax.xml.datatype.DatatypeConfigurationException;
@@ -271,10 +272,12 @@ public class ConfiguredObjectExpressionFactory
     {
 
         private final String _propertyName;
+        private final List<String> _propertyList;
 
         public ConfiguredObjectPropertyExpression(final String propertyName)
         {
             _propertyName = propertyName;
+            _propertyList = Collections.singletonList(_propertyName);
         }
 
         @Override
@@ -301,7 +304,7 @@ public class ConfiguredObjectExpressionFactory
             {
                 return object.getAttributeNames().contains(_propertyName)
                         ? object.getAttribute(_propertyName)
-                        : object.getStatistics().get(_propertyName);
+                        : object.getStatistics(_propertyList).get(_propertyName);
             }
         }
 
