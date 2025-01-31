@@ -20,10 +20,7 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -289,6 +286,39 @@ public class BasicTest extends BrokerAdminUsingTestBase
                               .ack()
                        .channel().close().consumeResponse(ChannelCloseOkBody.class);
             assertThat(getBrokerAdmin().getQueueDepthMessages(queueName), is(equalTo(0)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "1.8.3.3", description = "If no consumer tag is given then the server should generate " +
+            "a unique tag, not clashing with an existing tag")
+    public void serverGeneratedTagUniqueness() throws Exception
+    {
+        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+
+
+            String queueName = BrokerAdmin.TEST_QUEUE_NAME;
+            String consumerTag = "sgen_1";
+            interaction.negotiateOpen()
+                    .channel().open()
+                    .consumeResponse(ChannelOpenOkBody.class)
+                    .basic().qosPrefetchCount(1)
+                    .qos()
+                    .consumeResponse(BasicQosOkBody.class)
+                    .basic().consumeConsumerTag(consumerTag)
+                    .consumeQueue(queueName)
+                    .consume()
+                    .consumeResponse(BasicConsumeOkBody.class)
+                    .channel().flow(true)
+                    .consumeResponse(ChannelFlowOkBody.class);
+
+            BasicConsumeOkBody consumeOK = interaction.basic().consumeConsumerTag("")
+                    .consumeQueue(queueName)
+                    .consume()
+                    .consumeResponse(BasicConsumeOkBody.class).getLatestResponse(BasicConsumeOkBody.class);
+            assertThat(consumeOK.getConsumerTag().toString(), is(not(equalTo(consumerTag))));
         }
     }
 

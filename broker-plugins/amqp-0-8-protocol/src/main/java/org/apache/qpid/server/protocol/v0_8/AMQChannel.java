@@ -134,6 +134,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     /** Maps from consumer tag to subscription instance. Allows us to unsubscribe from a queue. */
     private final Map<AMQShortString, ConsumerTarget_0_8> _tag2SubscriptionTargetMap = new HashMap<>();
+    private final Set<AMQShortString> _nonGeneratedTags = new HashSet<>();
 
     private final MessageStore _messageStore;
 
@@ -567,7 +568,16 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     {
         if (tag == null)
         {
-            tag = AMQShortString.createAMQShortString("sgen_" + getNextConsumerTag());
+            do {
+                tag = AMQShortString.createAMQShortString("sgen_" + getNextConsumerTag());
+            }
+            while(_nonGeneratedTags.contains(tag));
+        }
+        else {
+            if(!_nonGeneratedTags.add(tag)) {
+                throw new ConsumerTagInUseException("Consumer already exists with same tag: " + tag);
+            }
+
         }
 
         if (_tag2SubscriptionTargetMap.containsKey(tag))
@@ -699,6 +709,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                 | MessageSource.ConsumerAccessRefused e)
         {
             _tag2SubscriptionTargetMap.remove(tag);
+            _nonGeneratedTags.remove(tag);
             throw e;
         }
         return tag;
@@ -716,6 +727,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             LOGGER.debug("Unsubscribing consumer '{}' on channel {}", consumerTag, this);
         }
 
+        _nonGeneratedTags.remove(consumerTag);
         ConsumerTarget_0_8 target = _tag2SubscriptionTargetMap.remove(consumerTag);
         if (target != null)
         {
