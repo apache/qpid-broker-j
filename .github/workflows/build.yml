@@ -62,7 +62,7 @@ jobs:
 
       - name: Upload Test Logs On Failure
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: surefire-reports-jdk-${{ matrix.java }}
           path: surefire-reports-jdk-${{ matrix.java }}.tar.gz
