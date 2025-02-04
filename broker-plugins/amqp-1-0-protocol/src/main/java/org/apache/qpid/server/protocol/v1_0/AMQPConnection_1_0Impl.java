@@ -897,7 +897,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
         else
         {
-            initialiseHeartbeating(_outgoingIdleTimeout / 2L, _incomingIdleTimeout);
+            initialiseHeartbeating(_outgoingIdleTimeout / 2L, _incomingIdleTimeout * 2);
             final NamedAddressSpace addressSpace = getPort().getAddressSpace(_localHostname);
             if (addressSpace == null)
             {
