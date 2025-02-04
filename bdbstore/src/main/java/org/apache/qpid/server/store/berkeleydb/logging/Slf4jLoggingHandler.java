@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -46,12 +47,13 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.store.berkeleydb.StandardEnvironmentConfiguration;
 
-
 public class Slf4jLoggingHandler extends Handler
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Slf4jLoggingHandler.class);
-
+    private static final String SLF4J_JUL_LOGGER_ADAPTER = "org.slf4j.jul.JDK14LoggerAdapter";
+    private static final boolean JUL_LOADED = isSlf4jJdk14Loaded();
     private static final Pattern NOT_DELETED_DUE_TO_PROTECTION = Pattern.compile("Cleaner has ([0-9]+) files not deleted because they are protected.*");
+    private static final ThreadLocal<AtomicBoolean> LOGGER_CALLED = ThreadLocal.withInitial(AtomicBoolean::new);
 
     private final ConcurrentMap<String,Logger> _loggers = new ConcurrentHashMap<>();
     private final int _logHandlerCleanerProtectedFilesLimit;
@@ -214,28 +216,40 @@ public class Slf4jLoggingHandler extends Handler
     @Override
     public void publish(final LogRecord record)
     {
-        MappedLevel level = convertLevel(record);
+        final MappedLevel level = convertLevel(record);
         final Logger logger = getLogger(record.getLoggerName());
         if (level.isEnabled(logger))
         {
-
-            Formatter formatter = getFormatter();
-
+            final Formatter formatter = getFormatter();
+            String message;
             try
             {
-                String message = formatter.format(record);
-                try
-                {
-                    level.log(logger, message);
-                }
-                catch (RuntimeException e)
-                {
-                    reportError(null, e, ErrorManager.WRITE_FAILURE);
-                }
+                message = formatter.format(record);
             }
             catch (RuntimeException e)
             {
                 reportError(null, e, ErrorManager.FORMAT_FAILURE);
+                return;
+            }
+
+            try
+            {
+                if (!JUL_LOADED)
+                {
+                    level.log(logger, message);
+                }
+                else if (LOGGER_CALLED.get().compareAndSet(false, true))
+                {
+                    level.log(logger, message);
+                }
+            }
+            catch (RuntimeException e)
+            {
+                reportError(null, e, ErrorManager.WRITE_FAILURE);
+            }
+            finally
+            {
+                LOGGER_CALLED.get().set(false);
             }
         }
     }
@@ -322,6 +336,20 @@ public class Slf4jLoggingHandler extends Handler
     public void close() throws SecurityException
     {
         _overridedenLoggers.clear();
+    }
 
+    public static boolean isSlf4jJdk14Loaded()
+    {
+        try
+        {
+            Class.forName(SLF4J_JUL_LOGGER_ADAPTER);
+            return true;
+        }
+        catch (ClassNotFoundException e)
+        {
+            final String message = "Could not find class " + SLF4J_JUL_LOGGER_ADAPTER + ", slf4j-jdk14 not available";
+            LOGGER.debug(message, e);
+            return false;
+        }
     }
 }
