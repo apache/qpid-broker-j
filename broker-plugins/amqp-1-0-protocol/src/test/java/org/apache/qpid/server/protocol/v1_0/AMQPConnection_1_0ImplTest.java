@@ -25,12 +25,16 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
 import java.net.SocketAddress;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -41,7 +45,10 @@ import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.transport.AggregateTicker;
+import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -67,7 +74,7 @@ class AMQPConnection_1_0ImplTest extends UnitTestBase
         when(_port.getModel()).thenReturn(model);
         when(_port.getTaskExecutor()).thenReturn(taskExecutor);
         when(_port.getChildExecutor()).thenReturn(taskExecutor);
-        _aggregateTicket = mock(AggregateTicker.class);
+        _aggregateTicket = new AggregateTicker();
         _virtualHost = BrokerTestHelper.createVirtualHost("test", _broker, true, this);
     }
 
@@ -175,5 +182,52 @@ class AMQPConnection_1_0ImplTest extends UnitTestBase
         assertEquals(0L, statisticsAfterReset.get("messagesOut"));
         assertEquals(0L, statisticsAfterReset.get("transactedMessagesIn"));
         assertEquals(0L, statisticsAfterReset.get("transactedMessagesOut"));
+    }
+
+    @Test
+    void heartbeat() throws Exception
+    {
+        final int writeDelay = 5000;
+        final int readDelay = 12;
+        final AtomicLong maxReadIdleMillis = new AtomicLong();
+        final AtomicLong maxWriteIdleMillis = new AtomicLong();
+
+        when(_broker.getNetworkBufferSize()).thenReturn(1024);
+
+        final ByteBufferSender sender = mock(ByteBufferSender.class);
+        when(sender.isDirectBufferPreferred()).thenReturn(true);
+        when(_network.getSender()).thenReturn(sender);
+        doAnswer(invocation ->
+        {
+            maxReadIdleMillis.set(invocation.getArgument(0));
+            return null;
+        }).when(_network).setMaxReadIdleMillis(anyLong());
+        doAnswer(invocation ->
+        {
+            maxWriteIdleMillis.set(invocation.getArgument(0));
+            return null;
+        }).when(_network).setMaxWriteIdleMillis(anyLong());
+
+        when(_port.getNetworkBufferSize()).thenReturn(1024);
+        when(_port.getHeartbeatDelay()).thenReturn(readDelay);
+        when(_port.getAddressSpace("localhost")).thenReturn(_virtualHost);
+
+        final AMQPConnection_1_0Impl connection =
+                new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
+        connection.setAddressSpace(_virtualHost);
+
+        final Field field = AMQPConnection_1_0Impl.class.getDeclaredField("_connectionState");
+        field.setAccessible(true);
+        field.set(connection, ConnectionState.AWAIT_OPEN);
+
+        final Open open = mock(Open.class);
+        when(open.getContainerId()).thenReturn("container");
+        when(open.getHostname()).thenReturn("localhost");
+        when(open.getIdleTimeOut()).thenReturn(UnsignedInteger.valueOf(writeDelay));
+
+        connection.receiveOpen(1, open);
+
+        assertEquals(readDelay * 2 * 1000, maxReadIdleMillis.get());
+        assertEquals(writeDelay / 2, maxWriteIdleMillis.get());
     }
 }
