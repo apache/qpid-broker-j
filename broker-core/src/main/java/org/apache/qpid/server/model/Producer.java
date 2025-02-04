@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.model;
 
+import java.util.UUID;
+
 import com.google.common.util.concurrent.ListenableFuture;
 
 @ManagedObject(creatable = false, amqpName = "org.apache.qpid.Producer")
@@ -47,6 +49,11 @@ public interface Producer<X extends Producer<X>> extends ConfiguredObject<X>
     String getDestination();
 
     void setDestination(String destination);
+
+    @DerivedAttribute(description = "Destination id")
+    UUID getDestinationId();
+
+    void setDestinationId(UUID destinationId);
 
     @DerivedAttribute(description = "DeliveryType type (standard or delayed)")
     DeliveryType getDeliveryType();

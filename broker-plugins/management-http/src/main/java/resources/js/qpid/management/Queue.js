@@ -398,12 +398,54 @@ define(["dojo/_base/declare",
                                   }));
             this.consumersGrid.startup();
 
+            this.producersGrid = new QueryGrid({
+                detectChanges: true,
+                rowsPerPage: 10,
+                transformer: lang.hitch(this, this._transformProducerData),
+                management: this.management,
+                parentObject: this.modelObj,
+                category: "Producer",
+                selectClause: "id, name, deliveryType, destinationType, destination, destinationId, messagesOut, bytesOut",
+                where: "to_string(destinationId) = '" + this.modelObj.id + "'",
+                orderBy: "name",
+                columns: [{
+                    label: "Name",
+                    field: "name"
+                }, {
+                    label: "Delivery Type",
+                    field: "deliveryType"
+                }, {
+                    label: "Destination Type",
+                    field: "destinationType"
+                }, {
+                    label: "Destination Name",
+                    field: "destination"
+                }, {
+                    label: "Msgs Out",
+                    field: "messagesOut"
+                }, {
+                    label: "Bytes Out",
+                    field: "bytesOut",
+                    formatter: formatter.formatBytes
+                }, {
+                    label: "Msgs Rate",
+                    field: "msgOutRate"
+                }, {
+                    label: "Bytes Rate",
+                    field: "bytesOutRate"
+                }
+                ]
+            }, findNode("producers"));
+
+            this.producersGrid.startup();
+
             // Add onShow handler to work around an issue with not rendering of grid columns before first update.
             // It seems if dgrid is created when tab is not shown (not active) the grid columns are not rendered.
             this.contentPane.on("show",
                 function()
                 {
                     that.consumersGrid.resize();
+                    that.producersGrid.resize();
                 });
 
             this._messagesGrid = this._buildMessagesGrid(findNode);
@@ -658,6 +700,9 @@ define(["dojo/_base/declare",
             thisObj.consumersGrid.updateData();
             thisObj.consumersGrid.resize();
 
+            thisObj.producersGrid.updateData();
+            thisObj.producersGrid.resize();
+
             var queuePromise = this.management.load(this.modelObj, {excludeInheritedContext: true, depth: 1 });
             var publishingLinkPromise = this.management.load({type: "queue", name: "getPublishingLinks", parent: this.modelObj});
 
@@ -773,6 +818,44 @@ define(["dojo/_base/declare",
             this._previousConsumerSampleTime = sampleTime;
             this._previousConsumers = consumers;
             return consumers;
+        };
+
+        QueueUpdater.prototype._transformProducerData = function (data)
+        {
+            const sampleTime = new Date();
+            const producers = util.queryResultToObjects(data);
+            if (this._previousProducerSampleTime)
+            {
+                const samplePeriod = sampleTime.getTime() - this._previousProducerSampleTime.getTime();
+                for (let i = 0; i < producers.length; i++)
+                {
+                    const producer = producers[i];
+                    let oldProducer = null;
+                    for (let j = 0; j < this._previousProducers.length; j++)
+                    {
+                        if (this._previousProducers[j].id === producer.id)
+                        {
+                            oldProducer = this._previousProducers[j];
+                            break;
+                        }
+                    }
+                    let msgOutRate = 0;
+                    let bytesOutRate = 0;
+
+                    if (oldProducer)
+                    {
+                        msgOutRate = (1000 * (producer.messagesOut - oldProducer.messagesOut)) / samplePeriod;
+                        bytesOutRate = (1000 * (producer.bytesOut - oldProducer.bytesOut)) / samplePeriod;
+                    }
+
+                    producer.msgOutRate = msgOutRate.toFixed(0) + " msg/s";
+                    const bytesOutRateFormat = formatter.formatBytes(bytesOutRate);
+                    producer.bytesOutRate = bytesOutRateFormat.value + " " + bytesOutRateFormat.units + "/s";
+                }
+            }
+            this._previousProducerSampleTime = sampleTime;
+            this._previousProducers = producers;
+            return producers;
         };
 
         Queue.prototype.deleteQueue = function ()

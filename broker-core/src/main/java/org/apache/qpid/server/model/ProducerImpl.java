@@ -56,6 +56,8 @@ public class ProducerImpl<X extends Producer<X>>
 
     private String _destination;
 
+    private UUID _destinationId;
+
     public ProducerImpl(final AbstractAMQPSession<?, ?> session,
                         final PublishingLink publishingLink,
                         final MessageDestination messageDestination)
@@ -74,7 +76,16 @@ public class ProducerImpl<X extends Producer<X>>
         else
         {
             _deliveryType = DeliveryType.STANDARD_DELIVERY;
-            _destinationType = messageDestination instanceof Exchange ? DestinationType.EXCHANGE : DestinationType.QUEUE;
+            if (messageDestination instanceof Exchange)
+            {
+                _destinationId = ((Exchange<?>) messageDestination).getId();
+                _destinationType = DestinationType.EXCHANGE;
+            }
+            else if (messageDestination instanceof Queue)
+            {
+                _destinationId = ((Queue<?>) messageDestination).getId();
+                _destinationType = DestinationType.QUEUE;
+            }
         }
 
         registerWithParents();
@@ -147,6 +158,18 @@ public class ProducerImpl<X extends Producer<X>>
     public void setDestination(String destination)
     {
         _destination = destination;
+    }
+
+    @Override
+    public UUID getDestinationId()
+    {
+        return _destinationId;
+    }
+
+    @Override
+    public void setDestinationId(UUID destinationId)
+    {
+        _destinationId = destinationId;
     }
 
     @Override
