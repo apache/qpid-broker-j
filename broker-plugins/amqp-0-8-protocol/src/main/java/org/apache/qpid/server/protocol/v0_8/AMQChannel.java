@@ -568,16 +568,15 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     {
         if (tag == null)
         {
-            do {
+            do
+            {
                 tag = AMQShortString.createAMQShortString("sgen_" + getNextConsumerTag());
             }
-            while(_nonGeneratedTags.contains(tag));
+            while (_nonGeneratedTags.contains(tag));
         }
-        else {
-            if(!_nonGeneratedTags.add(tag)) {
-                throw new ConsumerTagInUseException("Consumer already exists with same tag: " + tag);
-            }
-
+        else if (!_nonGeneratedTags.add(tag))
+        {
+            throw new ConsumerTagInUseException("Consumer already exists with same tag: " + tag);
         }
 
         if (_tag2SubscriptionTargetMap.containsKey(tag))

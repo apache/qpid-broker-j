@@ -20,7 +20,11 @@
  */
 package org.apache.qpid.tests.protocol.v0_8;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -294,7 +298,7 @@ public class BasicTest extends BrokerAdminUsingTestBase
             "a unique tag, not clashing with an existing tag")
     public void serverGeneratedTagUniqueness() throws Exception
     {
-        try(FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Interaction interaction = transport.newInteraction();
 
