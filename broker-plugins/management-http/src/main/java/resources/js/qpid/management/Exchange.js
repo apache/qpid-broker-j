@@ -35,6 +35,7 @@ define(["dojo/_base/xhr",
         "qpid/management/addBinding",
         "qpid/management/addExchange",
         "dojox/grid/EnhancedGrid",
+        "qpid/management/query/QueryGrid",
         "dojox/html/entities",
         "dojo/text!showExchange.html",
         "qpid/common/StatisticsWidget",
@@ -56,6 +57,7 @@ define(["dojo/_base/xhr",
               addBinding,
               addExchange,
               EnhancedGrid,
+              QueryGrid,
               entities,
               template,
               StatisticsWidget)
@@ -248,6 +250,47 @@ define(["dojo/_base/xhr",
 
                 }
             }, EnhancedGrid);
+
+            this.producersGrid = new QueryGrid({
+                detectChanges: true,
+                rowsPerPage: 10,
+                transformer: lang.hitch(this, this._transformProducerData),
+                management: this.management,
+                parentObject: this.modelObj,
+                category: "Producer",
+                selectClause: "id, name, deliveryType, destinationType, destination, destinationId, messagesOut, bytesOut",
+                where: "to_string(destinationId) = '" + this.modelObj.id + "'",
+                orderBy: "name",
+                columns: [{
+                    label: "Name",
+                    field: "name"
+                }, {
+                    label: "Delivery Type",
+                    field: "deliveryType"
+                }, {
+                    label: "Destination Type",
+                    field: "destinationType"
+                }, {
+                    label: "Destination Name",
+                    field: "destination"
+                }, {
+                    label: "Msgs Out",
+                    field: "messagesOut"
+                }, {
+                    label: "Bytes Out",
+                    field: "bytesOut",
+                    formatter: formatter.formatBytes
+                }, {
+                    label: "Msgs Rate",
+                    field: "msgOutRate"
+                }, {
+                    label: "Bytes Rate",
+                    field: "bytesOutRate"
+                }
+                ]
+            }, findNode("producers"));
+
+            this.producersGrid.startup();
         }
 
         ExchangeUpdater.prototype.updateHeader = function ()
@@ -317,6 +360,8 @@ define(["dojo/_base/xhr",
                         thisObj.bindingsGrid.grid.endUpdate()
                     }
 
+                    thisObj.producersGrid.updateData();
+
                 }, function (error)
                 {
                     util.tabErrorHandler(error, {
@@ -342,6 +387,44 @@ define(["dojo/_base/xhr",
                         that.contentPane.destroyRecursive();
                     }, util.xhrErrorHandler);
             }
+        };
+
+        ExchangeUpdater.prototype._transformProducerData = function (data)
+        {
+            const sampleTime = new Date();
+            const producers = util.queryResultToObjects(data);
+            if (this._previousProducerSampleTime)
+            {
+                const samplePeriod = sampleTime.getTime() - this._previousProducerSampleTime.getTime();
+                for (let i = 0; i < producers.length; i++)
+                {
+                    const producer = producers[i];
+                    let oldProducer = null;
+                    for (let j = 0; j < this._previousProducers.length; j++)
+                    {
+                        if (this._previousProducers[j].id === producer.id)
+                        {
+                            oldProducer = this._previousProducers[j];
+                            break;
+                        }
+                    }
+                    let msgOutRate = 0;
+                    let bytesOutRate = 0;
+
+                    if (oldProducer)
+                    {
+                        msgOutRate = (1000 * (producer.messagesOut - oldProducer.messagesOut)) / samplePeriod;
+                        bytesOutRate = (1000 * (producer.bytesOut - oldProducer.bytesOut)) / samplePeriod;
+                    }
+
+                    producer.msgOutRate = msgOutRate.toFixed(0) + " msg/s";
+                    const bytesOutRateFormat = formatter.formatBytes(bytesOutRate);
+                    producer.bytesOutRate = bytesOutRateFormat.value + " " + bytesOutRateFormat.units + "/s";
+                }
+            }
+            this._previousProducerSampleTime = sampleTime;
+            this._previousProducers = producers;
+            return producers;
         };
 
         return Exchange;
