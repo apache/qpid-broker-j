@@ -38,13 +38,13 @@ import org.apache.qpid.server.model.Queue;
  *     {@link java.util.ServiceLoader ServiceLoader}).
  * </p>
  *
- * <h3>Running reports</h3>
+ * <h2>Running reports</h2>
  * <p>
  *     The report can be run using the URL:
  *     {@code http://<broker>/service/queuereport/<virtualhost name>/<queue name>/<report name>[?param1=x&param2=y...]}
  * </p>
  *
- *  <h4>Report Parameters</h4>
+ * <h3>Report Parameters</h3>
  *
  * <p>
  *     Reports can take parameters from the query string of the HTTP request.  For every parameter in the query string
