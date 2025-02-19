@@ -74,6 +74,9 @@ From: 'Apache Software Foundation' (http://db.apache.org/)
   - Apache Derby Shared Code (http://db.apache.org/derby/) org.apache.derby:derbyshared:jar:10.15.2.0
     License: Apache 2  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
+  - Apache Derby Tools (http://db.apache.org/derby/) org.apache.derby:derbytools:jar:10.15.2.0
+    License: Apache 2  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
 
 From: 'FasterXML' (http://fasterxml.com/)
 
