@@ -23,13 +23,37 @@ package org.apache.qpid.server.model;
 import java.util.UUID;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.qpid.server.message.MessageDestination;
 
 @ManagedObject(creatable = false, amqpName = "org.apache.qpid.Producer")
 public interface Producer<X extends Producer<X>> extends ConfiguredObject<X>
 {
     enum DeliveryType { DELAYED_DELIVERY, STANDARD_DELIVERY }
 
-    enum DestinationType { EXCHANGE, QUEUE }
+    enum DestinationType
+    {
+        EXCHANGE,
+        QUEUE;
+
+        public static DestinationType from(MessageDestination messageDestination)
+        {
+            if (messageDestination instanceof Exchange)
+            {
+                return EXCHANGE;
+            }
+            else if (messageDestination instanceof Queue)
+            {
+                return QUEUE;
+            }
+            return null;
+        }
+
+        public static UUID getId(MessageDestination messageDestination)
+        {
+            final DestinationType destinationType = from(messageDestination);
+            return destinationType == null ? null : ((ConfiguredObject<?>) messageDestination).getId();
+        }
+    }
 
     void registerMessageDelivered(long messageSize);
 

@@ -296,14 +296,8 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                                     {
                                         final MessageDestination messageDestination = getAddressSpace()
                                                 .getAttainedMessageDestination(serverMessage.getTo(), false);
-                                        if (messageDestination != null)
-                                        {
-                                            final Producer.DestinationType destinationType =
-                                                    messageDestination instanceof Exchange
-                                                            ? Producer.DestinationType.EXCHANGE
-                                                            : Producer.DestinationType.QUEUE;
-                                            _producer.setDestinationType(destinationType);
-                                        }
+                                        _producer.setDestinationType(Producer.DestinationType.from(messageDestination));
+                                        _producer.setDestinationId(Producer.DestinationType.getId(messageDestination));
                                         _producer.setDestination(to);
                                     }
                                 }
