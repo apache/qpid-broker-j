@@ -67,25 +67,16 @@ public class ProducerImpl<X extends Producer<X>>
         _sessionName = session.getName();
         _principal = session.getAMQPConnection().getPrincipal();
         _remoteAddress = session.getAMQPConnection().getRemoteAddress();
-        _destination = messageDestination == null ? null : messageDestination.getName();
         if (messageDestination == null)
         {
             _deliveryType = DeliveryType.DELAYED_DELIVERY;
-            _destinationType = null;
         }
         else
         {
             _deliveryType = DeliveryType.STANDARD_DELIVERY;
-            if (messageDestination instanceof Exchange)
-            {
-                _destinationId = ((Exchange<?>) messageDestination).getId();
-                _destinationType = DestinationType.EXCHANGE;
-            }
-            else if (messageDestination instanceof Queue)
-            {
-                _destinationId = ((Queue<?>) messageDestination).getId();
-                _destinationType = DestinationType.QUEUE;
-            }
+            _destination = messageDestination.getName();
+            _destinationType = DestinationType.from(messageDestination);
+            _destinationId = DestinationType.getId(messageDestination);
         }
 
         registerWithParents();
