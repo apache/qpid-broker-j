@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.qpid</groupId>
         <artifactId>qpid-java-doc</artifactId>
-        <version>9.2.1-SNAPSHOT</version>
+        <version>9.2.1</version>
     </parent>
 
     <artifactId>qpid-broker-j-developer-guide</artifactId>
