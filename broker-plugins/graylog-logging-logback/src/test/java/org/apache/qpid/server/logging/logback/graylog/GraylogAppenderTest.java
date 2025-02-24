@@ -927,7 +927,7 @@ public class GraylogAppenderTest extends UnitTestBase
             Appender<ILoggingEvent> app = iterator.next();
             if (app instanceof GelfTcpAppender)
             {
-                return ((GelfTcpAppender) app).getEncoder();
+                return (GelfEncoder) ((GelfTcpAppender) app).getEncoder();
             }
         }
         return null;
