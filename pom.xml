@@ -1046,6 +1046,7 @@
         <configuration>
           <doCheck>false</doCheck>
           <doUpdate>false</doUpdate>
+          <revisionOnScmFailure>N/A</revisionOnScmFailure>
         </configuration>
       </plugin>
       <plugin>
