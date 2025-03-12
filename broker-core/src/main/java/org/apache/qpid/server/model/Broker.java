@@ -66,7 +66,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String BROKER_STATISTICS_REPORING_PERIOD = "broker.statisticsReportingPeriod";
 
     String NETWORK_BUFFER_SIZE = "qpid.broker.networkBufferSize";
-    // network buffer should at least hold a SSL/TLS frame which in jdk 11 is 33305 bytes
+    // network buffer should at least hold a SSL/TLS frame which in jdk 17 is 33305 bytes
     int MINIMUM_NETWORK_BUFFER_SIZE = 64 * 1024;
     @ManagedContextDefault(name = NETWORK_BUFFER_SIZE)
     int DEFAULT_NETWORK_BUFFER_SIZE = 256 * 1024;

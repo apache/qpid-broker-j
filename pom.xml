@@ -77,7 +77,7 @@
 
   <properties>
     <minimum-maven-version>3.0.0</minimum-maven-version>
-    <minimum-java-version>11</minimum-java-version>
+    <minimum-java-version>17</minimum-java-version>
     <maven.compiler.source>${minimum-java-version}</maven.compiler.source>
     <maven.compiler.target>${minimum-java-version}</maven.compiler.target>
     <skipTests>false</skipTests>

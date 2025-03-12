@@ -5,7 +5,7 @@
 The following tools are needed to build Qpid Broker-J
 
  * Git client
- * JDK 11 or above; you should set the `JAVA_HOME` environment variable and include its bin directory in your `PATH`.
+ * JDK 17 or above; you should set the `JAVA_HOME` environment variable and include its bin directory in your `PATH`.
  * Maven 3.0 or above; you should set the `M2_HOME` environment variable and include its bin directory in your `PATH`.
 
 ## Getting sources
