@@ -136,9 +136,8 @@
     <maven-resolver-provider-version>3.8.6</maven-resolver-provider-version>
     <maven-resolver-version>1.9.22</maven-resolver-version>
     <httpclient-version>4.5.13</httpclient-version>
-    <qpid-jms-client-version>0.61.0</qpid-jms-client-version>
+    <qpid-jms-client-version>1.13.0</qpid-jms-client-version>
     <qpid-jms-client-amqp-0-x-version>6.4.0</qpid-jms-client-amqp-0-x-version>
-    <jaxb-api-version>2.3.1</jaxb-api-version>
     <nashorn-version>15.6</nashorn-version>
 
     <exec-maven-plugin-version>3.5.0</exec-maven-plugin-version>
@@ -520,17 +519,6 @@
         <groupId>org.apache.qpid</groupId>
         <artifactId>qpid-client</artifactId>
         <version>${qpid-jms-client-amqp-0-x-version}</version>
-      </dependency>
-      <!-- qpid-client requires jaxb-api for Base64 encoding-->
-      <dependency>
-        <groupId>javax.xml.bind</groupId>
-        <artifactId>jaxb-api</artifactId>
-        <version>${jaxb-api-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.glassfish.jaxb</groupId>
-        <artifactId>jaxb-runtime</artifactId>
-        <version>${jaxb-api-version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.qpid</groupId>
