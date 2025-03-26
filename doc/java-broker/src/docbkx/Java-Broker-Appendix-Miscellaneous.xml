@@ -31,14 +31,14 @@
         following at the command prompt: </para>
       <programlisting>echo %JAVA_HOME%</programlisting>
       <para> If JAVA_HOME is set you will see something similar to the following: </para>
-      <screen>c:"\PROGRA~1"\Java\jdk-11.0.13\
+      <screen>c:"\PROGRA~1"\Java\jdk-17.0.14+7\
       </screen>
-      <para> Then confirm that a Java installation (11 or higher) is available: </para>
+      <para> Then confirm that a Java installation (17 or higher) is available: </para>
       <programlisting>java -version</programlisting>
       <para> If java is available on the path, output similar to the following will be seen: </para>
-      <screen>java version "11.0.13" 2021-10-19 LTS
-        Java(TM) SE Runtime Environment 18.9 (build 11.0.13+10-LTS-370)
-        Java HotSpot(TM) 64-Bit Server VM 18.9 (build 11.0.13+10-LTS-370, mixed mode</screen>
+      <screen>openjdk version "17.0.5" 2022-10-18
+        OpenJDK Runtime Environment Temurin-17.0.5+8 (build 17.0.5+8)
+        OpenJDK 64-Bit Server VM Temurin-17.0.5+8 (build 17.0.5+8, mixed mode, sharing)</screen>
     </section>
 
     <section role="h2" xml:id="Java-Broker-Miscellaneous-JVM-Verification-Unix">

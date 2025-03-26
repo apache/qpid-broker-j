@@ -119,13 +119,21 @@ class HostnameFirewallRuleTest extends UnitTestBase
     @Test
     void managementConnectionPrincipals()
     {
+        final InetAddress inetAddress = mock(InetAddress.class);
+        when(inetAddress.getCanonicalHostName()).thenReturn("127.0.0.1");
+        final InetSocketAddress inetSocketAddress = mock(InetSocketAddress.class);
+        when(inetSocketAddress.getAddress()).thenReturn(inetAddress);
+
         final ManagementConnectionPrincipal managementConnectionPrincipal = mock(ManagementConnectionPrincipal.class);
-        when(managementConnectionPrincipal.getRemoteAddress())
-                .thenReturn(new InetSocketAddress("127.0.0.1", 8000));
+        when(managementConnectionPrincipal.getRemoteAddress()).thenReturn(inetSocketAddress);
+
+        final InetAddress invalidInetAddress = mock(InetAddress.class);
+        when(invalidInetAddress.getCanonicalHostName()).thenReturn("127.0.0.3");
+        final InetSocketAddress invalidInetSocketAddress = mock(InetSocketAddress.class);
+        when(invalidInetSocketAddress.getAddress()).thenReturn(invalidInetAddress);
 
         final ManagementConnectionPrincipal invalidManagementConnectionPrincipal = mock(ManagementConnectionPrincipal.class);
-        when(invalidManagementConnectionPrincipal.getRemoteAddress())
-                .thenReturn(new InetSocketAddress("127.0.0.3", 8000));
+        when(invalidManagementConnectionPrincipal.getRemoteAddress()).thenReturn(invalidInetSocketAddress);
 
         final Subject subject = new Subject();
         final FirewallRule rule1 = new HostnameFirewallRule("127.0.0.1", "localhost");
