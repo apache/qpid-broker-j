@@ -26,12 +26,11 @@ import static org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHost
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,11 +123,11 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         if (!_nodeLeft)
         {
-            SettableFuture<Void> future = SettableFuture.create();
+            CompletableFuture<Void> future = new CompletableFuture<>();
 
             String nodeName = getName();
             try
@@ -136,13 +135,13 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
                 _replicatedEnvironmentFacade.removeNodeFromGroup(nodeName);
                 getEventLogger().message(_virtualHostNodeLogSubject,
                                          HighAvailabilityMessages.DELETE(getName(), String.valueOf(Outcome.SUCCESS)));
-                future.set(null);
+                future.complete(null);
             }
             catch (RuntimeException e)
             {
                 getEventLogger().message(_virtualHostNodeLogSubject,
                                          HighAvailabilityMessages.DELETE(getName(), String.valueOf(Outcome.FAILURE)));
-                future.setException(e);
+                future.completeExceptionally(e);
             }
             return future;
         }
@@ -267,7 +266,7 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
     }
 
     @Override
-    protected ListenableFuture<Void> deleteNoChecks()
+    protected CompletableFuture<Void> deleteNoChecks()
     {
         return super.deleteNoChecks();
     }

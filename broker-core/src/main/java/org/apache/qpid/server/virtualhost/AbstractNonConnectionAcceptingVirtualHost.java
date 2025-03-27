@@ -25,9 +25,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.messages.VirtualHostMessages;
 import org.apache.qpid.server.message.MessageDestination;
@@ -203,8 +202,8 @@ public abstract class AbstractNonConnectionAcceptingVirtualHost<X extends Abstra
     }
 
     @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
-                                                                             final Map<String, Object> attributes)
+    protected <C extends ConfiguredObject> CompletableFuture<C> addChildAsync(final Class<C> childClass,
+                                                                              final Map<String, Object> attributes)
     {
         throwUnsupported();
         return null;

@@ -44,15 +44,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
-
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -176,11 +174,11 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
-    protected ListenableFuture<Void> doActivate()
+    protected CompletableFuture<Void> doActivate()
     {
         initializeExpiryChecking();
         setState(State.ACTIVE);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

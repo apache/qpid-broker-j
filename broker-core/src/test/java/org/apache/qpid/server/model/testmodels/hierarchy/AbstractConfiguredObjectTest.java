@@ -35,10 +35,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 
 import org.junit.jupiter.api.Test;
 
@@ -120,7 +118,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         assertEquals(engine, car.getChildById(TestEngine.class, engine.getId()));
         assertEquals(engine, car.getChildByName(TestEngine.class, engine.getName()));
 
-        final ListenableFuture attainedChild = car.getAttainedChildByName(TestEngine.class, engine.getName());
+        final CompletableFuture attainedChild = car.getAttainedChildByName(TestEngine.class, engine.getName());
         assertNotNull(attainedChild);
         assertTrue(attainedChild.isDone(), "Engine should have already attained state");
     }
@@ -138,7 +136,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         assertEquals(engine, car.getChildById(TestEngine.class, engine.getId()));
         assertEquals(engine, car.getChildByName(TestEngine.class, engine.getName()));
 
-        final ListenableFuture attainedChild = car.getAttainedChildByName(TestEngine.class, engine.getName());
+        final CompletableFuture attainedChild = car.getAttainedChildByName(TestEngine.class, engine.getName());
         assertNotNull(attainedChild);
         assertFalse(attainedChild.isDone(), "Engine should not have yet attained state");
 
@@ -151,7 +149,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     @Test
     public void testOpenAwaitsChildToAttainState() throws Exception
     {
-        final SettableFuture<Void> engineStateChangeControllingFuture = SettableFuture.create();
+        final CompletableFuture<Void> engineStateChangeControllingFuture = new CompletableFuture<>();
         final TestCar car = recoverParentAndChild();
 
         // Check we can observe the recovered child from the parent
@@ -159,10 +157,10 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         final TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
         engine.setStateChangeFuture(engineStateChangeControllingFuture);
 
-        final ListenableFuture carFuture = car.openAsync();
+        final CompletableFuture carFuture = car.openAsync();
         assertFalse(carFuture.isDone(), "car open future has completed before engine has attained state");
 
-        engineStateChangeControllingFuture.set(null);
+        engineStateChangeControllingFuture.complete(null);
 
         assertTrue(carFuture.isDone(), "car open future has not completed");
         carFuture.get();
@@ -171,7 +169,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     @Test
     public void testOpenAwaitsChildToAttainState_ChildStateChangeAsyncErrors() throws Exception
     {
-        final SettableFuture<Void> engineStateChangeControllingFuture = SettableFuture.create();
+        final CompletableFuture<Void> engineStateChangeControllingFuture = new CompletableFuture<>();
 
         final TestCar car = recoverParentAndChild();
 
@@ -180,10 +178,10 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         final TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
         engine.setStateChangeFuture(engineStateChangeControllingFuture);
 
-        final ListenableFuture carFuture = car.openAsync();
+        final CompletableFuture carFuture = car.openAsync();
         assertFalse(carFuture.isDone(), "car open future has completed before engine has attained state");
 
-        engineStateChangeControllingFuture.setException(new RuntimeException("child attain state exception"));
+        engineStateChangeControllingFuture.completeExceptionally(new RuntimeException("child attain state exception"));
 
         assertTrue(carFuture.isDone(), "car open future has not completed");
         carFuture.get();
@@ -202,7 +200,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
 
         engine.setStateChangeException(new RuntimeException("child attain state exception"));
 
-        final ListenableFuture carFuture = car.openAsync();
+        final CompletableFuture carFuture = car.openAsync();
 
         assertTrue(carFuture.isDone(), "car open future has not completed");
         carFuture.get();
@@ -213,14 +211,14 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     @Test
     public void testCreateAwaitsAttainState()
     {
-        final SettableFuture<Void> stateChangeFuture = SettableFuture.create();
+        final CompletableFuture<Void> stateChangeFuture = new CompletableFuture<>();
         final TestCar car = _model.getObjectFactory().create(TestCar.class, Map.of(ConfiguredObject.NAME, "myCar"), null);
         final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, "myEngine",
                 TestEngine.STATE_CHANGE_FUTURE, stateChangeFuture);
-        final ListenableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
+        final CompletableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
         assertFalse(engine.isDone(), "create child has completed before state change completes");
 
-        stateChangeFuture.set(null);
+        stateChangeFuture.complete(null);
 
         assertTrue(engine.isDone(), "create child has not completed");
     }
@@ -228,15 +226,15 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     @Test
     public void testCreateAwaitsAttainState_StateChangeAsyncErrors()
     {
-        final SettableFuture stateChangeFuture = SettableFuture.create();
+        final CompletableFuture stateChangeFuture = new CompletableFuture<>();
         final RuntimeException stateChangeException = new RuntimeException("state change error");
         final TestCar car = _model.getObjectFactory().create(TestCar.class, Map.of(ConfiguredObject.NAME, "myCar"), null);
         final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, "myEngine",
                 TestEngine.STATE_CHANGE_FUTURE, stateChangeFuture);
-        final ListenableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
+        final CompletableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
         assertFalse(engine.isDone(), "create child has completed before state change completes");
 
-        stateChangeFuture.setException(stateChangeException);
+        stateChangeFuture.completeExceptionally(stateChangeException);
 
         assertTrue(engine.isDone(), "create child has not completed");
         final ExecutionException ee = assertThrows(ExecutionException.class, engine::get, "Exception not thrown");
@@ -252,7 +250,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         final TestCar car = _model.getObjectFactory().create(TestCar.class, Map.of(ConfiguredObject.NAME, "myCar"), null);
         final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, "myEngine",
                 TestEngine.STATE_CHANGE_EXCEPTION, stateChangeException);
-        final ListenableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
+        final CompletableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
         assertTrue(engine.isDone(), "create child has not completed");
         final ExecutionException ee = assertThrows(ExecutionException.class, engine::get, "Exception not thrown");
         assertSame(stateChangeException, ee.getCause());
@@ -263,21 +261,21 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     @Test
     public void testCloseAwaitsChildCloseCompletion()
     {
-        final SettableFuture<Void> engineCloseControllingFuture = SettableFuture.create();
+        final CompletableFuture<Void> engineCloseControllingFuture = new CompletableFuture<>();
         final TestCar car = _model.getObjectFactory().create(TestCar.class, Map.of(ConfiguredObject.NAME, "myCar"), null);
         final String engineName = "myEngine";
         final Map<String, Object> engineAttributes = Map.of(ConfiguredObject.NAME, engineName,
                 TestEngine.BEFORE_CLOSE_FUTURE, engineCloseControllingFuture);
         final TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
-        final ListenableFuture carListenableFuture = car.closeAsync();
-        assertFalse(carListenableFuture.isDone(), "car close future has completed before engine closed");
+        final CompletableFuture carCompletableFuture = car.closeAsync();
+        assertFalse(carCompletableFuture.isDone(), "car close future has completed before engine closed");
         assertSame(engine, car.getChildById(TestEngine.class, engine.getId()),
                    "engine deregistered from car too early");
 
 
-        engineCloseControllingFuture.set(null);
+        engineCloseControllingFuture.complete(null);
 
-        assertTrue(carListenableFuture.isDone(), "car close future has not completed");
+        assertTrue(carCompletableFuture.isDone(), "car close future has not completed");
         assertNull(car.getChildById(TestEngine.class, engine.getId()), "engine not deregistered");
     }
 

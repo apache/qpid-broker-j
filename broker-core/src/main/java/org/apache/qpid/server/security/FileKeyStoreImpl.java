@@ -38,14 +38,12 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.X509KeyManager;
-
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
@@ -104,11 +102,11 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
-    protected ListenableFuture<Void> doActivate()
+    protected CompletableFuture<Void> doActivate()
     {
         initializeExpiryChecking();
         setState(State.ACTIVE);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

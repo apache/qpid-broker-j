@@ -25,9 +25,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,14 +96,14 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
 
 
     @StateTransition( currentState = State.UNINITIALIZED, desiredState = State.QUIESCED )
-    protected ListenableFuture<Void> startQuiesced()
+    protected CompletableFuture<Void> startQuiesced()
     {
         setState(State.QUIESCED);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.QUIESCED }, desiredState = State.ACTIVE )
-    protected ListenableFuture<Void> activate()
+    protected CompletableFuture<Void> activate()
     {
         try
         {
@@ -122,7 +121,7 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
                 throw e;
             }
         }
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

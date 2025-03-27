@@ -25,13 +25,12 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,14 +101,14 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
     protected abstract Collection<? extends LogInclusionRule> getLogInclusionRules();
 
     @StateTransition( currentState = { State.ERRORED, State.UNINITIALIZED, State.STOPPED }, desiredState = State.ACTIVE )
-    private ListenableFuture<Void> doActivate()
+    private CompletableFuture<Void> doActivate()
     {
         setState(State.ACTIVE);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         stopLogging();
         return super.onDelete();

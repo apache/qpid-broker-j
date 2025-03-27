@@ -21,9 +21,7 @@
 package org.apache.qpid.server.security.access;
 
 import java.util.Map;
-
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -71,10 +69,10 @@ public abstract class AbstractAccessControlProvider<X extends AbstractAccessCont
 
     @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
     @SuppressWarnings("unused")
-    private ListenableFuture<Void> startQuiesced()
+    private CompletableFuture<Void> startQuiesced()
     {
         setState(State.QUIESCED);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

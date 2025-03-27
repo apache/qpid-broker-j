@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -41,8 +42,6 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.sleepycat.je.rep.ReplicationConfig;
@@ -112,7 +111,7 @@ public class GroupBrokerAdmin
         GroupMember first = _members[0];
         first.getAdmin().beforeTestMethod(_members[0].getName(), NODE_TYPE, _members[0].getNodeAttributes());
         awaitNodeRoleReplicaOrMaster(first);
-        ListenableFuture<Void> f;
+        CompletableFuture<Void> f;
         if (_members.length > 2)
         {
             f = invokeParallel(Arrays.stream(_members).skip(1).map(m -> (Callable<Void>) () -> {
@@ -127,7 +126,7 @@ public class GroupBrokerAdmin
                 _members[i].getAdmin()
                            .beforeTestMethod(_members[i].getName(), NODE_TYPE, _members[i].getNodeAttributes());
             }
-            f = Futures.immediateFuture(null);
+            f = CompletableFuture.completedFuture(null);
         }
 
         awaitFuture(WAIT_LIMIT, f);
@@ -168,7 +167,7 @@ public class GroupBrokerAdmin
         }
     }
 
-    public ListenableFuture<Void> restart()
+    public CompletableFuture<Void> restart()
     {
         awaitFuture(WAIT_LIMIT, invokeParallel(Arrays.stream(_members).map(m -> (Callable<Void>) () -> {
             m.getAdmin().restart();
@@ -176,7 +175,7 @@ public class GroupBrokerAdmin
         }).collect(Collectors.toList())));
         awaitAllTransitionIntoReplicaOrMaster();
 
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     public void stop()
@@ -399,23 +398,23 @@ public class GroupBrokerAdmin
                              String.format("Could not find node by amqp port %d", amqpPort)));
     }
 
-    private <T> ListenableFuture<T> invokeParallel(Collection<Callable<T>> tasks)
+    private <T> CompletableFuture<T> invokeParallel(Collection<Callable<T>> tasks)
     {
         try
         {
             @SuppressWarnings("unchecked")
-            List<ListenableFuture<T>> futures = (List) _executorService.invokeAll(tasks);
-            ListenableFuture<List<T>> combinedFuture = Futures.allAsList(futures);
-            return Futures.transform(combinedFuture, input -> null, _executorService);
+            List<CompletableFuture<T>> futures = (List) _executorService.invokeAll(tasks);
+            CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));
+            return combinedFuture.thenComposeAsync(input -> null, _executorService);
         }
         catch (InterruptedException e)
         {
             Thread.interrupted();
-            return Futures.immediateFailedFuture(e);
+            return CompletableFuture.failedFuture(e);
         }
     }
 
-    private <T> void awaitFuture(long waitLimit, ListenableFuture<T> future)
+    private <T> void awaitFuture(long waitLimit, CompletableFuture<T> future)
     {
         try
         {

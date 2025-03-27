@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -44,7 +45,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -443,7 +443,7 @@ class SelectorThread extends Thread
 
     private Future<Void> cancelAcceptingSocketAsync(final ServerSocketChannel socketChannel)
     {
-        final SettableFuture<Void> cancellationResult = SettableFuture.create();
+        final CompletableFuture<Void> cancellationResult = new CompletableFuture<>();
         _tasks.add(() ->
         {
             if (LOGGER.isDebugEnabled())
@@ -472,7 +472,7 @@ class SelectorThread extends Thread
             }
             finally
             {
-                cancellationResult.set(null);
+                cancellationResult.complete(null);
             }
         });
         _selectionTasks[0].wakeup();

@@ -21,8 +21,8 @@
 package org.apache.qpid.server.model;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.message.MessageDestination;
 
 @ManagedObject(creatable = false, amqpName = "org.apache.qpid.Producer")
@@ -96,5 +96,5 @@ public interface Producer<X extends Producer<X>> extends ConfiguredObject<X>
     @ManagedOperation(description = "Resets producer statistics", changesConfiguredObjectState = true)
     void resetStatistics();
 
-    ListenableFuture<Void> deleteNoChecks();
+    CompletableFuture<Void> deleteNoChecks();
 }

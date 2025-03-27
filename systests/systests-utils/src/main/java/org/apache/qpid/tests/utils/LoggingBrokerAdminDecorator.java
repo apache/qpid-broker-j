@@ -22,9 +22,9 @@ package org.apache.qpid.tests.utils;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
 
 import ch.qos.logback.classic.LoggerContext;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,7 +121,7 @@ public class LoggingBrokerAdminDecorator implements BrokerAdmin
     }
 
     @Override
-    public ListenableFuture<Void> restart()
+    public CompletableFuture<Void> restart()
     {
         return _delegate.restart();
     }

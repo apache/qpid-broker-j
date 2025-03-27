@@ -25,8 +25,8 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,7 +133,7 @@ public class ExternalQpidBrokerAdminImpl implements BrokerAdmin
     }
 
     @Override
-    public ListenableFuture<Void> restart()
+    public CompletableFuture<Void> restart()
     {
         throw new UnsupportedOperationException("External Qpid Broker does not support restart.");
     }

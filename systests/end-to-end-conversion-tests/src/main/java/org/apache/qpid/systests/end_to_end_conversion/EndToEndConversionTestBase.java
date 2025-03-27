@@ -32,11 +32,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -95,7 +95,7 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
         System.out.println("LQDEBUG: " + ClasspathQuery.getCacheStats());
     }
 
-    protected ListenableFuture<ClientResult> runPublisher(final List<ClientInstruction> clientInstructions)
+    protected CompletableFuture<ClientResult> runPublisher(final List<ClientInstruction> clientInstructions)
     {
         List<String> gavs = Arrays.asList(System.getProperty("qpid.systests.end_to_end_conversion.publisherGavs",
                                                              "org.apache.qpid:qpid-jms-client:LATEST")
@@ -104,13 +104,13 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
                 "qpid.systests.end_to_end_conversion.publisherAdditionalJavaArguments",
                 "").split(" ")).filter(s -> !s.isEmpty()).collect(Collectors.toList());
 
-        return _executorService.submit(() -> {
+        return CompletableFuture.supplyAsync(() -> {
             Thread.currentThread().setName("Publisher");
             return runClient(gavs, additionalJavaArgs, clientInstructions);
-        });
+        }, _executorService);
     }
 
-    protected ListenableFuture<ClientResult> runSubscriber(final List<ClientInstruction> clientInstructions)
+    protected CompletableFuture<ClientResult> runSubscriber(final List<ClientInstruction> clientInstructions)
     {
         List<String> gavs = Arrays.asList(System.getProperty("qpid.systests.end_to_end_conversion.subscriberGavs",
                                                              "org.apache.qpid:qpid-client:LATEST,org.apache.geronimo.specs:geronimo-jms_1.1_spec:1.1.1")
@@ -120,10 +120,10 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
                 "qpid.systests.end_to_end_conversion.subscriberAdditionalJavaArguments",
                 "-Dqpid.amqp.version=0-9-1").split(" ")).filter(s -> !s.isEmpty()).collect(Collectors.toList());
 
-        return _executorService.submit(() -> {
+        return CompletableFuture.supplyAsync(() -> {
             Thread.currentThread().setName("Subscriber");
             return runClient(gavs, additionalJavaArgs, clientInstructions);
-        });
+        }, _executorService);
     }
 
     private List<ClientInstruction> amendClientInstructions(List<ClientInstruction> clientInstructions,

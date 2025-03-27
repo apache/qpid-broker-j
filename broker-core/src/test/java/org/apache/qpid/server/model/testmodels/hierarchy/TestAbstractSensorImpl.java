@@ -21,10 +21,8 @@
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.State;
@@ -50,10 +48,10 @@ public class TestAbstractSensorImpl<X extends TestAbstractSensorImpl<X>> extends
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     @SuppressWarnings({"unused"})
-    private ListenableFuture<Void> onActivate()
+    private CompletableFuture<Void> onActivate()
     {
         setState(State.ACTIVE);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

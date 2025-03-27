@@ -22,11 +22,7 @@ package org.apache.qpid.server.model;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.SettableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.plugin.ConfiguredObjectTypeFactory;
 import org.apache.qpid.server.store.ConfiguredObjectDependency;
@@ -66,28 +62,24 @@ abstract public class AbstractConfiguredObjectTypeFactory<X extends AbstractConf
 
 
     @Override
-    public ListenableFuture<X> createAsync(final ConfiguredObjectFactory factory,
-                    final Map<String, Object> attributes,
-                    final ConfiguredObject<?> parent)
+    public CompletableFuture<X> createAsync(final ConfiguredObjectFactory factory,
+                                            final Map<String, Object> attributes,
+                                            final ConfiguredObject<?> parent)
     {
-        final SettableFuture<X> returnVal = SettableFuture.create();
+        final CompletableFuture<X> returnVal = new CompletableFuture<>();
         final X instance = createInstance(attributes, parent);
-        final ListenableFuture<Void> createFuture = instance.createAsync();
-        AbstractConfiguredObject.addFutureCallback(createFuture, new FutureCallback<>()
+        final CompletableFuture<Void> createFuture = instance.createAsync();
+        createFuture.whenComplete((result, throwable) ->
         {
-            @Override
-            public void onSuccess(final Void result)
+            if (throwable != null)
             {
-                returnVal.set(instance);
+                returnVal.completeExceptionally(throwable);
             }
-
-            @Override
-            public void onFailure(final Throwable t)
+            else
             {
-                returnVal.setException(t);
+                returnVal.complete(instance);
             }
-        }, MoreExecutors.directExecutor());
-
+        });
         return returnVal;
     }
 

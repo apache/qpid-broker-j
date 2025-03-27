@@ -22,8 +22,7 @@ package org.apache.qpid.tests.utils;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
-
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.plugin.Pluggable;
 
@@ -46,7 +45,7 @@ public interface BrokerAdmin extends Pluggable
     int getQueueDepthMessages(String testQueueName);
 
     boolean supportsRestart();
-    ListenableFuture<Void> restart();
+    CompletableFuture<Void> restart();
 
     boolean isAnonymousSupported();
     boolean isSASLSupported();

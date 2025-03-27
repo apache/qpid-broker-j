@@ -27,9 +27,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.Session_1_0;
@@ -195,7 +195,7 @@ public class DeleteOnCloseTest extends BrokerAdminUsingTestBase
             assertThat(Utils.doesNodeExist(getBrokerAdmin(), newTempQueueAddress), is(true));
         }
 
-        final ListenableFuture<Void> restart = getBrokerAdmin().restart();
+        final CompletableFuture<Void> restart = getBrokerAdmin().restart();
         restart.get(BrokerAdmin.RESTART_TIMEOUT, TimeUnit.MILLISECONDS);
         assertThat(Utils.doesNodeExist(getBrokerAdmin(), newTempQueueAddress), is(true));
     }

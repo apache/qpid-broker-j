@@ -21,8 +21,7 @@
 package org.apache.qpid.server.queue;
 
 import java.util.Map;
-
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
@@ -51,9 +50,9 @@ public class QueueFactory<X extends Queue<X>>  implements ConfiguredObjectTypeFa
     }
 
     @Override
-    public ListenableFuture<X> createAsync(final ConfiguredObjectFactory factory,
-                                           final Map<String, Object> attributes,
-                                           final ConfiguredObject<?> parent)
+    public CompletableFuture<X> createAsync(final ConfiguredObjectFactory factory,
+                                            final Map<String, Object> attributes,
+                                            final ConfiguredObject<?> parent)
     {
         return getQueueFactory(factory, attributes).createAsync(factory, attributes, parent);
     }

@@ -54,6 +54,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -64,8 +65,6 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
@@ -165,10 +164,10 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     }
 
     @Override
-    protected ListenableFuture<Void> onClose()
+    protected CompletableFuture<Void> onClose()
     {
         onCloseOrDelete();
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -244,7 +243,7 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         onCloseOrDelete();
         return super.onDelete();

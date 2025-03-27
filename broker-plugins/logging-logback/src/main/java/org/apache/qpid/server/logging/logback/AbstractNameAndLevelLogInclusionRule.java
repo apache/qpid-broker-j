@@ -21,12 +21,11 @@
 package org.apache.qpid.server.logging.logback;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.LogLevel;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -84,18 +83,18 @@ public abstract class AbstractNameAndLevelLogInclusionRule<X extends AbstractNam
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         QpidLoggerTurboFilter.filterRemovedFromRootContext(_filter);
         return super.onDelete();
     }
 
     @StateTransition( currentState = { State.ERRORED, State.UNINITIALIZED }, desiredState = State.ACTIVE )
-    private ListenableFuture<Void> doActivate()
+    private CompletableFuture<Void> doActivate()
     {
         setState(State.ACTIVE);
         QpidLoggerTurboFilter.filterAddedToRootContext(_filter);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
 }
