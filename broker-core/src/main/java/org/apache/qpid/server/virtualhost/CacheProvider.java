@@ -20,7 +20,7 @@
 
 package org.apache.qpid.server.virtualhost;
 
-import com.google.common.cache.Cache;
+import com.github.benmanes.caffeine.cache.Cache;
 
 public interface CacheProvider
 {

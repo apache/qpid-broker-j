@@ -33,8 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 import org.junit.jupiter.api.Test;
 
@@ -121,7 +121,7 @@ class BBEncoderTest extends UnitTestBase
     {
         final String testString = "Test";
         final Cache< String, byte[]> original = BBEncoder.getEncodedStringCache();
-        final Cache< String, byte[]> cache = CacheBuilder.newBuilder().maximumSize(2).build();
+        final Cache< String, byte[]> cache = Caffeine.newBuilder().maximumSize(2).build();
         try
         {
             final BBEncoder encoder = new BBEncoder(64);
@@ -129,7 +129,7 @@ class BBEncoderTest extends UnitTestBase
             encoder.writeStr8(testString);
             encoder.writeStr8(testString);
 
-            assertThat(cache.size(), is(equalTo(1L)));
+            assertThat(cache.estimatedSize(), is(equalTo(1L)));
         }
         finally
         {
