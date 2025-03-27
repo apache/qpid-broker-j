@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.ByteStreams;
 
 import org.junit.jupiter.api.Test;
 
@@ -268,7 +267,7 @@ class MessageConverter_Internal_to_0_8Test extends UnitTestBase
         try (final ByteArrayOutputStream bos = new ByteArrayOutputStream();
              final InputStream contentInputStream = content.asInputStream())
         {
-            ByteStreams.copy(contentInputStream, bos);
+            contentInputStream.transferTo(bos);
             content.dispose();
             return bos.toByteArray();
         }

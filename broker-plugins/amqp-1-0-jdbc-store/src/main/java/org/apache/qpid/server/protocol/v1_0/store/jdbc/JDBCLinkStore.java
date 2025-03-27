@@ -40,7 +40,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 
-import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -374,7 +373,7 @@ public class JDBCLinkStore extends AbstractLinkStore
             Blob blob = resultSet.getBlob(index);
             try (InputStream is = blob.getBinaryStream())
             {
-                sourceBytes = ByteStreams.toByteArray(is);
+                sourceBytes = is.readAllBytes();
             }
             catch (IOException e)
             {

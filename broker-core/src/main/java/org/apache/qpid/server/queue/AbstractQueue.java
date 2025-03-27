@@ -60,7 +60,6 @@ import java.util.zip.GZIPOutputStream;
 import javax.security.auth.Subject;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.ByteStreams;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,6 +141,7 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.util.DeleteDeleteTask;
+import org.apache.qpid.server.util.LimitedInputStream;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
@@ -2803,13 +2803,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 if (_limit != UNLIMITED && _decompressBeforeLimiting)
                 {
                     inputStream = new GZIPInputStream(inputStream);
-                    inputStream = ByteStreams.limit(inputStream, _limit);
+                    inputStream = new LimitedInputStream(inputStream, _limit);
                     outputStream = new GZIPOutputStream(outputStream, true);
                 }
 
                 try
                 {
-                    ByteStreams.copy(inputStream, outputStream);
+                    inputStream.transferTo(outputStream);
                 }
                 finally
                 {
