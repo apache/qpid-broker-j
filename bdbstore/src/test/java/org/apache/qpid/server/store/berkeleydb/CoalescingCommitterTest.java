@@ -30,10 +30,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,7 +99,7 @@ public class CoalescingCommitterTest extends UnitTestBase
 
         try
         {
-            ListenableFuture<?> future =  _coalescingCommitter.commitAsync(null, null);
+            CompletableFuture<?> future =  _coalescingCommitter.commitAsync(null, null);
             future.get(1000, TimeUnit.MILLISECONDS);
             fail("Async commit should fail");
         }
@@ -113,7 +112,7 @@ public class CoalescingCommitterTest extends UnitTestBase
 
         doNothing().when(_environmentFacade).flushLog();
         final String expectedResult = "Test";
-        ListenableFuture<?> future =  _coalescingCommitter.commitAsync(null, expectedResult);
+        CompletableFuture<?> future =  _coalescingCommitter.commitAsync(null, expectedResult);
         Object result = future.get(1000, TimeUnit.MILLISECONDS);
         assertEquals(expectedResult, result, "Unexpected result");
 

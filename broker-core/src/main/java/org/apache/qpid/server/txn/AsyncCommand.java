@@ -20,18 +20,17 @@
 
 package org.apache.qpid.server.txn;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class AsyncCommand
 {
-    private final ListenableFuture<Void> _future;
+    private final CompletableFuture<Void> _future;
     private ServerTransaction.Action _action;
 
-    public AsyncCommand(final ListenableFuture<Void> future, final ServerTransaction.Action action)
+    public AsyncCommand(final CompletableFuture<Void> future, final ServerTransaction.Action action)
     {
         _future = future;
         _action = action;

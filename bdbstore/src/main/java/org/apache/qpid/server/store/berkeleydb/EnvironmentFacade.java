@@ -21,8 +21,8 @@
 package org.apache.qpid.server.store.berkeleydb;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -62,11 +62,13 @@ public interface EnvironmentFacade
     Transaction beginTransaction(TransactionConfig transactionConfig);
 
     void commit(Transaction tx);
-    <X> ListenableFuture<X> commitAsync(Transaction tx, X val);
+
+    <X> CompletableFuture<X> commitAsync(Transaction tx, X val);
 
     RuntimeException handleDatabaseException(String contextMessage, RuntimeException e);
 
     void closeDatabase(String name);
+
     void close();
 
     long getTotalLogSize();

@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -51,7 +52,6 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -929,19 +929,19 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
     }
 
-    private <X> ListenableFuture<X> commitTranAsync(final ConnectionWrapper connWrapper, final X val) throws StoreException
+    private <X> CompletableFuture<X> commitTranAsync(final ConnectionWrapper connWrapper, final X val) throws StoreException
     {
-        final SettableFuture<X> future = SettableFuture.create();
+        final CompletableFuture<X> future = new CompletableFuture<>();
         _executor.submit(() ->
         {
             try
             {
                 commitTran(connWrapper);
-                future.set(val);
+                future.complete(val);
             }
             catch (RuntimeException e)
             {
-                future.setException(e);
+                future.completeExceptionally(e);
             }
         });
         return future;
@@ -1274,11 +1274,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public <X> ListenableFuture<X> commitTranAsync(final X val)
+        public <X> CompletableFuture<X> commitTranAsync(final X val)
         {
             checkMessageStoreOpen();
             doPreCommitActions();
-            ListenableFuture<X> futureResult = AbstractJDBCMessageStore.this.commitTranAsync(_connWrapper, val);
+            CompletableFuture<X> futureResult = AbstractJDBCMessageStore.this.commitTranAsync(_connWrapper, val);
             storedSizeChange(_storeSizeIncrease);
             doPostCommitActions();
             return futureResult;

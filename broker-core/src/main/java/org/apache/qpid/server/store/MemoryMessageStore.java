@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,10 +68,10 @@ public class MemoryMessageStore implements MessageStore
         private final Set<Xid> _localDistributedTransactionsRemoves = new HashSet<>();
 
         @Override
-        public <X> ListenableFuture<X> commitTranAsync(final X val)
+        public <X> CompletableFuture<X> commitTranAsync(final X val)
         {
             commitTran();
-            return Futures.immediateFuture(val);
+            return CompletableFuture.completedFuture(val);
         }
 
         @Override
