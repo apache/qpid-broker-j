@@ -30,10 +30,7 @@ import java.nio.channels.ScatteringByteChannel;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.common.primitives.Chars;
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
-import com.google.common.primitives.Shorts;
+import org.apache.qpid.server.util.PrimitivesUtils;
 
 class MultiQpidByteBuffer implements QpidByteBuffer
 {
@@ -71,28 +68,28 @@ class MultiQpidByteBuffer implements QpidByteBuffer
     @Override
     public QpidByteBuffer putShort(final int index, final short value)
     {
-        byte[] valueArray = Shorts.toByteArray(value);
+        byte[] valueArray = PrimitivesUtils.toByteArray(value);
         return put(index, valueArray);
     }
 
     @Override
     public QpidByteBuffer putChar(final int index, final char value)
     {
-        byte[] valueArray = Chars.toByteArray(value);
+        byte[] valueArray = PrimitivesUtils.toByteArray(value);
         return put(index, valueArray);
     }
 
     @Override
     public QpidByteBuffer putInt(final int index, final int value)
     {
-        byte[] valueArray = Ints.toByteArray(value);
+        byte[] valueArray = PrimitivesUtils.toByteArray(value);
         return put(index, valueArray);
     }
 
     @Override
     public QpidByteBuffer putLong(final int index, final long value)
     {
-        byte[] valueArray = Longs.toByteArray(value);
+        byte[] valueArray = PrimitivesUtils.toByteArray(value);
         return put(index, valueArray);
     }
 
@@ -172,7 +169,7 @@ class MultiQpidByteBuffer implements QpidByteBuffer
     @Override
     public final QpidByteBuffer putShort(final short value)
     {
-        byte[] valueArray = Shorts.toByteArray(value);
+        byte[] valueArray = PrimitivesUtils.toByteArray(value);
         return put(valueArray);
     }
 
@@ -186,14 +183,14 @@ class MultiQpidByteBuffer implements QpidByteBuffer
     @Override
     public final QpidByteBuffer putChar(final char value)
     {
-        byte[] valueArray = Chars.toByteArray(value);
+        byte[] valueArray = PrimitivesUtils.toByteArray(value);
         return put(valueArray);
     }
 
     @Override
     public final QpidByteBuffer putInt(final int value)
     {
-        byte[] valueArray = Ints.toByteArray(value);
+        byte[] valueArray = PrimitivesUtils.toByteArray(value);
         return put(valueArray);
     }
 
@@ -207,7 +204,7 @@ class MultiQpidByteBuffer implements QpidByteBuffer
     @Override
     public final QpidByteBuffer putLong(final long value)
     {
-        byte[] valueArray = Longs.toByteArray(value);
+        byte[] valueArray = PrimitivesUtils.toByteArray(value);
         return put(valueArray);
     }
 
@@ -390,7 +387,7 @@ class MultiQpidByteBuffer implements QpidByteBuffer
     public short getShort(final int index)
     {
         final byte[] byteArray = getByteArray(index, 2);
-        return Shorts.fromByteArray(byteArray);
+        return PrimitivesUtils.shortFromByteArray(byteArray);
     }
 
     @Override
@@ -403,21 +400,21 @@ class MultiQpidByteBuffer implements QpidByteBuffer
     public char getChar(final int index)
     {
         final byte[] byteArray = getByteArray(index, 2);
-        return Chars.fromByteArray(byteArray);
+        return PrimitivesUtils.charFromByteArray(byteArray);
     }
 
     @Override
     public int getInt(final int index)
     {
         final byte[] byteArray = getByteArray(index, 4);
-        return Ints.fromByteArray(byteArray);
+        return PrimitivesUtils.intFromByteArray(byteArray);
     }
 
     @Override
     public long getLong(final int index)
     {
         final byte[] byteArray = getByteArray(index, 8);
-        return Longs.fromByteArray(byteArray);
+        return PrimitivesUtils.longFromByteArray(byteArray);
     }
 
     @Override
@@ -500,7 +497,7 @@ class MultiQpidByteBuffer implements QpidByteBuffer
     {
         byte[] value = new byte[2];
         get(value, 0, value.length);
-        return Shorts.fromByteArray(value);
+        return PrimitivesUtils.shortFromByteArray(value);
     }
 
     @Override
@@ -514,7 +511,7 @@ class MultiQpidByteBuffer implements QpidByteBuffer
     {
         byte[] value = new byte[2];
         get(value, 0, value.length);
-        return Chars.fromByteArray(value);
+        return PrimitivesUtils.charFromByteArray(value);
     }
 
     @Override
@@ -522,7 +519,7 @@ class MultiQpidByteBuffer implements QpidByteBuffer
     {
         byte[] value = new byte[4];
         get(value, 0, value.length);
-        return Ints.fromByteArray(value);
+        return PrimitivesUtils.intFromByteArray(value);
     }
 
     @Override
@@ -536,7 +533,7 @@ class MultiQpidByteBuffer implements QpidByteBuffer
     {
         byte[] value = new byte[8];
         get(value, 0, value.length);
-        return Longs.fromByteArray(value);
+        return PrimitivesUtils.longFromByteArray(value);
     }
 
     @Override
