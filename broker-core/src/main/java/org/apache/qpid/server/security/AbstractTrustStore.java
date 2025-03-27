@@ -58,13 +58,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
-
-import com.google.common.collect.Sets;
 
 import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
@@ -300,7 +299,7 @@ public abstract class AbstractTrustStore<X extends AbstractTrustStore<X>>
     {
         if (isTrustAnchorValidityEnforced())
         {
-            final Set<Certificate> trustManagerCerts = Sets.newHashSet(getCertificates());
+            final Set<Certificate> trustManagerCerts = Stream.of(getCertificates()).collect(Collectors.toSet());
             final Set<TrustAnchor> trustAnchors = new HashSet<>();
             final Set<Certificate> otherCerts = new HashSet<>();
             for (Certificate certs : trustManagerCerts)

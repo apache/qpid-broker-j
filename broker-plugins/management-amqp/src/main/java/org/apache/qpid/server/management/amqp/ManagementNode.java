@@ -47,7 +47,6 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
 
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -493,10 +492,10 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
                 }
             };
 
-    private final Set<String> STANDARD_OPERATIONS = Sets.newHashSet(CREATE_OPERATION.getName(),
-                                                                    READ_OPERATION.getName(),
-                                                                    UPDATE_OPERATION.getName(),
-                                                                    DELETE_OPERATION.getName());
+    private final Set<String> STANDARD_OPERATIONS = Set.of(CREATE_OPERATION.getName(),
+            READ_OPERATION.getName(),
+            UPDATE_OPERATION.getName(),
+            DELETE_OPERATION.getName());
 
     private InternalMessage performOperation(final Class<? extends ConfiguredObject> clazz,
                                              final String operation,

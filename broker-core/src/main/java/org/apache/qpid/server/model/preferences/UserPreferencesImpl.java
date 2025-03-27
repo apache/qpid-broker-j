@@ -45,8 +45,6 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.security.auth.Subject;
 
-import com.google.common.collect.Ordering;
-
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -57,32 +55,26 @@ import org.apache.qpid.server.store.preferences.PreferenceStore;
 
 public class UserPreferencesImpl implements UserPreferences
 {
-    private static final Comparator<Preference> PREFERENCE_COMPARATOR = new Comparator<>()
+    private static final Comparator<Preference> PREFERENCE_COMPARATOR = Comparator.nullsFirst((o1, o2) ->
     {
-        private final Ordering<Comparable> _ordering = Ordering.natural().nullsFirst();
-
-        @Override
-        public int compare(final Preference o1, final Preference o2)
+        int nameOrder = o1.getName().compareTo(o2.getName());
+        if (nameOrder != 0)
         {
-            int nameOrder = _ordering.compare(o1.getName(), o2.getName());
-            if (nameOrder != 0)
+            return nameOrder;
+        }
+        else
+        {
+            int typeOrder = o1.getType().compareTo(o2.getType());
+            if (typeOrder != 0)
             {
-                return nameOrder;
+                return typeOrder;
             }
             else
             {
-                int typeOrder = _ordering.compare(o1.getType(), o2.getType());
-                if (typeOrder != 0)
-                {
-                    return typeOrder;
-                }
-                else
-                {
-                    return o1.getId().compareTo(o2.getId());
-                }
+                return o1.getId().compareTo(o2.getId());
             }
         }
-    };
+    });
 
     private final Map<UUID, Preference> _preferences;
     private final Map<String, List<Preference>> _preferencesByName;

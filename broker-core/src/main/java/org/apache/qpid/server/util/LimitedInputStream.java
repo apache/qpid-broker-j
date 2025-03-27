@@ -28,11 +28,11 @@ import java.util.Objects;
 
 public class LimitedInputStream extends FilterInputStream
 {
-
     private long left;
     private long mark = -1;
 
-    public LimitedInputStream(InputStream in, long limit) {
+    public LimitedInputStream(InputStream in, long limit)
+    {
         super(in);
         Objects.requireNonNull(in);
         if (limit < 0)
@@ -48,46 +48,55 @@ public class LimitedInputStream extends FilterInputStream
         return (int) Math.min(in.available(), left);
     }
 
-    // it's okay to mark even if mark isn't supported, as reset won't work
     @Override
-    public synchronized void mark(int readLimit) {
+    public synchronized void mark(int readLimit)
+    {
         in.mark(readLimit);
         mark = left;
     }
 
     @Override
-    public int read() throws IOException {
-        if (left == 0) {
+    public int read() throws IOException
+    {
+        if (left == 0)
+        {
             return -1;
         }
 
         int result = in.read();
-        if (result != -1) {
+        if (result != -1)
+        {
             --left;
         }
         return result;
     }
 
     @Override
-    public int read(byte[] b, int off, int len) throws IOException {
-        if (left == 0) {
+    public int read(byte[] b, int off, int len) throws IOException
+    {
+        if (left == 0)
+        {
             return -1;
         }
 
         len = (int) Math.min(len, left);
         int result = in.read(b, off, len);
-        if (result != -1) {
+        if (result != -1)
+        {
             left -= result;
         }
         return result;
     }
 
     @Override
-    public synchronized void reset() throws IOException {
-        if (!in.markSupported()) {
+    public synchronized void reset() throws IOException
+    {
+        if (!in.markSupported())
+        {
             throw new IOException("Mark not supported");
         }
-        if (mark == -1) {
+        if (mark == -1)
+        {
             throw new IOException("Mark not set");
         }
 
@@ -96,7 +105,8 @@ public class LimitedInputStream extends FilterInputStream
     }
 
     @Override
-    public long skip(long n) throws IOException {
+    public long skip(long n) throws IOException
+    {
         n = Math.min(n, left);
         long skipped = in.skip(n);
         left -= skipped;

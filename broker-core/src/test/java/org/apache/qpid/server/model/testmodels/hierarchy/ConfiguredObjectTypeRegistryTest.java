@@ -30,10 +30,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import com.google.common.collect.Lists;
 
 import org.junit.jupiter.api.Test;
 
@@ -156,7 +155,7 @@ public class ConfiguredObjectTypeRegistryTest extends UnitTestBase
         final ConfiguredSettableAttribute<?, ?> attribute =
                 (ConfiguredSettableAttribute<?, ?>) attributeTypes.get("bodyColour");
 
-        assertEquals(Lists.newArrayList("BLACK", "RED", "BLUE", "GREY"), attribute.validValues(),
+        assertEquals(List.of("BLACK", "RED", "BLUE", "GREY"), attribute.validValues(),
                 "The attribute's valid values should match the set of the enum");
     }
 
@@ -168,7 +167,7 @@ public class ConfiguredObjectTypeRegistryTest extends UnitTestBase
         final ConfiguredSettableAttribute<?, ?> attribute =
                 (ConfiguredSettableAttribute<?, ?>) attributeTypes.get("interiorColour");
 
-        assertEquals(Lists.newArrayList("GREY", "BLACK"), attribute.validValues(),
+        assertEquals(List.of("GREY", "BLACK"), attribute.validValues(),
                 "The attribute's valid values should match the restricted set defined on the attribute itself");
     }
 }

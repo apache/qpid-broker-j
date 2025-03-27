@@ -23,10 +23,9 @@ package org.apache.qpid.server.query.engine.retriever;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,24 +61,17 @@ public class AclRuleRetriever<C extends ConfiguredObject<?>> extends ConfiguredO
     /**
      * List of entity field names
      */
-    private final List<String> _fieldNames = new ImmutableList.Builder<String>()
-        .add("identity")
-        .add("attributes")
-        .add("objectType")
-        .add("operation")
-        .add("outcome")
-        .build();
+    private final List<String> _fieldNames = List.of("identity", "attributes", "objectType", "operation", "outcome");
 
     /**
      * Mapping function for a Rule
      */
-    private final Function<Rule, Map<String, Object>> _ruleMapping = rule -> ImmutableMap.<String, Object>builder()
-        .put(_fieldNames.get(0), rule.getIdentity())
-        .put(_fieldNames.get(1), rule.getAttributes())
-        .put(_fieldNames.get(2), rule.getObjectType())
-        .put(_fieldNames.get(3), rule.getOperation())
-        .put(_fieldNames.get(4), rule.getOutcome())
-        .build();
+    private final Function<Rule, Map<String, Object>> _ruleMapping = rule -> Map.of(
+            _fieldNames.get(0), rule.getIdentity(),
+            _fieldNames.get(1), rule.getAttributes(),
+            _fieldNames.get(2), rule.getObjectType(),
+            _fieldNames.get(3), rule.getOperation(),
+            _fieldNames.get(4), rule.getOutcome());
 
     /**
      * Cached RuleSet

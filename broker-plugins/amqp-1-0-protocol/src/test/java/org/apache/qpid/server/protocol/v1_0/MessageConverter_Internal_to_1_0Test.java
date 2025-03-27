@@ -36,8 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.google.common.collect.Lists;
-
 import org.junit.jupiter.api.Test;
 
 import org.mockito.ArgumentCaptor;
@@ -116,7 +114,7 @@ class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     @Test
     void listMessageWithMimeType() throws Exception
     {
-        final ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
+        final ArrayList<?> content = new ArrayList<>(List.of("testItem", 37.5, 42));
         doTest(content,
                "text/plain",
                AmqpSequenceSection.class,
@@ -128,7 +126,7 @@ class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     @Test
     void listMessageWithoutMimeType() throws Exception
     {
-        final ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
+        final ArrayList<?> content = new ArrayList<>(List.of("testItem", 37.5, 42));
         doTest(content,
                null,
                AmqpSequenceSection.class,
@@ -140,7 +138,7 @@ class MessageConverter_Internal_to_1_0Test extends UnitTestBase
     @Test
     void listMessageWithoutMimeTypeWithNonJmsContent() throws Exception
     {
-        final ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42, Lists.newArrayList());
+        final ArrayList<?> content = new ArrayList<>(List.of("testItem", 37.5, 42, List.of()));
         doTest(content,
                null,
                AmqpSequenceSection.class,

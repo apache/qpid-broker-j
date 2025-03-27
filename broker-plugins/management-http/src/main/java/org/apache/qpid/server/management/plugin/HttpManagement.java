@@ -51,7 +51,6 @@ import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.http.HttpServletRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
@@ -358,7 +357,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
         final FilterHolder corsFilter = new FilterHolder(new CrossOriginFilter());
         corsFilter.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, getCorsAllowOrigins());
-        corsFilter.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, Joiner.on(",").join(getCorsAllowMethods()));
+        corsFilter.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, String.join(",", getCorsAllowMethods()));
         corsFilter.setInitParameter(CrossOriginFilter.ALLOWED_HEADERS_PARAM, getCorsAllowHeaders());
         corsFilter.setInitParameter(CrossOriginFilter.ALLOW_CREDENTIALS_PARAM, String.valueOf(getCorsAllowCredentials()));
         root.addFilter(corsFilter, "/*", EnumSet.of(DispatcherType.REQUEST));

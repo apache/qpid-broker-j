@@ -18,15 +18,16 @@
  * under the License.
  *
  */
+
 package org.apache.qpid.server.query.engine.retriever;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.google.common.collect.ImmutableList;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
@@ -50,25 +51,9 @@ public class SessionRetriever<C extends ConfiguredObject<?>> extends ConfiguredO
     /**
      * List of entity field names
      */
-    private final List<String> _fieldNames = new ImmutableList.Builder<String>()
-        .add("connectionId")
-        .add("id")
-        .add("name")
-        .add("description")
-        .add("type")
-        .add("desiredState")
-        .add("state")
-        .add("durable")
-        .add("lifetimePolicy")
-        .add("channelId")
-        .add("lastOpenedTime")
-        .add("producerFlowBlocked")
-        .add("lastUpdatedTime")
-        .add("lastUpdatedBy")
-        .add("createdBy")
-        .add("createdTime")
-        .add("statistics")
-        .build();
+    private final List<String> _fieldNames = List.of("connectionId", "id", "name", "description", "type", "desiredState",
+            "state", "durable", "lifetimePolicy", "channelId", "lastOpenedTime", "producerFlowBlocked", "lastUpdatedTime",
+            "lastUpdatedBy", "createdBy", "createdTime", "statistics");
 
     /**
      * Mapping function for a Session
@@ -94,7 +79,7 @@ public class SessionRetriever<C extends ConfiguredObject<?>> extends ConfiguredO
             result.put(_fieldNames.get(14), session.getCreatedBy());
             result.put(_fieldNames.get(15), session.getCreatedTime());
             result.put(_fieldNames.get(16), session.getStatistics());
-            return result;
+            return Collections.unmodifiableMap(result);
         };
 
     /**

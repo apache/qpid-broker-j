@@ -30,8 +30,6 @@ import java.util.Set;
 
 import javax.security.auth.Subject;
 
-import com.google.common.collect.Sets;
-
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -264,7 +262,7 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     protected void postSetAttributes(final Set<String> actualUpdatedAttributes)
     {
         super.postSetAttributes(actualUpdatedAttributes);
-        _lastReportedSetAttributes.add(Sets.newHashSet(actualUpdatedAttributes));
+        _lastReportedSetAttributes.add(new HashSet<>(actualUpdatedAttributes));
     }
 
     @Override

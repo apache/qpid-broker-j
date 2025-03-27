@@ -31,6 +31,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -42,7 +43,6 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
 
-import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -148,10 +148,9 @@ public class SiteSpecificTrustStoreTest extends UnitTestBase
     {
         _testPeer = new TestPeer();
         final int listeningPort = _testPeer.start();
-        final Map<String, Object> attributes = ImmutableMap.<String, Object>builder()
-                .putAll(getTrustStoreAttributes(listeningPort))
-                .put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true)
-                .put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_LIST_URL, _clrUrl).build();
+        final Map<String, Object> attributes = new HashMap<>(getTrustStoreAttributes(listeningPort));
+        attributes.put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        attributes.put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_LIST_URL, _clrUrl);
         final SiteSpecificTrustStore<?> trustStore = createTestTrustStore(attributes);
         final List<CertificateDetails> certDetails = trustStore.getCertificateDetails();
 
@@ -168,10 +167,9 @@ public class SiteSpecificTrustStoreTest extends UnitTestBase
     {
         _testPeer = new TestPeer();
         final int listeningPort = _testPeer.start();
-        final Map<String, Object> attributes = ImmutableMap.<String, Object>builder()
-                .putAll(getTrustStoreAttributes(listeningPort))
-                .put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true)
-                .put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_LIST_URL, _clrUrl).build();
+        final Map<String, Object> attributes = new HashMap<>(getTrustStoreAttributes(listeningPort));
+        attributes.put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        attributes.put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_LIST_URL, _clrUrl);
         final SiteSpecificTrustStore<?> trustStore = createTestTrustStore(attributes);
 
         final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
@@ -197,10 +195,9 @@ public class SiteSpecificTrustStoreTest extends UnitTestBase
     {
         _testPeer = new TestPeer();
         final int listeningPort = _testPeer.start();
-        final Map<String, Object> attributes = ImmutableMap.<String, Object>builder()
-                .putAll(getTrustStoreAttributes(listeningPort))
-                .put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true)
-                .put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_LIST_URL, NOT_A_CRL).build();
+        final Map<String, Object> attributes = new HashMap<>(getTrustStoreAttributes(listeningPort));
+        attributes.put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true);
+        attributes.put(SiteSpecificTrustStore.CERTIFICATE_REVOCATION_LIST_URL, NOT_A_CRL);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
                 String.format("Unable to load certificate revocation list '%s' for truststore '%s'", NOT_A_CRL, NAME));

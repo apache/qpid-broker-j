@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
 
-import com.google.common.collect.Sets;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -903,7 +902,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         final Map<String, Object> update = Map.of(TestSingleton.NAME, objectName, TestSingleton.DESCRIPTION, "an update");
 
         object.setAttributes(update);
-        assertEquals(Sets.newHashSet(TestSingleton.DESCRIPTION), object.takeLastReportedSetAttributes(),
+        assertEquals(Set.of(TestSingleton.DESCRIPTION), object.takeLastReportedSetAttributes(),
                 "Unexpected member of update set");
     }
 

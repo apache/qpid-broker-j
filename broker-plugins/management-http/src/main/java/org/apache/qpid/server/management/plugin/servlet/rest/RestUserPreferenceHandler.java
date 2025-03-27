@@ -30,8 +30,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.base.Joiner;
-
 import org.apache.qpid.server.management.plugin.RequestType;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.preferences.Preference;
@@ -76,8 +74,7 @@ public class RestUserPreferenceHandler
         }
         else
         {
-            throw new IllegalArgumentException(String.format("unexpected path '%s'",
-                                                             Joiner.on("/").join(preferencesParts)));
+            throw new IllegalArgumentException(String.format("unexpected path '%s'", String.join("/", preferencesParts)));
         }
 
         awaitFuture(userPreferences.delete(type, name, id));
@@ -136,8 +133,7 @@ public class RestUserPreferenceHandler
         }
         else
         {
-            throw new IllegalArgumentException(String.format("unexpected path '%s'",
-                                                             Joiner.on("/").join(preferencesParts)));
+            throw new IllegalArgumentException(String.format("unexpected path '%s'", String.join("/", preferencesParts)));
         }
     }
 
@@ -173,8 +169,7 @@ public class RestUserPreferenceHandler
         }
         else
         {
-            throw new IllegalArgumentException(String.format("unexpected path '%s'",
-                                                             Joiner.on("/").join(preferencesParts)));
+            throw new IllegalArgumentException(String.format("unexpected path '%s'", String.join("/", preferencesParts)));
         }
 
         awaitFuture(userPreferences.updateOrAppend(preferences));
@@ -289,8 +284,7 @@ public class RestUserPreferenceHandler
         }
         else
         {
-            throw new IllegalArgumentException(String.format("unexpected path '%s'",
-                                                             Joiner.on("/").join(preferencesParts)));
+            throw new IllegalArgumentException(String.format("unexpected path '%s'", String.join("/", preferencesParts)));
         }
     }
 
