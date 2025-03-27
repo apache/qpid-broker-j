@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.google.common.collect.Lists;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -185,7 +184,7 @@ class MessageConverter_0_10_to_InternalTest extends UnitTestBase
     @Test
     void convertJmsStreamMessageBody() throws Exception
     {
-        final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D);
+        final List<Object> expected = List.of("apple", 43, 31.42D);
         final byte[] messageBytes = getJmsStreamMessageBytes(expected);
 
         final String mimeType = "jms/stream-message";
@@ -195,7 +194,7 @@ class MessageConverter_0_10_to_InternalTest extends UnitTestBase
     @Test
     void convertEmptyJmsStreamMessageBody()
     {
-        final List<Object> expected = Lists.newArrayList();
+        final List<Object> expected = List.of();
         final String mimeType = "jms/stream-message";
         doTestStreamMessage(null, mimeType, expected);
     }
@@ -203,7 +202,7 @@ class MessageConverter_0_10_to_InternalTest extends UnitTestBase
     @Test
     void convertAmqpListMessageBody()
     {
-        final List<Object> expected = Lists.newArrayList("apple", 43, 31.42D);
+        final List<Object> expected = List.of("apple", 43, 31.42D);
         final byte[] messageBytes = new ListToAmqpListConverter().toMimeContent(expected);
 
         doTestStreamMessage(messageBytes, "amqp/list", expected);
@@ -212,7 +211,7 @@ class MessageConverter_0_10_to_InternalTest extends UnitTestBase
     @Test
     void convertEmptyAmqpListMessageBody()
     {
-        final List<Object> expected = Lists.newArrayList();
+        final List<Object> expected = List.of();
         doTestStreamMessage(null, "amqp/list", expected);
     }
 

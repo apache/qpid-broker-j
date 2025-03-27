@@ -51,9 +51,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
-
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ResourceLimitMessages;
 import org.apache.qpid.server.security.limit.ConnectionLimitException;
@@ -131,6 +128,8 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.PeekingIterator;
+import org.apache.qpid.server.util.PeekingIteratorImpl;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
@@ -449,7 +448,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         if (!channelFrameBodies.isEmpty())
         {
-            final PeekingIterator<ChannelFrameBody> itr = Iterators.peekingIterator(channelFrameBodies.iterator());
+            final PeekingIterator<ChannelFrameBody> itr = new PeekingIteratorImpl(channelFrameBodies.iterator());
             boolean cleanExit = false;
             try
             {

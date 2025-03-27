@@ -49,7 +49,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -75,6 +74,7 @@ import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.server.txn.Xid;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.CachingUUIDFactory;
+import org.apache.qpid.server.util.CollectionUtils;
 
 public abstract class AbstractJDBCMessageStore implements MessageStore
 {
@@ -552,7 +552,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
                 try
                 {
-                    for (List<Long> boundMessageIds : Lists.partition(messageIds, _inClauseMaxSize))
+                    for (List<Long> boundMessageIds : CollectionUtils.partitions(messageIds, _inClauseMaxSize))
                     {
                         removeMessagesFromDatabase(conn, boundMessageIds);
                     }

@@ -26,13 +26,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import com.google.common.io.Resources;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.general.DefaultPieDataset;
@@ -101,10 +104,13 @@ public class ChartWriterTest extends UnitTestBase
 
         _writer.writeHtmlSummaryToFileSystem("Performance Charts");
 
-        List<String> expected = Resources.readLines(Resources.getResource(getClass(), "expected-chart-summary.html"),
-                                                   StandardCharsets.UTF_8);
-        List<String> actual = Files.readAllLines(summaryFile.toPath(), StandardCharsets.UTF_8);
-        assertEquals(expected, actual, "HTML summary file has unexpected content");
+        try (final InputStream is = getClass().getResourceAsStream("expected-chart-summary.html"))
+        {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+            List<String> expected = reader.lines().collect(Collectors.toList());
+            List<String> actual = Files.readAllLines(summaryFile.toPath(), StandardCharsets.UTF_8);
+            assertEquals(expected, actual, "HTML summary file has unexpected content");
+        }
     }
 
     @Test

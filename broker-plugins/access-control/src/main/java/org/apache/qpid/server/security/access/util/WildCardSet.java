@@ -22,10 +22,9 @@ package org.apache.qpid.server.security.access.util;
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.stream.Stream;
 
 import org.apache.qpid.server.security.access.config.AclRulePredicatesBuilder;
-
-import com.google.common.collect.Iterators;
 
 public class WildCardSet extends AbstractSet<Object>
 {
@@ -56,7 +55,7 @@ public class WildCardSet extends AbstractSet<Object>
     @Override
     public Iterator<Object> iterator()
     {
-        return Iterators.singletonIterator(AclRulePredicatesBuilder.WILD_CARD);
+        return Stream.<Object>of(AclRulePredicatesBuilder.WILD_CARD).iterator();
     }
 
     @Override

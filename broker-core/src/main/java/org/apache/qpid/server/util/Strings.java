@@ -471,6 +471,40 @@ public final class Strings
     }
 
     /**
+     * Returns the longest string such that {@code a.toString().startsWith(prefix) &&
+     * b.toString().startsWith(prefix)}, taking care not to split surrogate pairs. If {@code a} and
+     * {@code b} have no common prefix, returns the empty string.
+     * @param a First string to compare
+     * @param b Second string to compare
+     * @return Common prefix
+     */
+    public static String commonPrefix(final CharSequence a, final CharSequence b)
+    {
+        Objects.requireNonNull(a);
+        Objects.requireNonNull(b);
+
+        final int maxPrefixLength = Math.min(a.length(), b.length());
+        int position = 0;
+        while (position < maxPrefixLength && a.charAt(position) == b.charAt(position))
+        {
+            position++;
+        }
+        if (validSurrogatePairAt(a, position - 1) || validSurrogatePairAt(b, position - 1))
+        {
+            position--;
+        }
+        return a.subSequence(0, position).toString();
+    }
+
+    static boolean validSurrogatePairAt(final CharSequence string, final int index)
+    {
+        return index >= 0
+               && index <= (string.length() - 2)
+               && Character.isHighSurrogate(string.charAt(index))
+               && Character.isLowSurrogate(string.charAt(index + 1));
+    }
+
+    /**
      * Resolver variable using supplied resolver
      */
     public interface Resolver

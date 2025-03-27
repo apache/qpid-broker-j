@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,34 +18,17 @@
  * under the License.
  *
  */
+package org.apache.qpid.server.util;
 
-package org.apache.qpid.test.utils;
+import java.util.Iterator;
 
-public enum JvmVendor
+public interface PeekingIterator <E> extends Iterator<E>
 {
-    ORACLE,
-    IBM,
-    OPENJDK,
-    UNKNOWN;
+    E peek();
 
-    public static JvmVendor getJvmVendor()
-    {
-        final String property = String.valueOf(System.getProperty("java.vendor")).toUpperCase();
-        if (property.contains("IBM"))
-        {
-            return JvmVendor.IBM;
-        }
-        else if (property.contains("ORACLE"))
-        {
-            return JvmVendor.ORACLE;
-        }
-        else if (property.contains("OPENJDK"))
-        {
-            return JvmVendor.OPENJDK;
-        }
-        else
-        {
-            return JvmVendor.UNKNOWN;
-        }
-    }
+    @Override
+    E next();
+
+    @Override
+    void remove();
 }

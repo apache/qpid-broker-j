@@ -25,7 +25,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Blob;
@@ -40,7 +39,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 
-import com.google.common.io.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -395,10 +393,9 @@ public class JDBCLinkStore extends AbstractLinkStore
         }
 
         Blob blob = resultSet.getBlob(index);
-        try (InputStream is = blob.getBinaryStream();
-             InputStreamReader isr = new InputStreamReader(is, UTF_8))
+        try (InputStream is = blob.getBinaryStream())
         {
-            return CharStreams.toString(isr);
+            return new String(is.readAllBytes(), UTF_8);
         }
         catch (IOException e)
         {

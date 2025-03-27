@@ -106,7 +106,6 @@
     <derby-version>10.15.2.0</derby-version>
     <logback-version>1.5.16</logback-version>
     <logback-db-version>1.2.11.1</logback-db-version>
-    <guava-version>33.4.0-jre</guava-version>
     <caffeine-version>3.1.8</caffeine-version>
     <fasterxml-jackson-version>2.18.2</fasterxml-jackson-version>
     <fasterxml-jackson-databind-version>2.18.2</fasterxml-jackson-databind-version>
@@ -165,6 +164,7 @@
     <bcpkix-version>1.80</bcpkix-version>
     <logback-gelf-version>6.1.1</logback-gelf-version>
     <prometheus-client-version>0.16.0</prometheus-client-version>
+    <resilience4j-version>2.3.0</resilience4j-version>
 
     <bdb-repo-enabled>false</bdb-repo-enabled>
   </properties>
@@ -584,29 +584,6 @@
         <version>${caffeine-version}</version>
       </dependency>
       <dependency>
-        <groupId>com.google.guava</groupId>
-        <artifactId>guava</artifactId>
-        <version>${guava-version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>com.google.errorprone</groupId>
-            <artifactId>error_prone_annotations</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>com.google.guava</groupId>
-            <artifactId>listenablefuture</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.checkerframework</groupId>
-            <artifactId>checker-qual</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-core</artifactId>
         <version>${fasterxml-jackson-version}</version>
@@ -933,6 +910,13 @@
         <artifactId>simpleclient_common</artifactId>
         <version>${prometheus-client-version}</version>
       </dependency>
+
+      <dependency>
+        <groupId>io.github.resilience4j</groupId>
+        <artifactId>resilience4j-ratelimiter</artifactId>
+        <version>${resilience4j-version}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 

@@ -24,6 +24,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -85,5 +91,26 @@ public class StringUtilTest extends UnitTestBase
         assertEquals("&gt;&gt;&gt;", StringUtil.escapeHtml4(">>>"));
         assertEquals("&lt;&lt;&lt;", StringUtil.escapeHtml4("<<<"));
         assertEquals("&#x27;&#x27;&#x27;", StringUtil.escapeHtml4("'''"));
+    }
+
+    @Test
+    public void join()
+    {
+        assertEquals("", StringUtil.join((List) null, "", ""));
+        assertEquals("", StringUtil.join(List.of(), "", ""));
+        assertEquals("1,2,3", StringUtil.join(List.of("1", "2", "3"), ",", ""));
+        assertEquals("1,nill,3", StringUtil.join(Stream.of("1", null, "3").collect(Collectors.toList()), ",", "nill"));
+    }
+
+    @Test
+    public void joinMap()
+    {
+        assertEquals("", StringUtil.join((Map) null, "", ""));
+        assertEquals("", StringUtil.join(Map.of(), "", ""));
+        final Map<String, Integer> map = new LinkedHashMap<>();
+        map.put("1", 1);
+        map.put("2", 2);
+        map.put("3", 3);
+        assertEquals("1=1,2=2,3=3", StringUtil.join(map, ",", "="));
     }
 }

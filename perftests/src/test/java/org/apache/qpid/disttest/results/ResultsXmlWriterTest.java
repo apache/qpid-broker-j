@@ -31,9 +31,8 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Collections;
-
-import com.google.common.io.Resources;
 
 import org.junit.jupiter.api.BeforeEach;
 
@@ -69,8 +68,8 @@ public class ResultsXmlWriterTest extends UnitTestBase
         _resultsFileWriter.writeResults(resultsForAllTests, "config.json");
 
         File resultsFile = new File(_outputDir, "config.xml");
-
-        assertEquals(expectedXmlContent, Resources.toString(resultsFile.toURI().toURL(), StandardCharsets.UTF_8));
+        final String result = new String(Files.readAllBytes(resultsFile.toPath()), StandardCharsets.UTF_8);
+        assertEquals(expectedXmlContent, result);
     }
 
     @Test
@@ -90,8 +89,8 @@ public class ResultsXmlWriterTest extends UnitTestBase
         _resultsFileWriter.writeResults(resultsForAllTests, "config.json");
 
         File resultsFile = new File(_outputDir, "config.xml");
-
-        assertEquals(expectedXmlContent, Resources.toString(resultsFile.toURI().toURL(), StandardCharsets.UTF_8));
+        final String result = new String(Files.readAllBytes(resultsFile.toPath()), StandardCharsets.UTF_8);
+        assertEquals(expectedXmlContent, result);
     }
 
     @Test
@@ -119,7 +118,7 @@ public class ResultsXmlWriterTest extends UnitTestBase
         _resultsFileWriter.writeResults(resultsForAllTests, "config.json");
 
         File resultsFile = new File(_outputDir, "config.xml");
-
-        assertEquals(expectedXmlContent, Resources.toString(resultsFile.toURI().toURL(), StandardCharsets.UTF_8));
+        final String result = new String(Files.readAllBytes(resultsFile.toPath()), StandardCharsets.UTF_8);
+        assertEquals(expectedXmlContent, result);
     }
 }
