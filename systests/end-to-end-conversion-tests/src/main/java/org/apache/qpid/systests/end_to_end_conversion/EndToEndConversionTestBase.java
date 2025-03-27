@@ -33,12 +33,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -67,12 +65,12 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
     private static final int SERVER_SOCKET_TIMEOUT = 30000;
     private static final Logger LOGGER = LoggerFactory.getLogger(EndToEndConversionTestBase.class);
     private static final Logger CLIENT_LOGGER = LoggerFactory.getLogger(Client.class);
-    private ListeningExecutorService _executorService;
+    private ExecutorService _executorService;
 
     @BeforeEach
     public void setupExecutor()
     {
-        _executorService = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
+        _executorService = Executors.newCachedThreadPool();
     }
 
     @AfterEach

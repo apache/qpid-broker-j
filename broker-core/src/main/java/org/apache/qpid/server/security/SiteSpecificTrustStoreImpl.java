@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
@@ -42,9 +43,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -175,7 +173,7 @@ public class SiteSpecificTrustStoreImpl
             final String currentCertificate = getCertificate();
 
             final CompletableFuture<X509Certificate> certFuture = downloadCertificate(getSiteUrl());
-            certFuture.whenCompleteAsync((result1, error) ->
+            certFuture.whenCompleteAsync((certificate, error) ->
             {
                 if (error != null)
                 {
@@ -185,7 +183,7 @@ public class SiteSpecificTrustStoreImpl
                 }
                 else
                 {
-                    _x509Certificate = result1;
+                    _x509Certificate = certificate;
                     attributeSet(CERTIFICATE, currentCertificate, _x509Certificate);
                     generateTrustAndSetState(result);
                 }
@@ -222,8 +220,8 @@ public class SiteSpecificTrustStoreImpl
 
     private CompletableFuture<X509Certificate> downloadCertificate(final String url)
     {
-        final ListeningExecutorService workerService = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor(
-                getThreadFactory("download-certificate-worker-" + getName())));
+        final ExecutorService workerService = Executors.newSingleThreadExecutor(
+                getThreadFactory("download-certificate-worker-" + getName()));
         try
         {
             return CompletableFuture.supplyAsync(() ->

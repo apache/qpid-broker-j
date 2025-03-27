@@ -63,6 +63,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -73,8 +74,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import com.google.common.util.concurrent.SettableFuture;
 
 import com.sleepycat.bind.tuple.IntegerBinding;
 import com.sleepycat.bind.tuple.StringBinding;
@@ -1082,7 +1081,7 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
     @Test
     public void testSetElectableGroupSizeOverrideAfterMajorityLost()  throws Exception
     {
-        final SettableFuture<Boolean> majorityLost = SettableFuture.create();
+        final CompletableFuture<Boolean> majorityLost = new CompletableFuture<>();
         final TestStateChangeListener masterListener = new TestStateChangeListener();
 
         ReplicationGroupListener masterGroupListener = new NoopReplicationGroupListener()
@@ -1090,7 +1089,7 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
             @Override
             public void onNoMajority()
             {
-                majorityLost.set(true);
+                majorityLost.complete(true);
             }
         };
 
@@ -1130,7 +1129,7 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
     @Test
     public void testSetDesignatedPrimaryAfterMajorityLost()  throws Exception
     {
-        final SettableFuture<Boolean> majorityLost = SettableFuture.create();
+        final CompletableFuture<Boolean> majorityLost = new CompletableFuture<>();
         final TestStateChangeListener masterListener = new TestStateChangeListener();
         final NoopReplicationGroupListener masterGroupListener = new NoopReplicationGroupListener()
         {
@@ -1138,7 +1137,7 @@ public class ReplicatedEnvironmentFacadeTest extends UnitTestBase
             public void onNoMajority()
             {
                 super.onNoMajority();
-                majorityLost.set(true);
+                majorityLost.complete(true);
             }
         };
 
