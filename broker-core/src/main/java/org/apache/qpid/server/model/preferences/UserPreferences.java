@@ -23,22 +23,21 @@ package org.apache.qpid.server.model.preferences;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
-
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 public interface UserPreferences
 {
-    ListenableFuture<Void> updateOrAppend(Collection<Preference> preferences);
+    CompletableFuture<Void> updateOrAppend(Collection<Preference> preferences);
 
-    ListenableFuture<Set<Preference>> getPreferences();
+    CompletableFuture<Set<Preference>> getPreferences();
 
-    ListenableFuture<Void> replace(Collection<Preference> preferences);
+    CompletableFuture<Void> replace(Collection<Preference> preferences);
 
-    ListenableFuture<Void> replaceByType(String type, Collection<Preference> preferences);
+    CompletableFuture<Void> replaceByType(String type, Collection<Preference> preferences);
 
-    ListenableFuture<Void> replaceByTypeAndName(String type, String name, Preference preference);
+    CompletableFuture<Void> replaceByTypeAndName(String type, String name, Preference preference);
 
-    ListenableFuture<Set<Preference>> getVisiblePreferences();
+    CompletableFuture<Set<Preference>> getVisiblePreferences();
 
-    ListenableFuture<Void> delete(String type, String name, UUID id);
+    CompletableFuture<Void> delete(String type, String name, UUID id);
 }
