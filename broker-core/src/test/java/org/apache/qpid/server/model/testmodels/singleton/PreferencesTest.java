@@ -36,12 +36,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -319,7 +318,8 @@ public class PreferencesTest extends UnitTestBase
         Subject user2Subject = TestPrincipalUtils.createTestSubject(TEST_USERNAME2, testGroupName);
         Subject.doAs(user2Subject, (PrivilegedAction<Void>) () ->
         {
-            final ListenableFuture<Set<Preference>> visiblePreferencesFuture = _testObject.getUserPreferences().getVisiblePreferences();
+            final CompletableFuture<Set<Preference>>
+                    visiblePreferencesFuture = _testObject.getUserPreferences().getVisiblePreferences();
             final Set<Preference> visiblePreferences = awaitPreferenceFuture(visiblePreferencesFuture);
 
             assertEquals(1, (long) visiblePreferences

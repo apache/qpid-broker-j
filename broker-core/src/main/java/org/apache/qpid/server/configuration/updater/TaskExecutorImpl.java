@@ -18,21 +18,23 @@
  * under the License.
  *
  */
+
 package org.apache.qpid.server.configuration.updater;
 
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,10 +42,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,20 +54,25 @@ public class TaskExecutorImpl implements TaskExecutor
 {
     private static final String TASK_EXECUTION_THREAD_NAME = "Broker-Config";
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskExecutorImpl.class);
-    private final PrincipalAccessor _principalAccessor;
+    private static final Cache<Set<Principal>, Subject> SUBJECT_CACHE = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(5))
+            .maximumSize(1000)
+            .build();
 
-    private volatile Thread _taskThread;
+    private final PrincipalAccessor _principalAccessor;
     private final AtomicBoolean _running = new AtomicBoolean();
-    private volatile ListeningExecutorService _executor;
     private final ImmediateIfSameThreadExecutor _wrappedExecutor = new ImmediateIfSameThreadExecutor();
     private final String _name;
+
+    private volatile Thread _taskThread;
+    private volatile ExecutorService _executor;
 
     public TaskExecutorImpl()
     {
         this(TASK_EXECUTION_THREAD_NAME, null);
     }
 
-    public TaskExecutorImpl(final String name, PrincipalAccessor principalAccessor)
+    public TaskExecutorImpl(final String name, final PrincipalAccessor principalAccessor)
     {
         _name = name;
         _principalAccessor = principalAccessor;
@@ -85,22 +90,14 @@ public class TaskExecutorImpl implements TaskExecutor
         if (_running.compareAndSet(false, true))
         {
             LOGGER.debug("Starting task executor {}", _name);
-            final java.util.concurrent.BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
-            final java.util.concurrent.ThreadFactory factory = r ->
+            final BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
+            final ThreadFactory factory =
+                    QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(runnable ->
             {
-                _taskThread =
-                        new TaskThread(
-                                r,
-                                _name,
-                                TaskExecutorImpl.this);
+                _taskThread = new TaskThread(runnable, _name, TaskExecutorImpl.this);
                 return _taskThread;
-            };
-            _executor = MoreExecutors.listeningDecorator(new ThreadPoolExecutor(1,
-                                                                                1,
-                                                                                0L,
-                                                                                TimeUnit.MILLISECONDS,
-                                                                                workQueue,
-                                                                                QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(factory)));
+            });
+            _executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, workQueue, factory);
             LOGGER.debug("Task executor is started");
         }
     }
@@ -108,25 +105,19 @@ public class TaskExecutorImpl implements TaskExecutor
     @Override
     public void stopImmediately()
     {
-        if (_running.compareAndSet(true,false))
+        if (_running.compareAndSet(true, false))
         {
-            ExecutorService executor = _executor;
+            final ExecutorService executor = _executor;
             if (executor != null)
             {
                 LOGGER.debug("Stopping task executor {} immediately", _name);
-                List<Runnable> cancelledTasks = executor.shutdownNow();
-                for (Runnable runnable : cancelledTasks)
-                {
-                    if (runnable instanceof RunnableFuture<?>)
-                    {
-                        ((RunnableFuture<?>) runnable).cancel(true);
-                    }
-                }
-
+                final List<Runnable> cancelledTasks = executor.shutdownNow();
+                cancelledTasks.forEach(runnable -> ((RunnableWrapper) runnable).cancel());
                 _executor = null;
                 _taskThread = null;
-                LOGGER.debug("Task executor was stopped immediately. Number of unfinished tasks: " + cancelledTasks.size());
+                LOGGER.debug("Task executor was stopped immediately. Number of unfinished tasks: {}", cancelledTasks.size());
             }
+            SUBJECT_CACHE.invalidateAll();
         }
     }
 
@@ -135,7 +126,7 @@ public class TaskExecutorImpl implements TaskExecutor
     {
         if (_running.compareAndSet(true, false))
         {
-            ExecutorService executor = _executor;
+            final ExecutorService executor = _executor;
             if (executor != null)
             {
                 LOGGER.debug("Stopping task executor {}", _name);
@@ -144,16 +135,17 @@ public class TaskExecutorImpl implements TaskExecutor
                 _taskThread = null;
                 LOGGER.debug("Task executor is stopped");
             }
+            SUBJECT_CACHE.invalidateAll();
         }
     }
 
     @Override
-    public <T, E extends Exception> ListenableFuture<T> submit(Task<T, E> userTask) throws E
+    public <T, E extends Exception> CompletableFuture<T> submit(final Task<T, E> userTask) throws E
     {
-        return submitWrappedTask(new TaskLoggingWrapper<>(userTask));
+        return submitWrappedTask(userTask);
     }
 
-    private <T, E extends Exception> ListenableFuture<T> submitWrappedTask(TaskLoggingWrapper<T, E> task) throws E
+    private <T, E extends Exception> CompletableFuture<T> submitWrappedTask(final Task<T, E> task) throws E
     {
         checkState(task);
         if (isTaskExecutorThread())
@@ -162,8 +154,8 @@ public class TaskExecutorImpl implements TaskExecutor
             {
                 LOGGER.trace("Running {} immediately", task);
             }
-            T result = task.execute();
-            return Futures.immediateFuture(result);
+            final T result = task.execute();
+            return CompletableFuture.completedFuture(result);
         }
         else
         {
@@ -172,22 +164,26 @@ public class TaskExecutorImpl implements TaskExecutor
                 LOGGER.trace("Submitting {} to executor {}", task, _name);
             }
 
-            return _executor.submit(new CallableWrapper<>(task));
+            final CompletableFuture<T> future = new CompletableFuture<>();
+            _executor.execute(new RunnableWrapper<>(task, future));
+            return future;
         }
     }
 
     @Override
     public void execute(final Runnable command)
     {
-        LOGGER.trace("Running runnable {} through executor interface", command);
+        if (LOGGER.isTraceEnabled())
+        {
+            LOGGER.trace("Running runnable {} through executor interface", command);
+        }
         _wrappedExecutor.execute(command);
     }
 
     @Override
-    public <T, E extends Exception> T run(Task<T, E> userTask) throws CancellationException, E
+    public <T, E extends Exception> T run(final Task<T, E> userTask) throws CancellationException, E
     {
-        TaskLoggingWrapper<T, E> task = new TaskLoggingWrapper<>(userTask);
-        return FutureHelper.<T, E>await(submitWrappedTask(task));
+        return FutureHelper.<T, E>await(submitWrappedTask(userTask));
     }
 
     private boolean isTaskExecutorThread()
@@ -195,7 +191,7 @@ public class TaskExecutorImpl implements TaskExecutor
         return Thread.currentThread() == _taskThread;
     }
 
-    private void checkState(Task<?, ?> task)
+    private void checkState(final Task<?, ?> task)
     {
         if (!_running.get())
         {
@@ -204,213 +200,154 @@ public class TaskExecutorImpl implements TaskExecutor
         }
     }
 
-    private Subject getContextSubject()
+    private Subject getCachedSubject()
     {
-        Subject contextSubject = Subject.getSubject(AccessController.getContext());
-        if (contextSubject != null && _principalAccessor != null)
+        final Subject contextSubject = Subject.getSubject(AccessController.getContext());
+
+        if (contextSubject == null)
         {
-            Principal additionalPrincipal = _principalAccessor.getPrincipal();
-            Set<Principal> principals = contextSubject.getPrincipals();
-            if (additionalPrincipal != null && !principals.contains(additionalPrincipal))
-            {
-                Set<Principal> extendedPrincipals = new HashSet<>(principals);
-                extendedPrincipals.add(additionalPrincipal);
-                contextSubject = new Subject(contextSubject.isReadOnly(),
-                        extendedPrincipals,
-                        contextSubject.getPublicCredentials(),
-                        contextSubject.getPrivateCredentials());
-            }
+            return null;
         }
-        return contextSubject;
+
+        if (_principalAccessor == null || contextSubject.getPrincipals().contains(_principalAccessor.getPrincipal()))
+        {
+            return contextSubject;
+        }
+
+        final Set<Principal> principals = new HashSet<>(contextSubject.getPrincipals());
+        principals.add(_principalAccessor.getPrincipal());
+
+        return SUBJECT_CACHE.get(principals, key -> createSubjectWithPrincipals(key, contextSubject));
     }
 
-    private static class TaskLoggingWrapper<T, E extends Exception> implements Task<T, E>
+    Subject createSubjectWithPrincipals(final Set<Principal> principals, Subject subject)
     {
-        private final Task<T,E> _task;
+        return new Subject(subject.isReadOnly(), principals, subject.getPublicCredentials(), subject.getPrivateCredentials());
+    }
 
-        public TaskLoggingWrapper(Task<T, E> task)
+    private class ImmediateWrapper<T, E extends Exception> extends RunnableWrapper<T, E>
+    {
+        final Runnable _runnable;
+        final Subject _subject;
+
+        boolean _cancelled;
+
+        ImmediateWrapper(final Runnable runnable, final Subject subject)
         {
-            _task = task;
+            super(null, null);
+            _runnable = runnable;
+            _subject = subject;
         }
 
         @Override
-        public T execute() throws E
+        public void run()
         {
-            if (LOGGER.isDebugEnabled())
+            if (_cancelled)
             {
-                LOGGER.debug("Performing {}", this);
+                return;
             }
-
-            boolean success = false;
-            T result = null;
-            try
+            Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
             {
-                result = _task.execute();
-                success = true;
-            }
-            finally
-            {
-                if (LOGGER.isDebugEnabled())
-                {
-                    if (success)
-                    {
-                        LOGGER.debug("{} performed successfully with result: {}", this, result);
-                    } else
-                    {
-                        LOGGER.debug("{} failed to perform successfully", this);
-                    }
-                }
-            }
-            return result;
+                _runnable.run();
+                return null;
+            });
         }
 
-        @Override
-        public String getObject()
+        void cancel()
         {
-            return _task.getObject();
-        }
-
-        @Override
-        public String getAction()
-        {
-            return _task.getAction();
-        }
-
-        @Override
-        public String getArguments()
-        {
-            return _task.getArguments();
-        }
-
-        @Override
-        public String toString()
-        {
-            String arguments =  getArguments();
-            if (arguments == null)
-            {
-                return String.format("Task['%s' on '%s']", getAction(), getObject());
-            }
-            return String.format("Task['%s' on '%s' with arguments '%s']", getAction(), getObject(), arguments);
+            _cancelled = true;
         }
     }
 
-    private class CallableWrapper<T, E extends Exception> implements Callable<T>
+    private class RunnableWrapper<T, E extends Exception> implements Runnable
     {
         private final Task<T, E> _userTask;
+        private final CompletableFuture<T> _future;
         private final Subject _contextSubject;
         private final AtomicReference<Throwable> _throwable;
 
-        public CallableWrapper(Task<T, E> userWork)
+        public RunnableWrapper(final Task<T, E> userWork, final CompletableFuture<T> future)
         {
             _userTask = userWork;
-            _contextSubject = getContextSubject();
+            _future = future;
+            _contextSubject = getCachedSubject();
             _throwable = new AtomicReference<>();
         }
 
-        @Override
-        public T call() throws Exception
+        public void run()
         {
-            T result =  Subject.doAs(_contextSubject, (PrivilegedAction<T>) () ->
+            if (_future.isCancelled() || _future.isCompletedExceptionally())
+            {
+                return;
+            }
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("Performing {}", _userTask);
+            }
+            final T result = Subject.doAs(_contextSubject, (PrivilegedAction<T>) () ->
             {
                 try
                 {
                     return _userTask.execute();
                 }
-                catch(Throwable t)
+                catch (Throwable t)
                 {
                     _throwable.set(t);
+                    _future.obtrudeException(t);
                 }
                 return null;
             });
-            Throwable t = _throwable.get();
-            if (t != null)
+
+            final Throwable throwable = _throwable.get();
+            if (throwable != null)
             {
-                if (t instanceof RuntimeException)
+                if (LOGGER.isDebugEnabled())
                 {
-                    throw (RuntimeException) t;
+                    LOGGER.debug("{} failed to perform successfully", _userTask);
                 }
-                else if (t instanceof Error)
+                if (throwable instanceof RuntimeException)
                 {
-                    throw (Error) t;
+                    throw (RuntimeException) throwable;
+                }
+                else if (throwable instanceof Error)
+                {
+                    throw (Error) throwable;
                 }
                 else
                 {
-                    throw (Exception) t;
+                    throw new RuntimeException(throwable);
                 }
             }
-            return result;
-        }
-    }
 
-    private static class ImmediateFuture<T> implements Future<T>
-    {
-        private final T _result;
-
-        public ImmediateFuture(T result)
-        {
-            super();
-            _result = result;
+            LOGGER.debug("{} performed successfully with result: {}", _userTask, result);
+            _future.complete(result);
         }
 
-        @Override
-        public boolean cancel(boolean mayInterruptIfRunning)
+        void cancel()
         {
-            return false;
-        }
-
-        @Override
-        public boolean isCancelled()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean isDone()
-        {
-            return true;
-        }
-
-        @Override
-        public T get()
-        {
-            return _result;
-        }
-
-        @Override
-        public T get(long timeout, TimeUnit unit)
-        {
-            return get();
+            _future.completeExceptionally(new CancellationException("Task was cancelled"));
         }
     }
 
     private class ImmediateIfSameThreadExecutor implements Executor
     {
-
         @Override
         public void execute(final Runnable command)
         {
-            if(isTaskExecutorThread()
-               || (_executor == null && (Thread.currentThread() instanceof TaskThread
-                   && ((TaskThread)Thread.currentThread()).getTaskExecutor() == TaskExecutorImpl.this)))
+            if (isTaskExecutorThread() || (_executor == null && (Thread.currentThread() instanceof TaskThread &&
+                    ((TaskThread)Thread.currentThread()).getTaskExecutor() == TaskExecutorImpl.this)))
             {
                 command.run();
             }
             else
             {
-                final Subject subject = getContextSubject();
-                _executor.execute(() -> Subject.doAs(subject, (PrivilegedAction<Void>) () ->
-                {
-                    command.run();
-                    return null;
-                }));
+                _executor.execute(new ImmediateWrapper<>(command, getCachedSubject()));
             }
-
         }
     }
 
     private static class TaskThread extends Thread
     {
-
         private final TaskExecutorImpl _taskExecutor;
 
         public TaskThread(final Runnable r, final String name, final TaskExecutorImpl taskExecutor)
@@ -437,7 +374,7 @@ public class TaskExecutorImpl implements TaskExecutor
             }
 
             @Override
-            public TaskExecutor newInstance(final String name, PrincipalAccessor principalAccessor)
+            public TaskExecutor newInstance(final String name, final PrincipalAccessor principalAccessor)
             {
                 return new TaskExecutorImpl(name, principalAccessor);
             }

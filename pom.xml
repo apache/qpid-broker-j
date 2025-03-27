@@ -107,6 +107,7 @@
     <logback-version>1.5.16</logback-version>
     <logback-db-version>1.2.11.1</logback-db-version>
     <guava-version>33.4.0-jre</guava-version>
+    <caffeine-version>3.1.8</caffeine-version>
     <fasterxml-jackson-version>2.18.2</fasterxml-jackson-version>
     <fasterxml-jackson-databind-version>2.18.2</fasterxml-jackson-databind-version>
     <slf4j-version>2.0.16</slf4j-version>
@@ -576,6 +577,11 @@
             <artifactId>logback-core</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>com.github.ben-manes.caffeine</groupId>
+        <artifactId>caffeine</artifactId>
+        <version>${caffeine-version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
