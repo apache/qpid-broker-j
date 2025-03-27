@@ -18,12 +18,10 @@
  */
 package org.apache.qpid.server.store.jdbc;
 
-
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.StoreException;
@@ -137,7 +135,7 @@ public abstract class GenericAbstractJDBCMessageStore extends AbstractJDBCMessag
         }
 
         @Override
-        public <X> ListenableFuture<X> commitTranAsync(final X val)
+        public <X> CompletableFuture<X> commitTranAsync(final X val)
         {
             try
             {

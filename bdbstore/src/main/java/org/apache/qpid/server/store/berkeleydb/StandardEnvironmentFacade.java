@@ -27,11 +27,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import com.sleepycat.je.CheckpointConfig;
 import com.sleepycat.je.Database;
@@ -207,7 +206,7 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
     }
 
     @Override
-    public <X> ListenableFuture<X> commitAsync(final Transaction tx, final X val)
+    public <X> CompletableFuture<X> commitAsync(final Transaction tx, final X val)
     {
         try
         {

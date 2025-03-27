@@ -40,12 +40,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -148,7 +147,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         assertEquals(transactionalLogId, record.getQueueId(), "Unexpected queue id");
         assertEquals(message.getMessageNumber(), record.getMessageNumber(), "Unexpected message number");
 
-        final ListenableFuture<Void> future = transaction.commitTranAsync(null);
+        final CompletableFuture<Void> future = transaction.commitTranAsync(null);
         future.get(1000, TimeUnit.MILLISECONDS);
     }
 
@@ -169,7 +168,7 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         final Transaction dequeueTransaction = store.newTransaction();
         dequeueTransaction.dequeueMessage(record);
 
-        final ListenableFuture<Void> future = dequeueTransaction.commitTranAsync(null);
+        final CompletableFuture<Void> future = dequeueTransaction.commitTranAsync(null);
         future.get(1000, TimeUnit.MILLISECONDS);
     }
 
