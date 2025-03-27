@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 import javax.jms.Connection;
@@ -51,7 +52,6 @@ import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
 
-import com.google.common.base.Objects;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -87,7 +87,7 @@ public class BDBUpgradeTest extends UpgradeTestBase
     {
         assumeTrue("BDB".equals(System.getProperty("virtualhostnode.type", "BDB")),
                 "System property 'virtualhostnode.type' should be 'BDB'");
-        assumeFalse(Objects.equal(getProtocol(), Protocol.AMQP_1_0), "AMQP protocol should be 1.0");
+        assumeFalse(Objects.equals(getProtocol(), Protocol.AMQP_1_0), "AMQP protocol should be 1.0");
     }
 
     /**

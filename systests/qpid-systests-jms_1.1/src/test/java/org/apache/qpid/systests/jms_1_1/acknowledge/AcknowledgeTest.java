@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -42,8 +43,6 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.naming.NamingException;
-
-import com.google.common.collect.Sets;
 
 import org.junit.jupiter.api.Test;
 
@@ -157,7 +156,7 @@ public class AcknowledgeTest extends JmsTestBase
                 session.commit();
             }
 
-            Set<Integer> pendingMessages = Sets.newHashSet(messageIndices);
+            Set<Integer> pendingMessages = new HashSet<>(messageIndices);
             AtomicReference<Exception> exception = new AtomicReference<>();
             CountDownLatch completionLatch = new CountDownLatch(1);
 
