@@ -36,8 +36,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdArraySerializers;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.google.common.primitives.Bytes;
-import com.google.common.primitives.Ints;
 
 class MessageContentJsonConverter
 {
@@ -203,7 +201,12 @@ class MessageContentJsonConverter
         public void serialize(final byte[] value, final JsonGenerator jgen, final SerializerProvider provider)
                 throws IOException
         {
-            _underlying.serialize(Ints.toArray(Bytes.asList(value)), jgen, provider);
+            final int[] intArray = new int[value.length];
+            for (int i = 0; i < value.length; i++)
+            {
+                intArray[i] = value[i];
+            }
+            _underlying.serialize(intArray, jgen, provider);
         }
     }
 }
