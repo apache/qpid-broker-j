@@ -29,10 +29,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import javax.security.auth.Subject;
-
-import com.google.common.util.concurrent.Futures;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -105,7 +104,7 @@ class ServerSessionTest extends UnitTestBase
         final AMQPConnection_0_10 modelConnection = mock(AMQPConnection_0_10.class);
         when(modelConnection.getCategoryClass()).thenReturn(Connection.class);
         when(modelConnection.getTypeClass()).thenReturn(AMQPConnection_0_10.class);
-        when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
+        when(modelConnection.closeAsync()).thenReturn(CompletableFuture.completedFuture(null));
         when(modelConnection.getAddressSpace()).thenReturn(_virtualHost);
         when(modelConnection.getContextProvider()).thenReturn(_virtualHost);
         when(modelConnection.getBroker()).thenReturn(broker);

@@ -50,8 +50,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -1646,7 +1644,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             }
         }
 
-        synchronized ListenableFuture<Void> flushToStore()
+        synchronized CompletableFuture<Void> flushToStore()
         {
             if (_messageDataRef != null)
             {
@@ -1665,7 +1663,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 }
 
             }
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
 
         @Override

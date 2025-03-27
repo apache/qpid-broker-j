@@ -23,9 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -127,25 +125,25 @@ public class TestConfiguredObject extends AbstractConfiguredObject
 
     @StateTransition( currentState = {State.ERRORED, State.UNINITIALIZED}, desiredState = State.ACTIVE )
     @SuppressWarnings("unused")
-    protected ListenableFuture<Void> activate()
+    protected CompletableFuture<Void> activate()
     {
         if (_throwExceptionOnActivate)
         {
             setState(State.ERRORED);
-            return Futures.immediateFailedFuture(new IllegalConfigurationException("failed to activate"));
+            return CompletableFuture.failedFuture(new IllegalConfigurationException("failed to activate"));
         }
         else
         {
             setState(State.ACTIVE);
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
     }
 
     @StateTransition( currentState = {State.ERRORED, State.UNINITIALIZED, State.ACTIVE}, desiredState = State.DELETED )
-    protected ListenableFuture<Void> doDelete()
+    protected CompletableFuture<Void> doDelete()
     {
         setState(State.DELETED);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
     
     public boolean isOpened()

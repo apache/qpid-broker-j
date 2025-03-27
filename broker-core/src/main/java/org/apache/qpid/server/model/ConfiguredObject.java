@@ -26,10 +26,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import javax.security.auth.Subject;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.preferences.UserPreferences;
@@ -246,16 +245,16 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
     <C extends ConfiguredObject> C createChild(Class<C> childClass,
                                                Map<String, Object> attributes);
 
-    <C extends ConfiguredObject> ListenableFuture<C> getAttainedChildById(Class<C> childClass,
-                                                                          UUID id);
+    <C extends ConfiguredObject> CompletableFuture<C> getAttainedChildById(Class<C> childClass,
+                                                                           UUID id);
 
-    <C extends ConfiguredObject> ListenableFuture<C> getAttainedChildByName(Class<C> childClass, String name);
+    <C extends ConfiguredObject> CompletableFuture<C> getAttainedChildByName(Class<C> childClass, String name);
 
-    <C extends ConfiguredObject> ListenableFuture<C> createChildAsync(Class<C> childClass,
-                                                                      Map<String, Object> attributes);
+    <C extends ConfiguredObject> CompletableFuture<C> createChildAsync(Class<C> childClass,
+                                                                       Map<String, Object> attributes);
 
     void setAttributes(Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException;
-    ListenableFuture<Void> setAttributesAsync(Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException;
+    CompletableFuture<Void> setAttributesAsync(Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException;
 
 
     @Override
@@ -270,12 +269,12 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
     ConfiguredObjectRecord asObjectRecord();
 
     void open();
-    ListenableFuture<Void> openAsync();
+    CompletableFuture<Void> openAsync();
 
     void close();
-    ListenableFuture<Void> closeAsync();
+    CompletableFuture<Void> closeAsync();
 
-    ListenableFuture<Void> deleteAsync();
+    CompletableFuture<Void> deleteAsync();
 
     TaskExecutor getChildExecutor();
 

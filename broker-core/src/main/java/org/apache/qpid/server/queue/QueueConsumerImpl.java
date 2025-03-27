@@ -28,12 +28,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -236,7 +235,7 @@ class QueueConsumerImpl<T extends ConsumerTarget>
     }
 
     @Override
-    protected ListenableFuture<Void> onClose()
+    protected CompletableFuture<Void> onClose()
     {
         if(_closed.compareAndSet(false,true))
         {
@@ -244,14 +243,13 @@ class QueueConsumerImpl<T extends ConsumerTarget>
 
             _waitingOnCreditMessageListener.remove();
 
-            return doAfter(_target.consumerRemoved(this),
-                           () -> {
-                               _queue.unregisterConsumer(QueueConsumerImpl.this);
-                           }).then(this::deleteNoChecks);
+            return _target.consumerRemoved(this)
+                    .thenRunAsync(() -> _queue.unregisterConsumer(QueueConsumerImpl.this), getTaskExecutor())
+                    .thenRunAsync(this::deleteNoChecks, getTaskExecutor());
         }
         else
         {
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
     }
 

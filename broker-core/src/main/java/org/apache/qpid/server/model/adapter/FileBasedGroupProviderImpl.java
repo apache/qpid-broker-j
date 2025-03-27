@@ -30,9 +30,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,8 +194,8 @@ public class FileBasedGroupProviderImpl
     }
 
     @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
-                                                                          Map<String, Object> attributes)
+    protected <C extends ConfiguredObject> CompletableFuture<C> addChildAsync(Class<C> childClass,
+                                                                              Map<String, Object> attributes)
     {
         if (childClass == Group.class)
         {
@@ -216,7 +215,7 @@ public class FileBasedGroupProviderImpl
             attrMap.put(ConfiguredObject.NAME, groupName);
             GroupAdapter groupAdapter = new GroupAdapter(attrMap);
             groupAdapter.create();
-            return Futures.immediateFuture((C) groupAdapter);
+            return CompletableFuture.completedFuture((C) groupAdapter);
         }
         else
         {
@@ -244,7 +243,7 @@ public class FileBasedGroupProviderImpl
     }
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.ERRORED }, desiredState = State.ACTIVE )
-    private ListenableFuture<Void> activate()
+    private CompletableFuture<Void> activate()
     {
         if (_groupDatabase != null)
         {
@@ -261,33 +260,28 @@ public class FileBasedGroupProviderImpl
                 throw new IllegalConfigurationException(String.format("Cannot load groups from '%s'", getPath()));
             }
         }
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         // We manage the storage children so we close (so they may free any resources) them rather than deleting them
-        return doAfterAlways(closeChildren(),
-                             () -> {
-                                 File file = new File(getPath());
-                                 if (file.exists())
-                                 {
-                                     if (!file.delete())
-                                     {
-                                         throw new IllegalConfigurationException(String.format(
-                                                 "Cannot delete group file '%s'",
-                                                 file));
-                                     }
-                                 }
-                             });
+        return closeChildren().whenCompleteAsync((result, throwable) ->
+        {
+            final File file = new File(getPath());
+            if (file.exists() && !file.delete())
+            {
+                throw new IllegalConfigurationException(String.format("Cannot delete group file '%s'", file));
+            }
+        }, getTaskExecutor());
     }
 
     @StateTransition( currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
-    private ListenableFuture<Void> startQuiesced()
+    private CompletableFuture<Void> startQuiesced()
     {
         setState(State.QUIESCED);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -327,10 +321,10 @@ public class FileBasedGroupProviderImpl
         }
 
         @StateTransition( currentState = State.UNINITIALIZED, desiredState = State.ACTIVE )
-        private ListenableFuture<Void> activate()
+        private CompletableFuture<Void> activate()
         {
             setState(State.ACTIVE);
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
 
         @Override
@@ -354,8 +348,8 @@ public class FileBasedGroupProviderImpl
         }
 
         @Override
-        protected  <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
-                                                                              Map<String, Object> attributes)
+        protected  <C extends ConfiguredObject> CompletableFuture<C> addChildAsync(Class<C> childClass,
+                                                                                   Map<String, Object> attributes)
         {
             if (childClass == GroupMember.class)
             {
@@ -367,7 +361,7 @@ public class FileBasedGroupProviderImpl
                 attrMap.put(GroupMember.NAME, memberName);
                 GroupMemberAdapter groupMemberAdapter = new GroupMemberAdapter(attrMap);
                 groupMemberAdapter.create();
-                return Futures.immediateFuture((C) groupMemberAdapter);
+                return CompletableFuture.completedFuture((C) groupMemberAdapter);
             }
             else
             {
@@ -376,7 +370,7 @@ public class FileBasedGroupProviderImpl
         }
 
         @Override
-        protected ListenableFuture<Void> onDelete()
+        protected CompletableFuture<Void> onDelete()
         {
             _groupDatabase.removeGroup(getName());
             return super.onDelete();
@@ -410,14 +404,14 @@ public class FileBasedGroupProviderImpl
             }
 
             @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.ACTIVE)
-            private ListenableFuture<Void> activate()
+            private CompletableFuture<Void> activate()
             {
                 setState(State.ACTIVE);
-                return Futures.immediateFuture(null);
+                return CompletableFuture.completedFuture(null);
             }
 
             @Override
-            protected ListenableFuture<Void> onDelete()
+            protected CompletableFuture<Void> onDelete()
             {
                 _groupDatabase.removeUserFromGroup(getName(), GroupAdapter.this.getName());
                 return super.onDelete();

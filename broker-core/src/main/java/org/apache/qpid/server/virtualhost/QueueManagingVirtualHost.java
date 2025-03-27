@@ -25,9 +25,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.message.MessageDestination;
@@ -401,7 +400,7 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
     MessageDestination getSystemDestination(String name);
 
-    ListenableFuture<Void> reallocateMessages();
+    CompletableFuture<Void> reallocateMessages();
 
     boolean isOverTargetSize();
 

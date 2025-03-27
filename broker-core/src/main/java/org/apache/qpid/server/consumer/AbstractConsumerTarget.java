@@ -23,13 +23,12 @@ package org.apache.qpid.server.consumer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,7 +159,7 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
     }
 
     @Override
-    public ListenableFuture<Void> consumerRemoved(final MessageInstanceConsumer sub)
+    public CompletableFuture<Void> consumerRemoved(final MessageInstanceConsumer sub)
     {
         if(_consumers.contains(sub))
         {
@@ -169,11 +168,11 @@ public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>
         }
         else
         {
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
     }
 
-    private ListenableFuture<Void> doOnIoThreadAsync(final Runnable task)
+    private CompletableFuture<Void> doOnIoThreadAsync(final Runnable task)
     {
         return getSession().getAMQPConnection().doOnIOThreadAsync(task);
     }

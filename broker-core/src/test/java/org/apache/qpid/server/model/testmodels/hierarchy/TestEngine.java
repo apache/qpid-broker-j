@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttribute;
@@ -42,7 +42,7 @@ public interface TestEngine<X extends TestEngine<X>> extends ConfiguredObject<X>
     Object getBeforeCloseFuture();
 
     @SuppressWarnings("unused")
-    void setBeforeCloseFuture(ListenableFuture<Void> listenableFuture);
+    void setBeforeCloseFuture(CompletableFuture<Void> completableFuture);
 
     /* Injectable state change future, used to control when/how asynch state transition completes during the test */
 
@@ -50,7 +50,7 @@ public interface TestEngine<X extends TestEngine<X>> extends ConfiguredObject<X>
     @SuppressWarnings("unused")
     Object getStateChangeFuture();
 
-    void setStateChangeFuture(ListenableFuture<Void> listenableFuture);
+    void setStateChangeFuture(CompletableFuture<Void> completableFuture);
 
     /* Injectable exception, used to introduce an exception into a state change transition */
 

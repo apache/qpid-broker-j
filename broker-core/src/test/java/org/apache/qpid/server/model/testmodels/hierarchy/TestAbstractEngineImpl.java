@@ -22,9 +22,7 @@
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import java.util.Map;
-
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -36,10 +34,10 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
 {
     public static final int TEST_TEMPERATURE = 50;
     @ManagedAttributeField
-    private ListenableFuture<Void> _beforeCloseFuture = Futures.immediateFuture(null);
+    private CompletableFuture<Void> _beforeCloseFuture = CompletableFuture.completedFuture(null);
 
     @ManagedAttributeField
-    private Object _stateChangeFuture = Futures.immediateFuture(null);
+    private Object _stateChangeFuture = CompletableFuture.completedFuture(null);
 
     @ManagedAttributeField
     private RuntimeException _stateChangeException;
@@ -57,9 +55,9 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
     }
 
     @Override
-    public void setBeforeCloseFuture(final ListenableFuture<Void> listenableFuture)
+    public void setBeforeCloseFuture(final CompletableFuture<Void> completableFuture)
     {
-        _beforeCloseFuture = listenableFuture;
+        _beforeCloseFuture = completableFuture;
     }
 
     @Override
@@ -69,9 +67,9 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
     }
 
     @Override
-    public void setStateChangeFuture(final ListenableFuture<Void> listenableFuture)
+    public void setStateChangeFuture(final CompletableFuture<Void> completableFuture)
     {
-        _stateChangeFuture = listenableFuture;
+        _stateChangeFuture = completableFuture;
     }
 
     @Override
@@ -87,7 +85,7 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
     }
 
     @Override
-    protected ListenableFuture<Void> beforeClose()
+    protected CompletableFuture<Void> beforeClose()
     {
         return _beforeCloseFuture;
     }
@@ -100,7 +98,7 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     @SuppressWarnings({"unchecked", "unused"})
-    private ListenableFuture<Void> onActivate()
+    private CompletableFuture<Void> onActivate()
     {
         final RuntimeException stateChangeException = _stateChangeException;
         if (stateChangeException != null)
@@ -108,7 +106,7 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
             throw stateChangeException;
         }
         setState(State.ACTIVE);
-        return (ListenableFuture<Void>) _stateChangeFuture;
+        return (CompletableFuture<Void>) _stateChangeFuture;
     }
 
     @Override

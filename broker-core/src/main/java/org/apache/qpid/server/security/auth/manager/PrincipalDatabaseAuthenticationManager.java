@@ -31,13 +31,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.security.auth.login.AccountNotFoundException;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,9 +193,9 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
 
     @Override
     @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)
-    public ListenableFuture<Void> activate()
+    public CompletableFuture<Void> activate()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
+        final CompletableFuture<Void> returnVal = new CompletableFuture<>();
         final List<Principal> users = _principalDatabase == null ? List.of() : _principalDatabase.getUsers();
         _userMap.clear();
         if(!users.isEmpty())
@@ -206,13 +204,13 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
             {
                 final PrincipalAdapter principalAdapter = new PrincipalAdapter(user);
                 principalAdapter.registerWithParents();
-                principalAdapter.openAsync().addListener(() ->
+                principalAdapter.openAsync().whenCompleteAsync((result, error) ->
                 {
                     _userMap.put(user, principalAdapter);
                     if (_userMap.size() == users.size())
                     {
                         setState(State.ACTIVE);
-                        returnVal.set(null);
+                        returnVal.complete(null);
                     }
                 }, getTaskExecutor());
 
@@ -223,22 +221,22 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         else
         {
             setState(State.ACTIVE);
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         // We manage the storage children so we close (so they may free any resources) them rather than deleting them
-        return doAfterAlways(closeChildren(),
-                             () -> {
-                                 File file = new File(_path);
-                                 if (file.exists() && file.isFile())
-                                 {
-                                     file.delete();
-                                 }
-                             });
+        return closeChildren().whenComplete((result, error) ->
+        {
+            final File file = new File(_path);
+            if (file.exists() && file.isFile())
+            {
+                file.delete();
+            }
+        });
     }
 
     @Override
@@ -305,8 +303,8 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     }
 
     @Override
-    protected  <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
-                                                                          Map<String, Object> attributes)
+    protected  <C extends ConfiguredObject> CompletableFuture<C> addChildAsync(Class<C> childClass,
+                                                                               Map<String, Object> attributes)
     {
         if(childClass == User.class)
         {
@@ -329,7 +327,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
                 throw e;
             }
             _userMap.put(p, principalAdapter);
-            return Futures.immediateFuture((C)principalAdapter);
+            return CompletableFuture.completedFuture((C)principalAdapter);
         }
         else
         {
@@ -438,14 +436,14 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         }
 
         @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)
-        private ListenableFuture<Void> activate()
+        private CompletableFuture<Void> activate()
         {
             setState(State.ACTIVE);
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
 
         @Override
-        protected ListenableFuture<Void> onDelete()
+        protected CompletableFuture<Void> onDelete()
         {
             try
             {
@@ -460,7 +458,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         }
 
         @Override
-        protected ListenableFuture<Void> deleteNoChecks()
+        protected CompletableFuture<Void> deleteNoChecks()
         {
             return super.deleteNoChecks();
         }

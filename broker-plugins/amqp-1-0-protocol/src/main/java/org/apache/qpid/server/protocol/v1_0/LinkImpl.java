@@ -23,18 +23,13 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -86,7 +81,7 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
     }
 
     @Override
-    public final synchronized ListenableFuture<? extends LinkEndpoint<S, T>> attach(final Session_1_0 session, final Attach attach)
+    public final synchronized CompletableFuture<? extends LinkEndpoint<S, T>> attach(final Session_1_0 session, final Attach attach)
     {
         try
         {
@@ -108,7 +103,7 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
                             : (ConfiguredObject<?>) session.getReceivingDestination(this, (Target) getTarget()).getMessageDestination();
                     targetObject.authorise(operation);
                 }
-                final SettableFuture<LinkEndpoint<S, T>> future = SettableFuture.create();
+                final CompletableFuture<LinkEndpoint<S, T>> future = new CompletableFuture<>();
                 _thiefQueue.add(new ThiefInformation(session, attach, future));
                 startLinkStealingIfNecessary();
                 return future;
@@ -122,7 +117,7 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
 
                 _linkEndpoint.receiveAttach(attach);
                 _linkRegistry.linkChanged(this);
-                return Futures.immediateFuture(_linkEndpoint);
+                return CompletableFuture.completedFuture(_linkEndpoint);
             }
         }
         catch (Exception e)
@@ -227,7 +222,7 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
         return linkEndpoint;
     }
 
-    private ListenableFuture<? extends LinkEndpoint<S, T>> rejectLink(final Session_1_0 session, Throwable t)
+    private CompletableFuture<? extends LinkEndpoint<S, T>> rejectLink(final Session_1_0 session, Throwable t)
     {
         if (t instanceof AmqpErrorException)
         {
@@ -238,7 +233,7 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
             _linkEndpoint =
                     new ErrantLinkEndpoint<>(this, session, new Error(AmqpError.INTERNAL_ERROR, t.getMessage()));
         }
-        return Futures.immediateFuture(_linkEndpoint);
+        return CompletableFuture.completedFuture(_linkEndpoint);
     }
 
     private void startLinkStealingIfNecessary()
@@ -255,24 +250,20 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
         ThiefInformation thiefInformation;
         if ((thiefInformation = _thiefQueue.poll()) != null)
         {
-            AbstractConfiguredObject.addFutureCallback(doStealLink(thiefInformation.getSession(),
-                                                                   thiefInformation.getAttach()),
-                                                       new FutureCallback<>()
-                                                       {
-                                                           @Override
-                                                           public void onSuccess(final LinkEndpoint<S, T> result)
-                                                           {
-                                                               thiefInformation.getFuture().set(result);
-                                                               stealLink();
-                                                           }
-
-                                                           @Override
-                                                           public void onFailure(final Throwable t)
-                                                           {
-                                                               thiefInformation.getFuture().setException(t);
-                                                               stealLink();
-                                                           }
-                                                       }, MoreExecutors.directExecutor());
+            doStealLink(thiefInformation.getSession(), thiefInformation.getAttach())
+                    .whenComplete((result, error) ->
+                    {
+                        if (error != null)
+                        {
+                            thiefInformation.getFuture().completeExceptionally(error);
+                            stealLink();
+                        }
+                        else
+                        {
+                            thiefInformation.getFuture().complete(result);
+                            stealLink();
+                        }
+                    });
         }
         else
         {
@@ -280,9 +271,9 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
         }
     }
 
-    private ListenableFuture<LinkEndpoint<S, T>> doStealLink(final Session_1_0 session, final Attach attach)
+    private CompletableFuture<LinkEndpoint<S, T>> doStealLink(final Session_1_0 session, final Attach attach)
     {
-        final SettableFuture<LinkEndpoint<S, T>> returnFuture = SettableFuture.create();
+        final CompletableFuture<LinkEndpoint<S, T>> returnFuture = new CompletableFuture<>();
         final LinkEndpoint<S, T> linkEndpoint = _linkEndpoint;
 
         // check whether linkEndpoint has been closed in the mean time
@@ -312,20 +303,20 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
 
     private void doLinkStealAndHandleExceptions(final Session_1_0 session,
                                                 final Attach attach,
-                                                final SettableFuture<LinkEndpoint<S, T>> returnFuture)
+                                                final CompletableFuture<LinkEndpoint<S, T>> returnFuture)
     {
         try
         {
-            returnFuture.set(attach(session, attach).get());
+            returnFuture.complete(attach(session, attach).get());
         }
         catch (InterruptedException e)
         {
-            returnFuture.setException(e);
+            returnFuture.completeExceptionally(e);
             Thread.currentThread().interrupt();
         }
         catch (ExecutionException e)
         {
-            returnFuture.setException(e.getCause());
+            returnFuture.completeExceptionally(e.getCause());
         }
     }
 
@@ -346,11 +337,11 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
     {
         private final Session_1_0 _session;
         private final Attach _attach;
-        private final SettableFuture<LinkEndpoint<S, T>> _future;
+        private final CompletableFuture<LinkEndpoint<S, T>> _future;
 
         ThiefInformation(final Session_1_0 session,
                          final Attach attach,
-                         final SettableFuture<LinkEndpoint<S, T>> future)
+                         final CompletableFuture<LinkEndpoint<S, T>> future)
         {
             _session = session;
             _attach = attach;
@@ -367,7 +358,7 @@ public class LinkImpl<S extends BaseSource, T extends BaseTarget> implements Lin
             return _attach;
         }
 
-        SettableFuture<LinkEndpoint<S, T>> getFuture()
+        CompletableFuture<LinkEndpoint<S, T>> getFuture()
         {
             return _future;
         }

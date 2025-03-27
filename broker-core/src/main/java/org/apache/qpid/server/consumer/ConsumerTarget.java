@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.consumer;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
@@ -53,7 +53,7 @@ public interface ConsumerTarget<T extends ConsumerTarget<T>>
 
     void consumerAdded(MessageInstanceConsumer<T> sub);
 
-    ListenableFuture<Void> consumerRemoved(MessageInstanceConsumer<T> sub);
+    CompletableFuture<Void> consumerRemoved(MessageInstanceConsumer<T> sub);
 
     long getUnacknowledgedBytes();
 

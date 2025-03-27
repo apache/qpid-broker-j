@@ -33,11 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.store.ManagementModeStoreHandler;
@@ -137,7 +133,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     }
 
     @Override
-    protected ListenableFuture<Void> onClose()
+    protected CompletableFuture<Void> onClose()
     {
         final TaskExecutor taskExecutor = getTaskExecutor();
         try
@@ -161,7 +157,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
                 taskExecutor.stopImmediately();
             }
         }
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -223,25 +219,29 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
 
     @StateTransition(currentState = State.ACTIVE, desiredState = State.STOPPED)
-    protected ListenableFuture<Void> doStop()
+    protected CompletableFuture<Void> doStop()
     {
-        return doAfter(getContainer().closeAsync(), () ->
+        final Container<?> container = getContainer();
+        if (container == null)
+        {
+            return CompletableFuture.completedFuture(null);
+        }
+        return container.closeAsync().thenRunAsync(() ->
         {
             _configurationStore.closeConfigurationStore();
             AbstractSystemConfig.super.setState(State.STOPPED);
-        });
-
+        }, getTaskExecutor());
     }
 
 
     @StateTransition(currentState = { State.UNINITIALIZED, State.STOPPED }, desiredState = State.ACTIVE)
-    protected ListenableFuture<Void> activate()
+    protected CompletableFuture<Void> activate()
     {
-        return doAfter(makeActive(), () -> AbstractSystemConfig.super.setState(State.ACTIVE));
+        return makeActive().thenRunAsync(() -> AbstractSystemConfig.super.setState(State.ACTIVE), getTaskExecutor());
     }
 
 
-    protected ListenableFuture<Void> makeActive()
+    protected CompletableFuture<Void> makeActive()
     {
 
         final EventLogger eventLogger = _eventLogger;
@@ -253,32 +253,28 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
             final Container<?> container = initiateStoreAndRecovery();
 
             container.setEventLogger(startupLogger);
-            final SettableFuture<Void> returnVal = SettableFuture.create();
-            addFutureCallback(container.openAsync(), new FutureCallback()
-                                {
-                                    @Override
-                                    public void onSuccess(final Object result)
-                                    {
-                                        State state = container.getState();
-                                        if (state == State.ACTIVE)
-                                        {
-                                            startupLogger.message(BrokerMessages.READY());
-                                            container.setEventLogger(eventLogger);
-                                            returnVal.set(null);
-                                        }
-                                        else
-                                        {
-                                            returnVal.setException(new ServerScopedRuntimeException("Broker failed reach ACTIVE state (state is " + state + ")"));
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onFailure(final Throwable t)
-                                    {
-                                        returnVal.setException(t);
-                                    }
-                                }, getTaskExecutor()
-                               );
+            final CompletableFuture<Void> returnVal = new CompletableFuture<>();
+            container.openAsync().whenCompleteAsync((result, error) ->
+            {
+                if (error != null)
+                {
+                    returnVal.completeExceptionally(error);
+                }
+                else
+                {
+                    State state = container.getState();
+                    if (state == State.ACTIVE)
+                    {
+                        startupLogger.message(BrokerMessages.READY());
+                        container.setEventLogger(eventLogger);
+                        returnVal.complete(null);
+                    }
+                    else
+                    {
+                        returnVal.completeExceptionally(new ServerScopedRuntimeException("Broker failed reach ACTIVE state (state is " + state + ")"));
+                    }
+                }
+            }, getTaskExecutor());
 
             return returnVal;
         }
@@ -333,7 +329,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
 
     @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
-    protected ListenableFuture<Void> startQuiesced()
+    protected CompletableFuture<Void> startQuiesced()
     {
         final EventLogger startupLogger = initiateStartupLogging();
 
@@ -342,7 +338,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
             final Container<?> container = initiateStoreAndRecovery();
 
             container.setEventLogger(startupLogger);
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
         catch (IOException e)
         {

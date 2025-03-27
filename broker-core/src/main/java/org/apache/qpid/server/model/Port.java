@@ -23,10 +23,9 @@ package org.apache.qpid.server.model;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import javax.net.ssl.SSLContext;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.security.SubjectCreator;
@@ -131,7 +130,7 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
 
     void start();
 
-    ListenableFuture<Void> startAsync();
+    CompletableFuture<Void> startAsync();
 
     NamedAddressSpace getAddressSpace(String name);
 

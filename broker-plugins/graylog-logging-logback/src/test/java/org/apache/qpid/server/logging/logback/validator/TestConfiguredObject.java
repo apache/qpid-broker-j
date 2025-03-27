@@ -20,9 +20,6 @@
 
 package org.apache.qpid.server.logging.logback.validator;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
-
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
@@ -48,6 +45,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public class TestConfiguredObject implements ConfiguredObject<TestConfiguredObject>
 {
@@ -256,26 +254,26 @@ public class TestConfiguredObject implements ConfiguredObject<TestConfiguredObje
     }
 
     @Override
-    public <C extends ConfiguredObject> ListenableFuture<C> getAttainedChildById(Class<C> childClass, UUID id)
+    public <C extends ConfiguredObject> CompletableFuture<C> getAttainedChildById(Class<C> childClass, UUID id)
     {
-        final SettableFuture<C> returnVal = SettableFuture.create();
-        returnVal.set(null);
+        final CompletableFuture<C> returnVal = new CompletableFuture<>();
+        returnVal.complete(null);
         return returnVal;
     }
 
     @Override
-    public <C extends ConfiguredObject> ListenableFuture<C> getAttainedChildByName(Class<C> childClass, String name)
+    public <C extends ConfiguredObject> CompletableFuture<C> getAttainedChildByName(Class<C> childClass, String name)
     {
-        final SettableFuture<C> returnVal = SettableFuture.create();
-        returnVal.set(null);
+        final CompletableFuture<C> returnVal = new CompletableFuture<>();
+        returnVal.complete(null);
         return returnVal;
     }
 
     @Override
-    public <C extends ConfiguredObject> ListenableFuture<C> createChildAsync(Class<C> childClass, Map<String, Object> attributes)
+    public <C extends ConfiguredObject> CompletableFuture<C> createChildAsync(Class<C> childClass, Map<String, Object> attributes)
     {
-        final SettableFuture<C> returnVal = SettableFuture.create();
-        returnVal.set(null);
+        final CompletableFuture<C> returnVal = new CompletableFuture<>();
+        returnVal.complete(null);
         return returnVal;
     }
 
@@ -287,13 +285,11 @@ public class TestConfiguredObject implements ConfiguredObject<TestConfiguredObje
     }
 
     @Override
-    public ListenableFuture<Void> setAttributesAsync(Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException
+    public CompletableFuture<Void> setAttributesAsync(Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException
     {
         setAttributes(attributes);
 
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        returnVal.set(null);
-        return returnVal;
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -362,11 +358,9 @@ public class TestConfiguredObject implements ConfiguredObject<TestConfiguredObje
     }
 
     @Override
-    public ListenableFuture<Void> openAsync()
+    public CompletableFuture<Void> openAsync()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        returnVal.set(null);
-        return returnVal;
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -375,19 +369,15 @@ public class TestConfiguredObject implements ConfiguredObject<TestConfiguredObje
     }
 
     @Override
-    public ListenableFuture<Void> closeAsync()
+    public CompletableFuture<Void> closeAsync()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        returnVal.set(null);
-        return returnVal;
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public ListenableFuture<Void> deleteAsync()
+    public CompletableFuture<Void> deleteAsync()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        returnVal.set(null);
-        return returnVal;
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

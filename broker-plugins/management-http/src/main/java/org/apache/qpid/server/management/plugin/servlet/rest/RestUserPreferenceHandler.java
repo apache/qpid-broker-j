@@ -31,7 +31,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Joiner;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.management.plugin.RequestType;
 import org.apache.qpid.server.model.ConfiguredObject;

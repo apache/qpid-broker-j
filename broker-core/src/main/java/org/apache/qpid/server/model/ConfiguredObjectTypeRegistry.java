@@ -43,12 +43,12 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1084,7 +1084,7 @@ public class ConfiguredObjectTypeRegistry
         {
             if (m.isAnnotationPresent(StateTransition.class))
             {
-                if (ListenableFuture.class.isAssignableFrom(m.getReturnType()))
+                if (CompletableFuture.class.isAssignableFrom(m.getReturnType()))
                 {
                     if (m.getParameterTypes().length == 0)
                     {
@@ -1110,7 +1110,7 @@ public class ConfiguredObjectTypeRegistry
                 else
                 {
                     throw new ServerScopedRuntimeException(
-                            "A state transition method must return a ListenableFuture. Method "
+                            "A state transition method must return a CompletableFuture. Method "
                             + m.getName()
                             + " on "
                             + clazz.getName()

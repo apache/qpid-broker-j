@@ -20,21 +20,18 @@
  */
 package org.apache.qpid.tests.protocol;
 
-import static com.google.common.util.concurrent.Futures.allAsList;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 public abstract class AbstractInteraction<I extends AbstractInteraction<I>>
 {
     private final AbstractFrameTransport<I> _transport;
-    private ListenableFuture<?> _latestFuture;
+    private CompletableFuture<?> _latestFuture;
     private Response<?> _latestResponse;
 
     public AbstractInteraction(final AbstractFrameTransport<I> frameTransport)
@@ -131,31 +128,17 @@ public abstract class AbstractInteraction<I extends AbstractInteraction<I>>
         return (T) _latestResponse.getBody();
     }
 
-    protected ListenableFuture<Void> sendPerformativeAndChainFuture(final Object frameBody) throws Exception
+    protected CompletableFuture<Void> sendPerformativeAndChainFuture(final Object frameBody) throws Exception
     {
-        final ListenableFuture<Void> future = _transport.sendPerformative(frameBody);
-        if (_latestFuture != null)
-        {
-            _latestFuture = allAsList(_latestFuture, future);
-        }
-        else
-        {
-            _latestFuture = future;
-        }
+        final CompletableFuture<Void> future = _transport.sendPerformative(frameBody);
+        _latestFuture = _latestFuture != null ? CompletableFuture.allOf(_latestFuture, future) : future;
         return future;
     }
 
     public I negotiateProtocol() throws Exception
     {
-        final ListenableFuture<Void> future = _transport.sendProtocolHeader(getProtocolHeader());
-        if (_latestFuture != null)
-        {
-            _latestFuture = allAsList(_latestFuture, future);
-        }
-        else
-        {
-            _latestFuture = future;
-        }
+        final CompletableFuture<Void> future = _transport.sendProtocolHeader(getProtocolHeader());
+        _latestFuture = _latestFuture != null ? CompletableFuture.allOf(_latestFuture, future) : future;
         return getInteraction();
     }
 

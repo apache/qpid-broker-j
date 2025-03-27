@@ -26,11 +26,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import javax.security.auth.Subject;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +61,7 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
     }
 
     @Override
-    protected ListenableFuture<Void> activate()
+    protected CompletableFuture<Void> activate()
     {
         if (LOGGER.isDebugEnabled())
         {
@@ -103,48 +102,48 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
         if (host != null)
         {
             final QueueManagingVirtualHost<?> recoveredHost = host;
-            final ListenableFuture<Void> openFuture;
+            final CompletableFuture<Void> openFuture;
             recoveredHost.setFirstOpening(isNew && initialRecords.length == 0);
-            openFuture = Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<ListenableFuture<Void>>) recoveredHost::openAsync);
+            openFuture = Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<CompletableFuture<Void>>) recoveredHost::openAsync);
             return openFuture;
         }
         else
         {
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         final VirtualHost<?> virtualHost = getVirtualHost();
         final MessageStore messageStore = virtualHost == null ? null : virtualHost.getMessageStore();
 
-        return doAfterAlways(closeVirtualHostIfExists(),
-                             () -> {
-                                 if (messageStore != null)
-                                 {
-                                     messageStore.closeMessageStore();
-                                     messageStore.onDelete(virtualHost);
-                                 }
+        return closeVirtualHostIfExists().whenComplete((result, error) ->
+        {
+            if (messageStore != null)
+            {
+                messageStore.closeMessageStore();
+                messageStore.onDelete(virtualHost);
+            }
 
-                                 if (AbstractStandardVirtualHostNode.this instanceof PreferenceStoreProvider)
-                                 {
-                                     PreferenceStore preferenceStore =
-                                             ((PreferenceStoreProvider) AbstractStandardVirtualHostNode.this).getPreferenceStore();
-                                     if (preferenceStore != null)
-                                     {
-                                         preferenceStore.onDelete();
-                                     }
-                                 }
-                                 DurableConfigurationStore configurationStore = getConfigurationStore();
-                                 if (configurationStore != null)
-                                 {
-                                     configurationStore.closeConfigurationStore();
-                                     configurationStore.onDelete(AbstractStandardVirtualHostNode.this);
-                                 }
-                                 onCloseOrDelete();
-                             });
+            if (AbstractStandardVirtualHostNode.this instanceof PreferenceStoreProvider)
+            {
+                PreferenceStore preferenceStore =
+                        ((PreferenceStoreProvider) AbstractStandardVirtualHostNode.this).getPreferenceStore();
+                if (preferenceStore != null)
+                {
+                    preferenceStore.onDelete();
+                }
+            }
+            DurableConfigurationStore configurationStore = getConfigurationStore();
+            if (configurationStore != null)
+            {
+                configurationStore.closeConfigurationStore();
+                configurationStore.onDelete(AbstractStandardVirtualHostNode.this);
+            }
+            onCloseOrDelete();
+        });
     }
 
     @Override

@@ -21,9 +21,7 @@
 package org.apache.qpid.server.security.group;
 
 import java.util.Map;
-
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -46,9 +44,9 @@ public class GroupMemberImpl extends AbstractConfiguredObject<GroupMemberImpl> i
     }
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.ERRORED }, desiredState = State.ACTIVE )
-    private ListenableFuture<Void> activate()
+    private CompletableFuture<Void> activate()
     {
         setState(State.ACTIVE);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 }
