@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -56,7 +57,6 @@ import javax.jms.TextMessage;
 import javax.jms.TransactionRolledBackException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Objects;
 import com.sleepycat.je.Durability;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.rep.ReplicatedEnvironment;
@@ -946,7 +946,7 @@ public class MultiNodeTest extends GroupJmsTestBase
             {
                 final Message message = consumer.receive(getReceiveTimeout());
                 assumeTrue(message instanceof TextMessage,"Message should be a text message");
-                assumeTrue(Objects.equal(m, ((TextMessage) message).getText()),"Message text should be " + m);
+                assumeTrue(Objects.equals(m, ((TextMessage) message).getText()),"Message text should be " + m);
             }
         }
         finally

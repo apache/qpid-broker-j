@@ -28,6 +28,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +36,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -121,16 +121,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     {
         final MessageDescription messageDescription = new MessageDescription();
         messageDescription.setMessageType(MessageDescription.MessageType.STREAM_MESSAGE);
-        messageDescription.setContent(Lists.newArrayList(true,
-                                                         (byte) -7,
-                                                         (short) 259,
-                                                         Integer.MAX_VALUE,
-                                                         Long.MAX_VALUE,
-                                                         37.5f,
-                                                         38.5,
-                                                         "testString",
-                                                         null,
-                                                         new byte[]{0x24, 0x00, (byte) 0xFF}));
+        messageDescription.setContent(Arrays.asList(true, (byte) -7, (short) 259, Integer.MAX_VALUE, Long.MAX_VALUE,
+                37.5f, 38.5, "testString", null, new byte[]{ 0x24, 0x00, (byte) 0xFF }));
 
         performSimpleTest(messageDescription);
     }

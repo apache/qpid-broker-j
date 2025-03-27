@@ -36,7 +36,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -237,8 +236,7 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
         {
             serverSocket.setSoTimeout(SERVER_SOCKET_TIMEOUT);
             String classPath = classpathQuery.getClasspath();
-            final List<String> arguments = Lists.newArrayList("java", "-showversion",
-                                                              "-cp", classPath);
+            final List<String> arguments = new ArrayList<>(List.of("java", "-showversion", "-cp", classPath));
             arguments.addAll(additionalJavaArguments);
             arguments.add(classpathQuery.getClientClass().getName());
             arguments.add(String.valueOf(serverSocket.getLocalPort()));
