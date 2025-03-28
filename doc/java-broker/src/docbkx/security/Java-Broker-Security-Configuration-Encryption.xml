@@ -26,25 +26,21 @@
     Broker's configuration. This is means that items such as keystore/truststore passwords, JDBC
     passwords, and LDAP passwords can be stored in the configuration in a form that is difficult to
     read.</para>
-  <para>The Broker ships with an encryptor implementations called <literal>AESGCMKeyFile</literal> and
-    <literal>AESKeyFile</literal>. This uses a securely generated random key of 256bit
+  <para>The Broker ships with an encryptor implementation called <literal>AESGCMKeyFile</literal> .
+    This uses a securely generated random key of 256bit
     <footnote><para>Java Cryptography Extension (JCE) Unlimited Strength required</para></footnote>
     to encrypt the secrets stored within a key file. Of course, the key itself must be guarded carefully,
     otherwise the passwords encrypted with it may be compromised. For this reason, the Broker ensures
     that the file's permissions allow the file to be read exclusively by the user account used for running
     the Broker.</para>
   <important>
-    <para>AESKeyFile encryptor is considered as not safe, it is deprecated and will be removed in one of the
-      next releases. AESGCMKeyFile encryptor should be used instead.</para>
-  </important>
-  <important>
     <para>If the keyfile is lost or corrupted, the secrets will be irrecoverable.</para>
   </important>
   <section xml:id="Java-Broker-Security-Configuration-Encryption-Configuration">
     <title>Configuration</title>
-    <para>The <literal>AESGCMKeyFile</literal> or <literal>AESKeyFile</literal> encryptor providers are
+    <para>The <literal>AESGCMKeyFile</literal> encryptor provider is
       enabled/disabled via the <link linkend="Java-Broker-Management-Managing-Broker">Broker attributes</link>
-      within the Web Management Console.  On enabling the provider, any existing passwords within the
+      within the Web Management Console. On enabling the provider, any existing passwords within the
       configuration will be automatically rewritten in the encrypted form.</para>
     <para>Note that passwords stored by the Authentication Providers <link linkend="Java-Broker-Security-PlainPasswordFile-Provider">PlainPasswordFile</link> and.
       <link linkend="Java-Broker-Security-Base64MD5PasswordFile-Provider">PlainPasswordFile</link>

@@ -106,7 +106,7 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
             @Override
             protected ConfigurationSecretEncrypter createEncrypter(final SecretKeySpec keySpec)
             {
-                return new AESKeyFileEncrypter(keySpec);
+                return new AESGCMKeyFileEncrypter(keySpec);
             }
         };
     }
@@ -121,7 +121,7 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
 
         doChecks(encrypter, keyFilePathChecker);
 
-        final String pathName = (String) _broker.getContext().get(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE);
+        final String pathName = (String) _broker.getContext().get(AESGCMKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE);
 
         // check the context variable was set
         assertEquals(keyFilePathChecker.getKeyFile().toString(), pathName);
@@ -150,9 +150,9 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
         final String subdirName = getTestName() + File.separator + "test";
         final String fileLocation = _tmpDir.toString() + File.separator + subdirName + File.separator + filename;
 
-        when(_broker.getContextKeys(eq(false))).thenReturn(Set.of(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
+        when(_broker.getContextKeys(eq(false))).thenReturn(Set.of(AESGCMKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
         when(_broker.getContextValue(eq(String.class),
-                                     eq(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE))).thenReturn(fileLocation);
+                                     eq(AESGCMKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE))).thenReturn(fileLocation);
 
         final ConfigurationSecretEncrypter encrypter = _factory.createEncrypter(_broker);
 
@@ -169,9 +169,9 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
         final String subdirName = getTestName() + File.separator + "test";
         final String fileLocation = _tmpDir.toString() + File.separator + subdirName + File.separator + filename;
 
-        when(_broker.getContextKeys(eq(false))).thenReturn(Set.of(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
+        when(_broker.getContextKeys(eq(false))).thenReturn(Set.of(AESGCMKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
         when(_broker.getContextValue(eq(String.class),
-                                     eq(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE))).thenReturn(fileLocation);
+                                     eq(AESGCMKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE))).thenReturn(fileLocation);
 
         Files.createDirectories(Paths.get(fileLocation));
 
@@ -189,9 +189,9 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
         final String subdirName = getTestName() + File.separator + "test";
         final String fileLocation = _tmpDir.toString() + File.separator + subdirName + File.separator + filename;
 
-        when(_broker.getContextKeys(eq(false))).thenReturn(Set.of(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
+        when(_broker.getContextKeys(eq(false))).thenReturn(Set.of(AESGCMKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
         when(_broker.getContextValue(eq(String.class),
-                                     eq(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE))).thenReturn(fileLocation);
+                                     eq(AESGCMKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE))).thenReturn(fileLocation);
 
         Files.createDirectories(Paths.get(_tmpDir.toString(), subdirName));
 
@@ -213,9 +213,9 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
         final String subdirName = getTestName() + File.separator + "test";
         final String fileLocation = _tmpDir.toString() + File.separator + subdirName + File.separator + filename;
 
-        when(_broker.getContextKeys(eq(false))).thenReturn(Set.of(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
+        when(_broker.getContextKeys(eq(false))).thenReturn(Set.of(AESGCMKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE));
         when(_broker.getContextValue(eq(String.class),
-                                     eq(AESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE))).thenReturn(fileLocation);
+                                     eq(AESGCMKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE))).thenReturn(fileLocation);
 
         Files.createDirectories(Paths.get(_tmpDir.toString(), subdirName));
 
@@ -260,7 +260,7 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
 
         public KeyFilePathChecker()
         {
-            this(AESKeyFileEncrypterFactory.DEFAULT_KEYS_SUBDIR_NAME, "Broker_" + getTestName() + ".key");
+            this(AESGCMKeyFileEncrypterFactory.DEFAULT_KEYS_SUBDIR_NAME, "Broker_" + getTestName() + ".key");
         }
 
         public KeyFilePathChecker(final String subdirName, final String fileName)
