@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.store;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.message.EnqueueableMessage;
 
@@ -49,7 +49,7 @@ public interface Transaction
      *
      * @param val
      */
-    <X> ListenableFuture<X> commitTranAsync(final X val);
+    <X> CompletableFuture<X> commitTranAsync(final X val);
 
     /**
      * Abandons all operations performed within a given transactional context.
