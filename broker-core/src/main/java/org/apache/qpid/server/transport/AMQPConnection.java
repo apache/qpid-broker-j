@@ -25,10 +25,9 @@ import java.security.AccessControlContext;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
 
 import javax.security.auth.Subject;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.Broker;
@@ -123,7 +122,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
     void sendConnectionCloseAsync(CloseReason reason, String description);
 
     boolean isIOThread();
-    ListenableFuture<Void> doOnIOThreadAsync(final Runnable task);
+    CompletableFuture<Void> doOnIOThreadAsync(final Runnable task);
 
     void checkAuthorizedMessagePrincipal(String messageUserId);
 

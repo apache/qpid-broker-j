@@ -28,16 +28,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -121,16 +122,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     {
         final MessageDescription messageDescription = new MessageDescription();
         messageDescription.setMessageType(MessageDescription.MessageType.STREAM_MESSAGE);
-        messageDescription.setContent(Lists.newArrayList(true,
-                                                         (byte) -7,
-                                                         (short) 259,
-                                                         Integer.MAX_VALUE,
-                                                         Long.MAX_VALUE,
-                                                         37.5f,
-                                                         38.5,
-                                                         "testString",
-                                                         null,
-                                                         new byte[]{0x24, 0x00, (byte) 0xFF}));
+        messageDescription.setContent(Arrays.asList(true, (byte) -7, (short) 259, Integer.MAX_VALUE, Long.MAX_VALUE,
+                37.5f, 38.5, "testString", null, new byte[]{ 0x24, 0x00, (byte) 0xFF }));
 
         performSimpleTest(messageDescription);
     }
@@ -552,28 +545,33 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     private List<ClientResult> performTest(final List<ClientInstruction> publisherInstructions,
                                            final List<ClientInstruction> subscriberInstructions) throws Exception
     {
-        final ListenableFuture<ClientResult> publisherFuture = runPublisher(publisherInstructions);
-        final ListenableFuture<ClientResult> subscriberFuture = runSubscriber(subscriberInstructions);
-        try
-        {
-            return Futures.allAsList(publisherFuture, subscriberFuture).get(TEST_TIMEOUT, TimeUnit.MILLISECONDS);
-        }
-        catch (ExecutionException e)
-        {
-            final Throwable cause = e.getCause();
-            if (cause instanceof VerificationException)
-            {
-                throw new AssertionError("Client failed verification", cause);
-            }
-            else if (cause instanceof Exception)
-            {
-                throw ((Exception) cause);
-            }
-            else
-            {
-                throw e;
-            }
-        }
+        final CompletableFuture<ClientResult> publisherFuture = runPublisher(publisherInstructions);
+        final CompletableFuture<ClientResult> subscriberFuture = runSubscriber(subscriberInstructions);
+        return Stream.of(publisherFuture, subscriberFuture)
+                .map(future ->
+                {
+                    try
+                    {
+                        return future.get(TEST_TIMEOUT, TimeUnit.MILLISECONDS);
+                    }
+                    catch (ExecutionException | InterruptedException | TimeoutException e)
+                    {
+                        final Throwable cause = e.getCause();
+                        if (cause instanceof VerificationException)
+                        {
+                            throw new AssertionError("Client failed verification", cause);
+                        }
+                        else if (cause instanceof Exception)
+                        {
+                            throw new RuntimeException(cause);
+                        }
+                        else
+                        {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                })
+                .collect(Collectors.toList());
     }
 
     private List<ClientMessage> performProviderAssignedMessageIdTest(final Map<String, String> publisherConnectionUrlConfig) throws Exception

@@ -30,12 +30,11 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.sasl.SaslException;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
@@ -76,7 +75,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
 
     @Override
     @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.QUIESCED }, desiredState = State.ACTIVE )
-    protected ListenableFuture<Void> activate()
+    protected CompletableFuture<Void> activate()
     {
         _iterationCount = getContextValue(Integer.class, QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT);
         for(ManagedUser user : getUserMap().values())
