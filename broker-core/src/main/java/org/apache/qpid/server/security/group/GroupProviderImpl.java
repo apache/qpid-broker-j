@@ -25,9 +25,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.model.AbstractCaseAwareGroupProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -75,8 +73,8 @@ public class GroupProviderImpl extends AbstractCaseAwareGroupProvider<GroupProvi
     }
 
     @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
-                                                                             final Map<String, Object> attributes)
+    protected <C extends ConfiguredObject> CompletableFuture<C> addChildAsync(final Class<C> childClass,
+                                                                              final Map<String, Object> attributes)
     {
         if (childClass == Group.class)
         {
@@ -89,9 +87,9 @@ public class GroupProviderImpl extends AbstractCaseAwareGroupProvider<GroupProvi
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE)
-    private ListenableFuture<Void> activate()
+    private CompletableFuture<Void> activate()
     {
         setState(State.ACTIVE);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 }
