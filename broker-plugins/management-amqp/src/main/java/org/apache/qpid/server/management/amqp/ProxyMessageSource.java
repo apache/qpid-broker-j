@@ -27,11 +27,11 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.security.auth.Subject;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -283,7 +283,7 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
         }
 
         @Override
-        public ListenableFuture<Void> consumerRemoved(final MessageInstanceConsumer<WrappingTarget<T>> sub)
+        public CompletableFuture<Void> consumerRemoved(final MessageInstanceConsumer<WrappingTarget<T>> sub)
         {
             return _underlying.consumerRemoved(_consumer);
         }

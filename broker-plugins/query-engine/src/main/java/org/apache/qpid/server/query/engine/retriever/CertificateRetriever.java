@@ -21,13 +21,13 @@
 package org.apache.qpid.server.query.engine.retriever;
 
 import java.math.BigInteger;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.KeyStore;
@@ -58,37 +58,30 @@ public class CertificateRetriever<C extends ConfiguredObject<?>> extends Configu
     /**
      * List of entity field names
      */
-    private final List<String> _fieldNames = new ImmutableList.Builder<String>()
-        .add("store")
-        .add("alias")
-        .add("issuerName")
-        .add("serialNumber")
-        .add("hexSerialNumber")
-        .add("signatureAlgorithm")
-        .add("subjectAltNames")
-        .add("subjectName")
-        .add("validFrom")
-        .add("validUntil")
-        .add("version")
-        .build();
+    private final List<String> _fieldNames = Stream.of("store", "alias", "issuerName", "serialNumber", "hexSerialNumber",
+            "signatureAlgorithm", "subjectAltNames", "subjectName", "validFrom", "validUntil", "version")
+            .collect(Collectors.toList());
 
     /**
      * Mapping function for a CertificateDetails
      */
     private final BiFunction<ConfiguredObject<?>, CertificateDetails, Map<String, Object>> certificateMapping =
-        (ConfiguredObject<?> parent, CertificateDetails certificate) -> ImmutableMap.<String, Object>builder()
-            .put(_fieldNames.get(0), parent.getName())
-            .put(_fieldNames.get(1), certificate.getAlias() == null ? "null" : certificate.getAlias())
-            .put(_fieldNames.get(2), certificate.getIssuerName())
-            .put(_fieldNames.get(3), certificate.getSerialNumber())
-            .put(_fieldNames.get(4), toHex(certificate.getSerialNumber()))
-            .put(_fieldNames.get(5), certificate.getSignatureAlgorithm())
-            .put(_fieldNames.get(6), certificate.getSubjectAltNames())
-            .put(_fieldNames.get(7), certificate.getSubjectName())
-            .put(_fieldNames.get(8), certificate.getValidFrom())
-            .put(_fieldNames.get(9), certificate.getValidUntil())
-            .put(_fieldNames.get(10), certificate.getVersion())
-            .build();
+        (ConfiguredObject<?> parent, CertificateDetails certificate) ->
+        {
+            final Map<String, Object> map = new LinkedHashMap<>();
+            map.put(_fieldNames.get(0), parent.getName());
+            map.put(_fieldNames.get(1), certificate.getAlias() == null ? "null" : certificate.getAlias());
+            map.put(_fieldNames.get(2), certificate.getIssuerName());
+            map.put(_fieldNames.get(3), certificate.getSerialNumber());
+            map.put(_fieldNames.get(4), toHex(certificate.getSerialNumber()));
+            map.put(_fieldNames.get(5), certificate.getSignatureAlgorithm());
+            map.put(_fieldNames.get(6), certificate.getSubjectAltNames());
+            map.put(_fieldNames.get(7), certificate.getSubjectName());
+            map.put(_fieldNames.get(8), certificate.getValidFrom());
+            map.put(_fieldNames.get(9), certificate.getValidUntil());
+            map.put(_fieldNames.get(10), certificate.getVersion());
+            return Collections.unmodifiableMap(map);
+        };
 
     /**
      * Returns stream of CertificateDetails entities

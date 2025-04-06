@@ -40,10 +40,8 @@ import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -556,9 +554,9 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
         }
 
         @Override
-        protected ListenableFuture<Void> activate()
+        protected CompletableFuture<Void> activate()
         {
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
 
         @Override

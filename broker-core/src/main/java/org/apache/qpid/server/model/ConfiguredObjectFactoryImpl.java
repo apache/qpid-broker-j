@@ -25,8 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.plugin.ConfiguredObjectTypeFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
@@ -135,9 +134,9 @@ public class ConfiguredObjectFactoryImpl implements ConfiguredObjectFactory
 
 
     @Override
-    public <X extends ConfiguredObject<X>> ListenableFuture<X> createAsync(Class<X> clazz,
-                                                    final Map<String, Object> attributes,
-                                                    final ConfiguredObject<?> parent)
+    public <X extends ConfiguredObject<X>> CompletableFuture<X> createAsync(Class<X> clazz,
+                                                                            final Map<String, Object> attributes,
+                                                                            final ConfiguredObject<?> parent)
     {
         ConfiguredObjectTypeFactory<X> factory = getConfiguredObjectTypeFactory(clazz, attributes, parent);
 

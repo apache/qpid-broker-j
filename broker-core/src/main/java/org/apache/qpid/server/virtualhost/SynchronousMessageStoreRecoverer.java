@@ -24,9 +24,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +59,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
     private static final Logger LOGGER = LoggerFactory.getLogger(SynchronousMessageStoreRecoverer.class);
 
     @Override
-    public ListenableFuture<Void> recover(QueueManagingVirtualHost<?> virtualHost)
+    public CompletableFuture<Void> recover(QueueManagingVirtualHost<?> virtualHost)
     {
         EventLogger eventLogger = virtualHost.getEventLogger();
         MessageStore store = virtualHost.getMessageStore();
@@ -146,7 +145,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                              MessageStoreMessages.RECOVERED(recoveredMessages.size() - unusedMessages.size()));
         eventLogger.message(logSubject, MessageStoreMessages.RECOVERY_COMPLETE());
 
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

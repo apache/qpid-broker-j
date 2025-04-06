@@ -30,10 +30,8 @@ import java.security.PrivilegedAction;
 
 import javax.security.auth.Subject;
 
-import com.google.common.cache.Cache;
-
 import org.junit.jupiter.api.Test;
-
+import com.github.benmanes.caffeine.cache.Cache;
 import org.apache.qpid.server.model.VirtualHost;
 
 public class CacheFactoryTest
@@ -50,7 +48,7 @@ public class CacheFactoryTest
         subject.setReadOnly();
 
         final Cache<String, String> actualCache = Subject.doAs(subject, (PrivilegedAction<Cache<String, String>>) () ->
-                CacheFactory.getCache(cacheName,null));
+                CacheFactory.getCache(cacheName, null));
         assertSame(actualCache, cache);
         verify(virtualHost).getNamedCache(cacheName);
     }

@@ -27,8 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.nio.ByteBuffer;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +48,7 @@ class BBDecoderTest extends UnitTestBase
         final BBDecoder decoder = new BBDecoder();
         decoder.init(buffer);
         final Cache<Binary, String> original  = BBDecoder.getStringCache();
-        final Cache<Binary, String> cache = CacheBuilder.newBuilder().maximumSize(2).build();
+        final Cache<Binary, String> cache = Caffeine.newBuilder().maximumSize(2).build();
         try
         {
             BBDecoder.setStringCache(cache);
