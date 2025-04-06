@@ -26,9 +26,7 @@ import static org.mockito.Mockito.when;
 
 import java.security.Principal;
 import java.util.ArrayList;
-
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.message.MessageInstance;
@@ -185,10 +183,10 @@ public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
     }
 
     @Override
-    public ListenableFuture<Void> consumerRemoved(final MessageInstanceConsumer sub)
+    public CompletableFuture<Void> consumerRemoved(final MessageInstanceConsumer sub)
     {
         close();
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     public void setState(State state)

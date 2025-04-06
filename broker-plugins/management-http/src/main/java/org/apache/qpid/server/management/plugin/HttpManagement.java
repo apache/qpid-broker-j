@@ -34,10 +34,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.BiConsumer;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -50,9 +52,6 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
@@ -215,7 +214,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)
     @SuppressWarnings("unused")
-    private ListenableFuture<Void> doStart()
+    private CompletableFuture<Void> doStart()
     {
         final Collection<HttpPort<?>> httpPorts = getEligibleHttpPorts(getBroker().getPorts());
         if (httpPorts.isEmpty())
@@ -245,11 +244,11 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             getBroker().getEventLogger().message(ManagementConsoleMessages.READY(OPERATIONAL_LOGGING_NAME));
         }
         setState(State.ACTIVE);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    protected ListenableFuture<Void> onClose()
+    protected CompletableFuture<Void> onClose()
     {
         getBroker().removeChangeListener(_brokerChangeListener);
         if (_server != null)
@@ -270,7 +269,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             _jettyServerExecutor.shutdown();
         }
         getBroker().getEventLogger().message(ManagementConsoleMessages.STOPPED(OPERATIONAL_LOGGING_NAME));
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -1020,10 +1019,10 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                         LOGGER.debug("Connector has {} connection(s)", tracker.getConnectionCount());
 
                         final TaskExecutor taskExecutor = getBroker().getTaskExecutor();
-                        tracker.getAllClosedFuture().addListener(new Runnable()
+                        tracker.getAllClosedFuture().whenCompleteAsync(new BiConsumer<Void, Throwable>()
                         {
                             @Override
-                            public void run()
+                            public void accept(final Void unused, final Throwable throwable)
                             {
                                 final int connectionCount = tracker.getConnectionCount();
                                 if (connectionCount == 0)
@@ -1047,8 +1046,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                                 {
                                     LOGGER.debug("Connector still has {} connection(s)", tracker.getConnectionCount());
                                     connector.getConnectedEndPoints().forEach(endPoint -> endPoint.setIdleTimeout(1));
-                                    tracker.getAllClosedFuture()
-                                           .addListener(this, taskExecutor);
+                                    tracker.getAllClosedFuture().whenCompleteAsync(this, taskExecutor);
                                 }
                             }
                         }, taskExecutor);
@@ -1056,32 +1054,31 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                 }
             }
         }
-
     }
 
     private static class ConnectionTrackingListener implements Connection.Listener
     {
-        private final Map<Connection, SettableFuture<Void>> _closeFutures = new ConcurrentHashMap<>();
+        private final Map<Connection, CompletableFuture<Void>> _closeFutures = new ConcurrentHashMap<>();
 
         @Override
         public void onOpened(final Connection connection)
         {
-            _closeFutures.put(connection, SettableFuture.create());
+            _closeFutures.put(connection, new CompletableFuture<>());
         }
 
         @Override
         public void onClosed(final Connection connection)
         {
-            SettableFuture<Void> closeFuture = _closeFutures.remove(connection);
+            CompletableFuture<Void> closeFuture = _closeFutures.remove(connection);
             if (closeFuture != null)
             {
-                closeFuture.set(null);
+                closeFuture.complete(null);
             }
         }
 
-        public ListenableFuture<List<Void>> getAllClosedFuture()
+        public CompletableFuture<Void> getAllClosedFuture()
         {
-            return Futures.allAsList(_closeFutures.values());
+            return CompletableFuture.allOf(_closeFutures.values().toArray(new CompletableFuture[0]));
         }
 
         public int getConnectionCount()

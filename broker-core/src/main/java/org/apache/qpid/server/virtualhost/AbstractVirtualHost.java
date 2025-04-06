@@ -51,9 +51,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -67,12 +68,6 @@ import javax.security.auth.Subject;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.JdkFutureAdapters;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -694,51 +689,48 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     protected abstract MessageStore createMessageStore();
 
-    private ListenableFuture<List<Void>> createDefaultExchanges()
+    private CompletableFuture<Void> createDefaultExchanges()
     {
-        return Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<ListenableFuture<List<Void>>>()
+        return Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<CompletableFuture<Void>>()
         {
 
             @Override
-            public ListenableFuture<List<Void>> run()
+            public CompletableFuture<Void> run()
             {
-                List<ListenableFuture<Void>> standardExchangeFutures = new ArrayList<>();
+                List<CompletableFuture<Void>> standardExchangeFutures = new ArrayList<>();
                 standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.DIRECT_EXCHANGE_NAME, ExchangeDefaults.DIRECT_EXCHANGE_CLASS));
                 standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.TOPIC_EXCHANGE_NAME, ExchangeDefaults.TOPIC_EXCHANGE_CLASS));
                 standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.HEADERS_EXCHANGE_NAME, ExchangeDefaults.HEADERS_EXCHANGE_CLASS));
                 standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.FANOUT_EXCHANGE_NAME, ExchangeDefaults.FANOUT_EXCHANGE_CLASS));
-                return Futures.allAsList(standardExchangeFutures);
+                return CompletableFuture.allOf(standardExchangeFutures.toArray(CompletableFuture[]::new));
             }
 
-            ListenableFuture<Void> addStandardExchange(String name, String type)
+            CompletableFuture<Void> addStandardExchange(String name, String type)
             {
 
                 Map<String, Object> attributes = new HashMap<>();
                 attributes.put(Exchange.NAME, name);
                 attributes.put(Exchange.TYPE, type);
                 attributes.put(Exchange.ID, UUIDGenerator.generateExchangeUUID(name, getName()));
-                final ListenableFuture<Exchange<?>> future = addExchangeAsync(attributes);
-                final SettableFuture<Void> returnVal = SettableFuture.create();
-                addFutureCallback(future, new FutureCallback<>()
+                final CompletableFuture<Exchange<?>> future = addExchangeAsync(attributes);
+                final CompletableFuture<Void> returnVal = new CompletableFuture<>();
+                future.whenCompleteAsync((result, throwable) ->
                 {
-                    @Override
-                    public void onSuccess(final Exchange<?> result)
+                    if (throwable != null)
+                    {
+                        returnVal.completeExceptionally(throwable);
+                    }
+                    else
                     {
                         try
                         {
                             childAdded(result);
-                            returnVal.set(null);
+                            returnVal.complete(null);
                         }
                         catch (Throwable t)
                         {
-                            returnVal.setException(t);
+                            returnVal.completeExceptionally(t);
                         }
-                    }
-
-                    @Override
-                    public void onFailure(final Throwable t)
-                    {
-                        returnVal.setException(t);
                     }
                 }, getTaskExecutor());
 
@@ -860,7 +852,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
+    protected <C extends ConfiguredObject> CompletableFuture<C> addChildAsync(Class<C> childClass,
                                                                              Map<String, Object> attributes)
     {
         checkVHostStateIsActive();
@@ -877,15 +869,15 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public Map<String, Object> extractConfig(final boolean includeSecureAttributes)
     {
-        return doSync(doOnConfigThread(new Task<ListenableFuture<Map<String,Object>>, RuntimeException>()
+        return doSync(doOnConfigThread(new Task<CompletableFuture<Map<String,Object>>, RuntimeException>()
         {
             @Override
-            public ListenableFuture<Map<String, Object>> execute() throws RuntimeException
+            public CompletableFuture<Map<String, Object>> execute() throws RuntimeException
             {
                 ConfigurationExtractor configExtractor = new ConfigurationExtractor();
                 Map<String, Object> config = configExtractor.extractConfig(AbstractVirtualHost.this,
                                                                            includeSecureAttributes);
-                return Futures.immediateFuture(config);
+                return CompletableFuture.completedFuture(config);
             }
 
             @Override
@@ -920,10 +912,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         @Override
         public void write(final OutputStream outputStream) throws IOException
         {
-            doSync(doOnConfigThread(new Task<ListenableFuture<Void>, IOException>()
+            doSync(doOnConfigThread(new Task<CompletableFuture<Void>, IOException>()
             {
                 @Override
-                public ListenableFuture<Void> execute() throws IOException
+                public CompletableFuture<Void> execute() throws IOException
                 {
                     if (getState() != State.STOPPED)
                     {
@@ -950,7 +942,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     {
                         _messageStore.closeMessageStore();
                     }
-                    return Futures.immediateFuture(null);
+                    return CompletableFuture.completedFuture(null);
                 }
 
                 @Override
@@ -1025,10 +1017,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
                 final MessageStoreSerializer serializer = MessageStoreSerializer.FACTORY.newInstance(data);
 
-                doSync(doOnConfigThread(new Task<ListenableFuture<Void>, IOException>()
+                doSync(doOnConfigThread(new Task<CompletableFuture<Void>, IOException>()
                 {
                     @Override
-                    public ListenableFuture<Void> execute() throws IOException
+                    public CompletableFuture<Void> execute() throws IOException
                     {
                         if (getState() != State.STOPPED)
                         {
@@ -1056,7 +1048,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                         {
                             _messageStore.closeMessageStore();
                         }
-                        return Futures.immediateFuture(null);
+                        return CompletableFuture.completedFuture(null);
                     }
 
                     @Override
@@ -1398,27 +1390,25 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public ListenableFuture<Void> reallocateMessages()
+    public CompletableFuture<Void> reallocateMessages()
     {
         final ScheduledThreadPoolExecutor houseKeepingTaskExecutor = _houseKeepingTaskExecutor;
         if (houseKeepingTaskExecutor != null)
         {
             try
             {
-                final Future<Void> future = houseKeepingTaskExecutor.submit(() ->
-                                                                            {
-                                                                                final Collection<Queue> queues =
-                                                                                        getChildren(Queue.class);
-                                                                                for (Queue q : queues)
-                                                                                {
-                                                                                    if (q.getState() == State.ACTIVE)
-                                                                                    {
-                                                                                        q.reallocateMessages();
-                                                                                    }
-                                                                                }
-                                                                                return null;
-                                                                            });
-                return JdkFutureAdapters.listenInPoolThread(future);
+                return CompletableFuture.runAsync(() ->
+                                           {
+                                               final Collection<Queue> queues =
+                                                       getChildren(Queue.class);
+                                               for (Queue q : queues)
+                                               {
+                                                   if (q.getState() == State.ACTIVE)
+                                                   {
+                                                       q.reallocateMessages();
+                                                   }
+                                               }
+                                           }, houseKeepingTaskExecutor);
             }
             catch (RejectedExecutionException e)
             {
@@ -1428,7 +1418,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
             }
         }
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -1527,28 +1517,24 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         getChildren(Exchange.class).forEach(Exchange::resetStatistics);
     }
 
-    private ListenableFuture<Exchange<?>> addExchangeAsync(Map<String,Object> attributes)
+    private CompletableFuture<Exchange<?>> addExchangeAsync(Map<String,Object> attributes)
             throws ReservedExchangeNameException,
                    NoFactoryForTypeException
     {
-        final SettableFuture<Exchange<?>> returnVal = SettableFuture.create();
-        addFutureCallback(getObjectFactory().createAsync(Exchange.class, attributes, this),
-                            new FutureCallback<Exchange>()
-                            {
-                                @Override
-                                public void onSuccess(final Exchange result)
-                                {
-                                    returnVal.set(result);
-                                }
+        final CompletableFuture<Exchange<?>> returnVal = new CompletableFuture<>();
+        getObjectFactory().createAsync(Exchange.class, attributes, this).whenCompleteAsync((result, throwable) ->
+        {
+            if (throwable != null)
+            {
+                returnVal.completeExceptionally((Throwable) throwable);
+            }
+            else
+            {
+                returnVal.complete((Exchange<?>) result);
+            }
+        }, getTaskExecutor());
 
-                              @Override
-                              public void onFailure(final Throwable t)
-                              {
-                                  returnVal.setException(t);
-                              }
-                          }, getTaskExecutor());
         return returnVal;
-
     }
 
     @Override
@@ -1568,31 +1554,31 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    protected ListenableFuture<Void> beforeClose()
+    protected CompletableFuture<Void> beforeClose()
     {
         return beforeDeleteOrClose();
     }
 
     @Override
-    protected ListenableFuture<Void> onClose()
+    protected CompletableFuture<Void> onClose()
     {
         return onCloseOrDelete();
     }
 
     @Override
-    protected ListenableFuture<Void> beforeDelete()
+    protected CompletableFuture<Void> beforeDelete()
     {
         return beforeDeleteOrClose();
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         _deleteRequested  = true;
         return onCloseOrDelete();
     }
 
-    private ListenableFuture<Void> beforeDeleteOrClose()
+    private CompletableFuture<Void> beforeDeleteOrClose()
     {
         setState(State.UNAVAILABLE);
         _virtualHostLoggersToClose = new ArrayList<>(getChildren(VirtualHostLogger.class));
@@ -1600,7 +1586,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return closeConnections();
     }
 
-    private ListenableFuture<Void> onCloseOrDelete()
+    private CompletableFuture<Void> onCloseOrDelete()
     {
         _dtxRegistry.close();
         shutdownHouseKeeping();
@@ -1627,11 +1613,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _systemNodeRegistry.close();
 
         closeConnectionLimiter();
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
 
-    private ListenableFuture<Void> closeConnections()
+    private CompletableFuture<Void> closeConnections()
     {
         if (LOGGER.isDebugEnabled())
         {
@@ -1643,7 +1629,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             conn.stopConnection();
         }
 
-        List<ListenableFuture<Void>> connectionCloseFutures = new ArrayList<>();
+        List<CompletableFuture<Void>> connectionCloseFutures = new ArrayList<>();
         while (!_connections.isEmpty())
         {
             Iterator<AMQPConnection<?>> itr = _connections.iterator();
@@ -1664,8 +1650,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
             }
         }
-        ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(connectionCloseFutures);
-        return Futures.transform(combinedFuture, voids -> null, MoreExecutors.directExecutor());
+        CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(connectionCloseFutures.toArray(CompletableFuture[]::new));
+        return combinedFuture.thenApply(voids -> null);
     }
 
     private void closeMessageStore()
@@ -1770,12 +1756,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public <T extends LinkModel> T getSendingLink( String remoteContainerId, String linkName)
     {
-        return doSync(doOnConfigThread(new Task<ListenableFuture<T>, RuntimeException>()
+        return doSync(doOnConfigThread(new Task<CompletableFuture<T>, RuntimeException>()
         {
             @Override
-            public ListenableFuture<T> execute()
+            public CompletableFuture<T> execute()
             {
-                return Futures.immediateFuture((T)_linkRegistry.getSendingLink(remoteContainerId, linkName));
+                return CompletableFuture.completedFuture((T)_linkRegistry.getSendingLink(remoteContainerId, linkName));
             }
 
             @Override
@@ -1801,12 +1787,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public <T extends LinkModel> T getReceivingLink(String remoteContainerId, String linkName)
     {
-        return doSync(doOnConfigThread(new Task<ListenableFuture<T>, RuntimeException>()
+        return doSync(doOnConfigThread(new Task<CompletableFuture<T>, RuntimeException>()
         {
             @Override
-            public ListenableFuture<T> execute()
+            public CompletableFuture<T> execute()
             {
-                return Futures.immediateFuture((T)_linkRegistry.getReceivingLink(remoteContainerId, linkName));
+                return CompletableFuture.completedFuture((T)_linkRegistry.getReceivingLink(remoteContainerId, linkName));
             }
 
             @Override
@@ -1833,12 +1819,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public <T extends LinkModel> Collection<T> findSendingLinks(final Pattern containerIdPattern,
                                                                 final Pattern linkNamePattern)
     {
-        return doSync(doOnConfigThread(new Task<ListenableFuture<Collection<T>>, RuntimeException>()
+        return doSync(doOnConfigThread(new Task<CompletableFuture<Collection<T>>, RuntimeException>()
         {
             @Override
-            public ListenableFuture<Collection<T>> execute()
+            public CompletableFuture<Collection<T>> execute()
             {
-                return Futures.immediateFuture(_linkRegistry.findSendingLinks(containerIdPattern, linkNamePattern));
+                return CompletableFuture.completedFuture(_linkRegistry.findSendingLinks(containerIdPattern, linkNamePattern));
             }
 
             @Override
@@ -1864,13 +1850,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public <T extends LinkModel> void visitSendingLinks(final LinkRegistryModel.LinkVisitor<T> visitor)
     {
-        doSync(doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
+        doSync(doOnConfigThread(new Task<CompletableFuture<Void>, RuntimeException>()
         {
             @Override
-            public ListenableFuture<Void> execute()
+            public CompletableFuture<Void> execute()
             {
                 _linkRegistry.visitSendingLinks(visitor);
-                return Futures.immediateFuture(null);
+                return CompletableFuture.completedFuture(null);
             }
 
             @Override
@@ -2442,10 +2428,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.ACTIVE, State.ERRORED }, desiredState = State.STOPPED )
-    protected ListenableFuture<Void> doStop()
+    protected CompletableFuture<Void> doStop()
     {
         final List<VirtualHostLogger> loggers = new ArrayList<>(getChildren(VirtualHostLogger.class));
-        return doAfter(closeConnections(), () -> closeChildren()).then(() ->
+        return closeConnections().thenApplyAsync(result -> closeChildren(), getTaskExecutor()).thenRunAsync(() ->
         {
             shutdownHouseKeeping();
             closeNetworkConnectionScheduler();
@@ -2459,7 +2445,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             setState(State.STOPPED);
             stopLogging(loggers);
             closeConnectionLimiter();
-        });
+        }, getTaskExecutor());
     }
 
     @Override
@@ -2620,7 +2606,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
-    private ListenableFuture<Void> onActivate()
+    private CompletableFuture<Void> onActivate()
     {
 
         long threadPoolKeepAliveTimeout = getContextValue(Long.class, CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT);
@@ -2671,16 +2657,16 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         if (_createDefaultExchanges)
         {
-            return doAfter(createDefaultExchanges(), () ->
+            return createDefaultExchanges().thenRunAsync(() ->
             {
                 _createDefaultExchanges = false;
                 postCreateDefaultExchangeTasks();
-            });
+            }, getTaskExecutor());
         }
         else
         {
             postCreateDefaultExchangeTasks();
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
     }
 
@@ -2697,8 +2683,18 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         // propagate any exception thrown during recovery into HouseKeepingTaskExecutor to handle them accordingly
         // TODO if message recovery fails we ought to be transitioning the VH into ERROR and releasing the thread-pools etc.
-        final ListenableFuture<Void> recoveryResult = _messageStoreRecoverer.recover(this);
-        recoveryResult.addListener(() -> Futures.getUnchecked(recoveryResult), _houseKeepingTaskExecutor);
+        final CompletableFuture<Void> recoveryResult = _messageStoreRecoverer.recover(this);
+        recoveryResult.whenCompleteAsync((result, throwable) ->
+        {
+            try
+            {
+                recoveryResult.get();
+            }
+            catch (InterruptedException | ExecutionException e)
+            {
+                // do nothing
+            }
+        }, _houseKeepingTaskExecutor);
 
         State finalState = State.ERRORED;
         try
@@ -2740,35 +2736,31 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @StateTransition( currentState = { State.STOPPED }, desiredState = State.ACTIVE )
-    private ListenableFuture<Void> onRestart()
+    private CompletableFuture<Void> onRestart()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
+        final CompletableFuture<Void> returnVal = new CompletableFuture<>();
         try
         {
-            addFutureCallback(doRestart(), new FutureCallback<>()
-                              {
-                                  @Override
-                                  public void onSuccess(final Void result)
-                                  {
-                                      returnVal.set(null);
-                                  }
-
-                                  @Override
-                                  public void onFailure(final Throwable t)
-                                  {
-                                      doAfterAlways(onRestartFailure(), () -> returnVal.setException(t));
-                                  }
-                              }, getTaskExecutor()
-                             );
+            doRestart().whenCompleteAsync((result, throwable) ->
+            {
+                if (throwable != null)
+                {
+                    onRestartFailure().whenComplete((result1, throwable1) -> returnVal.completeExceptionally(throwable));
+                }
+                else
+                {
+                    returnVal.complete(null);
+                }
+                }, getTaskExecutor());
         }
         catch (IllegalArgumentException | IllegalConfigurationException e)
         {
-            doAfterAlways(onRestartFailure(), ()-> returnVal.setException(e));
+            onRestartFailure().whenComplete((result, throwable) -> returnVal.completeExceptionally(e));
         }
         return returnVal;
     }
 
-    private ListenableFuture<Void> doRestart()
+    private CompletableFuture<Void> doRestart()
     {
         createHousekeepingExecutor();
 
@@ -2782,27 +2774,20 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             accessControlProviders.forEach(child -> child.addChangeListener(_accessControlProviderListener));
         }
 
-        final List<ListenableFuture<Void>> childOpenFutures = new ArrayList<>();
+        final List<CompletableFuture<Void>> childOpenFutures = new ArrayList<>();
 
         Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () ->
         {
             applyToChildren(child ->
                             {
-                                final ListenableFuture<Void> childOpenFuture = child.openAsync();
+                                final CompletableFuture<Void> childOpenFuture = child.openAsync();
                                 childOpenFutures.add(childOpenFuture);
-
-                                addFutureCallback(childOpenFuture, new FutureCallback<>()
+                                childOpenFuture.whenCompleteAsync((result, throwable) ->
                                 {
-                                    @Override
-                                    public void onSuccess(final Void result)
-                                    {
-                                    }
-
-                                    @Override
-                                    public void onFailure(final Throwable t)
+                                    if (throwable != null)
                                     {
                                         LOGGER.error("Exception occurred while opening {} : {}",
-                                                     child.getClass().getSimpleName(), child.getName(), t);
+                                                     child.getClass().getSimpleName(), child.getName(), throwable);
                                         onRestartFailure();
                                     }
                                 }, getTaskExecutor());
@@ -2810,14 +2795,15 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             return null;
         });
 
-        ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(childOpenFutures);
-        return Futures.transformAsync(combinedFuture, input -> onActivate(), MoreExecutors.directExecutor());
+        CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(childOpenFutures.toArray(CompletableFuture[]::new));
+        return combinedFuture.thenAccept(result -> onActivate());
     }
 
-    private ChainedListenableFuture<Void> onRestartFailure()
+    private CompletableFuture<Void> onRestartFailure()
     {
         final List<VirtualHostLogger> loggers = new ArrayList<>(getChildren(VirtualHostLogger.class));
-        return doAfter(closeChildren(), () -> {
+        return closeChildren().thenRunAsync(() ->
+        {
             shutdownHouseKeeping();
             closeNetworkConnectionScheduler();
             if (_linkRegistry != null)
@@ -2830,7 +2816,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             setState(State.ERRORED);
             stopLogging(loggers);
             closeConnectionLimiter();
-        });
+        }, getTaskExecutor());
     }
 
     private class FileSystemSpaceChecker extends HouseKeepingTask
@@ -3026,10 +3012,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public Object dumpLinkRegistry()
     {
-        return doSync(doOnConfigThread(new Task<ListenableFuture<Object>, IOException>()
+        return doSync(doOnConfigThread(new Task<CompletableFuture<Object>, IOException>()
         {
             @Override
-            public ListenableFuture<Object> execute() throws IOException
+            public CompletableFuture<Object> execute() throws IOException
             {
                 Object dump;
                 if (getState() == State.STOPPED)
@@ -3060,7 +3046,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 {
                     throw new IllegalStateException("The dumpLinkRegistry operation can only be called when the virtual host is active or stopped.");
                 }
-                return Futures.immediateFuture(dump);
+                return CompletableFuture.completedFuture(dump);
             }
 
             @Override
@@ -3086,10 +3072,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public void purgeLinkRegistry(final String containerIdPatternString, final String role, final String linkNamePatternString)
     {
-        doSync(doOnConfigThread(new Task<ListenableFuture<Void>, IOException>()
+        doSync(doOnConfigThread(new Task<CompletableFuture<Void>, IOException>()
         {
             @Override
-            public ListenableFuture<Void> execute() throws IOException
+            public CompletableFuture<Void> execute() throws IOException
             {
                 if (getState() != State.STOPPED)
                 {
@@ -3113,7 +3099,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                         {
                             _linkRegistry.purgeReceivingLinks(containerIdPattern, linkNamePattern);
                         }
-                        return Futures.immediateFuture(null);
+                        return CompletableFuture.completedFuture(null);
                     }
                     finally
                     {

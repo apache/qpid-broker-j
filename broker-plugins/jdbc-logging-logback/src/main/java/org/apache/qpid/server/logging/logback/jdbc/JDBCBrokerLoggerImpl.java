@@ -22,12 +22,12 @@ package org.apache.qpid.server.logging.logback.jdbc;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.status.StatusManager;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.logback.AbstractBrokerLogger;
 import org.apache.qpid.server.logging.logback.BrokerLoggerStatusListener;
@@ -160,14 +160,14 @@ public class JDBCBrokerLoggerImpl extends AbstractBrokerLogger<JDBCBrokerLoggerI
     }
 
     @Override
-    protected ListenableFuture<Void> onClose()
+    protected CompletableFuture<Void> onClose()
     {
         onCloseOrDelete();
         return super.onClose();
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         onCloseOrDelete();
         return super.onDelete();

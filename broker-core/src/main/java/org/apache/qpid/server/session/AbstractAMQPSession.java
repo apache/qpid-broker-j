@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,8 +35,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -199,7 +198,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         removeDeleteTask(_deleteModelTask);
         return super.onDelete();
@@ -308,10 +307,10 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     public abstract boolean isClosing();
 
     @Override
-    public ListenableFuture<Void> doOnIOThreadAsync(final Runnable task)
+    public CompletableFuture<Void> doOnIOThreadAsync(final Runnable task)
     {
-        final ListenableFuture<Void> future = getAMQPConnection().doOnIOThreadAsync(task);
-        return doAfter(MoreExecutors.directExecutor(), future, () -> getAMQPConnection().notifyWork(AbstractAMQPSession.this));
+        return getAMQPConnection().doOnIOThreadAsync(task)
+                .whenComplete((result, error) -> getAMQPConnection().notifyWork(AbstractAMQPSession.this));
     }
 
     @Override

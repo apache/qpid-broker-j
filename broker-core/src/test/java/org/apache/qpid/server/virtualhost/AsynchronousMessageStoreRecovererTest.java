@@ -38,9 +38,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -89,7 +89,7 @@ public class AsynchronousMessageStoreRecovererTest extends UnitTestBase
         when(_virtualHost.getChildren(eq(Queue.class))).thenReturn(Set.of(queue));
 
         final AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
-        final ListenableFuture<Void> result = recoverer.recover(_virtualHost);
+        final CompletableFuture<Void> result = recoverer.recover(_virtualHost);
         final ExecutionException thrown = assertThrows(ExecutionException.class,
                 result::get,
                 "ServerScopedRuntimeException should be rethrown");
@@ -103,7 +103,7 @@ public class AsynchronousMessageStoreRecovererTest extends UnitTestBase
         when(_virtualHost.getChildren(eq(Queue.class))).thenReturn(Set.of(queue));
 
         final AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
-        final ListenableFuture<Void> result = recoverer.recover(_virtualHost);
+        final CompletableFuture<Void> result = recoverer.recover(_virtualHost);
         assertNull(result.get());
     }
 
@@ -134,7 +134,7 @@ public class AsynchronousMessageStoreRecovererTest extends UnitTestBase
         when(_store.newMessageStoreReader()).thenReturn(storeReader);
 
         final AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
-        final ListenableFuture<Void> result = recoverer.recover(_virtualHost);
+        final CompletableFuture<Void> result = recoverer.recover(_virtualHost);
         assertNull(result.get());
 
         verify(orphanedMessage, times(1)).remove();

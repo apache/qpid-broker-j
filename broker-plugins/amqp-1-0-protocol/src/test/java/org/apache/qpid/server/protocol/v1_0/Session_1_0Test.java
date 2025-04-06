@@ -38,11 +38,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import javax.security.auth.Subject;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -824,10 +823,10 @@ class Session_1_0Test extends UnitTestBase
         when(connection.getDescribedTypeRegistry()).thenReturn(DESCRIBED_TYPE_REGISTRY);
         when(connection.getMaxFrameSize()).thenReturn(512);
         final ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
-        when(connection.doOnIOThreadAsync(runnableCaptor.capture())).thenAnswer((Answer<ListenableFuture<Void>>) invocation ->
+        when(connection.doOnIOThreadAsync(runnableCaptor.capture())).thenAnswer((Answer<CompletableFuture<Void>>) invocation ->
         {
             runnableCaptor.getValue().run();
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         });
         final AggregateTicker mockTicker = mock(AggregateTicker.class);
         when(connection.getAggregateTicker()).thenReturn(mockTicker);

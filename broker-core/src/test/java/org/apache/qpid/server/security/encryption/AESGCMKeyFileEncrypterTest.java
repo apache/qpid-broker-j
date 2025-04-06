@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import javax.crypto.SecretKeyFactory;
@@ -48,7 +49,6 @@ import javax.crypto.spec.SecretKeySpec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.SettableFuture;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -280,13 +280,13 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
                 SystemConfig.TYPE, JsonSystemConfigImpl.SYSTEM_CONFIG_TYPE,
                 SystemConfig.STARTUP_LOGGED_TO_SYSTEM_OUT, Boolean.FALSE,
                 SystemConfig.CONTEXT, context);
-        final SettableFuture<SystemConfig<?>> configFuture = SettableFuture.create();
+        final CompletableFuture<SystemConfig<?>> configFuture = new CompletableFuture<>();
         _systemLauncher = new SystemLauncher(new SystemLauncherListener.DefaultSystemLauncherListener()
         {
             @Override
             public void onContainerResolve(final SystemConfig<?> systemConfig)
             {
-                configFuture.set(systemConfig);
+                configFuture.complete(systemConfig);
             }
         });
         _systemLauncher.startup(attributes);
