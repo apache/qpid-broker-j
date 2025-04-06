@@ -31,8 +31,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.collect.ImmutableMap;
-
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -104,14 +102,13 @@ public class FromExpression<T, R extends Stream<?>, C extends ConfiguredObject<?
     /**
      * Additional domains allowed to be queried
      */
-    private final Map<Class<?>, EntityRetriever<C>> _allowedClasses = ImmutableMap.<Class<?>, EntityRetriever<C>> builder()
-        .put(AclRule.class, _aclRuleRetriever)
-        .put(Binding.class, _bindingRetriever)
-        .put(Certificate.class, _certificateRetriever)
-        .put(ConnectionLimitRule.class, _connectionLimitRuleRetriever)
-        .put(Domain.class, _domainRetriever)
-        .put(Session.class, _sessionRetriever)
-        .build();
+    private final Map<Class<?>, EntityRetriever<C>> _allowedClasses = Map.of(
+            AclRule.class, _aclRuleRetriever,
+            Binding.class, _bindingRetriever,
+            Certificate.class, _certificateRetriever,
+            ConnectionLimitRule.class, _connectionLimitRuleRetriever,
+            Domain.class, _domainRetriever,
+            Session.class, _sessionRetriever);
 
     /**
      * Domain name
@@ -175,7 +172,7 @@ public class FromExpression<T, R extends Stream<?>, C extends ConfiguredObject<?
             if (_category.isAssignableFrom(Domain.class))
             {
                 return (R) Stream.concat(
-                    _allowedClasses.keySet().stream().map(type -> ImmutableMap.<String, Object> builder().put("name", type.getSimpleName()).build()),
+                    _allowedClasses.keySet().stream().map(type -> Map.of("name", type.getSimpleName())),
                     _allowedClasses.get(_category).retrieve((C) _broker)
                 );
             }

@@ -23,15 +23,13 @@ package org.apache.qpid.server.store.berkeleydb;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.google.common.util.concurrent.AbstractFuture;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.sleepycat.je.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +80,7 @@ public class CoalescingCommiter implements Committer
     }
 
     @Override
-    public <X> ListenableFuture<X> commitAsync(Transaction tx, X val)
+    public <X> CompletableFuture<X> commitAsync(Transaction tx, X val)
     {
         ThreadNotifyingSettableFuture<X> future = new ThreadNotifyingSettableFuture<>();
         BDBCommitFutureResult<X> commitFuture = new BDBCommitFutureResult<>(val, future);
@@ -106,13 +104,13 @@ public class CoalescingCommiter implements Committer
         @Override
         public void complete()
         {
-            _future.set(_value);
+            _future.complete(_value);
         }
 
         @Override
         public void abort(RuntimeException databaseException)
         {
-            _future.setException(databaseException);
+            _future.completeExceptionally(databaseException);
         }
     }
 
@@ -295,7 +293,7 @@ public class CoalescingCommiter implements Committer
         }
     }
 
-    private final class ThreadNotifyingSettableFuture<X> extends AbstractFuture<X>
+    private final class ThreadNotifyingSettableFuture<X> extends CompletableFuture<X>
     {
         @Override
         public X get(final long timeout, final TimeUnit unit)
@@ -319,22 +317,15 @@ public class CoalescingCommiter implements Committer
         }
 
         @Override
-        protected boolean set(final X value)
+        public boolean complete(final X value)
         {
-            return super.set(value);
+            return super.complete(value);
         }
 
         @Override
-        protected boolean setException(final Throwable throwable)
+        public boolean completeExceptionally(final Throwable throwable)
         {
-            return super.setException(throwable);
-        }
-
-        @Override
-        public void addListener(final Runnable listener, final Executor exec)
-        {
-            super.addListener(listener, exec);
-            _commitThread.explicitNotify();
+            return super.completeExceptionally(throwable);
         }
     }
 

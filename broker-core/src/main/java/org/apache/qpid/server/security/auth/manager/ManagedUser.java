@@ -23,8 +23,7 @@ package org.apache.qpid.server.security.auth.manager;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.messages.AuthenticationProviderMessages;
@@ -77,7 +76,7 @@ class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         _authenticationManager.getUserMap().remove(getName());
         return super.onDelete();

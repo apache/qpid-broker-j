@@ -41,7 +41,6 @@ import java.nio.InvalidMarkException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import com.google.common.io.ByteStreams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -531,7 +530,7 @@ public class QpidByteBufferTest extends UnitTestBase
         final ByteArrayOutputStream destination = new ByteArrayOutputStream();
         try (final InputStream is = _slicedBuffer.asInputStream())
         {
-            ByteStreams.copy(is, destination);
+            is.transferTo(destination);
         }
 
         final byte[] expected =  new byte[source.length - 2];

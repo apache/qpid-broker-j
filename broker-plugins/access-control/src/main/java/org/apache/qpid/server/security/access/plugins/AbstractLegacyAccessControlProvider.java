@@ -21,9 +21,8 @@
 package org.apache.qpid.server.security.access.plugins;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +85,7 @@ abstract class AbstractLegacyAccessControlProvider<X extends AbstractLegacyAcces
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE)
     @SuppressWarnings("unused")
-    private ListenableFuture<Void> activate()
+    private CompletableFuture<Void> activate()
     {
 
         final boolean isManagementMode = getModel().getAncestor(SystemConfig.class, this).isManagementMode();
@@ -107,7 +106,7 @@ abstract class AbstractLegacyAccessControlProvider<X extends AbstractLegacyAcces
                 throw e;
             }
         }
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
 

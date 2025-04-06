@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.server.store.berkeleydb.replication;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.util.concurrent.SettableFuture;
 import com.sleepycat.je.rep.ReplicatedEnvironment.State;
 import com.sleepycat.je.rep.StateChangeEvent;
 import com.sleepycat.je.rep.StateChangeListener;
@@ -32,7 +32,7 @@ import com.sleepycat.je.rep.StateChangeListener;
 class TestStateChangeListener implements StateChangeListener
 {
     private final AtomicReference<State> _expectedState = new AtomicReference<>();
-    private final AtomicReference<SettableFuture<Void>> _currentFuture = new AtomicReference<>(SettableFuture.create());
+    private final AtomicReference<CompletableFuture<Void>> _currentFuture = new AtomicReference<>(new CompletableFuture<>());
     private final AtomicReference<State> _currentState = new AtomicReference<>();
 
     @Override
@@ -42,7 +42,7 @@ class TestStateChangeListener implements StateChangeListener
         _currentState.set(newState);
         if (_expectedState.get() == newState)
         {
-            _currentFuture.get().set(null);
+            _currentFuture.get().complete(null);
         }
     }
 
@@ -55,11 +55,11 @@ class TestStateChangeListener implements StateChangeListener
         }
         else
         {
-            final SettableFuture<Void> future = SettableFuture.create();
+            final CompletableFuture<Void> future = new CompletableFuture<>();
             _currentFuture.set(future);
             if (desiredState == _currentState.get())
             {
-                future.set(null);
+                future.complete(null);
             }
 
             try

@@ -22,8 +22,7 @@ package org.apache.qpid.server.model;
 
 import java.util.Collection;
 import java.util.Map;
-
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.plugin.ConfiguredObjectTypeFactory;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
@@ -36,7 +35,7 @@ public interface ConfiguredObjectFactory
 
     <X extends ConfiguredObject<X>> X create(Class<X> clazz, Map<String, Object> attributes, ConfiguredObject<?> parent);
 
-    <X extends ConfiguredObject<X>> ListenableFuture<X> createAsync(Class<X> clazz, Map<String, Object> attributes, ConfiguredObject<?> parent);
+    <X extends ConfiguredObject<X>> CompletableFuture<X> createAsync(Class<X> clazz, Map<String, Object> attributes, ConfiguredObject<?> parent);
 
     <X extends ConfiguredObject<X>> ConfiguredObjectTypeFactory<X> getConfiguredObjectTypeFactory(String category,
                                                                                                   String type);

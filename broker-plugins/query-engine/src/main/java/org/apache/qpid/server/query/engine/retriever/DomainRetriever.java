@@ -20,12 +20,9 @@
  */
 package org.apache.qpid.server.query.engine.retriever;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
-import com.google.common.collect.ImmutableMap;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -42,7 +39,7 @@ public class DomainRetriever<C extends ConfiguredObject<?>> extends ConfiguredOb
     /**
      * List of entity field names
      */
-    private final List<String> _fieldNames = Collections.singletonList("name");
+    private final List<String> _fieldNames = List.of("name");
 
     /**
      * Returns stream of Domain entities
@@ -55,7 +52,7 @@ public class DomainRetriever<C extends ConfiguredObject<?>> extends ConfiguredOb
     public Stream<Map<String, ?>> retrieve(final C broker)
     {
         return broker.getModel().getDescendantCategories(Broker.class).stream()
-            .map(type -> ImmutableMap.<String, Object> builder().put("name", type.getSimpleName()).build());
+            .map(type -> Map.of("name", type.getSimpleName()));
     }
 
     /**

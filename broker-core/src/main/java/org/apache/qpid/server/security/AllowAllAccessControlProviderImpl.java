@@ -21,9 +21,7 @@
 package org.apache.qpid.server.security;
 
 import java.util.Map;
-
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.Outcome;
@@ -75,20 +73,20 @@ public class AllowAllAccessControlProviderImpl extends AbstractConfiguredObject<
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE)
     @SuppressWarnings("unused")
-    private ListenableFuture<Void> activate()
+    private CompletableFuture<Void> activate()
     {
 
         setState(_broker.isManagementMode() ? State.QUIESCED : State.ACTIVE);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
 
     @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
     @SuppressWarnings("unused")
-    private ListenableFuture<Void> startQuiesced()
+    private CompletableFuture<Void> startQuiesced()
     {
         setState(State.QUIESCED);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

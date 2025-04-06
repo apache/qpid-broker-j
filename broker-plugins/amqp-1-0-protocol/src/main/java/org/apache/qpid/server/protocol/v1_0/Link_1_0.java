@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
@@ -29,7 +29,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 
 public interface Link_1_0<S extends BaseSource, T extends BaseTarget> extends LinkDefinition<S, T>
 {
-    ListenableFuture<? extends LinkEndpoint<S, T>> attach(Session_1_0 session, final Attach attach);
+    CompletableFuture<? extends LinkEndpoint<S, T>> attach(Session_1_0 session, final Attach attach);
 
     void linkClosed();
 

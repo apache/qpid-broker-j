@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -41,8 +42,6 @@ import javax.jms.MapMessage;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
-
-import com.google.common.util.concurrent.SettableFuture;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -205,12 +204,12 @@ public class TransactionTimeoutTest extends JmsTestBase
 
     private static class ExceptionCatchingListener implements ExceptionListener
     {
-        private final SettableFuture<JMSException> _future = SettableFuture.create();
+        private final CompletableFuture<JMSException> _future = new CompletableFuture<>();
 
         @Override
         public void onException(final JMSException exception)
         {
-            _future.set(exception);
+            _future.complete(exception);
         }
 
         void assertConnectionExceptionReported(final long time, final TimeUnit timeUnit) throws Exception
