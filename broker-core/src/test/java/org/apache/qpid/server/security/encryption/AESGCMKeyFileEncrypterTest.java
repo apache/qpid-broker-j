@@ -188,10 +188,10 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
     @Test
     public void testChangeOfEncryptionToGCM() throws Exception
     {
-        createBrokerAndAuthenticationProviderWithEncrypterPassword(AESKeyFileEncrypterFactory.TYPE);
+        createBrokerAndAuthenticationProviderWithEncrypterPassword(AESGCMKeyFileEncrypterFactory.TYPE);
         final String aesEncryptedPassword = getEncryptedPasswordFromConfig();
         final SecretKeySpec aesSecretKey = new SecretKeySpec(getBrokerSecretKey(), "AES");
-        final AESKeyFileEncrypter cbcEncrypter = new AESKeyFileEncrypter(aesSecretKey);
+        final AESGCMKeyFileEncrypter cbcEncrypter = new AESGCMKeyFileEncrypter(aesSecretKey);
         final String aesDecryptedPassword = cbcEncrypter.decrypt(aesEncryptedPassword);
         assertEquals(SECRET, aesDecryptedPassword, "Decrypted text doesnt match original");
         _broker.setAttributes(Map.of(
@@ -231,9 +231,9 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
         final String gcmDecryptedPassword = gcmEncrypter.decrypt(gcmEncryptedPassword);
         assertEquals(SECRET, gcmDecryptedPassword, "Decrypted text doesnt match original");
         _broker.setAttributes(Map.of(
-                Broker.CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER, "AESKeyFile"));
+                Broker.CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER, "AESGCMKeyFile"));
         final String cbcEncryptedPassword = getEncryptedPasswordFromConfig();
-        final AESKeyFileEncrypter cbcEncrypter = new AESKeyFileEncrypter(aesSecretKey);
+        final AESGCMKeyFileEncrypter cbcEncrypter = new AESGCMKeyFileEncrypter(aesSecretKey);
         final String cbcDecryptedPassword = cbcEncrypter.decrypt(cbcEncryptedPassword);
         assertEquals(SECRET, cbcDecryptedPassword, "Decrypted text doesnt match original");
     }
