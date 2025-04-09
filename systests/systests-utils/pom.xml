@@ -56,11 +56,6 @@
             <artifactId>qpid-broker-plugins-memory-store</artifactId>
         </dependency>
 
-
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>

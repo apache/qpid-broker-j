@@ -22,17 +22,14 @@
 package org.apache.qpid.server.message.mimecontentconverter;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +40,7 @@ public class MimeContentConverterRegistry
     private static final Logger LOGGER = LoggerFactory.getLogger(MimeContentConverterRegistry.class);
     private static final String SEQUENCED_MAP = "java.util.SequencedMap";
     private static final Map<String, MimeContentToObjectConverter> _mimeContentToObjectConverters;
-    private static final Multimap<Class, ObjectToMimeContentConverter> _classToMimeContentConverters;
+    private static final Map<Class, List<ObjectToMimeContentConverter>> _classToMimeContentConverters;
 
     static
     {
@@ -51,13 +48,16 @@ public class MimeContentConverterRegistry
         _mimeContentToObjectConverters = buildMimeContentToObjectMap();
     }
 
-    private static Multimap<Class, ObjectToMimeContentConverter> buildClassToMimeConverters()
+    private MimeContentConverterRegistry() { }
+
+    private static Map<Class, List<ObjectToMimeContentConverter>> buildClassToMimeConverters()
     {
-        Multimap<Class, ObjectToMimeContentConverter> classToMineConverters = HashMultimap.create();
+        Map<Class, List<ObjectToMimeContentConverter>> classToMineConverters = new HashMap<>();
         Iterable<ObjectToMimeContentConverter> objectToMimeContentConverters = new QpidServiceLoader().instancesOf(ObjectToMimeContentConverter.class);
         for(ObjectToMimeContentConverter converter : objectToMimeContentConverters)
         {
             Class objectClass = converter.getObjectClass();
+            classToMineConverters.computeIfAbsent(objectClass, key -> new ArrayList<>()).add(converter);
             for(ObjectToMimeContentConverter existing : classToMineConverters.get(objectClass))
             {
                 if (existing.getRank() == converter.getRank())
@@ -70,12 +70,10 @@ public class MimeContentConverterRegistry
                                 existing.getClass().getName(),
                                 converter.getClass().getName());
                 }
-
             }
-            classToMineConverters.put(objectClass, converter);
         }
-        classToMineConverters.put(Void.class, new IdentityConverter());
-        return ImmutableMultimap.copyOf(classToMineConverters);
+        classToMineConverters.put(Void.class, List.of(new IdentityConverter()));
+        return Map.copyOf(classToMineConverters);
     }
 
     private static Map<String, MimeContentToObjectConverter> buildMimeContentToObjectMap()
@@ -104,45 +102,36 @@ public class MimeContentConverterRegistry
 
     public static ObjectToMimeContentConverter getBestFitObjectToMimeContentConverter(Object object)
     {
-        ObjectToMimeContentConverter converter = null;
-        if (object != null)
+        if (object == null)
         {
-            final List<Class<?>> classes = Stream.of(object.getClass().getInterfaces())
-                    // Java 21 compatibility fix
-                    .flatMap(anInterface -> SEQUENCED_MAP.equals(anInterface.getName()) ? Stream.of(anInterface.getInterfaces()) : Stream.of(anInterface))
-                    .collect(Collectors.toList());
-            classes.add(object.getClass());
-            for (Class<?> i : classes)
-            {
-                for (ObjectToMimeContentConverter candidate : _classToMimeContentConverters.get(i))
-                {
-                    if (candidate.isAcceptable(object))
-                    {
-                        if (converter == null || candidate.getRank() > converter.getRank())
-                        {
-                            converter = candidate;
-                        }
-                    }
-                }
-            }
+            return null;
         }
-        return converter;
+
+        final List<Class<?>> classes = Stream.of(object.getClass().getInterfaces())
+                // Java 21 compatibility fix
+                .flatMap(anInterface -> SEQUENCED_MAP.equals(anInterface.getName()) ? Stream.of(anInterface.getInterfaces()) : Stream.of(anInterface))
+                .collect(Collectors.toList());
+        classes.add(object.getClass());
+
+        return findBestConverter(object, classes.stream().flatMap(type ->
+                _classToMimeContentConverters.getOrDefault(type, List.of()).stream()));
     }
 
     public static ObjectToMimeContentConverter getBestFitObjectToMimeContentConverter(Object object, Class<?> typeHint)
     {
-        ObjectToMimeContentConverter converter = null;
-        for (ObjectToMimeContentConverter candidate : _classToMimeContentConverters.get(typeHint))
+        if (typeHint == null)
         {
-            if (candidate.isAcceptable(object))
-            {
-                if (converter == null || candidate.getRank() > converter.getRank())
-                {
-                    converter = candidate;
-                }
-            }
+            return null;
         }
+        return findBestConverter(object, _classToMimeContentConverters.getOrDefault(typeHint, List.of()).stream());
+    }
 
-        return converter;
+    private static ObjectToMimeContentConverter findBestConverter(final Object object,
+                                                                  final Stream<ObjectToMimeContentConverter> converters)
+    {
+        return converters
+                .filter(candidate -> candidate.isAcceptable(object))
+                .max(Comparator.comparing(ObjectToMimeContentConverter::getRank))
+                .orElse(null);
     }
 }

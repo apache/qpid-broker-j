@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +39,7 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
 import org.apache.qpid.server.util.FileHelper;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.util.StringUtil;
 
 /**
  * A group database that reads/writes the following file format:
@@ -287,7 +287,7 @@ public class FileGroupDatabase implements GroupDatabase
         for (String group : _groupToUserMap.keySet())
         {
             Set<String> users = _groupToUserMap.get(keySearch(_groupToUserMap.keySet(), group));
-            final String userList = Joiner.on(",").useForNull("").join(users);
+            final String userList = StringUtil.join(users, ",", "");
 
             propertiesFile.setProperty(group + ".users", userList);
         }

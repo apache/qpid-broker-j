@@ -27,8 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
-import com.google.common.collect.Streams;
-
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -37,6 +35,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 class PrefixTreeTest extends UnitTestBase
 {
@@ -855,7 +854,7 @@ class PrefixTreeTest extends UnitTestBase
     {
         assertNotNull(tree);
 
-        final List<String> list = Streams.stream(tree).collect(Collectors.toList());
+        final List<String> list = StreamSupport.stream(tree.spliterator(), false).collect(Collectors.toList());
         assertEquals(Arrays.asList(strings), list);
 
         final Iterator<String> iterator = tree.iterator();

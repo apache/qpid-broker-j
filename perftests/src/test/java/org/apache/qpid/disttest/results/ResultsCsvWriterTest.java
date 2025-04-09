@@ -25,9 +25,8 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
-
-import com.google.common.io.Resources;
 
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.results.aggregation.ITestResult;
@@ -75,19 +74,21 @@ public class ResultsCsvWriterTest extends UnitTestBase
         _resultsFileWriter.writeResults(results1, "config1.json");
 
         File resultsFile1 = new File(_outputDir, "config1.csv");
-
-        assertEquals(expectedCsvContents1, Resources.toString(resultsFile1.toURI().toURL(), StandardCharsets.UTF_8));
+        final String result1 = new String(Files.readAllBytes(resultsFile1.toPath()), StandardCharsets.UTF_8);
+        assertEquals(expectedCsvContents1, result1);
 
         _resultsFileWriter.writeResults(results2, "config2.json");
 
         File resultsFile2 = new File(_outputDir, "config2.csv");
-        assertEquals(expectedCsvContents2, Resources.toString(resultsFile2.toURI().toURL(), StandardCharsets.UTF_8));
+        final String result2 = new String(Files.readAllBytes(resultsFile2.toPath()), StandardCharsets.UTF_8);
+        assertEquals(expectedCsvContents2, result2);
 
         when(_csvFormater.format(any(List.class))).thenReturn(expectedSummaryFileContents);
 
         _resultsFileWriter.end();
 
         File summaryFile = new File(_outputDir, ResultsCsvWriter.TEST_SUMMARY_FILE_NAME);
-        assertEquals(expectedSummaryFileContents, Resources.toString(summaryFile.toURI().toURL(), StandardCharsets.UTF_8));
+        final String result = new String(Files.readAllBytes(summaryFile.toPath()), StandardCharsets.UTF_8);
+        assertEquals(expectedSummaryFileContents, result);
     }
 }

@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 
 import org.apache.qpid.server.configuration.CommonProperties;
 
-import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -95,22 +94,22 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
     @Test
     public void testUpgradeVirtualHostWithJDBCStoreAndBoneCPPool()
     {
-        final Map<String, Object> hostAttributes = ImmutableMap.<String, Object>builder()
-                .put("name", VIRTUALHOST_NAME)
-                .put("modelVersion", "0.4")
-                .put("connectionPool", "BONECP")
-                .put("connectionURL", "jdbc:derby://localhost:1527/tmp/vh/test;create=true")
-                .put("createdBy", VIRTUALHOST_CREATED_BY)
-                .put("createdTime", VIRTUALHOST_CREATE_TIME)
-                .put("maxConnectionsPerPartition", 7)
-                .put("minConnectionsPerPartition", 6)
-                .put("partitionCount", 2)
-                .put("storeType", "jdbc")
-                .put("type", "STANDARD")
-                .put("jdbcBigIntType", "mybigint")
-                .put("jdbcBlobType", "myblob")
-                .put("jdbcVarbinaryType", "myvarbinary")
-                .put("jdbcBytesForBlob", true).build();
+        final Map<String, Object> hostAttributes = new HashMap<>();
+        hostAttributes.put("name", VIRTUALHOST_NAME);
+        hostAttributes.put("modelVersion", "0.4");
+        hostAttributes.put("connectionPool", "BONECP");
+        hostAttributes.put("connectionURL", "jdbc:derby://localhost:1527/tmp/vh/test;create=true");
+        hostAttributes.put("createdBy", VIRTUALHOST_CREATED_BY);
+        hostAttributes.put("createdTime", VIRTUALHOST_CREATE_TIME);
+        hostAttributes.put("maxConnectionsPerPartition", 7);
+        hostAttributes.put("minConnectionsPerPartition", 6);
+        hostAttributes.put("partitionCount", 2);
+        hostAttributes.put("storeType", "jdbc");
+        hostAttributes.put("type", "STANDARD");
+        hostAttributes.put("jdbcBigIntType", "mybigint");
+        hostAttributes.put("jdbcBlobType", "myblob");
+        hostAttributes.put("jdbcVarbinaryType", "myvarbinary");
+        hostAttributes.put("jdbcBytesForBlob", true);
 
         final ConfiguredObjectRecord virtualHostRecord = new ConfiguredObjectRecordImpl(randomUUID(), "VirtualHost",
                 hostAttributes, Map.of("Broker", _brokerRecord.getId()));
@@ -153,20 +152,19 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
     @Test
     public void testUpgradeVirtualHostWithJDBCStoreAndDefaultPool()
     {
-        final Map<String, Object> hostAttributes = ImmutableMap.<String, Object>builder()
-                .put("name", VIRTUALHOST_NAME)
-                .put("modelVersion", "0.4")
-                .put("connectionPool", "DEFAULT")
-                .put("connectionURL", "jdbc:derby://localhost:1527/tmp/vh/test;create=true")
-                .put("createdBy", VIRTUALHOST_CREATED_BY)
-                .put("createdTime", VIRTUALHOST_CREATE_TIME)
-                .put("storeType", "jdbc")
-                .put("type", "STANDARD")
-                .put("jdbcBigIntType", "mybigint")
-                .put("jdbcBlobType", "myblob")
-                .put("jdbcVarbinaryType", "myvarbinary")
-                .put("jdbcBytesForBlob", true).build();
-
+        final Map<String, Object> hostAttributes = new HashMap<>();
+        hostAttributes.put("name", VIRTUALHOST_NAME);
+        hostAttributes.put("modelVersion", "0.4");
+        hostAttributes.put("connectionPool", "DEFAULT");
+        hostAttributes.put("connectionURL", "jdbc:derby://localhost:1527/tmp/vh/test;create=true");
+        hostAttributes.put("createdBy", VIRTUALHOST_CREATED_BY);
+        hostAttributes.put("createdTime", VIRTUALHOST_CREATE_TIME);
+        hostAttributes.put("storeType", "jdbc");
+        hostAttributes.put("type", "STANDARD");
+        hostAttributes.put("jdbcBigIntType", "mybigint");
+        hostAttributes.put("jdbcBlobType", "myblob");
+        hostAttributes.put("jdbcVarbinaryType", "myvarbinary");
+        hostAttributes.put("jdbcBytesForBlob", true);
 
         final ConfiguredObjectRecord virtualHostRecord = new ConfiguredObjectRecordImpl(randomUUID(), "VirtualHost",
                 hostAttributes, Map.of("Broker", _brokerRecord.getId()));
@@ -261,21 +259,21 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
     @Test
     public void testUpgradeVirtualHostWithBDBHAStore()
     {
-        final Map<String, Object> hostAttributes = ImmutableMap.<String, Object>builder()
-                .put("name", VIRTUALHOST_NAME)
-                .put("modelVersion", "0.4")
-                .put("createdBy", VIRTUALHOST_CREATED_BY)
-                .put("createdTime", VIRTUALHOST_CREATE_TIME)
-                .put("type", "BDB_HA")
-                .put("storePath", "/tmp/vh/bdbha")
-                .put("haCoalescingSync", "true")
-                .put("haDesignatedPrimary", "true")
-                .put("haGroupName", "ha")
-                .put("haHelperAddress", "localhost:7000")
-                .put("haNodeAddress", "localhost:7000")
-                .put("haNodeName", "n1")
-                .put("haReplicationConfig", Map.of("je.stats.collect", "false"))
-                .put("bdbEnvironmentConfig", Map.of("je.rep.feederTimeout", "1 m")).build();
+        final Map<String, Object> hostAttributes = new HashMap<>();
+        hostAttributes.put("name", VIRTUALHOST_NAME);
+        hostAttributes.put("modelVersion", "0.4");
+        hostAttributes.put("createdBy", VIRTUALHOST_CREATED_BY);
+        hostAttributes.put("createdTime", VIRTUALHOST_CREATE_TIME);
+        hostAttributes.put("type", "BDB_HA");
+        hostAttributes.put("storePath", "/tmp/vh/bdbha");
+        hostAttributes.put("haCoalescingSync", "true");
+        hostAttributes.put("haDesignatedPrimary", "true");
+        hostAttributes.put("haGroupName", "ha");
+        hostAttributes.put("haHelperAddress", "localhost:7000");
+        hostAttributes.put("haNodeAddress", "localhost:7000");
+        hostAttributes.put("haNodeName", "n1");
+        hostAttributes.put("haReplicationConfig", Map.of("je.stats.collect", "false"));
+        hostAttributes.put("bdbEnvironmentConfig", Map.of("je.rep.feederTimeout", "1 m"));
 
         final ConfiguredObjectRecord virtualHostRecord = new ConfiguredObjectRecordImpl(randomUUID(), "VirtualHost",
                 hostAttributes, Map.of("Broker", _brokerRecord.getId()));
@@ -289,18 +287,18 @@ public class BrokerStoreUpgraderAndRecovererTest extends UnitTestBase
         final Map<String,Object> expectedContext = Map.of("je.stats.collect", "false",
                 "je.rep.feederTimeout", "1 m");
 
-        final Map<String,Object> expectedAttributes = ImmutableMap.<String, Object>builder()
-                .put("createdBy", VIRTUALHOST_CREATED_BY)
-                .put("createdTime", VIRTUALHOST_CREATE_TIME)
-                .put("type", "BDB_HA")
-                .put("storePath", "/tmp/vh/bdbha")
-                .put("designatedPrimary", "true")
-                .put("groupName", "ha")
-                .put("address", "localhost:7000")
-                .put("helperAddress", "localhost:7000")
-                .put("name", "n1")
-                .put("context", expectedContext)
-                .put("defaultVirtualHostNode", "true").build();
+        final Map<String,Object> expectedAttributes = new HashMap<>();
+        expectedAttributes.put("createdBy", VIRTUALHOST_CREATED_BY);
+        expectedAttributes.put("createdTime", VIRTUALHOST_CREATE_TIME);
+        expectedAttributes.put("type", "BDB_HA");
+        expectedAttributes.put("storePath", "/tmp/vh/bdbha");
+        expectedAttributes.put("designatedPrimary", "true");
+        expectedAttributes.put("groupName", "ha");
+        expectedAttributes.put("address", "localhost:7000");
+        expectedAttributes.put("helperAddress", "localhost:7000");
+        expectedAttributes.put("name", "n1");
+        expectedAttributes.put("context", expectedContext);
+        expectedAttributes.put("defaultVirtualHostNode", "true");
 
         assertEquals(expectedAttributes, upgradedVirtualHostNodeRecord.getAttributes(), "Unexpected attributes");
         assertBrokerRecord(records);

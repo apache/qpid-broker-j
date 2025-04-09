@@ -23,11 +23,9 @@ package org.apache.qpid.server.model;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.session.AbstractAMQPSession;
@@ -96,14 +94,14 @@ public class ProducerImpl<X extends Producer<X>>
 
     @SuppressWarnings("unused")
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
-    private ListenableFuture<Void> activate()
+    private CompletableFuture<Void> activate()
     {
         setState(State.ACTIVE);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public ListenableFuture<Void> deleteNoChecks()
+    public CompletableFuture<Void> deleteNoChecks()
     {
         return super.deleteNoChecks();
     }

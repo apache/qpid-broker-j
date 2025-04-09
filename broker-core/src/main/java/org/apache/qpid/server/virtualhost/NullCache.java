@@ -21,14 +21,14 @@
 package org.apache.qpid.server.virtualhost;
 
 import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheStats;
-import com.google.common.collect.ImmutableMap;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Policy;
+import com.github.benmanes.caffeine.cache.stats.CacheStats;
 
 public class NullCache<K, V> implements Cache<K, V>
 {
@@ -39,59 +39,64 @@ public class NullCache<K, V> implements Cache<K, V>
     }
 
     @Override
-    public V get(final K key, final Callable<? extends V> loader) throws ExecutionException
+    public V get(final K key, final Function<? super K, ? extends V> mappingFunction)
     {
-        try
-        {
-            return loader.call();
-        }
-        catch (Exception e)
-        {
-            throw new ExecutionException(e);
-        }
+        return null;
     }
 
     @Override
-    public ImmutableMap<K, V> getAllPresent(final Iterable<?> keys)
+    public Map<K, V> getAllPresent(final Iterable<? extends K> keys)
     {
-        return ImmutableMap.of();
+        return Map.of();
+    }
+
+    @Override
+    public Map<K, V> getAll(final Iterable<? extends K> keys,
+                            final Function<? super Set<? extends K>, ? extends Map<? extends K, ? extends V>> mappingFunction)
+    {
+        return Map.of();
     }
 
     @Override
     public void put(final K key, final V value)
     {
+        // no logic intended
     }
 
     @Override
-    public void putAll(final Map<? extends K, ? extends V> m)
+    public void putAll(final Map<? extends K, ? extends V> map)
     {
+        // no logic intended
     }
 
     @Override
     public void invalidate(final Object key)
     {
-    }
-
-    @Override
-    public void invalidateAll(final Iterable<?> keys)
-    {
+        // no logic intended
     }
 
     @Override
     public void invalidateAll()
     {
+        // no logic intended
     }
 
     @Override
-    public long size()
+    public void invalidateAll(final Iterable<? extends K> keys)
     {
-        return 0;
+        // no logic intended
+    }
+
+    @Override
+    public long estimatedSize()
+    {
+        return 0L;
     }
 
     @Override
     public CacheStats stats()
     {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
@@ -103,5 +108,12 @@ public class NullCache<K, V> implements Cache<K, V>
     @Override
     public void cleanUp()
     {
+        // no logic intended
+    }
+
+    @Override
+    public Policy<K, V> policy()
+    {
+        return null;
     }
 }

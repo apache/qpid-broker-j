@@ -25,9 +25,9 @@ import java.util.Set;
 
 import org.apache.qpid.server.security.access.config.predicates.TestFirewallRule;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
+import org.apache.qpid.server.util.CollectionUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-import com.google.common.collect.Iterables;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -171,7 +171,7 @@ class AclRulePredicatesTest extends UnitTestBase
 
         predicates = _builder.put(Property.ROUTING_KEY, null).build(_firewallRuleFactory);
         assertEquals(1, predicates.get(Property.ROUTING_KEY).size());
-        assertEquals("*", Iterables.getOnlyElement(predicates.get(Property.ROUTING_KEY)));
+        assertEquals("*", CollectionUtils.getOnlyElement(predicates.get(Property.ROUTING_KEY)));
     }
 
     @Test
@@ -182,7 +182,7 @@ class AclRulePredicatesTest extends UnitTestBase
 
         predicates = _builder.put(QUEUE_NAME, " ").build(_firewallRuleFactory);
         assertEquals(1, predicates.get(QUEUE_NAME).size());
-        assertEquals("*", Iterables.getOnlyElement(predicates.get(QUEUE_NAME)));
+        assertEquals("*", CollectionUtils.getOnlyElement(predicates.get(QUEUE_NAME)));
     }
 
     @Test
@@ -201,10 +201,10 @@ class AclRulePredicatesTest extends UnitTestBase
         assertEquals(1, predicates.get(Property.TEMPORARY).size());
         assertEquals(1, predicates.get(Property.EXCLUSIVE).size());
         assertEquals(1, predicates.get(Property.AUTO_DELETE).size());
-        assertEquals(Boolean.TRUE, Iterables.getOnlyElement(predicates.get(DURABLE)));
-        assertEquals(Boolean.FALSE, Iterables.getOnlyElement(predicates.get(Property.TEMPORARY)));
-        assertEquals(Boolean.TRUE, Iterables.getOnlyElement(predicates.get(Property.EXCLUSIVE)));
-        assertEquals(Boolean.FALSE, Iterables.getOnlyElement(predicates.get(Property.AUTO_DELETE)));
+        assertEquals(Boolean.TRUE, CollectionUtils.getOnlyElement(predicates.get(DURABLE)));
+        assertEquals(Boolean.FALSE, CollectionUtils.getOnlyElement(predicates.get(Property.TEMPORARY)));
+        assertEquals(Boolean.TRUE, CollectionUtils.getOnlyElement(predicates.get(Property.EXCLUSIVE)));
+        assertEquals(Boolean.FALSE, CollectionUtils.getOnlyElement(predicates.get(Property.AUTO_DELETE)));
     }
 
     @Test
@@ -217,7 +217,7 @@ class AclRulePredicatesTest extends UnitTestBase
                 .put(DURABLE, "*")
                 .build(_firewallRuleFactory);
         assertEquals(1, predicates.get(DURABLE).size());
-        assertEquals("*", Iterables.getOnlyElement(predicates.get(DURABLE)));
+        assertEquals("*", CollectionUtils.getOnlyElement(predicates.get(DURABLE)));
 
         final IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
                 () -> _builder.put(DURABLE, "X*"),
@@ -233,7 +233,7 @@ class AclRulePredicatesTest extends UnitTestBase
 
         predicates = _builder.put(Property.TYPE, "EX ").build(_firewallRuleFactory);
         assertEquals(1, predicates.get(Property.TYPE).size());
-        assertEquals("EX", Iterables.getOnlyElement(predicates.get(Property.TYPE)));
+        assertEquals("EX", CollectionUtils.getOnlyElement(predicates.get(Property.TYPE)));
     }
 
     @Test

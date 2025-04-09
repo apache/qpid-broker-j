@@ -30,7 +30,6 @@ import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
-import com.google.common.base.StandardSystemProperty;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
@@ -43,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.TokenCarryingPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
+import org.apache.qpid.server.util.SystemProperties;
 
 public class SpnegoAuthenticator
 {
@@ -160,7 +160,7 @@ public class SpnegoAuthenticator
         {
 
             final int credentialLifetime;
-            if (String.valueOf(System.getProperty(StandardSystemProperty.JAVA_VENDOR.key()))
+            if (String.valueOf(System.getProperty(SystemProperties.JAVA_VENDOR))
                       .toUpperCase()
                       .contains("IBM"))
             {

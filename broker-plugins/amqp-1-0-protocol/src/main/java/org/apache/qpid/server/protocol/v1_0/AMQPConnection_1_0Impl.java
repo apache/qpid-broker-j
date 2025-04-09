@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import static com.google.common.util.concurrent.Futures.allAsList;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_ENFORCEMENT_POLICY;
 
 import java.net.SocketAddress;
@@ -43,16 +42,14 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
-import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ResourceLimitMessages;
@@ -131,6 +128,8 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.PeekingIterator;
+import org.apache.qpid.server.util.PeekingIteratorImpl;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
@@ -449,7 +448,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         if (!channelFrameBodies.isEmpty())
         {
-            final PeekingIterator<ChannelFrameBody> itr = Iterators.peekingIterator(channelFrameBodies.iterator());
+            final PeekingIterator<ChannelFrameBody> itr = new PeekingIteratorImpl(channelFrameBodies.iterator());
             boolean cleanExit = false;
             try
             {
@@ -856,7 +855,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         final Map<Symbol, Object> remoteProperties = open.getProperties() == null
                 ? Map.of()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(open.getProperties()));
-        _remoteDesiredCapabilities = open.getDesiredCapabilities() == null ? Set.of() : Sets.newHashSet(open.getDesiredCapabilities());
+        _remoteDesiredCapabilities = open.getDesiredCapabilities() == null ? Set.of() : Stream.of(open.getDesiredCapabilities())
+                .collect(Collectors.toSet());
         if (remoteProperties.containsKey(Symbol.valueOf("product")))
         {
             setClientProduct(remoteProperties.get(Symbol.valueOf("product")).toString());
@@ -994,7 +994,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             error.setInfo(Map.of(Symbol.valueOf("sole-connection-enforcement"), true));
 
             final EventLogger logger = getEventLogger();
-            final List<ListenableFuture<Void>> rescheduleFutures = new ArrayList<>();
+            final List<CompletableFuture<Void>> rescheduleFutures = new ArrayList<>();
             for (final AMQPConnection_1_0<?> connection : e.getExistingConnections())
             {
                 if (!connection.isClosing())
@@ -1006,7 +1006,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                             String.format("Closing existing connection '%s'", connection.getName()), e.getMessage()));
                 }
             }
-            doAfter(allAsList(rescheduleFutures), () -> doOnIOThreadAsync(() -> receiveOpenInternal(addressSpace)));
+            CompletableFuture.allOf(rescheduleFutures.toArray(CompletableFuture[]::new))
+                    .thenRunAsync(() -> doOnIOThreadAsync(() -> receiveOpenInternal(addressSpace)), getTaskExecutor());
         }
     }
 

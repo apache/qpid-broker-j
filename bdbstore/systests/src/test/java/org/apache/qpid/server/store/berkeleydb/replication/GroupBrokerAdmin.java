@@ -31,8 +31,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -41,11 +43,6 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.sleepycat.je.rep.ReplicationConfig;
 
 import org.apache.qpid.server.virtualhostnode.AbstractVirtualHostNode;
@@ -68,7 +65,7 @@ public class GroupBrokerAdmin
     private static final String HOST = "127.0.0.1";
 
     private GroupMember[] _members;
-    private ListeningExecutorService _executorService;
+    private ExecutorService _executorService;
     private SpawnBrokerAdmin[] _brokers;
     private String _groupName;
 
@@ -77,7 +74,7 @@ public class GroupBrokerAdmin
         GroupConfig runBrokerAdmin = (GroupConfig) testClass.getAnnotation(GroupConfig.class);
         int numberOfNodes = runBrokerAdmin == null ? 2 : runBrokerAdmin.numberOfNodes();
         _groupName = runBrokerAdmin == null ? "test-ha" : runBrokerAdmin.groupName();
-        _executorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(numberOfNodes));
+        _executorService = Executors.newFixedThreadPool(numberOfNodes);
 
         _brokers = Stream.generate(SpawnBrokerAdmin::new).limit(numberOfNodes).toArray(SpawnBrokerAdmin[]::new);
 
@@ -85,8 +82,9 @@ public class GroupBrokerAdmin
         try
         {
             int startupTimeout = Integer.getInteger(SYSTEST_PROPERTY_SPAWN_BROKER_STARTUP_TIME, 30000);
-            awaitFuture(startupTimeout, invokeParallel(Arrays.stream(_brokers).map(a -> (Callable<Void>) () -> {
-                a.beforeTestClass(testClass);
+            awaitFuture(startupTimeout, invokeParallel(Arrays.stream(_brokers).map(admin -> (Callable<Void>) () ->
+            {
+                admin.beforeTestClass(testClass);
                 return null;
             }).collect(Collectors.toList())));
 
@@ -113,7 +111,7 @@ public class GroupBrokerAdmin
         GroupMember first = _members[0];
         first.getAdmin().beforeTestMethod(_members[0].getName(), NODE_TYPE, _members[0].getNodeAttributes());
         awaitNodeRoleReplicaOrMaster(first);
-        ListenableFuture<Void> f;
+        CompletableFuture<Void> f;
         if (_members.length > 2)
         {
             f = invokeParallel(Arrays.stream(_members).skip(1).map(m -> (Callable<Void>) () -> {
@@ -128,7 +126,7 @@ public class GroupBrokerAdmin
                 _members[i].getAdmin()
                            .beforeTestMethod(_members[i].getName(), NODE_TYPE, _members[i].getNodeAttributes());
             }
-            f = Futures.immediateFuture(null);
+            f = CompletableFuture.completedFuture(null);
         }
 
         awaitFuture(WAIT_LIMIT, f);
@@ -169,7 +167,7 @@ public class GroupBrokerAdmin
         }
     }
 
-    public ListenableFuture<Void> restart()
+    public CompletableFuture<Void> restart()
     {
         awaitFuture(WAIT_LIMIT, invokeParallel(Arrays.stream(_members).map(m -> (Callable<Void>) () -> {
             m.getAdmin().restart();
@@ -177,7 +175,7 @@ public class GroupBrokerAdmin
         }).collect(Collectors.toList())));
         awaitAllTransitionIntoReplicaOrMaster();
 
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     public void stop()
@@ -400,23 +398,25 @@ public class GroupBrokerAdmin
                              String.format("Could not find node by amqp port %d", amqpPort)));
     }
 
-    private <T> ListenableFuture<T> invokeParallel(Collection<Callable<T>> tasks)
+    private <T> CompletableFuture<T> invokeParallel(Collection<Callable<T>> tasks)
     {
-        try
-        {
-            @SuppressWarnings("unchecked")
-            List<ListenableFuture<T>> futures = (List) _executorService.invokeAll(tasks);
-            ListenableFuture<List<T>> combinedFuture = Futures.allAsList(futures);
-            return Futures.transform(combinedFuture, input -> null, _executorService);
-        }
-        catch (InterruptedException e)
-        {
-            Thread.interrupted();
-            return Futures.immediateFailedFuture(e);
-        }
+        final List<CompletableFuture<T>> futures = tasks.stream()
+                .map(task -> CompletableFuture.supplyAsync(() ->
+                {
+                    try
+                    {
+                        return task.call();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }}, _executorService))
+                .collect(Collectors.toList());
+        final CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));
+        return combinedFuture.thenComposeAsync(input -> CompletableFuture.completedFuture(null), _executorService);
     }
 
-    private <T> void awaitFuture(long waitLimit, ListenableFuture<T> future)
+    private <T> void awaitFuture(long waitLimit, CompletableFuture<T> future)
     {
         try
         {
@@ -448,8 +448,8 @@ public class GroupBrokerAdmin
 
         if (roles.values().stream().noneMatch(role -> ROLE_MASTER.equals(role) || ROLE_REPLICA.equals(role)))
         {
-            throw new BrokerAdminException("Unexpected node roles " + Joiner.on(", ").withKeyValueSeparator(" -> ")
-                                                                            .join(roles));
+            throw new BrokerAdminException("Unexpected node roles " + roles.entrySet().stream()
+                    .map(entry -> entry.getKey() + " -> " + entry.getValue()).collect(Collectors.joining(", ")));
         }
     }
 

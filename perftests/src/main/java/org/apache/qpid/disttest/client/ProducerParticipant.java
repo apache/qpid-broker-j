@@ -19,6 +19,7 @@
  */
 package org.apache.qpid.disttest.client;
 
+import java.time.Duration;
 import java.util.Date;
 import java.util.NavigableSet;
 import java.util.TreeSet;
@@ -27,10 +28,13 @@ import java.util.concurrent.TimeUnit;
 
 import javax.jms.Message;
 
-import com.google.common.util.concurrent.RateLimiter;
 import org.apache.qpid.disttest.jms.ClientJmsDelegate;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.apache.qpid.disttest.message.ParticipantResult;
+
+import io.github.resilience4j.ratelimiter.RateLimiter;
+import io.github.resilience4j.ratelimiter.RateLimiterConfig;
+import io.github.resilience4j.ratelimiter.internal.AtomicRateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +68,22 @@ public class ProducerParticipant implements Participant
         _batchSize = _command.getBatchSize();
         _acknowledgeMode = _jmsDelegate.getAcknowledgeMode(_command.getSessionName());
         final double rate = _command.getRate();
-        _rateLimiter = (rate > 0 ? RateLimiter.create(rate) : null);
+        if (rate > 0)
+        {
+            final int period = rate < 10 ? 1000 : 100;
+            final int limitForPeriod = (int) (rate * period / 1000);
+            final RateLimiterConfig config = RateLimiterConfig
+                    .custom()
+                    .limitForPeriod(limitForPeriod)
+                    .limitRefreshPeriod(Duration.ofMillis(period))
+                    .timeoutDuration(Duration.ofMillis(0))
+                    .build();
+            _rateLimiter = new AtomicRateLimiter("limiter", config);
+        }
+        else
+        {
+            _rateLimiter = null;
+        }
     }
 
     @Override
@@ -84,9 +103,8 @@ public class ProducerParticipant implements Participant
         {
             if (_rateLimiter != null)
             {
-                _rateLimiter.acquire();
+                _rateLimiter.acquirePermission();
             }
-
             if (_collectData)
             {
                 if (startTime == 0)

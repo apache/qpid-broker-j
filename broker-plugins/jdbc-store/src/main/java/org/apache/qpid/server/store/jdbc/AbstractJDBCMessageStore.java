@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -48,10 +49,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -77,6 +74,7 @@ import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.server.txn.Xid;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.CachingUUIDFactory;
+import org.apache.qpid.server.util.CollectionUtils;
 
 public abstract class AbstractJDBCMessageStore implements MessageStore
 {
@@ -554,7 +552,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
                 try
                 {
-                    for (List<Long> boundMessageIds : Lists.partition(messageIds, _inClauseMaxSize))
+                    for (List<Long> boundMessageIds : CollectionUtils.partitions(messageIds, _inClauseMaxSize))
                     {
                         removeMessagesFromDatabase(conn, boundMessageIds);
                     }
@@ -929,19 +927,19 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
     }
 
-    private <X> ListenableFuture<X> commitTranAsync(final ConnectionWrapper connWrapper, final X val) throws StoreException
+    private <X> CompletableFuture<X> commitTranAsync(final ConnectionWrapper connWrapper, final X val) throws StoreException
     {
-        final SettableFuture<X> future = SettableFuture.create();
+        final CompletableFuture<X> future = new CompletableFuture<>();
         _executor.submit(() ->
         {
             try
             {
                 commitTran(connWrapper);
-                future.set(val);
+                future.complete(val);
             }
             catch (RuntimeException e)
             {
-                future.setException(e);
+                future.completeExceptionally(e);
             }
         });
         return future;
@@ -1274,11 +1272,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public <X> ListenableFuture<X> commitTranAsync(final X val)
+        public <X> CompletableFuture<X> commitTranAsync(final X val)
         {
             checkMessageStoreOpen();
             doPreCommitActions();
-            ListenableFuture<X> futureResult = AbstractJDBCMessageStore.this.commitTranAsync(_connWrapper, val);
+            CompletableFuture<X> futureResult = AbstractJDBCMessageStore.this.commitTranAsync(_connWrapper, val);
             storedSizeChange(_storeSizeIncrease);
             doPostCommitActions();
             return futureResult;
@@ -1646,7 +1644,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             }
         }
 
-        synchronized ListenableFuture<Void> flushToStore()
+        synchronized CompletableFuture<Void> flushToStore()
         {
             if (_messageDataRef != null)
             {
@@ -1665,7 +1663,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 }
 
             }
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
 
         @Override

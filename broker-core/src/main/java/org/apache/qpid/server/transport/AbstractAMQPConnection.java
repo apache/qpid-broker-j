@@ -35,6 +35,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,9 +43,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.security.auth.Subject;
 import javax.security.auth.SubjectDomainCombiner;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,8 +103,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     private final long _connectionId;
     private final AggregateTicker _aggregateTicker;
     private final Subject _subject = new Subject();
-    private final List<Action<? super C>> _connectionCloseTaskList =
-            new CopyOnWriteArrayList<>();
+    private final List<Action<? super C>> _connectionCloseTaskList = new CopyOnWriteArrayList<>();
 
     private final LogSubject _logSubject;
     private volatile ContextProvider _contextProvider;
@@ -128,8 +125,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     private final AtomicLong _localTransactionRollbacks = new AtomicLong();
     private final AtomicLong _localTransactionOpens = new AtomicLong();
 
-    private final SettableFuture<Void> _transportClosedFuture = SettableFuture.create();
-    private final SettableFuture<Void> _modelTransportRendezvousFuture = SettableFuture.create();
+    private final CompletableFuture<Void> _transportClosedFuture = new CompletableFuture<>();
+    private final CompletableFuture<Void> _modelTransportRendezvousFuture = new CompletableFuture<>();
     private volatile NamedAddressSpace _addressSpace;
     private volatile long _lastReadTime;
     private volatile long _lastWriteTime;
@@ -175,11 +172,11 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
         updateAccessControllerContext();
 
-        _transportClosedFuture.addListener(
-                () -> {
-                    _modelTransportRendezvousFuture.set(null);
-                    doAfter(closeAsync(), this::logConnectionClose);
-                }, getTaskExecutor());
+        _transportClosedFuture.thenRunAsync(() ->
+        {
+            _modelTransportRendezvousFuture.complete(null);
+            closeAsync().whenCompleteAsync((result, error) -> logConnectionClose(), getTaskExecutor());
+        }, getTaskExecutor());
 
         setState(State.ACTIVE);
         _logSubject = new ConnectionLogSubject(this);
@@ -527,27 +524,27 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     }
 
     @Override
-    public ListenableFuture<Void> doOnIOThreadAsync(final Runnable task)
+    public CompletableFuture<Void> doOnIOThreadAsync(final Runnable task)
     {
         if (isIOThread())
         {
             task.run();
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
         else
         {
-            final SettableFuture<Void> future = SettableFuture.create();
+            final CompletableFuture<Void> future = new CompletableFuture<>();
 
             addAsyncTask(object ->
             {
                 try
                 {
                     task.run();
-                    future.set(null);
+                    future.complete(null);
                 }
                 catch (RuntimeException e)
                 {
-                    future.setException(e);
+                    future.completeExceptionally(e);
                 }
             });
             return future;
@@ -653,28 +650,28 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         return closeAsyncIfNotAlreadyClosing();
     }
 
     @Override
-    protected ListenableFuture<Void> beforeClose()
+    protected CompletableFuture<Void> beforeClose()
     {
         return closeAsyncIfNotAlreadyClosing();
     }
 
     @Override
-    protected ListenableFuture<Void> onClose()
+    protected CompletableFuture<Void> onClose()
     {
         if (_transactionObserver != null)
         {
             _transactionObserver.reset();
         }
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
-    private ListenableFuture<Void> closeAsyncIfNotAlreadyClosing()
+    private CompletableFuture<Void> closeAsyncIfNotAlreadyClosing()
     {
         if (!_modelTransportRendezvousFuture.isDone())
         {
@@ -684,10 +681,10 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     }
 
     @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
-                                                                          Map<String, Object> attributes)
+    protected <C extends ConfiguredObject> CompletableFuture<C> addChildAsync(Class<C> childClass,
+                                                                              Map<String, Object> attributes)
     {
-        if(childClass == Session.class)
+        if (childClass == Session.class)
         {
             throw new IllegalStateException();
         }
@@ -695,7 +692,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         {
             throw new IllegalArgumentException("Cannot create a child of class " + childClass.getSimpleName());
         }
-
     }
 
     @Override
@@ -833,7 +829,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     protected void markTransportClosed()
     {
-        _transportClosedFuture.set(null);
+        _transportClosedFuture.complete(null);
     }
 
     public LogSubject getLogSubject()

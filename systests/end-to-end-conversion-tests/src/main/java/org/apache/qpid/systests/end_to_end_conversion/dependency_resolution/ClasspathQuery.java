@@ -31,9 +31,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
@@ -57,17 +56,10 @@ public class ClasspathQuery
     {
         _mavenRepositorySystem = Booter.newRepositorySystem();
         _mavenRepositorySession = Booter.newRepositorySystemSession(_mavenRepositorySystem);
-        _classpathCache = CacheBuilder.newBuilder()
-                                      .maximumSize(8)
-                                      .recordStats()
-                                      .build(new CacheLoader<>()
-                                      {
-                                          @Override
-                                          public List<File> load(final Collection<String> key)
-                                          {
-                                              return doBuildClassPath(key);
-                                          }
-                                      });
+        _classpathCache = Caffeine.newBuilder()
+                                  .maximumSize(8)
+                                  .recordStats()
+                                  .build(ClasspathQuery::doBuildClassPath);
     }
 
     private final Class<?> _clientClass;
@@ -153,7 +145,7 @@ public class ClasspathQuery
     private String buildClassPath(final Class<?> clientClazz, final Collection<String> gavs)
     {
         final List<File> classpathElements = new ArrayList<>();
-        final List<File> cached = _classpathCache.getUnchecked(gavs);
+        final List<File> cached = _classpathCache.get(gavs);
         if (cached != null)
         {
             classpathElements.addAll(cached);

@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.google.common.cache.Cache;
+import com.github.benmanes.caffeine.cache.Cache;
 
 import org.apache.qpid.server.virtualhost.CacheFactory;
 import org.apache.qpid.server.virtualhost.NullCache;

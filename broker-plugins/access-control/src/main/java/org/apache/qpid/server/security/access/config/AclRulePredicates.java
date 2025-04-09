@@ -31,9 +31,8 @@ import java.util.stream.Collectors;
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
-
-import com.google.common.base.Joiner;
-import com.google.common.collect.Iterables;
+import org.apache.qpid.server.util.CollectionUtils;
+import org.apache.qpid.server.util.StringUtil;
 
 public final class AclRulePredicates extends AbstractMap<Property, Set<Object>>
         implements RulePredicate
@@ -76,7 +75,7 @@ public final class AclRulePredicates extends AbstractMap<Property, Set<Object>>
             final Set<Object> values = entry.getValue();
             if (values.size() == 1)
             {
-                parsed.put(entry.getKey(), Iterables.getOnlyElement(values).toString());
+                parsed.put(entry.getKey(), CollectionUtils.getOnlyElement(values).toString());
             }
             else
             {
@@ -172,12 +171,6 @@ public final class AclRulePredicates extends AbstractMap<Property, Set<Object>>
     @Override
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("AclRulePredicates[");
-
-        final Joiner joiner = Joiner.on(",");
-        joiner.withKeyValueSeparator("=").appendTo(sb, getParsedProperties());
-        sb.append("]");
-        return sb.toString();
+        return "AclRulePredicates[" + StringUtil.join(getParsedProperties(), ",", "=") + "]";
     }
 }

@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
@@ -37,8 +38,6 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import com.google.common.util.concurrent.SettableFuture;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -47,12 +46,12 @@ import org.apache.qpid.systests.JmsTestBase;
 
 public class SpontaneousConnectionCloseTest extends JmsTestBase
 {
-    private SettableFuture<JMSException> _connectionCloseFuture;
+    private CompletableFuture<JMSException> _connectionCloseFuture;
 
     @BeforeEach
     public void setUp()
     {
-        _connectionCloseFuture = SettableFuture.create();
+        _connectionCloseFuture = new CompletableFuture<>();
     }
 
     @Test
@@ -63,7 +62,7 @@ public class SpontaneousConnectionCloseTest extends JmsTestBase
         Connection con = getConnection();
         try
         {
-            con.setExceptionListener(_connectionCloseFuture::set);
+            con.setExceptionListener(_connectionCloseFuture::complete);
 
             final UUID uuid = getConnectionUUID(con);
 
@@ -83,7 +82,7 @@ public class SpontaneousConnectionCloseTest extends JmsTestBase
         Connection con = getConnectionBuilder().setFailover(false).build();
         try
         {
-            con.setExceptionListener(_connectionCloseFuture::set);
+            con.setExceptionListener(_connectionCloseFuture::complete);
 
             getBrokerAdmin().restart();
 

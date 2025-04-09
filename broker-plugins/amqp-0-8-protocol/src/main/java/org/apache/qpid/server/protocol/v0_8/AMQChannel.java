@@ -38,16 +38,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Collections2;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -459,7 +457,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                         {
                             if (_confirmOnPublish)
                             {
-                                recordFuture(Futures.immediateFuture(null),
+                                recordFuture(CompletableFuture.completedFuture(null),
                                              new ServerTransaction.Action()
                                              {
                                                  private final long _deliveryTag = _confirmedMessageCounter;
@@ -1585,7 +1583,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     }
 
     @Override
-    public void recordFuture(final ListenableFuture<Void> future, final ServerTransaction.Action action)
+    public void recordFuture(final CompletableFuture<Void> future, final ServerTransaction.Action action)
     {
         _unfinishedCommandsQueue.add(new AsyncCommand(future, action));
     }
@@ -1681,8 +1679,8 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
         if (!ackedMessages.isEmpty())
         {
-            final Collection<MessageInstance> messages =
-                    Collections2.transform(ackedMessages, MESSAGE_INSTANCE_FUNCTION);
+            final Collection<MessageInstance> messages = ackedMessages.stream()
+                    .map(MESSAGE_INSTANCE_FUNCTION).collect(Collectors.toList());
             _transaction.dequeue(messages, new MessageAcknowledgeAction(ackedMessages));
         }
 

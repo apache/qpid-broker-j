@@ -21,8 +21,7 @@ package org.apache.qpid.server.security.access.util;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
-
-import com.google.common.collect.Iterators;
+import java.util.stream.Stream;
 
 final class Any extends AbstractTreeBranch
 {
@@ -72,6 +71,6 @@ final class Any extends AbstractTreeBranch
     @Override
     public Iterator<String> iterator()
     {
-        return Iterators.singletonIterator("*");
+        return Stream.of("*").iterator();
     }
 }

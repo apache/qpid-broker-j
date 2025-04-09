@@ -20,8 +20,6 @@
 
 package org.apache.qpid.test.utils;
 
-import com.google.common.base.StandardSystemProperty;
-
 public enum JvmVendor
 {
     ORACLE,
@@ -31,7 +29,7 @@ public enum JvmVendor
 
     public static JvmVendor getJvmVendor()
     {
-        final String property = String.valueOf(System.getProperty(StandardSystemProperty.JAVA_VENDOR.key())).toUpperCase();
+        final String property = String.valueOf(System.getProperty("java.vendor")).toUpperCase();
         if (property.contains("IBM"))
         {
             return JvmVendor.IBM;

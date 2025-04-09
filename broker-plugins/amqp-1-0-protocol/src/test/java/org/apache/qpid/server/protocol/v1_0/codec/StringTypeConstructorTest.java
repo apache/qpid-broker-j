@@ -25,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 import java.nio.ByteBuffer;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +39,7 @@ class StringTypeConstructorTest
     {
         final StringTypeConstructor constructor = StringTypeConstructor.getInstance(1);
         final Cache<ByteBuffer, String> original = StringTypeConstructor.getCache();
-        final Cache<ByteBuffer, String> cache = CacheBuilder.newBuilder().maximumSize(2).build();
+        final Cache<ByteBuffer, String> cache = Caffeine.newBuilder().maximumSize(2).build();
         StringTypeConstructor.setCache(cache);
         try
         {

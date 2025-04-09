@@ -28,15 +28,13 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import com.google.common.io.CharStreams;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.logback.VirtualHostFileLogger;
@@ -182,10 +180,9 @@ public class VirtualHostLoggerTest extends HttpTestBase
         HttpURLConnection httpCon = getHelper().openManagementConnection(url, "GET");
         httpCon.connect();
 
-        try (InputStreamReader r = new InputStreamReader(httpCon.getInputStream()))
+        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(httpCon.getInputStream())))
         {
-            final List<String> strings = CharStreams.readLines(r);
-            return strings.stream().filter(line -> line.contains(searchTerm)).collect(Collectors.toList()).size();
+            return (int) reader.lines().filter(line -> line.contains(searchTerm)).count();
         }
     }
 }

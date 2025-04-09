@@ -18,14 +18,14 @@
  */
 package org.apache.qpid.server.security.access.util;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.Iterators;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Stream;
+
+import org.apache.qpid.server.util.Strings;
 
 class TreeBranch extends AbstractTreeBranch
 {
@@ -208,7 +208,7 @@ class TreeBranch extends AbstractTreeBranch
         {
             _prefix = root.prefix();
             _tree = new TreeMap<>(root._branches).values().iterator();
-            _branch = Iterators.singletonIterator(firstValue);
+            _branch = Stream.of(firstValue).iterator();
         }
 
         @Override

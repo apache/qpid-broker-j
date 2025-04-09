@@ -54,9 +54,6 @@
     <dependencySet>
       <outputDirectory>/lib</outputDirectory>
       <useProjectArtifact>false</useProjectArtifact>
-      <excludes>
-        <exclude>com.google.j2objc:j2objc-annotations</exclude>
-      </excludes>
     </dependencySet>
   </dependencySets>
 </assembly>

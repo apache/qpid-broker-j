@@ -48,11 +48,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import javax.security.auth.Subject;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -643,8 +642,8 @@ public class VirtualHostTest extends UnitTestBase
         final Subject subject =
                 new Subject(true, Set.of(principal), Set.of(), Set.of());
         when(connection.getSubject()).thenReturn(subject);
-        final ListenableFuture<Void> listenableFuture = Futures.immediateFuture(null);
-        when(connection.closeAsync()).thenReturn(listenableFuture);
+        final CompletableFuture<Void> completableFuture = CompletableFuture.completedFuture(null);
+        when(connection.closeAsync()).thenReturn(completableFuture);
         when(connection.getCreatedTime()).thenReturn(new Date());
         return connection;
     }
