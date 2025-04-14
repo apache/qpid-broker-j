@@ -21,9 +21,7 @@
 package org.apache.qpid.server.txn;
 
 import java.util.UUID;
-
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -106,9 +104,9 @@ class MockStoreTransaction implements Transaction
     }
 
     @Override
-    public <X> ListenableFuture<X> commitTranAsync(final X val)
+    public <X> CompletableFuture<X> commitTranAsync(final X val)
     {
-        return Futures.immediateFuture(val);
+        return CompletableFuture.completedFuture(val);
     }
 
     @Override

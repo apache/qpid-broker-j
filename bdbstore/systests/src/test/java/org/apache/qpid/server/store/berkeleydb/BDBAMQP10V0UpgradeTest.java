@@ -23,6 +23,7 @@ import static org.apache.qpid.systests.JmsTestBase.DEFAULT_BROKER_CONFIG;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.security.MessageDigest;
+import java.util.Objects;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -31,7 +32,6 @@ import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import com.google.common.base.Objects;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -62,7 +62,7 @@ public class BDBAMQP10V0UpgradeTest extends UpgradeTestBase
     {
         assumeTrue("BDB".equals(System.getProperty("virtualhostnode.type", "BDB")),
                 "System property 'virtualhostnode.type' should be 'BDB'");
-        assumeTrue(Objects.equal(getProtocol(), Protocol.AMQP_1_0), "AMQP protocol should be 1.0");
+        assumeTrue(Objects.equals(getProtocol(), Protocol.AMQP_1_0), "AMQP protocol should be 1.0");
     }
 
     @Test
@@ -85,11 +85,11 @@ public class BDBAMQP10V0UpgradeTest extends UpgradeTestBase
             byte[] content = new byte[(int) length];
             bytesMessage.readBytes(content);
 
-            assumeTrue(Objects.equal(EXPECTED_MESSAGE_LENGTH, length), "Unexpected content length");
+            assumeTrue(Objects.equals(EXPECTED_MESSAGE_LENGTH, length), "Unexpected content length");
             assumeTrue(expectedContentHash != null, "Message should carry expectedShaHash property");
 
             String contentHash = computeContentHash(content);
-            assumeTrue(Objects.equal(expectedContentHash, contentHash), "Unexpected content hash");
+            assumeTrue(Objects.equals(expectedContentHash, contentHash), "Unexpected content hash");
             session.commit();
         }
         finally

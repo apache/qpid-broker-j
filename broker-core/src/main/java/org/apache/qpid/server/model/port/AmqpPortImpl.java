@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -39,8 +40,6 @@ import javax.net.ssl.SSLSessionContext;
 import javax.security.auth.Subject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -291,28 +290,28 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     }
 
     @Override
-    protected ListenableFuture<Void> beforeClose()
+    protected CompletableFuture<Void> beforeClose()
     {
         _closingOrDeleting.set(true);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    protected ListenableFuture<Void> onClose()
+    protected CompletableFuture<Void> onClose()
     {
         closeTransport();
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    protected ListenableFuture<Void> beforeDelete()
+    protected CompletableFuture<Void> beforeDelete()
     {
         _closingOrDeleting.set(true);
         return super.beforeDelete();
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         closeTransport();
         return super.onDelete();

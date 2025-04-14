@@ -133,10 +133,8 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
             pw.println("import static org.apache.qpid.server.security.access.Operation.INVOKE_METHOD;");
             pw.println();
             pw.println("import java.util.Map;");
+            pw.println("import java.util.concurrent.CompletableFuture;");
             pw.println("import java.util.concurrent.ExecutionException;");
-            pw.println();
-            pw.println("import com.google.common.util.concurrent.Futures;");
-            pw.println("import com.google.common.util.concurrent.ListenableFuture;");
             pw.println();
             pw.println("import org.apache.qpid.server.configuration.updater.Task;");
             pw.println("import org.apache.qpid.server.util.FixedKeyMapCreator;");
@@ -409,13 +407,13 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
         StringWriter stringWriter = new StringWriter();
         PrintWriter pw = new PrintWriter(stringWriter);
         String boxedReturnTypeName = getBoxedReturnTypeAsString(methodElement);
-        pw.println("doSync(doOnConfigThread(new Task<ListenableFuture<"
+        pw.println("doSync(doOnConfigThread(new Task<CompletableFuture<"
                    + boxedReturnTypeName
                    + ">, RuntimeException>()");
         pw.println("            {");
         pw.println("                private String _args;");
         pw.println("                @Override");
-        pw.println("                public ListenableFuture<"
+        pw.println("                public CompletableFuture<"
                    + boxedReturnTypeName
                    + "> execute()");
         pw.println("                {");
@@ -427,9 +425,9 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
         }
         if (methodElement.getReturnType().getKind() != TypeKind.VOID)
         {
-            pw.println("                    return Futures.<"
+            pw.println("                    return CompletableFuture.<"
                        + boxedReturnTypeName
-                       + ">immediateFuture("
+                       + ">completedFuture("
                        + className
                        + "."
                        + callToWrap
@@ -438,9 +436,9 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
         else
         {
             pw.println("                    " + className + "." + callToWrap + ";");
-            pw.println("                    return Futures.<"
+            pw.println("                    return CompletableFuture.<"
                        + boxedReturnTypeName
-                       + ">immediateFuture(null);");
+                       + ">completedFuture(null);");
         }
         if (!thrownTypes.isEmpty())
         {
@@ -449,7 +447,7 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
                                   .map(TypeMirror::toString)
                                   .collect(Collectors.joining(" | ", "                    catch (", " e)")));
             pw.println("                    {");
-            pw.println("                        return Futures.immediateFailedFuture(e);");
+            pw.println("                        return CompletableFuture.failedFuture(e);");
             pw.println("                    }");
         }
         pw.println("                }");

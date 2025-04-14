@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -49,8 +50,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -422,7 +421,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     }
 
     @Override
-    public <X> ListenableFuture<X> commitAsync(final Transaction tx, final X val)
+    public <X> CompletableFuture<X> commitAsync(final Transaction tx, final X val)
     {
         commitInternal(tx, _realMessageStoreDurability);
 
@@ -431,7 +430,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         {
             return _coalescingCommiter.commitAsync(tx, val);
         }
-        return Futures.immediateFuture(val);
+        return CompletableFuture.completedFuture(val);
     }
 
     @Override

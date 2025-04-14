@@ -33,6 +33,7 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
@@ -42,12 +43,9 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.SettableFuture;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,34 +165,32 @@ public class SiteSpecificTrustStoreImpl
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
-    protected ListenableFuture<Void> doActivate()
+    protected CompletableFuture<Void> doActivate()
     {
         initializeExpiryChecking();
 
-        final SettableFuture<Void> result = SettableFuture.create();
+        final CompletableFuture<Void> result = new CompletableFuture<>();
         if(_x509Certificate == null)
         {
             final String currentCertificate = getCertificate();
 
-            final ListenableFuture<X509Certificate> certFuture = downloadCertificate(getSiteUrl());
-            addFutureCallback(certFuture, new FutureCallback<>()
+            final CompletableFuture<X509Certificate> certFuture = downloadCertificate(getSiteUrl());
+            certFuture.whenCompleteAsync((result1, error) ->
             {
-                @Override
-                public void onSuccess(final X509Certificate cert)
-                {
-                    _x509Certificate = cert;
-                    attributeSet(CERTIFICATE, currentCertificate, _x509Certificate);
-                    generateTrustAndSetState(result);
-                }
-
-                @Override
-                public void onFailure(final Throwable t)
+                if (error != null)
                 {
                     _trustManagers = new TrustManager[0];
                     setState(State.ERRORED);
-                    result.setException(t);
+                    result.completeExceptionally(error);
+                }
+                else
+                {
+                    _x509Certificate = result1;
+                    attributeSet(CERTIFICATE, currentCertificate, _x509Certificate);
+                    generateTrustAndSetState(result);
                 }
             }, getTaskExecutor());
+
             return result;
         }
         else
@@ -204,33 +200,33 @@ public class SiteSpecificTrustStoreImpl
         return result;
     }
 
-    private void generateTrustAndSetState(final SettableFuture<Void> result)
+    private void generateTrustAndSetState(final CompletableFuture<Void> result)
     {
         State state = State.ERRORED;
         try
         {
             generateTrustManagers();
             state = State.ACTIVE;
-            result.set(null);
+            result.complete(null);
         }
         catch(IllegalConfigurationException e)
         {
-            result.setException(e);
+            result.completeExceptionally(e);
         }
         finally
         {
             setState(state);
-            result.set(null);
+            result.complete(null);
         }
     }
 
-    private ListenableFuture<X509Certificate> downloadCertificate(final String url)
+    private CompletableFuture<X509Certificate> downloadCertificate(final String url)
     {
         final ListeningExecutorService workerService = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor(
                 getThreadFactory("download-certificate-worker-" + getName())));
         try
         {
-            return workerService.submit(() ->
+            return CompletableFuture.supplyAsync(() ->
             {
                 try
                 {
@@ -268,7 +264,7 @@ public class SiteSpecificTrustStoreImpl
                                                                           getName(),
                                                                           url), e);
                 }
-            });
+            }, workerService);
         }
         finally
         {
@@ -315,12 +311,12 @@ public class SiteSpecificTrustStoreImpl
     {
         logOperation("refreshCertificate");
         final String currentCertificate = getCertificate();
-        final ListenableFuture<X509Certificate> certFuture = downloadCertificate(getSiteUrl());
-        final ListenableFuture<Void> modelFuture = doAfter(certFuture, cert ->
+        final CompletableFuture<X509Certificate> certFuture = downloadCertificate(getSiteUrl());
+        final CompletableFuture<Void> modelFuture = certFuture.thenApply(cert ->
         {
             _x509Certificate = cert;
             attributeSet(CERTIFICATE, currentCertificate, _x509Certificate);
-            return Futures.immediateFuture(null);
+            return null;
         });
         doSync(modelFuture);
     }

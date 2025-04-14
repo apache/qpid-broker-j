@@ -38,10 +38,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -137,16 +136,16 @@ public class ManagementModeStoreHandlerTest extends UnitTestBase
             }
 
             @Override
-            protected ListenableFuture<Void> onClose()
+            protected CompletableFuture<Void> onClose()
             {
-                return Futures.immediateFuture(null);
+                return CompletableFuture.completedFuture(null);
             }
 
             @Override
             @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
-            protected ListenableFuture<Void> startQuiesced()
+            protected CompletableFuture<Void> startQuiesced()
             {
-                return Futures.immediateFuture(null);
+                return CompletableFuture.completedFuture(null);
             }
         };
         _systemConfig.open();

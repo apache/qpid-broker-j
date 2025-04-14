@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -44,9 +45,6 @@ import java.util.stream.Collectors;
 import javax.security.auth.Subject;
 
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -203,9 +201,61 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                     link = getAddressSpace().getReceivingLink(getConnection().getRemoteContainerId(), attach.getName());
                 }
 
-                final ListenableFuture<? extends LinkEndpoint<?,?>> future = link.attach(this, attach);
+                final CompletableFuture<? extends LinkEndpoint<?,?>> future = link.attach(this, attach);
 
-                addFutureCallback(future, new EndpointCreationCallback(attach), MoreExecutors.directExecutor());
+                future.whenComplete((endpoint, error) ->
+                {
+                    if (error != null)
+                    {
+                        String errorMessage = String.format("Failed to create LinkEndpoint in response to Attach: %s", attach);
+                        LOGGER.error(errorMessage, error);
+                        throw new ConnectionScopedRuntimeException(errorMessage, error);
+                    }
+                    else
+                    {
+                        doOnIOThreadAsync(() ->
+                        {
+                            _associatedLinkEndpoints.add(endpoint);
+                            _inputHandleToEndpoint.put(attach.getHandle(), endpoint);
+                            UnsignedInteger nextAvailableOutputHandle = findNextAvailableOutputHandle();
+                            if (nextAvailableOutputHandle == null)
+                            {
+                                endpoint.close(new Error(AmqpError.RESOURCE_LIMIT_EXCEEDED,
+                                                         String.format(
+                                                                 "Cannot find free handle for endpoint '%s' on session '%s'",
+                                                                 attach.getName(),
+                                                                 endpoint.getSession().toLogString())));
+                            }
+                            else
+                            {
+                                endpoint.setLocalHandle(nextAvailableOutputHandle);
+                                if (endpoint instanceof ErrantLinkEndpoint)
+                                {
+                                    endpoint.sendAttach();
+                                    ((ErrantLinkEndpoint) endpoint).closeWithError();
+                                }
+                                else
+                                {
+
+                                    if (!_endpointToOutputHandle.containsKey(endpoint))
+                                    {
+                                        _endpointToOutputHandle.put(endpoint, endpoint.getLocalHandle());
+                                        checkMessageDestinationFlowForReceivingLinkEndpoint(endpoint);
+                                        endpoint.sendAttach();
+                                        endpoint.start();
+                                    }
+                                    else
+                                    {
+                                        final End end = new End();
+                                        end.setError(new Error(AmqpError.INTERNAL_ERROR,
+                                                               "Endpoint is already registered with session."));
+                                        endpoint.getSession().end(end);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
             }
         }
     }
@@ -1358,71 +1408,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                     queue.checkCapacity();
                 }
             }
-        }
-    }
-
-    private class EndpointCreationCallback<T extends LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> implements FutureCallback<T>
-    {
-
-        private final Attach _attach;
-
-        EndpointCreationCallback(final Attach attach)
-        {
-            _attach = attach;
-        }
-
-        @Override
-        public void onSuccess(final T endpoint)
-        {
-            doOnIOThreadAsync(() ->
-            {
-                _associatedLinkEndpoints.add(endpoint);
-                _inputHandleToEndpoint.put(_attach.getHandle(), endpoint);
-                UnsignedInteger nextAvailableOutputHandle = findNextAvailableOutputHandle();
-                if (nextAvailableOutputHandle == null)
-                {
-                    endpoint.close(new Error(AmqpError.RESOURCE_LIMIT_EXCEEDED,
-                                             String.format(
-                                                     "Cannot find free handle for endpoint '%s' on session '%s'",
-                                                     _attach.getName(),
-                                                     endpoint.getSession().toLogString())));
-                }
-                else
-                {
-                    endpoint.setLocalHandle(nextAvailableOutputHandle);
-                    if (endpoint instanceof ErrantLinkEndpoint)
-                    {
-                        endpoint.sendAttach();
-                        ((ErrantLinkEndpoint) endpoint).closeWithError();
-                    }
-                    else
-                    {
-
-                        if (!_endpointToOutputHandle.containsKey(endpoint))
-                        {
-                            _endpointToOutputHandle.put(endpoint, endpoint.getLocalHandle());
-                            checkMessageDestinationFlowForReceivingLinkEndpoint(endpoint);
-                            endpoint.sendAttach();
-                            endpoint.start();
-                        }
-                        else
-                        {
-                            final End end = new End();
-                            end.setError(new Error(AmqpError.INTERNAL_ERROR,
-                                                   "Endpoint is already registered with session."));
-                            endpoint.getSession().end(end);
-                        }
-                    }
-                }
-            });
-        }
-
-        @Override
-        public void onFailure(final Throwable t)
-        {
-            String errorMessage = String.format("Failed to create LinkEndpoint in response to Attach: %s", _attach);
-            LOGGER.error(errorMessage, t);
-            throw new ConnectionScopedRuntimeException(errorMessage, t);
         }
     }
 }
