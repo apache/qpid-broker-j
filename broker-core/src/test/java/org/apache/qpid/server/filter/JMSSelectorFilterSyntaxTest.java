@@ -385,6 +385,8 @@ class JMSSelectorFilterSyntaxTest
 
         when(message.getHeader("entry")).thenReturn("aaa");
         assertTrue(new JMSSelectorFilter("entry like '%aaa%'").matches(message));
+
+        assertTrue(new JMSSelectorFilter("entry like '%%%%%%%%%%%'").matches(message));
     }
 
     @Test
@@ -408,6 +410,8 @@ class JMSSelectorFilterSyntaxTest
         assertFalse(new JMSSelectorFilter("NOT entry LIKE '%aaa%'").matches(message));
         assertTrue(new JMSSelectorFilter("NOT (entry NOT LIKE '%aaa%')").matches(message));
         assertTrue(new JMSSelectorFilter("NOT entry NOT LIKE '%aaa%'").matches(message));
+
+        assertFalse(new JMSSelectorFilter("entry not like '%%%%%%%%%%%aaa%%%%%%%%%%%'").matches(message));
     }
 
     @Test
