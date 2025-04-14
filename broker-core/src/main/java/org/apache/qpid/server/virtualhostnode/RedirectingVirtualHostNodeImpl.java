@@ -25,11 +25,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,38 +77,36 @@ public class RedirectingVirtualHostNodeImpl
     }
 
     @StateTransition( currentState = {State.UNINITIALIZED, State.STOPPED, State.ERRORED }, desiredState = State.ACTIVE )
-    private ListenableFuture<Void> doActivate()
+    private CompletableFuture<Void> doActivate()
     {
-        final SettableFuture<Void> resultFuture = SettableFuture.create();
+        final CompletableFuture<Void> resultFuture = new CompletableFuture<>();
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(ConfiguredObject.NAME, getName());
         attributes.put(ConfiguredObject.TYPE, RedirectingVirtualHostImpl.VIRTUAL_HOST_TYPE);
 
-        final ListenableFuture<VirtualHost> virtualHostFuture = getObjectFactory().createAsync(VirtualHost.class, attributes, this);
+        final CompletableFuture<VirtualHost>
+                virtualHostFuture = getObjectFactory().createAsync(VirtualHost.class, attributes, this);
 
-        addFutureCallback(virtualHostFuture, new FutureCallback<>()
+        virtualHostFuture.whenCompleteAsync((result, error) ->
         {
-            @Override
-            public void onSuccess(final VirtualHost virtualHost)
-            {
-                _virtualHost = (RedirectingVirtualHostImpl) virtualHost;
-                setState(State.ACTIVE);
-                resultFuture.set(null);
-            }
-
-            @Override
-            public void onFailure(final Throwable t)
+            if (error != null)
             {
                 setState(State.ERRORED);
                 if (((Broker) getParent()).isManagementMode())
                 {
-                    LOGGER.warn("Failed to make {} active.", this, t);
-                    resultFuture.set(null);
+                    LOGGER.warn("Failed to make {} active.", this, error);
+                    resultFuture.complete(null);
                 }
                 else
                 {
-                    resultFuture.setException(t);
+                    resultFuture.completeExceptionally(error);
                 }
+            }
+            else
+            {
+                _virtualHost = (RedirectingVirtualHostImpl) result;
+                setState(State.ACTIVE);
+                resultFuture.complete(null);
             }
         }, getTaskExecutor());
 
@@ -119,17 +114,17 @@ public class RedirectingVirtualHostNodeImpl
     }
 
     @StateTransition( currentState = { State.ACTIVE, State.ERRORED, State.UNINITIALIZED }, desiredState = State.STOPPED )
-    private ListenableFuture<Void> doStop()
+    private CompletableFuture<Void> doStop()
     {
-        final ListenableFuture<Void> future = Futures.immediateFuture(null);
+        final CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
         final RedirectingVirtualHostImpl virtualHost = _virtualHost;
         if (virtualHost != null)
         {
-            return doAfter(virtualHost.closeAsync(), () ->
+            return virtualHost.closeAsync().thenApply(x ->
             {
                 _virtualHost = null;
                 setState(State.STOPPED);
-                return future;
+                return future.join();
             });
         }
         else
@@ -140,28 +135,28 @@ public class RedirectingVirtualHostNodeImpl
     }
 
     @Override
-    protected ListenableFuture<Void> beforeClose()
+    protected CompletableFuture<Void> beforeClose()
     {
-        final ListenableFuture<Void> superFuture = super.beforeClose();
+        final CompletableFuture<Void> superFuture = super.beforeClose();
         return closeVirtualHost(superFuture);
     }
 
     @Override
-    protected ListenableFuture<Void> beforeDelete()
+    protected CompletableFuture<Void> beforeDelete()
     {
-        final ListenableFuture<Void> superFuture = super.beforeDelete();
+        final CompletableFuture<Void> superFuture = super.beforeDelete();
         return closeVirtualHost(superFuture);
     }
 
-    private ListenableFuture<Void> closeVirtualHost(final ListenableFuture<Void> superFuture)
+    private CompletableFuture<Void> closeVirtualHost(final CompletableFuture<Void> superFuture)
     {
         final RedirectingVirtualHostImpl virtualHost = _virtualHost;
         if (virtualHost != null)
         {
-            return doAfter(virtualHost.closeAsync(), () -> {
+            return virtualHost.closeAsync().thenApplyAsync(x -> {
                 _virtualHost = null;
-                return superFuture;
-            });
+                return superFuture.join();
+            }, getTaskExecutor());
         }
         else
         {
@@ -253,10 +248,10 @@ public class RedirectingVirtualHostNodeImpl
     }
 
     @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
-                                                                             Map<String, Object> attributes)
+    protected <C extends ConfiguredObject> CompletableFuture<C> addChildAsync(Class<C> childClass,
+                                                                              Map<String, Object> attributes)
     {
-        if(childClass == VirtualHost.class)
+        if (childClass == VirtualHost.class)
         {
             throw new UnsupportedOperationException("The redirecting virtualhost node automatically manages the creation"
                                                     + " of the redirecting virtualhost. Creating it explicitly is not supported.");

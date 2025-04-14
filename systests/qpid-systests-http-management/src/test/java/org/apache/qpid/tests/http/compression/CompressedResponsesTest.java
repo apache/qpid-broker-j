@@ -36,8 +36,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.google.common.io.ByteStreams;
-
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.tests.http.HttpTestBase;
@@ -104,7 +102,7 @@ public class CompressedResponsesTest extends HttpTestBase
             byte[] bytes;
             try(ByteArrayOutputStream contentBuffer = new ByteArrayOutputStream())
             {
-                ByteStreams.copy(conn.getInputStream(), contentBuffer);
+                conn.getInputStream().transferTo(contentBuffer);
                 bytes = contentBuffer.toByteArray();
             }
             try (InputStream jsonStream = expectCompression

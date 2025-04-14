@@ -26,17 +26,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +67,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
     private AsynchronousRecoverer _asynchronousRecoverer;
 
     @Override
-    public ListenableFuture<Void> recover(final QueueManagingVirtualHost<?> virtualHost)
+    public CompletableFuture<Void> recover(final QueueManagingVirtualHost<?> virtualHost)
     {
         _asynchronousRecoverer = new AsynchronousRecoverer(virtualHost);
 
@@ -96,13 +94,12 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private final Set<Queue<?>> _recoveringQueues = new CopyOnWriteArraySet<>();
         private final AtomicBoolean _recoveryComplete = new AtomicBoolean();
         private final Map<Long, MessageReference<? extends ServerMessage<?>>> _recoveredMessages = new HashMap<>();
-        private final ListeningExecutorService _queueRecoveryExecutor =
-                MoreExecutors.listeningDecorator(new ThreadPoolExecutor(0,
-                                                                        Integer.MAX_VALUE,
-                                                                        60L,
-                                                                        TimeUnit.SECONDS,
-                                                                        new SynchronousQueue<>(),
-                                                                        QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(Executors.defaultThreadFactory())));
+        private final ExecutorService _queueRecoveryExecutor = new ThreadPoolExecutor(0,
+                Integer.MAX_VALUE,
+                60L,
+                TimeUnit.SECONDS,
+                new SynchronousQueue<>(),
+                QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(Executors.defaultThreadFactory()));
 
         private final MessageStore.MessageStoreReader _storeReader;
         private final AtomicBoolean _continueRecovery = new AtomicBoolean(true);
@@ -121,24 +118,24 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
         }
 
-        public ListenableFuture<Void> recover()
+        public CompletableFuture<Void> recover()
         {
             getStoreReader().visitDistributedTransactions(new DistributedTransactionVisitor());
 
-            List<ListenableFuture<Void>> queueRecoveryFutures = new ArrayList<>();
-            if(_recoveringQueues.isEmpty())
+            List<CompletableFuture<Void>> queueRecoveryFutures = new ArrayList<>();
+            if (_recoveringQueues.isEmpty())
             {
-                return _queueRecoveryExecutor.submit(new RemoveOrphanedMessagesTask(), null);
+                return CompletableFuture.runAsync(new RemoveOrphanedMessagesTask(), _queueRecoveryExecutor);
             }
             else
             {
                 for (Queue<?> queue : _recoveringQueues)
                 {
-                    ListenableFuture<Void> result = _queueRecoveryExecutor.submit(new QueueRecoveringTask(queue), null);
+                    CompletableFuture<Void> result = CompletableFuture.runAsync(new QueueRecoveringTask(queue), _queueRecoveryExecutor);
                     queueRecoveryFutures.add(result);
                 }
-                ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(queueRecoveryFutures);
-                return Futures.transform(combinedFuture, voids -> null, MoreExecutors.directExecutor());
+                CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(queueRecoveryFutures.toArray(CompletableFuture[]::new));
+                return combinedFuture.thenApply(voids -> null);
             }
         }
 

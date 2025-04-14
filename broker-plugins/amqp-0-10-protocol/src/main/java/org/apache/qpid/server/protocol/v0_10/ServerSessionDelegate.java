@@ -32,10 +32,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import com.google.common.util.concurrent.Futures;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,7 +150,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
         serverSession.accept(method.getTransfers());
         if(!serverSession.isTransactional())
         {
-            serverSession.recordFuture(Futures.<Void>immediateFuture(null),
+            serverSession.recordFuture(CompletableFuture.completedFuture(null),
                                        new CommandProcessedAction(serverSession, method));
         }
     }
@@ -537,7 +537,7 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
                     }
                     else
                     {
-                        ssn.recordFuture(Futures.immediateFuture(null),
+                        ssn.recordFuture(CompletableFuture.completedFuture(null),
                                          new CommandProcessedAction(ssn, xfr));
                     }
                 }

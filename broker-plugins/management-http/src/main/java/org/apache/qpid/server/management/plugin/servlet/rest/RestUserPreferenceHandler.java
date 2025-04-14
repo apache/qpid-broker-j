@@ -27,10 +27,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-
-import com.google.common.base.Joiner;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.management.plugin.RequestType;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -76,8 +74,7 @@ public class RestUserPreferenceHandler
         }
         else
         {
-            throw new IllegalArgumentException(String.format("unexpected path '%s'",
-                                                             Joiner.on("/").join(preferencesParts)));
+            throw new IllegalArgumentException(String.format("unexpected path '%s'", String.join("/", preferencesParts)));
         }
 
         awaitFuture(userPreferences.delete(type, name, id));
@@ -136,8 +133,7 @@ public class RestUserPreferenceHandler
         }
         else
         {
-            throw new IllegalArgumentException(String.format("unexpected path '%s'",
-                                                             Joiner.on("/").join(preferencesParts)));
+            throw new IllegalArgumentException(String.format("unexpected path '%s'", String.join("/", preferencesParts)));
         }
     }
 
@@ -173,8 +169,7 @@ public class RestUserPreferenceHandler
         }
         else
         {
-            throw new IllegalArgumentException(String.format("unexpected path '%s'",
-                                                             Joiner.on("/").join(preferencesParts)));
+            throw new IllegalArgumentException(String.format("unexpected path '%s'", String.join("/", preferencesParts)));
         }
 
         awaitFuture(userPreferences.updateOrAppend(preferences));
@@ -191,7 +186,7 @@ public class RestUserPreferenceHandler
         final Map<String, List<String>> queryParameters = requestInfo.getQueryParameters();
         UUID id = getIdFromQueryParameters(queryParameters);
 
-        final ListenableFuture<Set<Preference>> allPreferencesFuture;
+        final CompletableFuture<Set<Preference>> allPreferencesFuture;
         if (requestInfo.getType() == RequestType.USER_PREFERENCES)
         {
             allPreferencesFuture = userPreferences.getPreferences();
@@ -289,14 +284,13 @@ public class RestUserPreferenceHandler
         }
         else
         {
-            throw new IllegalArgumentException(String.format("unexpected path '%s'",
-                                                             Joiner.on("/").join(preferencesParts)));
+            throw new IllegalArgumentException(String.format("unexpected path '%s'", String.join("/", preferencesParts)));
         }
     }
 
-    private <T> T awaitFuture(final ListenableFuture<T> future)
+    private <T> T awaitFuture(final CompletableFuture<T> future)
     {
-        return FutureHelper.<T, RuntimeException>await(future, _preferenceOperationTimeout, TimeUnit.MILLISECONDS);
+        return FutureHelper.await(future, _preferenceOperationTimeout, TimeUnit.MILLISECONDS);
     }
 
     private List<Preference> validateAndConvert(final ConfiguredObject<?> target, final Map<String, Object> providedObjectMap)

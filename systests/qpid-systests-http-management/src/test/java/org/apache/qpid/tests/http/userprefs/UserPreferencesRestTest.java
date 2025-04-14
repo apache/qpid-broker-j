@@ -26,6 +26,7 @@ import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,8 +34,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-
-import com.google.common.collect.Lists;
 
 import org.junit.jupiter.api.Test;
 
@@ -298,8 +297,8 @@ public class UserPreferencesRestTest extends HttpTestBase
             pref2Attributes.put(Preference.TYPE_ATTRIBUTE, pref2Type);
 
             final Map<String, List<Map<String, Object>>> payload = new HashMap<>();
-            payload.put(pref1Type, Lists.newArrayList(pref1Attributes));
-            payload.put(pref2Type, Lists.newArrayList(pref2Attributes));
+            payload.put(pref1Type, new ArrayList<>(List.of(pref1Attributes)));
+            payload.put(pref2Type, new ArrayList<>(List.of(pref2Attributes)));
 
             getHelper().submitRequest(rootUrl, "PUT", payload, SC_OK);
         }
@@ -338,8 +337,8 @@ public class UserPreferencesRestTest extends HttpTestBase
             pref4Attributes.put(Preference.TYPE_ATTRIBUTE, pref3Type);
 
             final Map<String, List<Map<String, Object>>> payload = new HashMap<>();
-            payload.put(pref1Type, Lists.newArrayList(pref3Attributes));
-            payload.put(pref3Type, Lists.newArrayList(pref4Attributes));
+            payload.put(pref1Type, new ArrayList<>(List.of(pref3Attributes)));
+            payload.put(pref3Type, new ArrayList<>(List.of(pref4Attributes)));
 
             getHelper().submitRequest(rootUrl, "PUT", payload, SC_OK);
         }

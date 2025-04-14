@@ -20,9 +20,6 @@
 
 package org.apache.qpid.server.logging.logback.validator;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
-
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.plugin.ConfiguredObjectTypeFactory;
@@ -33,6 +30,7 @@ import org.apache.qpid.server.store.UnresolvedConfiguredObject;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class TestConfiguredObjectTypeFactory implements ConfiguredObjectTypeFactory<TestConfiguredObject>
 {
@@ -49,11 +47,9 @@ public class TestConfiguredObjectTypeFactory implements ConfiguredObjectTypeFact
     }
 
     @Override
-    public ListenableFuture<TestConfiguredObject> createAsync(ConfiguredObjectFactory factory, Map<String, Object> attributes, ConfiguredObject<?> parent)
+    public CompletableFuture<TestConfiguredObject> createAsync(ConfiguredObjectFactory factory, Map<String, Object> attributes, ConfiguredObject<?> parent)
     {
-        final SettableFuture<TestConfiguredObject> returnVal = SettableFuture.create();
-        returnVal.set(create(factory, attributes, parent));
-        return returnVal;
+        return CompletableFuture.completedFuture(create(factory, attributes, parent));
     }
 
     @Override

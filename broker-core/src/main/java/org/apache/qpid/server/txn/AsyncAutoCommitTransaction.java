@@ -21,9 +21,8 @@
 package org.apache.qpid.server.txn;
 
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,8 +55,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
 
     public interface FutureRecorder
     {
-        void recordFuture(ListenableFuture<Void> future, Action action);
-
+        void recordFuture(CompletableFuture<Void> future, Action action);
     }
 
     public AsyncAutoCommitTransaction(MessageStore transactionLog, FutureRecorder recorder)
@@ -85,7 +83,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
     @Override
     public void addPostTransactionAction(final Action immediateAction)
     {
-        addFuture(Futures.<Void>immediateFuture(null), immediateAction);
+        addFuture(CompletableFuture.completedFuture(null), immediateAction);
 
     }
 
@@ -95,7 +93,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
         Transaction txn = null;
         try
         {
-            ListenableFuture<Void> future;
+            CompletableFuture<Void> future;
             if(record != null)
             {
                 LOGGER.debug("Dequeue of message number {} from transaction log. Queue : {}", record.getMessageNumber(), record.getQueueId());
@@ -108,7 +106,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
             }
             else
             {
-                future = Futures.immediateFuture(null);
+                future = CompletableFuture.completedFuture(null);
             }
             addFuture(future, postTransactionAction);
             postTransactionAction = null;
@@ -120,8 +118,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
 
     }
 
-
-    private void addFuture(final ListenableFuture<Void> future, final Action action)
+    private void addFuture(final CompletableFuture<Void> future, final Action action)
     {
         if(action != null)
         {
@@ -136,7 +133,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
         }
     }
 
-    private void addEnqueueFuture(final ListenableFuture<Void> future, final Action action, boolean persistent)
+    private void addEnqueueFuture(final CompletableFuture<Void> future, final Action action, boolean persistent)
     {
         if(action != null)
         {
@@ -176,15 +173,15 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
                 }
 
             }
-            ListenableFuture<Void> future;
+            CompletableFuture<Void> future;
             if(txn != null)
             {
-                future = txn.commitTranAsync((Void) null);
+                future = txn.commitTranAsync(null);
                 txn = null;
             }
             else
             {
-                future = Futures.immediateFuture(null);
+                future = CompletableFuture.completedFuture(null);
             }
             addFuture(future, postTransactionAction);
             postTransactionAction = null;
@@ -203,7 +200,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
         Transaction txn = null;
         try
         {
-            ListenableFuture<Void> future;
+            CompletableFuture<Void> future;
             final MessageEnqueueRecord enqueueRecord;
             if(queue.getMessageDurability().persist(message.isPersistent()))
             {
@@ -216,7 +213,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
             }
             else
             {
-                future = Futures.immediateFuture(null);
+                future = CompletableFuture.completedFuture(null);
                 enqueueRecord = null;
             }
             final EnqueueAction underlying = postTransactionAction;
@@ -287,15 +284,15 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
                 i++;
             }
 
-            ListenableFuture<Void> future;
+            CompletableFuture<Void> future;
             if (txn != null)
             {
-                future = txn.commitTranAsync((Void) null);
+                future = txn.commitTranAsync(null);
                 txn = null;
             }
             else
             {
-                future = Futures.immediateFuture(null);
+                future = CompletableFuture.completedFuture(null);
             }
             final EnqueueAction underlying = postTransactionAction;
             addEnqueueFuture(future, new Action()
@@ -350,7 +347,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
     {
         if(immediatePostTransactionAction != null)
         {
-            addFuture(Futures.<Void>immediateFuture(null), new Action()
+            addFuture(CompletableFuture.completedFuture(null), new Action()
             {
                 @Override
                 public void postCommit()

@@ -33,9 +33,9 @@ import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.Subject;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.util.concurrent.UncheckedExecutionException;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,10 +62,10 @@ public class AuthenticationResultCacher
         else
         {
             _iterationCount = iterationCount;
-            _authenticationCache = CacheBuilder.newBuilder()
-                                               .maximumSize(cacheSize)
-                                               .expireAfterWrite(expirationTime, TimeUnit.SECONDS)
-                                               .build();
+            _authenticationCache = Caffeine.newBuilder()
+                    .maximumSize(cacheSize)
+                    .expireAfterWrite(expirationTime, TimeUnit.SECONDS)
+                    .build();
         }
     }
 
@@ -80,16 +80,22 @@ public class AuthenticationResultCacher
             else
             {
                 String credentialDigest = digestCredentials(credentials);
-                return _authenticationCache.get(credentialDigest, loader::call);
+                return _authenticationCache.get(credentialDigest, key ->
+                {
+                    try
+                    {
+                        return loader.call();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException("Unexpected checked Exception while authenticating", e);
+                    }
+                });
             }
         }
         catch (ExecutionException e)
         {
             throw new RuntimeException("Unexpected checked Exception while authenticating", e.getCause());
-        }
-        catch (UncheckedExecutionException e)
-        {
-            throw new RuntimeException("Unexpected Exception while authenticating", e.getCause());
         }
         catch (RuntimeException e)
         {

@@ -27,7 +27,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import javax.security.auth.Subject;
 
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +69,7 @@ public class HousekeepingExecutor extends ScheduledThreadPoolExecutor
                 LOGGER.debug("Housekeeping task got cancelled");
                 // Ignore cancellation of task
             }
-            catch (ExecutionException | UncheckedExecutionException ee)
+            catch (ExecutionException ee)
             {
                 t = ee.getCause();
             }

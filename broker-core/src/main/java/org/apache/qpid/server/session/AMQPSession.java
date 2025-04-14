@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.session;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -92,7 +92,7 @@ public interface AMQPSession<S extends org.apache.qpid.server.session.AMQPSessio
     @Override
     void close();
 
-    ListenableFuture<Void> doOnIOThreadAsync(final Runnable task);
+    CompletableFuture<Void> doOnIOThreadAsync(final Runnable task);
 
     void registerTransactedMessageReceived();
 

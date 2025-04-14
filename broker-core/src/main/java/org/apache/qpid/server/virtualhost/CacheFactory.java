@@ -24,7 +24,7 @@ import java.security.AccessController;
 
 import javax.security.auth.Subject;
 
-import com.google.common.cache.Cache;
+import com.github.benmanes.caffeine.cache.Cache;
 
 import org.apache.qpid.server.security.QpidPrincipal;
 

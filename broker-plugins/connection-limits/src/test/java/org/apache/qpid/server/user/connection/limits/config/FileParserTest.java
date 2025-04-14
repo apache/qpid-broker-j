@@ -36,8 +36,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
 
-import com.google.common.collect.Iterables;
-
 import org.junit.jupiter.api.Test;
 
 import org.mockito.Mockito;
@@ -55,7 +53,7 @@ public class FileParserTest extends UnitTestBase
     {
         final RuleSetCreator creator = writeConfig("CLT user port=amqp connection_limit=10");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals("amqp", rule.getPort());
@@ -72,7 +70,7 @@ public class FileParserTest extends UnitTestBase
     {
         final RuleSetCreator creator = writeConfig("CLT user port=amqp connection-frequency-limit=10/15M");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals("amqp", rule.getPort());
@@ -88,7 +86,7 @@ public class FileParserTest extends UnitTestBase
     {
         final RuleSetCreator creator = writeConfig("CLT user port=amqp connection-frequency-limit=17/m");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals("amqp", rule.getPort());
@@ -105,7 +103,7 @@ public class FileParserTest extends UnitTestBase
         final RuleSetCreator creator = writeConfig("CLT user port=amqp connection-frequency-limit=17/P1dT1m17.7s");
         final Duration duration = Duration.parse("P1dT1m17.7s");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals("amqp", rule.getPort());
@@ -122,7 +120,7 @@ public class FileParserTest extends UnitTestBase
     {
         final RuleSetCreator creator = writeConfig("CLT user port=amqp connection-frequency-limit=17");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals("amqp", rule.getPort());
@@ -138,7 +136,7 @@ public class FileParserTest extends UnitTestBase
     {
         final RuleSetCreator creator = writeConfig("CLT user port=amqp connection_limit=10 connection-frequency-limit=20/m");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals("amqp", rule.getPort());
@@ -154,7 +152,7 @@ public class FileParserTest extends UnitTestBase
     {
         final RuleSetCreator creator = writeConfig("CLT\tuser\tport='amqp' connection_limit=\"10\" connection-frequency-limit='20/h'");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals("amqp", rule.getPort());
@@ -170,7 +168,7 @@ public class FileParserTest extends UnitTestBase
     {
         final RuleSetCreator creator = writeConfig("CLT user \\ \n connectionLimit=10 connection-frequency-limit=20");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals(RulePredicates.ALL_PORTS, rule.getPort());
@@ -184,7 +182,7 @@ public class FileParserTest extends UnitTestBase
     {
         final RuleSetCreator creator = writeConfig("CLT user block port=amqp");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals("amqp", rule.getPort());
@@ -200,7 +198,7 @@ public class FileParserTest extends UnitTestBase
     {
         final RuleSetCreator creator = writeConfig("CLT user connection_limit=10 connection-frequency-limit=20");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals(RulePredicates.ALL_PORTS, rule.getPort());
@@ -248,7 +246,7 @@ public class FileParserTest extends UnitTestBase
     {
         final RuleSetCreator creator = writeConfig("ACL ALLOW-LOG user ACCESS VIRTUALHOST connection_limit=10");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals(RulePredicates.ALL_PORTS, rule.getPort());
@@ -264,7 +262,7 @@ public class FileParserTest extends UnitTestBase
     {
         final RuleSetCreator creator = writeConfig("ACL ALLOW-LOG user ACCESS VIRTUALHOST connection_frequency_limit=60");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals(RulePredicates.ALL_PORTS, rule.getPort());
@@ -278,7 +276,7 @@ public class FileParserTest extends UnitTestBase
     {
         final RuleSetCreator creator = writeConfig("ACL ALLOW-LOG user ACCESS VIRTUALHOST connection_limit=10 connection_frequency_limit=60");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals(RulePredicates.ALL_PORTS, rule.getPort());
@@ -292,7 +290,7 @@ public class FileParserTest extends UnitTestBase
     {
         final RuleSetCreator creator = writeConfig("27 ACL ALLOW-LOG user ACCESS VIRTUALHOST connection_limit=10 connection_frequency_limit=60");
 
-        final Rule rule = Iterables.getFirst(creator, null);
+        final Rule rule = creator.iterator().next();
         assertNotNull(rule);
         assertEquals("user", rule.getIdentity());
         assertEquals(RulePredicates.ALL_PORTS, rule.getPort());

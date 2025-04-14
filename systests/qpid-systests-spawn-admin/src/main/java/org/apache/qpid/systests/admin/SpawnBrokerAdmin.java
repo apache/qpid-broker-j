@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,9 +63,6 @@ import javax.naming.NamingException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.ByteStreams;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -244,11 +242,11 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
     }
 
     @Override
-    public ListenableFuture<Void> restart()
+    public CompletableFuture<Void> restart()
     {
         stop();
         start();
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -727,7 +725,7 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
             try (InputStream is = getClass().getClassLoader().getResourceAsStream(config);
                  OutputStream os = new FileOutputStream(testInitialConfiguration))
             {
-                ByteStreams.copy(is, os);
+                is.transferTo(os);
             }
         }
         else

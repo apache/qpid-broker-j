@@ -27,7 +27,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,7 +78,7 @@ class LinkImplTest
 
         final LinkImpl<Source, Target> link = new LinkImpl<>(REMOTE_CONTAINER_ID, LINK_NAME, Role.RECEIVER, _linkRegistry);
 
-        final ListenableFuture<? extends LinkEndpoint<?, ?>> future = link.attach(session1, attach1);
+        final CompletableFuture<? extends LinkEndpoint<?, ?>> future = link.attach(session1, attach1);
         final LinkEndpoint<?, ?> linkEndpoint = future.get();
         assertTrue(linkEndpoint instanceof StandardReceivingLinkEndpoint);
 
@@ -98,7 +98,7 @@ class LinkImplTest
 
         final LinkImpl<Source, Target> link = new LinkImpl<>(REMOTE_CONTAINER_ID, LINK_NAME, Role.SENDER, _linkRegistry);
 
-        final ListenableFuture<? extends LinkEndpoint<?, ?>> future = link.attach(session1, attach1);
+        final CompletableFuture<? extends LinkEndpoint<?, ?>> future = link.attach(session1, attach1);
         final LinkEndpoint<?, ?> linkEndpoint = future.get();
         assertTrue(linkEndpoint instanceof SendingLinkEndpoint);
 
@@ -119,7 +119,7 @@ class LinkImplTest
 
         final LinkImpl<Source, Target> link = new LinkImpl<>(REMOTE_CONTAINER_ID, LINK_NAME, Role.RECEIVER, _linkRegistry);
 
-        final ListenableFuture<? extends LinkEndpoint<?, ?>> future = link.attach(session1, attach1);
+        final CompletableFuture<? extends LinkEndpoint<?, ?>> future = link.attach(session1, attach1);
         final LinkEndpoint<?, ?> linkEndpoint = future.get();
         assertTrue(linkEndpoint instanceof StandardReceivingLinkEndpoint);
 
@@ -140,7 +140,7 @@ class LinkImplTest
 
         final LinkImpl<Source, Target> link = new LinkImpl<>(REMOTE_CONTAINER_ID, LINK_NAME, Role.SENDER, _linkRegistry);
 
-        final ListenableFuture<? extends LinkEndpoint<?, ?>> future = link.attach(session1, attach1);
+        final CompletableFuture<? extends LinkEndpoint<?, ?>> future = link.attach(session1, attach1);
         final LinkEndpoint<?, ?> linkEndpoint = future.get();
         assertTrue(linkEndpoint instanceof SendingLinkEndpoint);
 

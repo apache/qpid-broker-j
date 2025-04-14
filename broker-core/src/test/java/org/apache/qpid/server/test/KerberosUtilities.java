@@ -50,7 +50,6 @@ import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
-import com.google.common.io.ByteStreams;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
@@ -323,7 +322,7 @@ public class KerberosUtilities
         final String config;
         try (final InputStream is = resource.openStream())
         {
-            config = new String(ByteStreams.toByteArray(is), UTF_8);
+            config = new String(is.readAllBytes(), UTF_8);
         }
         catch (IOException e)
         {
