@@ -20,7 +20,8 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
+
 import com.sleepycat.je.Transaction;
 
 public interface Committer
@@ -28,7 +29,8 @@ public interface Committer
     void start();
 
     void commit(Transaction tx, boolean syncCommit);
-    <X> ListenableFuture<X> commitAsync(Transaction tx, X val);
+
+    <X> CompletableFuture<X> commitAsync(Transaction tx, X val);
 
     void stop();
 }

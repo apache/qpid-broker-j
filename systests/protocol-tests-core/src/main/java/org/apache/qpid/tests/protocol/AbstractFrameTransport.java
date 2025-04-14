@@ -19,6 +19,7 @@
 
 package org.apache.qpid.tests.protocol;
 
+import io.netty.util.concurrent.Future;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
@@ -26,13 +27,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 import java.net.InetSocketAddress;
+import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.base.Preconditions;
-import com.google.common.util.concurrent.JdkFutureAdapters;
-import com.google.common.util.concurrent.ListenableFuture;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -131,27 +131,31 @@ public abstract class AbstractFrameTransport<I extends AbstractInteraction<I>> i
         }
     }
 
-    ListenableFuture<Void> sendProtocolHeader(final byte[] bytes)
+    CompletableFuture<Void> sendProtocolHeader(final byte[] bytes)
     {
         return sendBytes(bytes);
     }
 
-    public ListenableFuture<Void> sendBytes(final byte[] bytes)
+    public CompletableFuture<Void> sendBytes(final byte[] bytes)
     {
-        Preconditions.checkState(_channel != null, "Not connected");
+        Objects.requireNonNull(_channel, "Not connected");
         final ChannelPromise promise = _channel.newPromise();
         final ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
         buffer.writeBytes(bytes);
         _channel.write(buffer, promise);
-        return JdkFutureAdapters.listenInPoolThread(promise);
+        final CompletableFuture<Void> result = new CompletableFuture<>();
+        promise.addListener(future -> completeFuture(future, result));
+        return result;
     }
 
-    public ListenableFuture<Void> sendPerformative(final Object data) throws Exception
+    public CompletableFuture<Void> sendPerformative(final Object data) throws Exception
     {
-        Preconditions.checkState(_channel != null, "Not connected");
+        Objects.requireNonNull(_channel, "Not connected");
         final ChannelPromise promise = _channel.newPromise();
         _channel.write(data, promise);
-        return JdkFutureAdapters.listenInPoolThread(promise);
+        final CompletableFuture<Void> result = new CompletableFuture<>();
+        promise.addListener(future -> completeFuture(future, result));
+        return result;
     }
 
     <T extends Response<?>> T getNextResponse() throws Exception
@@ -174,6 +178,18 @@ public abstract class AbstractFrameTransport<I extends AbstractInteraction<I>> i
     public void flush()
     {
         _channel.flush();
+    }
+
+    private static void completeFuture(Future<? super Void> future, CompletableFuture<Void> result)
+    {
+        if (future.isSuccess())
+        {
+            result.complete(null);
+        }
+        else
+        {
+            result.completeExceptionally(future.cause());
+        }
     }
 
     public abstract byte[] getProtocolHeader();

@@ -24,8 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import com.google.common.util.concurrent.ListenableFuture;
+import java.util.concurrent.CompletableFuture;
 
 import org.apache.qpid.server.exchange.DestinationReferrer;
 import org.apache.qpid.server.logging.LogSubject;
@@ -380,7 +379,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     void visit(QueueEntryVisitor visitor);
 
-    ListenableFuture<Integer> deleteAndReturnCountAsync();
+    CompletableFuture<Integer> deleteAndReturnCountAsync();
 
     int deleteAndReturnCount();
 

@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -58,13 +59,6 @@ import java.util.zip.GZIPOutputStream;
 
 import javax.security.auth.Subject;
 
-import com.google.common.collect.Lists;
-import com.google.common.io.ByteStreams;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,6 +139,7 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.util.DeleteDeleteTask;
+import org.apache.qpid.server.util.LimitedInputStream;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
@@ -190,7 +185,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final AtomicBoolean _stopped = new AtomicBoolean(false);
 
     private final AtomicBoolean _deleted = new AtomicBoolean(false);
-    private final SettableFuture<Integer> _deleteQueueDepthFuture = SettableFuture.create();
+    private final CompletableFuture<Integer> _deleteQueueDepthFuture = new CompletableFuture<>();
 
     private final List<Action<? super X>> _deleteTaskList = new CopyOnWriteArrayList<>();
 
@@ -1060,7 +1055,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    protected ListenableFuture<Void> beforeClose()
+    protected CompletableFuture<Void> beforeClose()
     {
         _closing = true;
         return super.beforeClose();
@@ -1203,7 +1198,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private Collection<QueueConsumer<?,?>> getConsumersImpl()
     {
-        return Lists.newArrayList(_queueConsumerManager.getAllIterator());
+        final List<QueueConsumer<?,?>> result = new ArrayList<>();
+        _queueConsumerManager.getAllIterator().forEachRemaining(result::add);
+        return result;
     }
 
 
@@ -1975,19 +1972,19 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public ListenableFuture<Integer> deleteAndReturnCountAsync()
+    public CompletableFuture<Integer> deleteAndReturnCountAsync()
     {
-        return Futures.transformAsync(deleteAsync(), v -> _deleteQueueDepthFuture, getTaskExecutor());
+        return deleteAsync().thenApplyAsync(v -> _deleteQueueDepthFuture.join(), getTaskExecutor());
     }
 
-    private ListenableFuture<Integer> performDelete()
+    private CompletableFuture<Integer> performDelete()
     {
         if (_deleted.compareAndSet(false, true))
         {
             if (getState() == State.UNINITIALIZED)
             {
                 preSetAlternateBinding();
-                _deleteQueueDepthFuture.set(0);
+                _deleteQueueDepthFuture.complete(0);
             }
             else
             {
@@ -2039,28 +2036,28 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
             performQueueDeleteTasks();
 
-            _deleteQueueDepthFuture.set(queueDepthMessages);
+            _deleteQueueDepthFuture.complete(queueDepthMessages);
 
             _transactions.clear();
         }
         catch(Throwable e)
         {
-            _deleteQueueDepthFuture.setException(e);
+            _deleteQueueDepthFuture.completeExceptionally(e);
         }
     }
 
     private void deleteAfterCompletionOfDischargingTransactions()
     {
-        final List<SettableFuture<Void>> dischargingTxs =
+        final List<CompletableFuture<Void>> dischargingTxs =
                 _transactions.stream()
                              .filter(t -> !t.isDischarged() && !t.isRollbackOnly() && !t.setRollbackOnly())
                              .map(t -> {
-                                 final SettableFuture<Void> future = SettableFuture.create();
-                                 LocalTransaction.LocalTransactionListener listener = tx -> future.set(null);
+                                 final CompletableFuture<Void> future = new CompletableFuture<>();
+                                 LocalTransaction.LocalTransactionListener listener = tx -> future.complete(null);
                                  t.addTransactionListener(listener);
                                  if (t.isRollbackOnly() || t.isDischarged())
                                  {
-                                     future.set(null);
+                                     future.complete(null);
                                      t.removeTransactionListener(listener);
                                  }
                                  return future;
@@ -2073,24 +2070,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         else
         {
-            ListenableFuture<Void> dischargingFuture = Futures.transform(Futures.allAsList(dischargingTxs),
-                                                                         input -> null,
-                                                                         MoreExecutors.directExecutor());
-
-            Futures.addCallback(dischargingFuture, new FutureCallback<>()
-            {
-                @Override
-                public void onSuccess(final Void result)
-                {
-                    doDelete();
-                }
-
-                @Override
-                public void onFailure(final Throwable t)
-                {
-                    _deleteQueueDepthFuture.setException(t);
-                }
-            }, MoreExecutors.directExecutor());
+            CompletableFuture<Void> dischargingFuture = CompletableFuture.allOf(dischargingTxs.toArray(CompletableFuture[]::new))
+                    .whenComplete((result, error) ->
+                    {
+                        if (error != null)
+                        {
+                            _deleteQueueDepthFuture.completeExceptionally(error);
+                        }
+                        else
+                        {
+                            doDelete();
+                        }
+                    });
         }
     }
 
@@ -2123,12 +2114,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    protected ListenableFuture<Void> onClose()
+    protected CompletableFuture<Void> onClose()
     {
         _stopped.set(true);
         _closing = false;
         _queueHouseKeepingTask.cancel();
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -2812,13 +2803,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 if (_limit != UNLIMITED && _decompressBeforeLimiting)
                 {
                     inputStream = new GZIPInputStream(inputStream);
-                    inputStream = ByteStreams.limit(inputStream, _limit);
+                    inputStream = new LimitedInputStream(inputStream, _limit);
                     outputStream = new GZIPOutputStream(outputStream, true);
                 }
 
                 try
                 {
-                    ByteStreams.copy(inputStream, outputStream);
+                    inputStream.transferTo(outputStream);
                 }
                 finally
                 {
@@ -3285,17 +3276,17 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     //=============
 
     @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)
-    private ListenableFuture<Void> activate()
+    private CompletableFuture<Void> activate()
     {
         _virtualHost.scheduleHouseKeepingTask(_virtualHost.getHousekeepingCheckPeriod(), _queueHouseKeepingTask);
         setState(State.ACTIVE);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
-        return Futures.transform(performDelete(), i -> null, getTaskExecutor());
+        return performDelete().thenApplyAsync(i -> null, getTaskExecutor());
     }
 
     @Override
@@ -3355,11 +3346,15 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         if (clazz == org.apache.qpid.server.model.Consumer.class)
         {
-            return _queueConsumerManager == null
-                    ? Set.of()
-                    : (Collection<C>) Lists.newArrayList(_queueConsumerManager.getAllIterator());
+            if (_queueConsumerManager == null)
+            {
+                return Set.of();
+            }
+            final List<QueueConsumer<?,?>> result = new ArrayList<>();
+            _queueConsumerManager.getAllIterator().forEachRemaining(result::add);
+            return (Collection<C>) result;
         }
-        else return super.getChildren(clazz);
+        return super.getChildren(clazz);
     }
 
     @Override

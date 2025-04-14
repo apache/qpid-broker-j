@@ -26,11 +26,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +74,7 @@ public class LocalTransaction implements ServerTransaction
     private final MessageStore _transactionLog;
     private volatile long _txnStartTime = 0L;
     private volatile long _txnUpdateTime = 0L;
-    private ListenableFuture<Runnable> _asyncTran;
+    private CompletableFuture<Runnable> _asyncTran;
     private volatile boolean _outstandingWork;
     private final LocalTransactionState _finalState;
     private final Set<LocalTransactionListener> _localTransactionListeners = new CopyOnWriteArraySet<>();
