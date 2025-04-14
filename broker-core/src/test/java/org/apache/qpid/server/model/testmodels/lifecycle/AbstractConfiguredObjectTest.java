@@ -28,10 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.junit.jupiter.api.Test;
 
@@ -271,7 +270,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         final TestConfiguredObject parent = new TestConfiguredObject("parent")
         {
             @Override
-            protected ListenableFuture<Void> doDelete()
+            protected CompletableFuture<Void> doDelete()
             {
                 throw expectedException;
             }

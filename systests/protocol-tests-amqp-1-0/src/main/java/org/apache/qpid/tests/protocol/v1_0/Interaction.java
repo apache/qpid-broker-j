@@ -31,13 +31,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.framing.SASLFrame;
@@ -1186,14 +1184,14 @@ public class Interaction extends AbstractInteraction<Interaction>
                 duplicate = payload.duplicate();
             }
             transportFrame = new TransportFrame(channel.shortValue(), frameBody, duplicate);
-            ListenableFuture<Void> listenableFuture = sendPerformativeAndChainFuture(transportFrame);
+            CompletableFuture<Void> listenableFuture = sendPerformativeAndChainFuture(transportFrame);
             if (frameBody instanceof Transfer)
             {
-                listenableFuture.addListener(() -> ((Transfer) frameBody).dispose(), MoreExecutors.directExecutor());
+                listenableFuture.whenComplete((result, error) -> ((Transfer) frameBody).dispose());
             }
             if (duplicate != null)
             {
-                listenableFuture.addListener(() -> duplicate.dispose(), MoreExecutors.directExecutor());
+                listenableFuture.whenComplete((result, error) -> duplicate.dispose());
             }
         }
     }

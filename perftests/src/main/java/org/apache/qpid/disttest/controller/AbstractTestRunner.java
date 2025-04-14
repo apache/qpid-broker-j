@@ -26,13 +26,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,14 +64,14 @@ public abstract class AbstractTestRunner implements ITestRunner
     private final long _testResultTimeout;
     private CountDownLatch _testResultsLatch;
     protected ControllerJmsDelegate _jmsDelegate;
-    private volatile SettableFuture<Object> _testCleanupComplete;
+    private volatile CompletableFuture<Object> _testCleanupComplete;
     private final Thread _removeQueuesShutdownHook = new Thread("shutdown-hook")
     {
         @Override
         public void run()
         {
             LOGGER.info("Shutdown intercepted: deleting test queues");
-            SettableFuture cleanupComplete = _testCleanupComplete;
+            CompletableFuture cleanupComplete = _testCleanupComplete;
             try
             {
                 cleanupComplete.get(30, TimeUnit.SECONDS);
@@ -316,7 +316,7 @@ public abstract class AbstractTestRunner implements ITestRunner
 
         try
         {
-            _testCleanupComplete = SettableFuture.create();
+            _testCleanupComplete = new CompletableFuture<>();
             createQueues();
             queuesCreated = true;
 
@@ -346,7 +346,7 @@ public abstract class AbstractTestRunner implements ITestRunner
             }
             finally
             {
-                _testCleanupComplete.set(null);
+                _testCleanupComplete.complete(null);
             }
 
             Runtime.getRuntime().removeShutdownHook(_removeQueuesShutdownHook);
