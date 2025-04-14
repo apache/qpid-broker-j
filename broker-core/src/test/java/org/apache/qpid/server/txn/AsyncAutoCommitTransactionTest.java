@@ -26,8 +26,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -50,7 +50,7 @@ public class AsyncAutoCommitTransactionTest extends UnitTestBase
     private final BaseQueue _queue = mock(BaseQueue.class);
     private final MessageStore _messageStore = mock(MessageStore.class);
     private final ServerTransaction.EnqueueAction _postTransactionAction = mock(ServerTransaction.EnqueueAction.class);
-    private final ListenableFuture<Void> _future = mock(ListenableFuture.class);
+    private final CompletableFuture<Void> _future = mock(CompletableFuture.class);
 
     private Transaction _storeTransaction;
     private FutureRecorder _futureRecorder;
@@ -149,7 +149,7 @@ public class AsyncAutoCommitTransactionTest extends UnitTestBase
         asyncAutoCommitTransaction.enqueue(_queue, _message, _postTransactionAction);
 
         verifyNoInteractions(_storeTransaction);
-        verify(_futureRecorder).recordFuture(any(ListenableFuture.class), any(Action.class));
+        verify(_futureRecorder).recordFuture(any(CompletableFuture.class), any(Action.class));
         verifyNoInteractions(_postTransactionAction);
     }
 }

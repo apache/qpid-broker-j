@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Joiner;
@@ -191,7 +192,7 @@ public class RestUserPreferenceHandler
         final Map<String, List<String>> queryParameters = requestInfo.getQueryParameters();
         UUID id = getIdFromQueryParameters(queryParameters);
 
-        final ListenableFuture<Set<Preference>> allPreferencesFuture;
+        final CompletableFuture<Set<Preference>> allPreferencesFuture;
         if (requestInfo.getType() == RequestType.USER_PREFERENCES)
         {
             allPreferencesFuture = userPreferences.getPreferences();
@@ -294,9 +295,9 @@ public class RestUserPreferenceHandler
         }
     }
 
-    private <T> T awaitFuture(final ListenableFuture<T> future)
+    private <T> T awaitFuture(final CompletableFuture<T> future)
     {
-        return FutureHelper.<T, RuntimeException>await(future, _preferenceOperationTimeout, TimeUnit.MILLISECONDS);
+        return FutureHelper.await(future, _preferenceOperationTimeout, TimeUnit.MILLISECONDS);
     }
 
     private List<Preference> validateAndConvert(final ConfiguredObject<?> target, final Map<String, Object> providedObjectMap)

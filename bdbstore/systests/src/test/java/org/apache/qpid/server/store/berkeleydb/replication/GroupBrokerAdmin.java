@@ -41,7 +41,6 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -448,8 +447,8 @@ public class GroupBrokerAdmin
 
         if (roles.values().stream().noneMatch(role -> ROLE_MASTER.equals(role) || ROLE_REPLICA.equals(role)))
         {
-            throw new BrokerAdminException("Unexpected node roles " + Joiner.on(", ").withKeyValueSeparator(" -> ")
-                                                                            .join(roles));
+            throw new BrokerAdminException("Unexpected node roles " + roles.entrySet().stream()
+                    .map(entry -> entry.getKey() + " -> " + entry.getValue()).collect(Collectors.joining(", ")));
         }
     }
 
