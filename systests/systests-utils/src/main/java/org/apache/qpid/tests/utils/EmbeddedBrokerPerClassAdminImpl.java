@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -47,8 +48,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.security.auth.Subject;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -369,7 +368,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     }
 
     @Override
-    public ListenableFuture<Void> restart()
+    public CompletableFuture<Void> restart()
     {
         try
         {
@@ -381,9 +380,9 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         }
         catch (Exception e)
         {
-            return Futures.immediateFailedFuture(e);
+            return CompletableFuture.failedFuture(e);
         }
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

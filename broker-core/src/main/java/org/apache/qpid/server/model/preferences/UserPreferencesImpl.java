@@ -41,11 +41,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import javax.security.auth.Subject;
 
 import com.google.common.collect.Ordering;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -107,7 +107,7 @@ public class UserPreferencesImpl implements UserPreferences
     }
 
     @Override
-    public ListenableFuture<Void> updateOrAppend(final Collection<Preference> preferences)
+    public CompletableFuture<Void> updateOrAppend(final Collection<Preference> preferences)
     {
         return _executor.submit(new PreferencesTask<>("updateOrAppend", preferences)
         {
@@ -145,7 +145,7 @@ public class UserPreferencesImpl implements UserPreferences
     }
 
     @Override
-    public ListenableFuture<Set<Preference>> getPreferences()
+    public CompletableFuture<Set<Preference>> getPreferences()
     {
         return _executor.submit(new PreferencesTask<>("getPreferences")
         {
@@ -173,7 +173,7 @@ public class UserPreferencesImpl implements UserPreferences
     }
 
     @Override
-    public ListenableFuture<Void> replace(final Collection<Preference> preferences)
+    public CompletableFuture<Void> replace(final Collection<Preference> preferences)
     {
         return _executor.submit(new PreferencesTask<>("replace", preferences)
         {
@@ -187,7 +187,7 @@ public class UserPreferencesImpl implements UserPreferences
     }
 
     @Override
-    public ListenableFuture<Void> replaceByType(final String type, final Collection<Preference> preferences)
+    public CompletableFuture<Void> replaceByType(final String type, final Collection<Preference> preferences)
     {
         return _executor.submit(new PreferencesTask<>("replaceByType", type, preferences)
         {
@@ -237,7 +237,7 @@ public class UserPreferencesImpl implements UserPreferences
     }
 
     @Override
-    public ListenableFuture<Void> replaceByTypeAndName(final String type,
+    public CompletableFuture<Void> replaceByTypeAndName(final String type,
                                                        final String name,
                                                        final Preference newPreference)
     {
@@ -295,7 +295,7 @@ public class UserPreferencesImpl implements UserPreferences
     }
 
     @Override
-    public ListenableFuture<Void> delete(final String type, final String name, final UUID id)
+    public CompletableFuture<Void> delete(final String type, final String name, final UUID id)
     {
         return _executor.submit(new PreferencesTask<>("delete", type, name, id)
         {
@@ -345,7 +345,7 @@ public class UserPreferencesImpl implements UserPreferences
     }
 
     @Override
-    public ListenableFuture<Set<Preference>> getVisiblePreferences()
+    public CompletableFuture<Set<Preference>> getVisiblePreferences()
     {
         return _executor.submit(new PreferencesTask<>("getVisiblePreferences")
         {

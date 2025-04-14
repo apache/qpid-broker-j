@@ -36,11 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,42 +150,37 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     }
 
     @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
-    protected ListenableFuture<Void> startQuiesced()
+    protected CompletableFuture<Void> startQuiesced()
     {
         setState(State.QUIESCED);
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     @StateTransition( currentState = {State.UNINITIALIZED, State.STOPPED, State.ERRORED }, desiredState = State.ACTIVE )
-    protected ListenableFuture<Void> doActivate()
+    protected CompletableFuture<Void> doActivate()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
+        final CompletableFuture<Void> returnVal = new CompletableFuture<>();
 
         try
         {
-            addFutureCallback(activate(),
-                              new FutureCallback<>()
-                              {
-                                  @Override
-                                  public void onSuccess(final Void result)
-                                  {
-                                      try
-                                      {
-                                          setState(State.ACTIVE);
-                                      }
-                                      finally
-                                      {
-                                          returnVal.set(null);
-                                      }
-                                  }
-
-                                  @Override
-                                  public void onFailure(final Throwable t)
-                                  {
-                                      onActivationFailure(returnVal, t);
-                                  }
-                              }, getTaskExecutor()
-                               );
+            activate().whenCompleteAsync((result, throwable) ->
+            {
+                if (throwable != null)
+                {
+                    onActivationFailure(returnVal, throwable);
+                }
+                else
+                {
+                    try
+                    {
+                        setState(State.ACTIVE);
+                    }
+                    finally
+                    {
+                        returnVal.complete(null);
+                    }
+                }
+            }, getTaskExecutor());
         }
         catch(RuntimeException e)
         {
@@ -197,17 +189,18 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         return returnVal;
     }
 
-    private void onActivationFailure(final SettableFuture<Void> returnVal, final Throwable e)
+    private void onActivationFailure(final CompletableFuture<Void> returnVal, final Throwable e)
     {
-        doAfterAlways(stopAndSetStateTo(State.ERRORED), () -> {
+        stopAndSetStateTo(State.ERRORED).whenComplete((throwable, error) ->
+        {
             if (_broker.isManagementMode())
             {
                 LOGGER.warn("Failed to make " + this + " active.", e);
-                returnVal.set(null);
+                returnVal.complete(null);
             }
             else
             {
-                returnVal.setException(e);
+                returnVal.completeExceptionally(e);
             }
         });
     }
@@ -289,12 +282,12 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     }
 
     @Override
-    protected ListenableFuture<Void> onDelete()
+    protected CompletableFuture<Void> onDelete()
     {
         throw new UnsupportedOperationException("Sub-classes must override");
     }
 
-    protected ListenableFuture<Void> closeVirtualHostIfExists()
+    protected CompletableFuture<Void> closeVirtualHostIfExists()
     {
         final VirtualHost<?> virtualHost = getVirtualHost();
         if (virtualHost != null)
@@ -303,20 +296,20 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         }
         else
         {
-            return Futures.immediateFuture(null);
+            return CompletableFuture.completedFuture(null);
         }
     }
 
     @StateTransition( currentState = { State.ACTIVE, State.ERRORED, State.UNINITIALIZED }, desiredState = State.STOPPED )
-    protected ListenableFuture<Void> doStop()
+    protected CompletableFuture<Void> doStop()
     {
         return stopAndSetStateTo(State.STOPPED);
     }
 
-    protected ListenableFuture<Void> stopAndSetStateTo(final State stoppedState)
+    protected CompletableFuture<Void> stopAndSetStateTo(final State stoppedState)
     {
-        ListenableFuture<Void> childCloseFuture = closeChildren();
-        return doAfterAlways(childCloseFuture, () ->
+        CompletableFuture<Void> childCloseFuture = closeChildren();
+        return childCloseFuture.whenComplete((result, throwable) ->
         {
             closeConfigurationStoreSafely();
             setState(stoppedState);
@@ -343,11 +336,11 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     }
 
     @Override
-    protected ListenableFuture<Void> onClose()
+    protected CompletableFuture<Void> onClose()
     {
         closeConfigurationStore();
         onCloseOrDelete();
-        return Futures.immediateFuture(null);
+        return CompletableFuture.completedFuture(null);
     }
 
     protected void onCloseOrDelete()
@@ -419,7 +412,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
 
     protected abstract DurableConfigurationStore createConfigurationStore();
 
-    protected abstract ListenableFuture<Void> activate();
+    protected abstract CompletableFuture<Void> activate();
 
     protected abstract ConfiguredObjectRecord enrichInitialVirtualHostRootRecord(final ConfiguredObjectRecord vhostRecord);
 
