@@ -21,15 +21,15 @@ package org.apache.qpid.disttest.results.formatting;
 import java.util.Comparator;
 import java.util.Map;
 
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Ordering;
-
 import org.apache.qpid.disttest.message.ConsumerParticipantResult;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.message.ProducerParticipantResult;
 
 public class CSVOrderParticipantResultComparator implements Comparator<ParticipantResult>
 {
+    private final Comparator<ParticipantResult> COMPARATOR = Comparator.comparing(this::getTypeCode, Comparator.nullsFirst(Comparator.naturalOrder()))
+        .thenComparing(ParticipantResult::getParticipantName, Comparator.nullsFirst(Comparator.naturalOrder()));
+
     // TODO yuk
     private static final Map<Class<? extends ParticipantResult>, Integer> TYPE_CODES =
             Map.of(ProducerParticipantResult.class, 0, ConsumerParticipantResult.class, 1, ParticipantResult.class, 2);
@@ -37,16 +37,11 @@ public class CSVOrderParticipantResultComparator implements Comparator<Participa
     @Override
     public int compare(ParticipantResult left, ParticipantResult right)
     {
-        return ComparisonChain.start()
-            .compare(getTypeCode(left), getTypeCode(right), Ordering.natural().nullsFirst())
-            .compare(left.getParticipantName(), right.getParticipantName(), Ordering.natural().nullsFirst())
-            .result();
+        return COMPARATOR.compare(left, right);
     }
-
 
     private int getTypeCode(ParticipantResult participantResult)
     {
         return TYPE_CODES.get(participantResult.getClass());
     }
-
 }

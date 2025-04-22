@@ -26,14 +26,26 @@ Apache Qpid Broker-J Performance Tests
 
 From: 'an unknown organization'
 
-  - Guava InternalFutureFailureAccess and InternalFutures (https://github.com/google/guava/failureaccess) com.google.guava:failureaccess:bundle:1.0.2
+  - resilience4j (https://resilience4j.readme.io) io.github.resilience4j:resilience4j-core:jar:2.3.0
+    License: Apache-2.0  (https://github.com/resilience4j/resilience4j/blob/master/LICENSE.txt)
+
+  - resilience4j (https://resilience4j.readme.io) io.github.resilience4j:resilience4j-ratelimiter:jar:2.3.0
+    License: Apache-2.0  (https://github.com/resilience4j/resilience4j/blob/master/LICENSE.txt)
+
+  - IntelliJ IDEA Annotations (http://www.jetbrains.org) org.jetbrains:annotations:jar:13.0
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Guava: Google Core Libraries for Java (https://github.com/google/guava) com.google.guava:guava:bundle:33.4.0-jre
-    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Kotlin Stdlib (https://kotlinlang.org/) org.jetbrains.kotlin:kotlin-stdlib:jar:1.9.0
+    License: The Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - J2ObjC Annotations (https://github.com/google/j2objc/) com.google.j2objc:j2objc-annotations:jar:3.0.0
-    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Kotlin Stdlib Common (https://kotlinlang.org/) org.jetbrains.kotlin:kotlin-stdlib-common:jar:1.9.0
+    License: The Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Kotlin Stdlib Jdk7 (https://kotlinlang.org/) org.jetbrains.kotlin:kotlin-stdlib-jdk7:jar:1.9.0
+    License: The Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Kotlin Stdlib Jdk8 (https://kotlinlang.org/) org.jetbrains.kotlin:kotlin-stdlib-jdk8:jar:1.9.0
+    License: The Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 
 From: 'Apache Software Foundation' (http://www.apache.org)

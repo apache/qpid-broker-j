@@ -30,8 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +43,8 @@ import org.apache.qpid.server.protocol.v0_10.transport.ProtocolError;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolEvent;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolHeader;
 import org.apache.qpid.server.protocol.v0_10.transport.Struct;
+import org.apache.qpid.server.util.PeekingIterator;
+import org.apache.qpid.server.util.PeekingIteratorImpl;
 
 public class ServerAssembler
 {
@@ -73,7 +73,7 @@ public class ServerAssembler
     {
         if (!frames.isEmpty())
         {
-            final PeekingIterator<ServerFrame> itr = Iterators.peekingIterator(frames.iterator());
+            final PeekingIterator<ServerFrame> itr = new PeekingIteratorImpl(frames.iterator());
 
             boolean cleanExit = false;
             try

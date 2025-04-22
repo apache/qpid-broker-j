@@ -54,8 +54,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -74,7 +72,6 @@ import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.UpdateLogMessage;
 
-import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -2386,7 +2383,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
         final List<CompletableFuture<Void>> childDeleteFutures = new ArrayList<>();
 
-        applyToChildren(child -> {
+        applyToChildren(child ->
+        {
 
             final CompletableFuture<Void> childDeleteFuture;
             if (child instanceof AbstractConfiguredObject<?>)
@@ -2413,12 +2411,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         ((AbstractConfiguredObject) child).logDeleted(Outcome.FAILURE);
                     }
                 }
-                else
+                else if (child instanceof AbstractConfiguredObject<?>)
                 {
-                    if (child instanceof AbstractConfiguredObject<?>)
-                    {
-                        ((AbstractConfiguredObject) child).logDeleted(Outcome.SUCCESS);
-                    }
+                    ((AbstractConfiguredObject) child).logDeleted(Outcome.SUCCESS);
                 }
             }, getTaskExecutor());
 

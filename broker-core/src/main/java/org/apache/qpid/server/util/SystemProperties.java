@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,33 +19,11 @@
  *
  */
 
-package org.apache.qpid.test.utils;
+package org.apache.qpid.server.util;
 
-public enum JvmVendor
+public class SystemProperties
 {
-    ORACLE,
-    IBM,
-    OPENJDK,
-    UNKNOWN;
+    private SystemProperties() { }
 
-    public static JvmVendor getJvmVendor()
-    {
-        final String property = String.valueOf(System.getProperty("java.vendor")).toUpperCase();
-        if (property.contains("IBM"))
-        {
-            return JvmVendor.IBM;
-        }
-        else if (property.contains("ORACLE"))
-        {
-            return JvmVendor.ORACLE;
-        }
-        else if (property.contains("OPENJDK"))
-        {
-            return JvmVendor.OPENJDK;
-        }
-        else
-        {
-            return JvmVendor.UNKNOWN;
-        }
-    }
+    public static final String JAVA_VENDOR = "java.vendor";
 }

@@ -60,10 +60,10 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Defaults;
 
 import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.util.ClassUtils;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.Strings;
 
@@ -1382,7 +1382,7 @@ abstract class AttributeValueConverter<T>
                                 }
                                 else
                                 {
-                                    return Defaults.defaultValue(method.getReturnType());
+                                    return ClassUtils.defaultValue(method.getReturnType());
                                 }
                             }
                         });

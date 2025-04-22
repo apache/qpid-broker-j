@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-import static com.google.common.collect.Iterators.cycle;
 import static java.util.Collections.newSetFromMap;
 
 import java.io.BufferedInputStream;
@@ -1398,17 +1397,16 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             try
             {
                 return CompletableFuture.runAsync(() ->
-                                           {
-                                               final Collection<Queue> queues =
-                                                       getChildren(Queue.class);
-                                               for (Queue q : queues)
-                                               {
-                                                   if (q.getState() == State.ACTIVE)
-                                                   {
-                                                       q.reallocateMessages();
-                                                   }
-                                               }
-                                           }, houseKeepingTaskExecutor);
+                {
+                    final Collection<Queue> queues = getChildren(Queue.class);
+                    for (Queue q : queues)
+                    {
+                        if (q.getState() == State.ACTIVE)
+                        {
+                            q.reallocateMessages();
+                        }
+                    }
+                }, houseKeepingTaskExecutor);
             }
             catch (RejectedExecutionException e)
             {
@@ -2122,41 +2120,44 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 Collections.shuffle(queueIterators);
 
                 long cumulativeSize = 0;
-                final Iterator<QueueEntryIterator> cyclicIterators = cycle(queueIterators);
-                while (cyclicIterators.hasNext())
-                {
-                    final QueueEntryIterator queueIterator = cyclicIterators.next();
-                    if (queueIterator.advance())
-                    {
-                        QueueEntry node = queueIterator.getNode();
-                        if (node != null && !node.isDeleted())
-                        {
-                            try (MessageReference messageReference = node.getMessage().newReference())
-                            {
-                                final StoredMessage storedMessage = messageReference.getMessage().getStoredMessage();
-                                final long inMemorySize = storedMessage.getInMemorySize();
-                                if (inMemorySize > 0)
-                                {
-                                    if (cumulativeSize <= currentTargetSize)
-                                    {
-                                        cumulativeSize += inMemorySize;
-                                    }
 
-                                    if (cumulativeSize > currentTargetSize && node.getQueue().checkValid(node))
+                while (!queueIterators.isEmpty())
+                {
+                    for (final Iterator<QueueEntryIterator> it = queueIterators.iterator(); it.hasNext();)
+                    {
+                        final QueueEntryIterator queueIterator = it.next();
+                        if (queueIterator.advance())
+                        {
+                            QueueEntry node = queueIterator.getNode();
+                            if (node != null && !node.isDeleted())
+                            {
+                                try (MessageReference messageReference = node.getMessage().newReference())
+                                {
+                                    final StoredMessage storedMessage = messageReference.getMessage().getStoredMessage();
+                                    final long inMemorySize = storedMessage.getInMemorySize();
+                                    if (inMemorySize > 0)
                                     {
-                                        storedMessage.flowToDisk();
+                                        if (cumulativeSize <= currentTargetSize)
+                                        {
+                                            cumulativeSize += inMemorySize;
+                                        }
+
+                                        if (cumulativeSize > currentTargetSize && node.getQueue().checkValid(node))
+                                        {
+                                            storedMessage.flowToDisk();
+                                        }
                                     }
                                 }
-                            }
-                            catch (MessageDeletedException e)
-                            {
-                                // pass
+                                catch (MessageDeletedException e)
+                                {
+                                    // pass
+                                }
                             }
                         }
-                    }
-                    else
-                    {
-                        cyclicIterators.remove();
+                        else
+                        {
+                            it.remove();
+                        }
                     }
                 }
                 reportDirectMemoryBelowTargetIfReached(cumulativeSize,

@@ -82,8 +82,9 @@ public class GroupBrokerAdmin
         try
         {
             int startupTimeout = Integer.getInteger(SYSTEST_PROPERTY_SPAWN_BROKER_STARTUP_TIME, 30000);
-            awaitFuture(startupTimeout, invokeParallel(Arrays.stream(_brokers).map(a -> (Callable<Void>) () -> {
-                a.beforeTestClass(testClass);
+            awaitFuture(startupTimeout, invokeParallel(Arrays.stream(_brokers).map(admin -> (Callable<Void>) () ->
+            {
+                admin.beforeTestClass(testClass);
                 return null;
             }).collect(Collectors.toList())));
 
@@ -399,18 +400,20 @@ public class GroupBrokerAdmin
 
     private <T> CompletableFuture<T> invokeParallel(Collection<Callable<T>> tasks)
     {
-        try
-        {
-            @SuppressWarnings("unchecked")
-            List<CompletableFuture<T>> futures = (List) _executorService.invokeAll(tasks);
-            CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));
-            return combinedFuture.thenComposeAsync(input -> null, _executorService);
-        }
-        catch (InterruptedException e)
-        {
-            Thread.interrupted();
-            return CompletableFuture.failedFuture(e);
-        }
+        final List<CompletableFuture<T>> futures = tasks.stream()
+                .map(task -> CompletableFuture.supplyAsync(() ->
+                {
+                    try
+                    {
+                        return task.call();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new RuntimeException(e);
+                    }}, _executorService))
+                .collect(Collectors.toList());
+        final CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));
+        return combinedFuture.thenComposeAsync(input -> CompletableFuture.completedFuture(null), _executorService);
     }
 
     private <T> void awaitFuture(long waitLimit, CompletableFuture<T> future)

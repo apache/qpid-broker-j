@@ -18,12 +18,12 @@
  */
 package org.apache.qpid.server.security.access.util;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.Iterators;
-
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.stream.Stream;
+
+import org.apache.qpid.server.util.Strings;
 
 final class WildCardBranch extends AbstractTreeBranch
 {
@@ -53,7 +53,7 @@ final class WildCardBranch extends AbstractTreeBranch
     @Override
     public Iterator<String> iterator()
     {
-        return Iterators.singletonIterator(_prefix + "*");
+        return Stream.of(_prefix + "*").iterator();
     }
 
     @Override

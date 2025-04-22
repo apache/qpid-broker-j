@@ -51,8 +51,8 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.config.Rule.Builder;
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
+import org.apache.qpid.server.util.CollectionUtils;
 
-import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -329,7 +329,7 @@ public final class AclFileParser
         {
             final String key = i.next().toLowerCase(Locale.ENGLISH);
             final Set<String> values = readValue(i, line);
-            final Boolean value = Boolean.valueOf(Iterables.getOnlyElement(values));
+            final Boolean value = Boolean.valueOf(CollectionUtils.getOnlyElement(values));
 
             if (Boolean.TRUE.equals(value))
             {

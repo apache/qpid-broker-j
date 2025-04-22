@@ -21,8 +21,7 @@ package org.apache.qpid.disttest.results.formatting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import com.google.common.base.Joiner;
+import java.util.stream.Collectors;
 
 import org.apache.qpid.disttest.message.ParticipantAttribute;
 import org.apache.qpid.disttest.message.ParticipantResult;
@@ -67,8 +66,10 @@ public class CSVFormatter
             String attributeValueFormatted = attribute.format(attributeValue);
             attributeValues.add(attributeValueFormatted);
         }
-        String row = Joiner.on(',').useForNull("").join(attributeValues.toArray());
-        return row + "\n";
+
+        return attributeValues.stream()
+                .map(el -> el == null ? "" : String.valueOf(el))
+                .collect(Collectors.joining(",")) + "\n";
     }
 
     /** return the header row, including a newline at the end */
@@ -80,8 +81,9 @@ public class CSVFormatter
             displayNames.add(attribute.getDisplayName());
         }
 
-        String header = Joiner.on(',').useForNull("").join(displayNames.toArray());
-        return header + "\n";
+        return displayNames.stream()
+                .map(el -> el == null ? "" : el)
+                .collect(Collectors.joining(",")) + "\n";
     }
 
 }

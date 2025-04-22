@@ -19,19 +19,29 @@
 package org.apache.qpid.disttest.controller;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
-
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 
 public class ParticipatingClients
 {
-    private final BiMap<String, String> _configuredToRegisteredNameMap;
+    private final Map<String, String> _configuredToRegisteredNameMap = new HashMap<>();
+    private final Map<String, String> _registeredNameToConfiguredMap = new HashMap<>();
 
     public ParticipatingClients(ClientRegistry clientRegistry, List<String> configuredClientNamesForTest)
     {
-        _configuredToRegisteredNameMap = mapConfiguredToRegisteredClientNames(configuredClientNamesForTest, clientRegistry);
+        TreeSet<String> registeredClients = new TreeSet<>(clientRegistry.getClients());
+        for (String configuredClientName : configuredClientNamesForTest)
+        {
+            String allocatedClientName = registeredClients.pollFirst();
+            if (allocatedClientName == null)
+            {
+                throw new IllegalArgumentException("Too few clients in registry " + clientRegistry + " configured clients " + configuredClientNamesForTest);
+            }
+            _configuredToRegisteredNameMap.put(configuredClientName, allocatedClientName);
+            _registeredNameToConfiguredMap.put(allocatedClientName, configuredClientName);
+        }
     }
 
     public String getRegisteredNameFromConfiguredName(String clientConfiguredName)
@@ -47,7 +57,7 @@ public class ParticipatingClients
 
     public String getConfiguredNameFromRegisteredName(String registeredClientName)
     {
-        String clientConfiguredName = _configuredToRegisteredNameMap.inverse().get(registeredClientName);
+        String clientConfiguredName = _registeredNameToConfiguredMap.get(registeredClientName);
         if (clientConfiguredName == null)
         {
             throw new IllegalArgumentException("Unrecognised client registered name " + registeredClientName
@@ -55,24 +65,6 @@ public class ParticipatingClients
         }
 
         return clientConfiguredName;
-    }
-
-    private BiMap<String, String> mapConfiguredToRegisteredClientNames(List<String> configuredClientNamesForTest, ClientRegistry clientRegistry)
-    {
-        BiMap<String, String> configuredToRegisteredNameMap = HashBiMap.create();
-
-        TreeSet<String> registeredClients = new TreeSet<>(clientRegistry.getClients());
-        for (String configuredClientName : configuredClientNamesForTest)
-        {
-            String allocatedClientName = registeredClients.pollFirst();
-            if (allocatedClientName == null)
-            {
-                throw new IllegalArgumentException("Too few clients in registry " + clientRegistry + " configured clients " + configuredClientNamesForTest);
-            }
-            configuredToRegisteredNameMap.put(configuredClientName, allocatedClientName);
-        }
-
-        return configuredToRegisteredNameMap;
     }
 
     @SuppressWarnings("unchecked")
