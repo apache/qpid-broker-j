@@ -34,6 +34,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -42,8 +43,6 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.sleepycat.je.rep.ReplicationConfig;
 
 import org.apache.qpid.server.virtualhostnode.AbstractVirtualHostNode;
@@ -66,7 +65,7 @@ public class GroupBrokerAdmin
     private static final String HOST = "127.0.0.1";
 
     private GroupMember[] _members;
-    private ListeningExecutorService _executorService;
+    private ExecutorService _executorService;
     private SpawnBrokerAdmin[] _brokers;
     private String _groupName;
 
@@ -75,7 +74,7 @@ public class GroupBrokerAdmin
         GroupConfig runBrokerAdmin = (GroupConfig) testClass.getAnnotation(GroupConfig.class);
         int numberOfNodes = runBrokerAdmin == null ? 2 : runBrokerAdmin.numberOfNodes();
         _groupName = runBrokerAdmin == null ? "test-ha" : runBrokerAdmin.groupName();
-        _executorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(numberOfNodes));
+        _executorService = Executors.newFixedThreadPool(numberOfNodes);
 
         _brokers = Stream.generate(SpawnBrokerAdmin::new).limit(numberOfNodes).toArray(SpawnBrokerAdmin[]::new);
 

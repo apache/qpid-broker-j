@@ -28,14 +28,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,13 +94,12 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private final Set<Queue<?>> _recoveringQueues = new CopyOnWriteArraySet<>();
         private final AtomicBoolean _recoveryComplete = new AtomicBoolean();
         private final Map<Long, MessageReference<? extends ServerMessage<?>>> _recoveredMessages = new HashMap<>();
-        private final ListeningExecutorService _queueRecoveryExecutor =
-                MoreExecutors.listeningDecorator(new ThreadPoolExecutor(0,
-                                                                        Integer.MAX_VALUE,
-                                                                        60L,
-                                                                        TimeUnit.SECONDS,
-                                                                        new SynchronousQueue<>(),
-                                                                        QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(Executors.defaultThreadFactory())));
+        private final ExecutorService _queueRecoveryExecutor = new ThreadPoolExecutor(0,
+                Integer.MAX_VALUE,
+                60L,
+                TimeUnit.SECONDS,
+                new SynchronousQueue<>(),
+                QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(Executors.defaultThreadFactory()));
 
         private final MessageStore.MessageStoreReader _storeReader;
         private final AtomicBoolean _continueRecovery = new AtomicBoolean(true);

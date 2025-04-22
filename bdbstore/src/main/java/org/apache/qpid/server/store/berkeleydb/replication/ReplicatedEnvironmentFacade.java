@@ -50,8 +50,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 
 import com.sleepycat.je.CheckpointConfig;
 import com.sleepycat.je.Database;
@@ -253,7 +251,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     private final File _environmentDirectory;
 
     private final ExecutorService _environmentJobExecutor;
-    private final ListeningExecutorService _stateChangeExecutor;
+    private final ExecutorService _stateChangeExecutor;
 
     /**
      * Executor used to learn about changes in the group.  Number of threads in the pool is maintained dynamically
@@ -328,7 +326,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
         // we rely on this executor being single-threaded as we need to restart and mutate the environment from one thread only
         _environmentJobExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory("Environment-" + _prettyGroupNodeName));
-        _stateChangeExecutor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor(new DaemonThreadFactory("StateChange-" + _prettyGroupNodeName)));
+        _stateChangeExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory("StateChange-" + _prettyGroupNodeName));
         _groupChangeExecutor = new ScheduledThreadPoolExecutor(2, new DaemonThreadFactory("Group-Change-Learner:" + _prettyGroupNodeName));
         _disableCoalescingCommiter = configuration.getFacadeParameter(Boolean.class,DISABLE_COALESCING_COMMITTER_PROPERTY_NAME, DEFAULT_DISABLE_COALESCING_COMMITTER);
         _noSyncTxDurability = Durability.parse(configuration.getFacadeParameter(String.class, NO_SYNC_TX_DURABILITY_PROPERTY_NAME, getDefaultDurability(_disableCoalescingCommiter)));
@@ -588,7 +586,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             // Tell the virtualhostnode that we are no longer attached to the group.  It will close the virtualhost,
             // closing the connections, housekeeping etc meaning all transactions are finished before we
             // restart the environment.
-            _stateChangeExecutor.submit(() ->
+            CompletableFuture.supplyAsync(() ->
             {
                 StateChangeListener listener = _stateChangeListener.get();
                 if (listener != null && _state.get() == State.RESTARTING)
@@ -605,7 +603,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 }
 
                 return null;
-            }).addListener(() ->
+            }, _stateChangeExecutor).thenRunAsync(() ->
             {
                 int attemptNumber = 1;
                 boolean restarted = false;
