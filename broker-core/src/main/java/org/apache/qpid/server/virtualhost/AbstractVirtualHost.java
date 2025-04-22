@@ -66,8 +66,8 @@ import java.util.regex.PatternSyntaxException;
 
 import javax.security.auth.Subject;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -3144,7 +3144,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         int maxSize = contextKeys.contains(maxSizeContextVarName) ? getContextValue(Integer.class, maxSizeContextVarName) : getContextValue(Integer.class, NAMED_CACHE_MAXIMUM_SIZE);
         long expiration = contextKeys.contains(expirationContextVarName) ? getContextValue(Long.class, expirationContextVarName) : getContextValue(Long.class, NAMED_CACHE_EXPIRATION);
 
-        return _caches.computeIfAbsent(cacheName, (k) -> CacheBuilder.<K, V>newBuilder()
+        return _caches.computeIfAbsent(cacheName, (k) -> Caffeine.<K, V>newBuilder()
                 .maximumSize(maxSize)
                 .expireAfterAccess(expiration, TimeUnit.MILLISECONDS)
                 .build());

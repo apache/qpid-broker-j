@@ -29,9 +29,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -140,7 +140,7 @@ class AMQShortStringTest extends UnitTestBase
     void caching()
     {
         final Cache<ByteBuffer, AMQShortString> original = AMQShortString.getShortStringCache();
-        final Cache<ByteBuffer, AMQShortString> cache = CacheBuilder.newBuilder().maximumSize(1).build();
+        final Cache<ByteBuffer, AMQShortString> cache = Caffeine.newBuilder().maximumSize(1).build();
         AMQShortString.setShortStringCache(cache);
         try
         {
