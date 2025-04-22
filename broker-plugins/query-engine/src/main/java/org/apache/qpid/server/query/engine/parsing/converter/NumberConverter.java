@@ -25,8 +25,6 @@ import java.math.RoundingMode;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.google.common.collect.ImmutableMap;
-
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContext;
 import org.apache.qpid.server.query.engine.evaluator.EvaluationContextHolder;
 import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
@@ -42,31 +40,27 @@ public final class NumberConverter
     /**
      * Conversion rules
      */
-    private static final Map<Class<?>, Map<Class<?>, Function<Object, ?>>> CONVERSIONS = ImmutableMap.<Class<?>, Map<Class<?>, Function<Object, ?>>>builder()
-        .put(Double.class, ImmutableMap.<Class<?>, Function<Object, ?>>builder()
-            .put(BigDecimal.class, arg -> ((BigDecimal) arg).doubleValue())
-            .put(Byte.class, arg -> ((Byte) arg).doubleValue())
-            .put(Double.class, arg -> arg)
-            .put(Float.class, arg -> ((Float) arg).doubleValue())
-            .put(Integer.class, arg -> ((Integer) arg).doubleValue())
-            .put(Long.class, arg -> ((Long) arg).doubleValue())
-            .put(Number.class, arg -> ((Number) arg).doubleValue())
-            .put(Short.class, arg -> ((Short) arg).doubleValue())
-            .put(String.class, arg -> Double.parseDouble((String)arg))
-            .build()
-        )
-        .put(Long.class, ImmutableMap.<Class<?>, Function<Object, ?>>builder()
-            .put(BigDecimal.class, arg -> ((BigDecimal) arg).longValue())
-            .put(Byte.class, arg -> ((Byte) arg).longValue())
-            .put(Double.class, arg -> ((Double) arg).longValue())
-            .put(Float.class, arg -> ((Float) arg).longValue())
-            .put(Integer.class, arg -> ((Integer) arg).longValue())
-            .put(Long.class, arg -> arg)
-            .put(Number.class, arg -> ((Number) arg).longValue())
-            .put(Short.class, arg -> ((Short) arg).longValue())
-            .put(String.class, arg -> ((Double) Double.parseDouble((String)arg)).longValue())
-            .build()
-        ).build();
+    private static final Map<Class<?>, Map<Class<?>, Function<Object, ?>>> CONVERSIONS = Map.of(
+        Double.class, Map.<Class<?>, Function<Object, ?>>of(
+            BigDecimal.class, arg -> ((BigDecimal) arg).doubleValue(),
+            Byte.class, arg -> ((Byte) arg).doubleValue(),
+            Double.class, arg -> arg,
+            Float.class, arg -> ((Float) arg).doubleValue(),
+            Integer.class, arg -> ((Integer) arg).doubleValue(),
+            Long.class, arg -> ((Long) arg).doubleValue(),
+            Number.class, arg -> ((Number) arg).doubleValue(),
+            Short.class, arg -> ((Short) arg).doubleValue(),
+            String.class, arg -> Double.parseDouble((String)arg)),
+        Long.class, Map.<Class<?>, Function<Object, ?>>of(
+            BigDecimal.class, arg -> ((BigDecimal) arg).longValue(),
+            Byte.class, arg -> ((Byte) arg).longValue(),
+            Double.class, arg -> ((Double) arg).longValue(),
+            Float.class, arg -> ((Float) arg).longValue(),
+            Integer.class, arg -> ((Integer) arg).longValue(),
+            Long.class, arg -> arg,
+            Number.class, arg -> ((Number) arg).longValue(),
+            Short.class, arg -> ((Short) arg).longValue(),
+            String.class, arg -> ((Double) Double.parseDouble((String)arg)).longValue()));
 
     /**
      * Shouldn't be instantiated directly

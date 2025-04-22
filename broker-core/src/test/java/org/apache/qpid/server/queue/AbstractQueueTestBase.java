@@ -42,13 +42,13 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -117,9 +117,9 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @BeforeEach
     public void setUp() throws Exception
     {
-        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME, _qname)
-                .put(Queue.OWNER, _owner).build();
+        final Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, _qname);
+        attributes.put(Queue.OWNER, _owner);
         _queue = (AbstractQueue<?>) _virtualHost.createChild(Queue.class, attributes);
         _exchange = (DirectExchangeImpl) _virtualHost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
         _consumerTarget = new TestConsumerTarget();
@@ -144,8 +144,8 @@ abstract class AbstractQueueTestBase extends UnitTestBase
                 "Expected exception not thrown");
         assertTrue(thrown.getMessage().contains("name"), "Exception was not about missing name");
 
-        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME, "differentName").build();
+        final Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, "differentName");
         _queue = _virtualHost.createChild(Queue.class, attributes);
         assertNotNull(_queue, "Queue was not created");
     }
@@ -237,10 +237,10 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     public void testMessageHeldIfNotYetValidWhenConsumerAdded() throws Exception
     {
         _queue.close();
-        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME, _qname)
-                .put(Queue.OWNER, _owner)
-                .put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.TRUE).build();
+        final Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, _qname);
+        attributes.put(Queue.OWNER, _owner);
+        attributes.put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.TRUE);
 
         _queue = _virtualHost.createChild(Queue.class, attributes);
 
@@ -266,10 +266,10 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     public void testMessageHoldingDependentOnQueueProperty() throws Exception
     {
         _queue.close();
-        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME, _qname)
-                .put(Queue.OWNER, _owner)
-                .put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.FALSE).build();
+        final Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, _qname);
+        attributes.put(Queue.OWNER, _owner);
+        attributes.put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.FALSE);
 
         _queue = _virtualHost.createChild(Queue.class, attributes);
 
@@ -290,10 +290,10 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     public void testUnheldMessageOvertakesHeld() throws Exception
     {
         _queue.close();
-        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME, _qname)
-                .put(Queue.OWNER, _owner)
-                .put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.TRUE).build();
+        final Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, _qname);
+        attributes.put(Queue.OWNER, _owner);
+        attributes.put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.TRUE);
 
         _queue = _virtualHost.createChild(Queue.class, attributes);
 
@@ -782,9 +782,9 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     public void testMaximumMessageTtl()
     {
         // Test scenarios where only the maximum TTL has been set
-        Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME,"testTtlOverrideMaximumTTl")
-                .put(Queue.MAXIMUM_MESSAGE_TTL, 10000L).build();
+        Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME,"testTtlOverrideMaximumTTl");
+        attributes.put(Queue.MAXIMUM_MESSAGE_TTL, 10000L);
 
         Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
@@ -809,9 +809,9 @@ abstract class AbstractQueueTestBase extends UnitTestBase
 
         // Test the scenarios where only the minimum TTL has been set
 
-        attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME,"testTtlOverrideMinimumTTl")
-                .put(Queue.MINIMUM_MESSAGE_TTL, 10000L).build();
+        attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME,"testTtlOverrideMinimumTTl");
+        attributes.put(Queue.MINIMUM_MESSAGE_TTL, 10000L);
 
         queue = _virtualHost.createChild(Queue.class, attributes);
 
@@ -836,10 +836,10 @@ abstract class AbstractQueueTestBase extends UnitTestBase
 
         // Test the scenarios where both the minimum and maximum TTL have been set
 
-        attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME,"testTtlOverrideBothTTl")
-                .put(Queue.MINIMUM_MESSAGE_TTL, 10000L)
-                .put(Queue.MAXIMUM_MESSAGE_TTL, 20000L).build();
+        attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME,"testTtlOverrideBothTTl");
+        attributes.put(Queue.MINIMUM_MESSAGE_TTL, 10000L);
+        attributes.put(Queue.MAXIMUM_MESSAGE_TTL, 20000L);
 
         queue = _virtualHost.createChild(Queue.class, attributes);
 
@@ -867,9 +867,9 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testNoneOverflowPolicy()
     {
-        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 2)
-                .put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 100).build();
+        final Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 2);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 100);
 
         final Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
@@ -893,9 +893,9 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testRingOverflowPolicyMaxCount()
     {
-        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING)
-                .put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 4).build();
+        final Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 4);
 
         final Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
@@ -925,10 +925,10 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testRingOverflowPolicyMaxSize()
     {
-        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING)
-                .put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 4)
-                .put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 100).build();
+        final Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 4);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 100);
 
         final Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
@@ -962,9 +962,9 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testRingOverflowPolicyMessagesRejected()
     {
-        Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING)
-                .put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 0).build();
+        Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 0);
 
         final Queue<?> queue = getQueue();
         queue.setAttributes(attributes);
@@ -980,9 +980,9 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         final int payloadSize = 10;
         final int id = 28;
 
-        attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 10)
-                .put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 10).build();
+        attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 10);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_BYTES, 10);
         queue.setAttributes(attributes);
 
         message = createMessage((long) id, headerSize, payloadSize);
@@ -994,9 +994,9 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     public void testAlternateBindingValidationRejectsNonExistingDestination()
     {
         final String alternateBinding = "nonExisting";
-        final Map<String, Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME, getTestName())
-                .put(Queue.ALTERNATE_BINDING, Map.of(AlternateBinding.DESTINATION, alternateBinding)).build();
+        final Map<String, Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, getTestName());
+        attributes.put(Queue.ALTERNATE_BINDING, Map.of(AlternateBinding.DESTINATION, alternateBinding));
         final UnknownAlternateBindingException thrown = assertThrows(UnknownAlternateBindingException.class,
                 () -> _virtualHost.createChild(Queue.class, attributes),
                 "Expected exception is not thrown");
@@ -1018,16 +1018,16 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     public void testDurableQueueRejectsNonDurableAlternateBinding()
     {
         final String dlqName = getTestName() + "_DLQ";
-        final Map<String, Object> dlqAttributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME, dlqName)
-                .put(Queue.DURABLE, false).build();
+        final Map<String, Object> dlqAttributes = new HashMap<>(_arguments);
+        dlqAttributes.put(Queue.NAME, dlqName);
+        dlqAttributes.put(Queue.DURABLE, false);
 
         _virtualHost.createChild(Queue.class, dlqAttributes);
 
-        final Map<String, Object> queueAttributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME, getTestName())
-                .put(Queue.ALTERNATE_BINDING, Map.of(AlternateBinding.DESTINATION, dlqName))
-                .put(Queue.DURABLE, true).build();
+        final Map<String, Object> queueAttributes = new HashMap<>(_arguments);
+        queueAttributes.put(Queue.NAME, getTestName());
+        queueAttributes.put(Queue.ALTERNATE_BINDING, Map.of(AlternateBinding.DESTINATION, dlqName));
+        queueAttributes.put(Queue.DURABLE, true);
 
         assertThrows(IllegalConfigurationException.class,
                 () -> _virtualHost.createChild(Queue.class, queueAttributes),
@@ -1037,9 +1037,9 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testAlternateBinding()
     {
-        final Map<String, Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME, getTestName())
-                .put(Queue.ALTERNATE_BINDING, Map.of(AlternateBinding.DESTINATION, _qname)).build();
+        final Map<String, Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, getTestName());
+        attributes.put(Queue.ALTERNATE_BINDING, Map.of(AlternateBinding.DESTINATION, _qname));
         final Queue<?> newQueue = _virtualHost.createChild(Queue.class, attributes);
 
         assertEquals(_qname, newQueue.getAlternateBinding().getDestination(), "Unexpected alternate binding");
@@ -1048,9 +1048,9 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testDeleteOfQueueSetAsAlternate()
     {
-        final Map<String, Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME, getTestName())
-                .put(Queue.ALTERNATE_BINDING, Map.of(AlternateBinding.DESTINATION, _qname)).build();
+        final Map<String, Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, getTestName());
+        attributes.put(Queue.ALTERNATE_BINDING, Map.of(AlternateBinding.DESTINATION, _qname));
         final Queue<?> newQueue = _virtualHost.createChild(Queue.class, attributes);
 
         assertEquals(_qname, newQueue.getAlternateBinding().getDestination(), "Unexpected alternate binding");
@@ -1074,15 +1074,15 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testExpiryPolicyRouteToAlternate()
     {
-        final Map<String, Object> dlqAttributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME, getTestName() + "_dlq")
-                .put(Queue.MINIMUM_MESSAGE_TTL, Long.MAX_VALUE).build();
+        final Map<String, Object> dlqAttributes = new HashMap<>(_arguments);
+        dlqAttributes.put(Queue.NAME, getTestName() + "_dlq");
+        dlqAttributes.put(Queue.MINIMUM_MESSAGE_TTL, Long.MAX_VALUE);
         final Queue<?> dlq = _virtualHost.createChild(Queue.class, dlqAttributes);
 
-        final Map<String,Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME, getTestName())
-                .put(Queue.ALTERNATE_BINDING, Map.of("destination", dlq.getName()))
-                .put(Queue.EXPIRY_POLICY, Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE).build();
+        final Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, getTestName());
+        attributes.put(Queue.ALTERNATE_BINDING, Map.of("destination", dlq.getName()));
+        attributes.put(Queue.EXPIRY_POLICY, Queue.ExpiryPolicy.ROUTE_TO_ALTERNATE);
 
         final Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
@@ -1135,10 +1135,10 @@ abstract class AbstractQueueTestBase extends UnitTestBase
     @Test
     public void testCopyMessageRespectsQueueSizeLimits()
     {
-        final Map<String, Object> attributes = ImmutableMap.<String,Object>builder().putAll(_arguments)
-                .put(Queue.NAME, getTestName() + "_target")
-                .put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING)
-                .put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 2).build();
+        final Map<String, Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, getTestName() + "_target");
+        attributes.put(Queue.OVERFLOW_POLICY, OverflowPolicy.RING);
+        attributes.put(Queue.MAXIMUM_QUEUE_DEPTH_MESSAGES, 2);
 
         final Queue<?> target = _virtualHost.createChild(Queue.class, attributes);
 

@@ -25,7 +25,9 @@ public final class PrimitivesUtils
     public static final int BYTES = Short.SIZE / Byte.SIZE;
     private static final String ARRAY_TOO_SMALL = "array too small: %s < %s";
 
-    private PrimitivesUtils() { }
+    private PrimitivesUtils()
+    {
+    }
 
     private static void checkArgument(boolean expression, int p1)
     {

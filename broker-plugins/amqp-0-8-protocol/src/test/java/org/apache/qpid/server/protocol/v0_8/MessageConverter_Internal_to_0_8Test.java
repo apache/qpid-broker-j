@@ -31,9 +31,8 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-import com.google.common.collect.Lists;
 
 import org.junit.jupiter.api.Test;
 
@@ -85,7 +84,7 @@ class MessageConverter_Internal_to_0_8Test extends UnitTestBase
     @Test
     void listMessageWithMimeType() throws Exception
     {
-        final ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
+        final ArrayList<?> content = new ArrayList<>(List.of("testItem", 37.5, 42));
         final ListToJmsStreamMessage listToJmsStreamMessage = new ListToJmsStreamMessage();
         final byte[] expectedContent = listToJmsStreamMessage.toMimeContent(content);
         doTest(content, "foo/bar", expectedContent, listToJmsStreamMessage.getMimeType());
@@ -94,7 +93,7 @@ class MessageConverter_Internal_to_0_8Test extends UnitTestBase
     @Test
     void listMessageWithoutMimeType() throws Exception
     {
-        final ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42);
+        final ArrayList<?> content = new ArrayList<>(List.of("testItem", 37.5, 42));
         final ListToJmsStreamMessage listToJmsStreamMessage = new ListToJmsStreamMessage();
         final byte[] expectedContent = listToJmsStreamMessage.toMimeContent(content);
         doTest(content, null, expectedContent, listToJmsStreamMessage.getMimeType());
@@ -103,7 +102,7 @@ class MessageConverter_Internal_to_0_8Test extends UnitTestBase
     @Test
     void listMessageWithoutMimeTypeWithNonJmsContent() throws Exception
     {
-        final ArrayList<?> content = Lists.newArrayList("testItem", 37.5, 42, Lists.newArrayList());
+        final ArrayList<?> content = new ArrayList<>(List.of("testItem", 37.5, 42, List.of()));
         final ListToAmqpListConverter listToAmqpListConverter = new ListToAmqpListConverter();
         final byte[] expectedContent = listToAmqpListConverter.toMimeContent(content);
         doTest(content, null, expectedContent, listToAmqpListConverter.getMimeType());
@@ -112,7 +111,7 @@ class MessageConverter_Internal_to_0_8Test extends UnitTestBase
     @Test
     void listMessageWithoutMimeTypeWithNonConvertibleItem() throws Exception
     {
-        final ArrayList<?> content = Lists.newArrayList(new MySerializable());
+        final ArrayList<?> content = new ArrayList<>(List.of(new MySerializable()));
         final InternalMessage sourceMessage = getAmqMessage(content, null);
         doTest(content, null, getObjectStreamMessageBytes(content), "application/java-object-stream");
     }

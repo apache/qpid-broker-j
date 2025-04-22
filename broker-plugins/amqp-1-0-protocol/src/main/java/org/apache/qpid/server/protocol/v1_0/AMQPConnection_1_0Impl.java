@@ -48,10 +48,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
-import com.google.common.collect.Sets;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ResourceLimitMessages;
@@ -855,7 +856,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         final Map<Symbol, Object> remoteProperties = open.getProperties() == null
                 ? Map.of()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(open.getProperties()));
-        _remoteDesiredCapabilities = open.getDesiredCapabilities() == null ? Set.of() : Sets.newHashSet(open.getDesiredCapabilities());
+        _remoteDesiredCapabilities = open.getDesiredCapabilities() == null ? Set.of() : Stream.of(open.getDesiredCapabilities())
+                .collect(Collectors.toSet());
         if (remoteProperties.containsKey(Symbol.valueOf("product")))
         {
             setClientProduct(remoteProperties.get(Symbol.valueOf("product")).toString());

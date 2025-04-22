@@ -23,10 +23,8 @@ package org.apache.qpid.server.query.engine.retriever;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -50,27 +48,19 @@ public class BindingRetriever<C extends ConfiguredObject<?>> extends ConfiguredO
     /**
      * List of entity field names
      */
-    private final List<String> _fieldNames = new ImmutableList.Builder<String>()
-        .add("exchange")
-        .add("bindingKey")
-        .add("name")
-        .add("type")
-        .add("arguments")
-        .add("destination")
-        .build();
+    private final List<String> _fieldNames = List.of("exchange", "bindingKey", "name", "type", "arguments", "destination");
 
     /**
      * Mapping function for a Binding
      */
     private final BiFunction<ConfiguredObject<?>, Binding, Map<String, Object>> _bindingMapping =
-        (ConfiguredObject<?> parent, Binding binding) ->  ImmutableMap.<String, Object>builder()
-            .put(_fieldNames.get(0), parent.getName())
-            .put(_fieldNames.get(1), binding.getBindingKey())
-            .put(_fieldNames.get(2), binding.getName())
-            .put(_fieldNames.get(3), binding.getType())
-            .put(_fieldNames.get(4), binding.getArguments())
-            .put(_fieldNames.get(5), binding.getDestination())
-            .build();
+        (ConfiguredObject<?> parent, Binding binding) -> Map.of(
+            _fieldNames.get(0), parent.getName(),
+            _fieldNames.get(1), binding.getBindingKey(),
+            _fieldNames.get(2), binding.getName(),
+            _fieldNames.get(3), binding.getType(),
+            _fieldNames.get(4), binding.getArguments(),
+            _fieldNames.get(5), binding.getDestination());
 
     /**
      * Returns stream of Binding entities

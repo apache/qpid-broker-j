@@ -41,10 +41,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.security.auth.Subject;
 
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -867,7 +867,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
 
             if (terminus.getCapabilities() != null)
             {
-                final Set<Symbol> capabilities = Sets.newHashSet(terminus.getCapabilities());
+                final Set<Symbol> capabilities = Stream.of(terminus.getCapabilities()).collect(Collectors.toSet());
                 if (capabilities.contains(Symbol.valueOf("temporary-queue"))
                     || capabilities.contains(Symbol.valueOf("temporary-topic")))
                 {
@@ -893,7 +893,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                                                         final Terminus terminus) throws AmqpErrorException
     {
         final Symbol[] capabilities = terminus.getCapabilities();
-        final Set<Symbol> capabilitySet = capabilities == null ? Set.of() : Sets.newHashSet(capabilities);
+        final Set<Symbol> capabilitySet = capabilities == null ? Set.of() : Stream.of(capabilities).collect(Collectors.toSet());
         boolean isTopic = capabilitySet.contains(Symbol.valueOf("temporary-topic")) || capabilitySet.contains(Symbol.valueOf("topic"));
         final String destName = (isTopic ? "TempTopic" : "TempQueue") + UUID.randomUUID();
         try

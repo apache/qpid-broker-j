@@ -33,7 +33,6 @@ import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 import org.apache.qpid.server.security.access.util.PrefixTreeSet;
 import org.apache.qpid.server.security.access.util.WildCardSet;
 
-import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -266,7 +265,7 @@ public final class AclRulePredicatesBuilder
             final Set<?> values = entry.getValue();
             if (!values.isEmpty())
             {
-                properties.put(entry.getKey(), ImmutableSet.builder().addAll(values).build());
+                properties.put(entry.getKey(), Collections.unmodifiableSet(values));
             }
         }
         return properties;

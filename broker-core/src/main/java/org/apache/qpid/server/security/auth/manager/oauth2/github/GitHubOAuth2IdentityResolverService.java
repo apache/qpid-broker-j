@@ -31,10 +31,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +75,7 @@ public class GitHubOAuth2IdentityResolverService implements OAuth2IdentityResolv
     @Override
     public void validate(final OAuth2AuthenticationProvider<?> authProvider) throws IllegalConfigurationException
     {
-        if (!Sets.newHashSet(authProvider.getScope().split("\\s")).contains("user"))
+        if (Stream.of(authProvider.getScope().split("\\s")).noneMatch("user"::equals))
         {
             throw new IllegalConfigurationException("This identity resolver requires that scope 'user' is included in"
                                                + " the authentication request.");

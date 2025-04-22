@@ -59,8 +59,6 @@ import java.util.zip.GZIPOutputStream;
 
 import javax.security.auth.Subject;
 
-import com.google.common.collect.Lists;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1200,7 +1198,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private Collection<QueueConsumer<?,?>> getConsumersImpl()
     {
-        return Lists.newArrayList(_queueConsumerManager.getAllIterator());
+        final List<QueueConsumer<?,?>> result = new ArrayList<>();
+        _queueConsumerManager.getAllIterator().forEachRemaining(result::add);
+        return result;
     }
 
 
@@ -3346,11 +3346,15 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         if (clazz == org.apache.qpid.server.model.Consumer.class)
         {
-            return _queueConsumerManager == null
-                    ? Set.of()
-                    : (Collection<C>) Lists.newArrayList(_queueConsumerManager.getAllIterator());
+            if (_queueConsumerManager == null)
+            {
+                return Set.of();
+            }
+            final List<QueueConsumer<?,?>> result = new ArrayList<>();
+            _queueConsumerManager.getAllIterator().forEachRemaining(result::add);
+            return (Collection<C>) result;
         }
-        else return super.getChildren(clazz);
+        return super.getChildren(clazz);
     }
 
     @Override

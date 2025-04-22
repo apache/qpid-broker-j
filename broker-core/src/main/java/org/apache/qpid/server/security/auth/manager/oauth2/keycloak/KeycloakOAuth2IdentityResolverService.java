@@ -31,10 +31,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +79,7 @@ public class KeycloakOAuth2IdentityResolverService implements OAuth2IdentityReso
     @Override
     public void validate(final OAuth2AuthenticationProvider<?> authProvider) throws IllegalConfigurationException
     {
-        if (!Sets.newHashSet(authProvider.getScope().split("\\s")).contains("openid"))
+        if (Stream.of(authProvider.getScope().split("\\s")).noneMatch("openid"::equals))
         {
             throw new IllegalConfigurationException("This identity resolver requires that scope 'openid' is included in"
                                                + " the authentication request.");

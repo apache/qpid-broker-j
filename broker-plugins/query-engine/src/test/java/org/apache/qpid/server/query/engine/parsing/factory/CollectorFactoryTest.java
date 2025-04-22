@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collector;
 
-import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -45,33 +44,12 @@ import org.apache.qpid.server.query.engine.parsing.expression.accessor.MapObject
  */
 public class CollectorFactoryTest
 {
-    private final List<Map<String, Object>> _entities = Arrays.asList(
-        ImmutableMap.<String, Object>builder()
-            .put("age", 10)
-            .put("firstname", "Anna")
-            .put("lastname", "Abbot")
-            .build(),
-        ImmutableMap.<String, Object>builder()
-            .put("age", 20)
-            .put("firstname", "Bart")
-            .put("lastname", "Burton")
-            .build(),
-        ImmutableMap.<String, Object>builder()
-            .put("age", 30)
-            .put("firstname", "Emma")
-            .put("lastname", "Edwards")
-            .build(),
-        ImmutableMap.<String, Object>builder()
-            .put("age", 40)
-            .put("firstname", "Piter")
-            .put("lastname", "Parker")
-            .build(),
-        ImmutableMap.<String, Object>builder()
-            .put("age", 50)
-            .put("firstname", "Vincent")
-            .put("lastname", "Van Gogh")
-            .build()
-    );
+    private final List<Map<String, Object>> _entities = List.of(
+            Map.of("age", 10, "firstname", "Anna", "lastname", "Abbot"),
+            Map.of("age", 20, "firstname", "Bart", "lastname", "Burton"),
+            Map.of("age", 30, "firstname", "Emma", "lastname", "Edwards"),
+            Map.of("age", 40, "firstname", "Peter", "lastname", "Parker"),
+            Map.of("age", 50, "firstname", "Vincent", "lastname", "Van Gogh"));
 
     @BeforeEach()
     public void setUp()

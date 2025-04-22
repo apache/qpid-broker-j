@@ -22,8 +22,7 @@
 package org.apache.qpid.server.transport;
 
 import java.util.concurrent.atomic.AtomicLong;
-
-import com.google.common.base.Supplier;
+import java.util.function.Supplier;
 
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.transport.network.Ticker;
