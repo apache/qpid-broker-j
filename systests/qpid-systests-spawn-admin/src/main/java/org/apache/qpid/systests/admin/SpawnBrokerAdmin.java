@@ -63,7 +63,6 @@ import javax.naming.NamingException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.ByteStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -726,7 +725,7 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
             try (InputStream is = getClass().getClassLoader().getResourceAsStream(config);
                  OutputStream os = new FileOutputStream(testInitialConfiguration))
             {
-                ByteStreams.copy(is, os);
+                is.transferTo(os);
             }
         }
         else

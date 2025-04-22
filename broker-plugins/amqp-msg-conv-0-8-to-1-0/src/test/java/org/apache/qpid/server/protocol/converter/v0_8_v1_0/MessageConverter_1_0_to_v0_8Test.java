@@ -38,8 +38,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.io.ByteStreams;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -831,7 +829,7 @@ class MessageConverter_1_0_to_v0_8Test extends UnitTestBase
         try (final ByteArrayOutputStream bos = new ByteArrayOutputStream();
              final InputStream contentInputStream = content.asInputStream())
         {
-            ByteStreams.copy(contentInputStream, bos);
+            contentInputStream.transferTo(bos);
             content.dispose();
             return bos.toByteArray();
         }
