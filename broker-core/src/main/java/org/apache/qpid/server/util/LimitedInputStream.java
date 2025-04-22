@@ -48,6 +48,7 @@ public class LimitedInputStream extends FilterInputStream
         return (int) Math.min(in.available(), left);
     }
 
+    // it's okay to mark even if mark isn't supported, as reset won't work
     @Override
     public synchronized void mark(int readLimit)
     {

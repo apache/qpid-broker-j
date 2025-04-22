@@ -72,6 +72,7 @@ import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.UpdateLogMessage;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -2409,6 +2410,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     if (child instanceof AbstractConfiguredObject<?>)
                     {
                         ((AbstractConfiguredObject) child).logDeleted(Outcome.FAILURE);
+                    }
+                }
+                else
+                {
+                    if (child instanceof AbstractConfiguredObject<?>)
+                    {
+                        ((AbstractConfiguredObject) child).logDeleted(Outcome.SUCCESS);
                     }
                 }
                 else if (child instanceof AbstractConfiguredObject<?>)

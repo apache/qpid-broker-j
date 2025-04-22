@@ -27,7 +27,6 @@ public final class PrimitivesUtils
 
     private PrimitivesUtils()
     {
-
     }
 
     private static void checkArgument(boolean expression, int p1)
