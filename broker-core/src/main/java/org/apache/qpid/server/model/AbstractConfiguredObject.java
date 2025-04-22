@@ -2412,13 +2412,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         ((AbstractConfiguredObject) child).logDeleted(Outcome.FAILURE);
                     }
                 }
-                else
-                {
-                    if (child instanceof AbstractConfiguredObject<?>)
-                    {
-                        ((AbstractConfiguredObject) child).logDeleted(Outcome.SUCCESS);
-                    }
-                }
                 else if (child instanceof AbstractConfiguredObject<?>)
                 {
                     ((AbstractConfiguredObject) child).logDeleted(Outcome.SUCCESS);
