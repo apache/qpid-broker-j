@@ -123,11 +123,10 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     {
         final MessageDescription messageDescription = new MessageDescription();
         messageDescription.setMessageType(MessageDescription.MessageType.STREAM_MESSAGE);
-        messageDescription.setContent(new ArrayList<>(Arrays.asList(true, (byte) -7, (short) 259, Integer.MAX_VALUE, Long.MAX_VALUE,
-                37.5f, 38.5, "testString", null, new byte[]{ 0x24, 0x00, (byte) 0xFF })));
+        messageDescription.setContent(new ArrayList<>(Arrays.asList(true, (byte) -7, (short) 259, Integer.MAX_VALUE,
+                Long.MAX_VALUE, 37.5f, 38.5, "testString", null, new byte[]{ 0x24, 0x00, (byte) 0xFF })));
 
         performSimpleTest(messageDescription);
-
     }
 
     @Test
