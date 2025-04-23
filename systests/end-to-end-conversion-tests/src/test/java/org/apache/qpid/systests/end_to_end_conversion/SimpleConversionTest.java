@@ -28,6 +28,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -122,8 +123,8 @@ public class SimpleConversionTest extends EndToEndConversionTestBase
     {
         final MessageDescription messageDescription = new MessageDescription();
         messageDescription.setMessageType(MessageDescription.MessageType.STREAM_MESSAGE);
-        messageDescription.setContent(Arrays.asList(true, (byte) -7, (short) 259, Integer.MAX_VALUE, Long.MAX_VALUE,
-                37.5f, 38.5, "testString", null, new byte[]{ 0x24, 0x00, (byte) 0xFF }));
+        messageDescription.setContent(new ArrayList<>(Arrays.asList(true, (byte) -7, (short) 259, Integer.MAX_VALUE,
+                Long.MAX_VALUE, 37.5f, 38.5, "testString", null, new byte[]{ 0x24, 0x00, (byte) 0xFF })));
 
         performSimpleTest(messageDescription);
     }
