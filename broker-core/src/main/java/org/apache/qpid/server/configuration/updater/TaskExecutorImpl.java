@@ -209,7 +209,8 @@ public class TaskExecutorImpl implements TaskExecutor
             return null;
         }
 
-        if (_principalAccessor == null || contextSubject.getPrincipals().contains(_principalAccessor.getPrincipal()))
+        if (_principalAccessor == null || _principalAccessor.getPrincipal() == null
+                || contextSubject.getPrincipals().contains(_principalAccessor.getPrincipal()))
         {
             return contextSubject;
         }
