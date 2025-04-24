@@ -833,6 +833,12 @@
         <artifactId>apacheds-core</artifactId>
         <version>${apache-directory-version}</version>
         <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -854,6 +860,12 @@
         <artifactId>apacheds-interceptor-kerberos</artifactId>
         <version>${apache-directory-version}</version>
         <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
