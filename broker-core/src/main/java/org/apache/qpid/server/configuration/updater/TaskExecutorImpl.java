@@ -95,6 +95,8 @@ public class TaskExecutorImpl implements TaskExecutor
                     QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(runnable ->
             {
                 _taskThread = new TaskThread(runnable, _name, TaskExecutorImpl.this);
+                _taskThread.setUncaughtExceptionHandler((thread, throwable) ->
+                        LOGGER.error("Uncaught exception in task thread", throwable));
                 return _taskThread;
             });
             _executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, workQueue, factory);
@@ -112,7 +114,13 @@ public class TaskExecutorImpl implements TaskExecutor
             {
                 LOGGER.debug("Stopping task executor {} immediately", _name);
                 final List<Runnable> cancelledTasks = executor.shutdownNow();
-                cancelledTasks.forEach(runnable -> ((RunnableWrapper) runnable).cancel());
+                cancelledTasks.forEach(runnable ->
+                {
+                    if (runnable instanceof RunnableWrapper<?, ?> runnableWrapper)
+                    {
+                        runnableWrapper.cancel();
+                    }
+                });
                 _executor = null;
                 _taskThread = null;
                 LOGGER.debug("Task executor was stopped immediately. Number of unfinished tasks: {}", cancelledTasks.size());
@@ -157,17 +165,15 @@ public class TaskExecutorImpl implements TaskExecutor
             final T result = task.execute();
             return CompletableFuture.completedFuture(result);
         }
-        else
-        {
-            if (LOGGER.isTraceEnabled())
-            {
-                LOGGER.trace("Submitting {} to executor {}", task, _name);
-            }
 
-            final CompletableFuture<T> future = new CompletableFuture<>();
-            _executor.execute(new RunnableWrapper<>(task, future));
-            return future;
+        if (LOGGER.isTraceEnabled())
+        {
+            LOGGER.trace("Submitting {} to executor {}", task, _name);
         }
+
+        final CompletableFuture<T> future = new CompletableFuture<>();
+        _executor.execute(new RunnableWrapper<>(task, future));
+        return future;
     }
 
     @Override
@@ -209,14 +215,15 @@ public class TaskExecutorImpl implements TaskExecutor
             return null;
         }
 
-        if (_principalAccessor == null || _principalAccessor.getPrincipal() == null
-                || contextSubject.getPrincipals().contains(_principalAccessor.getPrincipal()))
+        final Principal accessorPrincipal = _principalAccessor == null ? null : _principalAccessor.getPrincipal();
+
+        if (accessorPrincipal == null || contextSubject.getPrincipals().contains(accessorPrincipal))
         {
             return contextSubject;
         }
 
         final Set<Principal> principals = new HashSet<>(contextSubject.getPrincipals());
-        principals.add(_principalAccessor.getPrincipal());
+        principals.add(accessorPrincipal);
 
         return SUBJECT_CACHE.get(principals, key -> createSubjectWithPrincipals(key, contextSubject));
     }
@@ -283,7 +290,7 @@ public class TaskExecutorImpl implements TaskExecutor
             }
             if (LOGGER.isDebugEnabled())
             {
-                LOGGER.debug("Performing {}", _userTask);
+                LOGGER.debug("Performing {}", this);
             }
             final T result = Subject.doAs(_contextSubject, (PrivilegedAction<T>) () ->
             {
@@ -304,7 +311,7 @@ public class TaskExecutorImpl implements TaskExecutor
             {
                 if (LOGGER.isDebugEnabled())
                 {
-                    LOGGER.debug("{} failed to perform successfully", _userTask);
+                    LOGGER.debug("{} failed to perform successfully", this);
                 }
                 if (throwable instanceof RuntimeException)
                 {
@@ -320,13 +327,24 @@ public class TaskExecutorImpl implements TaskExecutor
                 }
             }
 
-            LOGGER.debug("{} performed successfully with result: {}", _userTask, result);
+            LOGGER.debug("{} performed successfully with result: {}", this, result);
             _future.complete(result);
         }
 
         void cancel()
         {
             _future.completeExceptionally(new CancellationException("Task was cancelled"));
+        }
+
+        @Override
+        public String toString()
+        {
+            final String arguments = _userTask.getArguments();
+            if (arguments == null)
+            {
+                return "Task['%s' on '%s']".formatted(_userTask.getAction(), _userTask.getObject());
+            }
+            return "Task['%s' on '%s' with arguments '%s']".formatted(_userTask.getAction(), _userTask.getObject(), arguments);
         }
     }
 
