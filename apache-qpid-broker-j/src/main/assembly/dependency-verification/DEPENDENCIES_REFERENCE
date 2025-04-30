@@ -65,13 +65,13 @@ From: 'an unknown organization'
 
 From: 'Apache Software Foundation' (http://db.apache.org/)
 
-  - Apache Derby Database Engine and Embedded JDBC Driver (http://db.apache.org/derby/) org.apache.derby:derby:jar:10.15.2.0
+  - Apache Derby Database Engine and Embedded JDBC Driver (http://db.apache.org/derby/) org.apache.derby:derby:jar:10.16.1.1
     License: Apache 2  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Apache Derby Shared Code (http://db.apache.org/derby/) org.apache.derby:derbyshared:jar:10.15.2.0
+  - Apache Derby Shared Code (http://db.apache.org/derby/) org.apache.derby:derbyshared:jar:10.16.1.1
     License: Apache 2  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Apache Derby Tools (http://db.apache.org/derby/) org.apache.derby:derbytools:jar:10.15.2.0
+  - Apache Derby Tools (http://db.apache.org/derby/) org.apache.derby:derbytools:jar:10.16.1.1
     License: Apache 2  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 
