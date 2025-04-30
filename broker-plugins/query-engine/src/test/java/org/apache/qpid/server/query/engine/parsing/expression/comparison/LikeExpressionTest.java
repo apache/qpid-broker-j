@@ -250,4 +250,13 @@ public class LikeExpressionTest
         assertEquals(1, result.size());
         assertEquals(false, result.get(0).get("result"));
     }
+
+    @Test()
+    public void repeatedWildcards()
+    {
+        String query = "select 'test' like 't%%%' as result";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals(1, result.size());
+        assertEquals(true, result.get(0).get("result"));
+    }
 }

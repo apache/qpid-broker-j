@@ -71,12 +71,19 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
 
     static class LikeExpression<E> extends UnaryExpression<E> implements BooleanExpression<E>
     {
+        /** Repeated wildcards pattern */
+        private static final Pattern REPEATED_WILDCARDS = Pattern.compile("%{2,}");
 
         private final Pattern likePattern;
 
         public LikeExpression(Expression<E> right, String like, int escape)
         {
             super(right);
+
+            if (like.contains("%%"))
+            {
+                like = REPEATED_WILDCARDS.matcher(like).replaceAll("%");
+            }
 
             StringBuilder regexp = new StringBuilder(like.length() * 2);
             regexp.append("\\A"); // The beginning of the input

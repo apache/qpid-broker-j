@@ -39,6 +39,9 @@ import org.apache.qpid.server.query.engine.validation.FunctionParameterTypePredi
 @SuppressWarnings("java:S116")
 public class LikeExpression<T, R> extends AbstractComparisonExpression<T, Boolean>
 {
+    /** Repeated wildcards pattern */
+    private static final Pattern REPEATED_WILDCARDS = Pattern.compile("%{2,}");
+
     /**
      * Argument type validator
      */
@@ -51,6 +54,16 @@ public class LikeExpression<T, R> extends AbstractComparisonExpression<T, Boolea
         .allowStrings()
         .build();
 
+    /** Merges a sequence of '%' into a single '%' */
+    private static <X> ExpressionNode<X, ?> toConstantExpression(String source)
+    {
+        if (source.contains("%%"))
+        {
+            source = REPEATED_WILDCARDS.matcher(source).replaceAll("%");
+        }
+        return new ConstantExpression<>(source);
+    }
+
     /**
      * Constructor initializes children expression list
      *
@@ -60,7 +73,7 @@ public class LikeExpression<T, R> extends AbstractComparisonExpression<T, Boolea
      */
     public LikeExpression(final ExpressionNode<T, R> left, final String source, final String escape)
     {
-        super("", left, new ConstantExpression<>(source), new ConstantExpression<>(escape));
+        super("", left, toConstantExpression(source), new ConstantExpression<>(escape));
     }
 
     /**
@@ -97,13 +110,15 @@ public class LikeExpression<T, R> extends AbstractComparisonExpression<T, Boolea
      *
      * @return Regex pattern
      */
-    private Pattern sqlPatternToRegex(final String pattern, final String escape) {
-
-        if (pattern == null) {
+    private Pattern sqlPatternToRegex(final String pattern, final String escape)
+    {
+        if (pattern == null)
+        {
             throw new IllegalArgumentException("Null pattern");
         }
 
-        if (pattern.length() == 0) {
+        if (pattern.length() == 0)
+        {
             throw new IllegalArgumentException("Empty pattern");
         }
 
