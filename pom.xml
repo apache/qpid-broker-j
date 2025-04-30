@@ -1475,6 +1475,7 @@
         <profile>java-dby.0-9</profile>
         <profile.broker.version>0-9</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9"]</profile.test.amqp_port_protocols>
+        <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
         <profile.test_receive_timeout>2000</profile.test_receive_timeout>
       </properties>
@@ -1526,6 +1527,7 @@
         <profile>java-dby.1-0</profile>
         <profile.broker.version>1.0</profile.broker.version>
         <profile.test.amqp_port_protocols>["AMQP_1_0"]</profile.test.amqp_port_protocols>
+        <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
