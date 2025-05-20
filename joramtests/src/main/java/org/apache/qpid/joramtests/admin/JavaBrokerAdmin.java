@@ -22,7 +22,7 @@
 package org.apache.qpid.joramtests.admin;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.net.URISyntaxException;
 import java.util.Hashtable;
 
 import javax.jms.ConnectionFactory;
@@ -34,21 +34,23 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.BasicAuthCache;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.auth.BasicScheme;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.ProtocolVersion;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.objectweb.jtests.jms.admin.Admin;
 
 public class JavaBrokerAdmin implements Admin
@@ -64,7 +66,7 @@ public class JavaBrokerAdmin implements Admin
     private final String _queueApiUrl;
     private final String _topicApiUrl;
 
-    public JavaBrokerAdmin() throws NamingException
+    public JavaBrokerAdmin() throws NamingException, URISyntaxException
     {
         final Hashtable<String, String> env = new Hashtable<>();
         _context = new InitialContext(env);
@@ -91,7 +93,7 @@ public class JavaBrokerAdmin implements Admin
     }
 
     @Override
-    public Context createContext() throws NamingException
+    public Context createContext()
     {
         return _context;
     }
@@ -113,7 +115,6 @@ public class JavaBrokerAdmin implements Admin
     public void createTopicConnectionFactory(final String name)
     {
         checkObjectExistsInContext(name, TopicConnectionFactory.class);
-
     }
 
     @Override
@@ -121,7 +122,6 @@ public class JavaBrokerAdmin implements Admin
     {
         checkObjectExistsInContext(name, Queue.class);
         managementCreateQueue(name);
-
     }
 
     @Override
@@ -162,25 +162,25 @@ public class JavaBrokerAdmin implements Admin
     }
 
     @Override
-    public void startServer() throws Exception
+    public void startServer()
     {
 
     }
 
     @Override
-    public void stopServer() throws Exception
+    public void stopServer()
     {
 
     }
 
     @Override
-    public void start() throws Exception
+    public void start()
     {
 
     }
 
     @Override
-    public void stop() throws Exception
+    public void stop()
     {
 
     }
@@ -207,53 +207,44 @@ public class JavaBrokerAdmin implements Admin
 
     private void managementCreateQueue(final String name)
     {
-        HttpPut put = new HttpPut(String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name));
-
-        StringEntity input = new StringEntity("{}", StandardCharsets.UTF_8);
-        input.setContentType("application/json");
+        final HttpPut put = new HttpPut(String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name));
+        final StringEntity input = new StringEntity("{}", ContentType.APPLICATION_JSON, "UTF_8", false);
         put.setEntity(input);
-
         executeManagement(put);
     }
 
     private void managementCreateTopic(final String name)
     {
-        HttpPut put = new HttpPut(String.format(_topicApiUrl, _virtualhostnode, _virtualhost, name));
-
-        StringEntity input = new StringEntity("{\"type\" : \"fanout\"}", StandardCharsets.UTF_8);
-        input.setContentType("application/json");
-
+        final HttpPut put = new HttpPut(String.format(_topicApiUrl, _virtualhostnode, _virtualhost, name));
+        final StringEntity input = new StringEntity("{\"type\" : \"fanout\"}", ContentType.APPLICATION_JSON, "UTF_8", false);
         put.setEntity(input);
-
         executeManagement(put);
     }
 
     private void managementDeleteQueue(final String name)
     {
-        HttpDelete delete = new HttpDelete(String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name));
+        final HttpDelete delete = new HttpDelete(String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name));
         executeManagement(delete);
     }
 
     private void managementDeleteTopic(final String name)
     {
-        HttpDelete delete = new HttpDelete(String.format(_topicApiUrl, _virtualhostnode, _virtualhost, name));
+        final HttpDelete delete = new HttpDelete(String.format(_topicApiUrl, _virtualhostnode, _virtualhost, name));
         executeManagement(delete);
     }
 
-    private void executeManagement(final HttpRequest httpRequest)
+    private void executeManagement(final ClassicHttpRequest httpRequest)
     {
-        try(CloseableHttpClient httpClient = HttpClients.custom().setDefaultCredentialsProvider(_credentialsProvider).build())
+        try (final CloseableHttpClient httpClient = HttpClients.custom().setDefaultCredentialsProvider(_credentialsProvider).build();
+             final CloseableHttpResponse response = httpClient.execute(_management, httpRequest, _httpClientContext))
         {
-            try (CloseableHttpResponse response = httpClient.execute(_management, httpRequest, _httpClientContext))
+            final int status = response.getCode();
+            final ProtocolVersion version = response.getVersion();
+            final String reason = response.getReasonPhrase();
+            if (status != 200 && status != 201)
             {
-
-                int statusCode = response.getStatusLine().getStatusCode();
-                if (statusCode != 200 && statusCode != 201)
-                {
-                    throw new RuntimeException(String.format("Failed : HTTP error code : %d  status line : %s",
-                                                             statusCode,
-                                                             response.getStatusLine()));
-                }
+                final String msg = String.format("Failed: HTTP error code: %d, Version: %s, Reason: %s", status, version, reason);
+                throw new RuntimeException(msg);
             }
         }
         catch (IOException e)
@@ -266,15 +257,15 @@ public class JavaBrokerAdmin implements Admin
     {
         final BasicAuthCache authCache = new BasicAuthCache();
         authCache.put(management, new BasicScheme());
-        HttpClientContext localContext = HttpClientContext.create();
+        final HttpClientContext localContext = HttpClientContext.create();
         localContext.setAuthCache(authCache);
         return localContext;
     }
 
     private CredentialsProvider getCredentialsProvider(final String managementUser, final String managementPassword)
     {
-        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(managementUser, managementPassword));
+        final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(new AuthScope("localhost", 8080), new UsernamePasswordCredentials(managementUser, managementPassword.toCharArray()));
         return credentialsProvider;
     }
 }

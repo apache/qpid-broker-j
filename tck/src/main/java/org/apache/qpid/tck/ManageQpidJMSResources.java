@@ -18,34 +18,35 @@
  * under the License.
  *
  */
+
 package org.apache.qpid.tck;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.BasicAuthCache;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
+import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.auth.BasicScheme;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,11 +89,10 @@ public class ManageQpidJMSResources
         else
         {
             manageQpidJMSResources.createResources();
-
         }
     }
 
-    public ManageQpidJMSResources()
+    public ManageQpidJMSResources() throws URISyntaxException
     {
         _objectMapper = new ObjectMapper();
         _objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
@@ -213,10 +213,9 @@ public class ManageQpidJMSResources
         executeManagement(delete);
     }
 
-    private void management(final HttpEntityEnclosingRequestBase request, final Object obj) throws IOException
+    private void management(final HttpUriRequest request, final Object obj) throws IOException
     {
-        StringEntity input = new StringEntity(_objectMapper.writeValueAsString(obj), StandardCharsets.UTF_8);
-        input.setContentType("application/json");
+        StringEntity input = new StringEntity(_objectMapper.writeValueAsString(obj), ContentType.APPLICATION_JSON, "UTF_8", false);
         request.setEntity(input);
 
         int statusCode = executeManagement(request);
@@ -226,7 +225,7 @@ public class ManageQpidJMSResources
         }
     }
 
-    private int executeManagement(final HttpRequest httpRequest)
+    private int executeManagement(final HttpUriRequest httpRequest)
     {
 
         try(CloseableHttpClient httpClient = HttpClients.custom()
@@ -235,7 +234,7 @@ public class ManageQpidJMSResources
         {
             try (CloseableHttpResponse response = httpClient.execute(_management, httpRequest, _httpClientContext))
             {
-                return response.getStatusLine().getStatusCode();
+                return response.getCode();
             }
         }
         catch (IOException e)
@@ -255,8 +254,8 @@ public class ManageQpidJMSResources
 
     private CredentialsProvider getCredentialsProvider(final String managementUser, final String managementPassword)
     {
-        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(managementUser, managementPassword));
+        final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(new AuthScope("localhost", 8080), new UsernamePasswordCredentials(managementUser, managementPassword.toCharArray()));
         return credentialsProvider;
     }
 
