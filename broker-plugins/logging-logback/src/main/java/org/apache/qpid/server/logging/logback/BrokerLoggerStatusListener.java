@@ -21,6 +21,7 @@ package org.apache.qpid.server.logging.logback;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,25 +44,34 @@ public class BrokerLoggerStatusListener implements StatusListener
     private final Set<Class<?>> _errorClasses;
 
     public BrokerLoggerStatusListener(final BrokerLogger<?> brokerLogger,
-                               final SystemConfig<?> systemConfig,
-                               final String contextFlag,
-                               final Class<?>... errorClass)
+                                      final SystemConfig<?> systemConfig,
+                                      final String contextFlag,
+                                      final Class<?>... errorClass)
     {
         _brokerLogger = brokerLogger;
         _systemConfig = systemConfig;
         _contextFlag = contextFlag;
-        _errorClasses =
-                errorClass == null ? Collections.emptySet() : Arrays.stream(errorClass).collect(Collectors.toSet());
+        _errorClasses = errorClass == null
+                ? Collections.emptySet() : Arrays.stream(errorClass).filter(Objects::nonNull).collect(Collectors.toSet());
     }
 
     @Override
-    public void addStatusEvent(Status status)
+    public void addStatusEvent(final Status status)
     {
-        Throwable throwable = status.getThrowable();
-        if (status.getEffectiveLevel() == Status.ERROR
-            && _errorClasses.stream().anyMatch(c -> c.isInstance(throwable)))
+        final Throwable throwable = status.getThrowable();
+        if (status.getEffectiveLevel() == Status.ERROR &&
+                _errorClasses.stream().anyMatch(errorClass -> errorClass.isInstance(throwable)))
         {
-            LOGGER.error("Unexpected error whilst trying to store log entry. Log messages could be lost.", throwable);
+            // log full stacktrace on DEBUG or TRACE level only
+            if (LOGGER.isDebugEnabled() || LOGGER.isTraceEnabled())
+            {
+                LOGGER.error("Unexpected error whilst trying to store log entry. Log messages could be lost.", throwable);
+            }
+            else
+            {
+                LOGGER.error("Unexpected error whilst trying to store log entry. Log messages could be lost: {}", throwable.getMessage());
+            }
+
             if (_brokerLogger.getContextValue(Boolean.class, _contextFlag))
             {
                 try

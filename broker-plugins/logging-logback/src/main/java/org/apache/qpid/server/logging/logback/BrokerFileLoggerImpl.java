@@ -197,7 +197,8 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
                                                                 systemConfig,
                                                                 BROKER_FAIL_ON_LOGGER_IO_ERROR,
                                                                 IOException.class,
-                                                                IOError.class);
+                                                                IOError.class,
+                                                                RuntimeException.class);
         _statusManager = loggerContext.getStatusManager();
         _statusManager.add(_logbackStatusListener);
 
