@@ -23,7 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -37,22 +37,24 @@ import javax.jms.QueueBrowser;
 import javax.jms.Session;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.BasicAuthCache;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
+import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.auth.BasicScheme;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.ProtocolVersion;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +77,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
 
     private final CredentialsProvider _credentialsProvider;
 
-    public QpidRestAPIQueueCreator()
+    public QpidRestAPIQueueCreator() throws URISyntaxException
     {
         final String managementUser = System.getProperty("perftests.manangement-user", "guest");
         final String managementPassword = System.getProperty("perftests.manangement-password", "guest");
@@ -271,11 +273,8 @@ public class QpidRestAPIQueueCreator implements QueueCreator
     private void managementCreateQueue(final String name, final HttpClientContext context)
     {
         HttpPut put = new HttpPut(String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name));
-
-        StringEntity input = new StringEntity("{}", StandardCharsets.UTF_8);
-        input.setContentType("application/json");
+        StringEntity input = new StringEntity("{}", ContentType.APPLICATION_JSON, "UTF_8", false);
         put.setEntity(input);
-
         executeManagement(put, context);
     }
 
@@ -285,18 +284,20 @@ public class QpidRestAPIQueueCreator implements QueueCreator
         executeManagement(delete, context);
     }
 
-    private Object executeManagement(final HttpRequest httpRequest, final HttpClientContext context)
+    private Object executeManagement(final HttpUriRequest httpRequest, final HttpClientContext context)
     {
-        try(CloseableHttpClient httpClient = HttpClients.custom()
-                                                        .setDefaultCredentialsProvider(_credentialsProvider)
-                                                        .build();
-            CloseableHttpResponse response = httpClient.execute(_management, httpRequest, context))
+        try (final CloseableHttpClient httpClient = HttpClients.custom()
+                    .setDefaultCredentialsProvider(_credentialsProvider)
+                    .build();
+             final CloseableHttpResponse response = httpClient.execute(_management, httpRequest, context))
         {
-            int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode != 200 && statusCode != 201)
+            final int status = response.getCode();
+            final ProtocolVersion version = response.getVersion();
+            final String reason = response.getReasonPhrase();
+            if (status != 200 && status != 201)
             {
-                throw new RuntimeException(String.format("Failed : HTTP error code : %d  status line : %s", statusCode,
-                                                         response.getStatusLine()));
+                final String msg = String.format("Failed: HTTP error code: %d, Version: %s, Reason: %s", status, version, reason);
+                throw new RuntimeException(msg);
             }
 
             if (response.getEntity() != null)
@@ -311,7 +312,6 @@ public class QpidRestAPIQueueCreator implements QueueCreator
                 }
             }
             return null;
-
         }
         catch (IOException e)
         {
@@ -330,8 +330,8 @@ public class QpidRestAPIQueueCreator implements QueueCreator
 
     private CredentialsProvider getCredentialsProvider(final String managementUser, final String managementPassword)
     {
-        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(managementUser, managementPassword));
+        final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(new AuthScope("localhost", 8080), new UsernamePasswordCredentials(managementUser, managementPassword.toCharArray()));
         return credentialsProvider;
     }
 

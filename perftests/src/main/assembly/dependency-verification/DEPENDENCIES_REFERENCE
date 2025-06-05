@@ -80,21 +80,15 @@ From: 'QOS.ch' (http://www.qos.ch)
     License: MIT License  (http://www.opensource.org/licenses/mit-license.php)
 
 
-From: 'The Apache Software Foundation' (http://www.apache.org/)
-
-  - Apache Commons Logging (http://commons.apache.org/proper/commons-logging/) commons-logging:commons-logging:jar:1.2
-    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-
-  - Apache HttpClient (http://hc.apache.org/httpcomponents-client) org.apache.httpcomponents:httpclient:jar:4.5.13
-    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-
-  - Apache HttpCore (http://hc.apache.org/httpcomponents-core-ga) org.apache.httpcomponents:httpcore:jar:4.4.13
-    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-
-
 From: 'The Apache Software Foundation' (https://www.apache.org/)
 
-  - Apache Commons Codec (http://commons.apache.org/proper/commons-codec/) commons-codec:commons-codec:jar:1.11
+  - Apache HttpClient (https://hc.apache.org/httpcomponents-client-5.4.x/5.4.4/httpclient5/) org.apache.httpcomponents.client5:httpclient5:jar:5.4.4
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Apache HttpComponents Core HTTP/1.1 (https://hc.apache.org/httpcomponents-core-5.3.x/5.3.4/httpcore5/) org.apache.httpcomponents.core5:httpcore5:jar:5.3.4
+    License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Apache HttpComponents Core HTTP/2 (https://hc.apache.org/httpcomponents-core-5.3.x/5.3.4/httpcore5-h2/) org.apache.httpcomponents.core5:httpcore5-h2:jar:5.3.4
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 
