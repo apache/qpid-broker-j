@@ -119,7 +119,8 @@
     {
       "type": "MANAGEMENT-HTTP",
       "name": "httpManagement",
-      "httpBasicAuthenticationEnabled": true
+      "httpBasicAuthenticationEnabled": true,
+      "useLegacyUriCompliance": true
     }
   ],
   "virtualhostnodes": []
