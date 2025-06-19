@@ -30,20 +30,20 @@ import java.util.Map;
 
 import javax.net.ssl.SSLEngine;
 
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import org.apache.qpid.server.configuration.CommonProperties;
@@ -91,7 +91,10 @@ class OAuth2MockEndpointHolder
             }
         };
         sslContextFactory.setKeyStorePassword(keyStorePassword);
-        sslContextFactory.setKeyStoreResource(Resource.newResource(keyStorePath));
+        try (final ResourceFactory.Closeable resourceFactory = ResourceFactory.closeable())
+        {
+            sslContextFactory.setKeyStoreResource(resourceFactory.newResource(keyStorePath));
+        }
         sslContextFactory.setKeyStoreType(keyStoreType);
 
         // override default jetty excludes as valid IBM JDK are excluded
@@ -109,18 +112,20 @@ class OAuth2MockEndpointHolder
         _connector = new ServerConnector(_server, sslContextFactory, new HttpConnectionFactory(httpsConfig));
         _connector.setPort(0);
         _connector.setReuseAddress(true);
-        _server.setHandler(new AbstractHandler()
+
+        final ServletContextHandler servletContextHandler = new ServletContextHandler();
+        servletContextHandler.setContextPath("/");
+        _server.setHandler(servletContextHandler);
+
+        servletContextHandler.addServlet(new HttpServlet()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request,
-                               HttpServletResponse response) throws IOException
+            public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
-
                 try
                 {
                     final OAuth2MockEndpoint
-                            mockEndpoint = _endpoints.get(request.getPathInfo());
+                            mockEndpoint = _endpoints.get(request.getServletPath());
                     assertNotNull(mockEndpoint, String.format("Could not find mock endpoint for request path '%s'",
                                                               request.getPathInfo()));
                     mockEndpoint.handleRequest(request, response);
@@ -132,7 +137,14 @@ class OAuth2MockEndpointHolder
                             .getBytes(OAuth2AuthenticationProviderImplTest.UTF8));
                 }
             }
-        });
+
+            @Override
+            public void doPost(final HttpServletRequest request, final HttpServletResponse response) throws IOException
+            {
+                doGet(request, response);
+            }
+
+        }, "/");
         _server.addConnector(_connector);
     }
 

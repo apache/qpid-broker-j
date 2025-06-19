@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -48,16 +48,14 @@ import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 import javax.naming.NamingException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 
+import org.eclipse.jetty.util.Callback;
 import org.hamcrest.Matchers;
 
 import org.junit.jupiter.api.AfterAll;
@@ -117,7 +115,7 @@ public class AuthenticationTest extends JmsTestBase
     private static final String USER_PASSWORD = "user";
 
     private static final Server CRL_SERVER = new Server();
-    private static final HandlerCollection HANDLERS = new HandlerCollection();
+    private static final Handler.Sequence HANDLERS = new Handler.Sequence();
 
     private static final String CRL_TEMPLATE = "http://localhost:%d/%s";
 
@@ -839,7 +837,7 @@ public class AuthenticationTest extends JmsTestBase
         return DataUrlUtils.getDataUrlForBytes(Files.readAllBytes(file));
     }
 
-    private static class CrlServerHandler extends AbstractHandler
+    private static class CrlServerHandler extends Handler.Abstract
     {
         final Path crlPath;
 
@@ -849,15 +847,12 @@ public class AuthenticationTest extends JmsTestBase
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                throws IOException
+        public boolean handle(final Request request, final Response response, final Callback callback) throws Exception
         {
             final byte[] crlBytes = Files.readAllBytes(crlPath);
-            response.setStatus(HttpServletResponse.SC_OK);
-            try (final OutputStream responseBody = response.getOutputStream())
-            {
-                responseBody.write(crlBytes);
-            }
+            response.setStatus(200);
+            response.write(true, ByteBuffer.wrap(crlBytes), callback);
+            return true;
         }
     }
 }

@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.transport.websocket;
 
-import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.Principal;
@@ -40,31 +39,32 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
-import jakarta.servlet.Servlet;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,7 +130,7 @@ class WebSocketProvider implements AcceptingTransport
         _server = new Server(new QBBTrackingThreadPool());
 
         final ServerConnector connector;
-        HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
+        final HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
         httpConnectionFactory.getHttpConfiguration().setSendServerVersion(false);
         httpConnectionFactory.getHttpConfiguration().setSendXPoweredBy(false);
 
@@ -146,7 +146,7 @@ class WebSocketProvider implements AcceptingTransport
                 @Override
                 public void handshakeFailed(final Event event, final Throwable failure)
                 {
-                    SSLEngine sslEngine = event.getSSLEngine();
+                    final SSLEngine sslEngine = event.getSSLEngine();
                     if (LOGGER.isDebugEnabled())
                     {
                         LOGGER.info("TLS handshake failed: host='{}', port={}",
@@ -169,9 +169,9 @@ class WebSocketProvider implements AcceptingTransport
             throw new IllegalArgumentException("Unexpected transport on port " + _port.getName() + ":" + _transport);
         }
 
-        String bindingAddress = _port.getBindingAddress();
+        final String bindingAddress = _port.getBindingAddress();
 
-        if (bindingAddress != null && !bindingAddress.trim().equals("") && !bindingAddress.trim().equals("*"))
+        if (bindingAddress != null && !bindingAddress.trim().isEmpty() && !"*".equals(bindingAddress.trim()))
         {
             connector.setHost(bindingAddress.trim());
         }
@@ -179,48 +179,56 @@ class WebSocketProvider implements AcceptingTransport
         connector.setPort(_port.getPort());
         _server.addConnector(connector);
 
-        final Servlet websocketServlet = new JettyWebSocketServlet()
+        final JettyWebSocketCreator jettyWebSocketCreator = (request, response) ->
+        {
+            response.setAcceptedSubProtocol(AMQP_WEBSOCKET_SUBPROTOCOL);
+            return new AmqpWebSocket(request.getCertificates());
+        };
+
+        final JettyWebSocketServlet websocketServlet = new JettyWebSocketServlet()
         {
             @Override
             public void configure(final JettyWebSocketServletFactory factory)
             {
                 factory.setMaxBinaryMessageSize(0L);
-                factory.setCreator((req, resp) ->
-                {
-                    resp.setAcceptedSubProtocol(AMQP_WEBSOCKET_SUBPROTOCOL);
-                    return new AmqpWebSocket();
-                });
+                factory.setCreator(jettyWebSocketCreator);
             }
         };
 
-        final ContextHandlerCollection handlers = new ContextHandlerCollection();
         final ServletContextHandler servletContextHandler = new ServletContextHandler();
+        servletContextHandler.setContextPath("/");
         servletContextHandler.addServlet(new ServletHolder(websocketServlet), "");
-        JettyWebSocketServletContainerInitializer.configure(servletContextHandler, null);
-        handlers.addHandler(new AbstractHandler()
+        servletContextHandler.setServer(_server);
+
+        WebSocketServerComponents.ensureWebSocketComponents(_server, servletContextHandler);
+        JettyWebSocketServerContainer.ensureContainer(servletContextHandler.getServletContext())
+                .addMapping("/", jettyWebSocketCreator);
+
+        final ContextHandlerCollection handlers = new ContextHandlerCollection();
+        handlers.addHandler(servletContextHandler);
+        handlers.addHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(final String target,
-                               final Request baseRequest,
-                               final HttpServletRequest request,
-                               final HttpServletResponse response)
+            public boolean handle(final Request request,
+                                  final Response response,
+                                  final org.eclipse.jetty.util.Callback callback)
             {
-                if (response.isCommitted() || baseRequest.isHandled())
+                if (response.isCommitted())
                 {
-                    return;
+                    return false;
                 }
-                baseRequest.setHandled(true);
+                callback.succeeded();
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return true;
             }
         });
-        handlers.addHandler(servletContextHandler);
         _server.setHandler(handlers);
 
         try
         {
             _server.start();
         }
-        catch(RuntimeException e)
+        catch (RuntimeException e)
         {
             throw e;
         }
@@ -245,10 +253,9 @@ class WebSocketProvider implements AcceptingTransport
                                                   port.getTlsProtocolAllowList(),
                                                   port.getTlsProtocolDenyList());
 
-                if (port.getTlsCipherSuiteAllowList() != null
-                    && !port.getTlsCipherSuiteAllowList().isEmpty())
+                if (port.getTlsCipherSuiteAllowList() != null && !port.getTlsCipherSuiteAllowList().isEmpty())
                 {
-                    SSLParameters sslParameters = sslEngine.getSSLParameters();
+                    final SSLParameters sslParameters = sslEngine.getSSLParameters();
                     sslParameters.setUseCipherSuitesOrder(true);
                     sslEngine.setSSLParameters(sslParameters);
                 }
@@ -292,9 +299,9 @@ class WebSocketProvider implements AcceptingTransport
         {
             try
             {
-                _sslContextFactory.reload(f ->
+                _sslContextFactory.reload(sslContextFactory ->
                 {
-                    final SslContextFactory.Server server = (SslContextFactory.Server) f;
+                    final SslContextFactory.Server server = (SslContextFactory.Server) sslContextFactory;
                     server.setSslContext(_port.getSSLContext());
                     server.setNeedClientAuth(_port.getNeedClientAuth());
                     server.setWantClientAuth(_port.getWantClientAuth());
@@ -324,34 +331,34 @@ class WebSocketProvider implements AcceptingTransport
     @WebSocket
     public class AmqpWebSocket
     {
+        final X509Certificate[] _certificates;
         private volatile QpidByteBuffer _netInputBuffer;
         private volatile MultiVersionProtocolEngine _protocolEngine;
         private volatile ConnectionWrapper _connectionWrapper;
         private volatile boolean _unexpectedByteBufferSizeReported;
 
-        AmqpWebSocket()
+        AmqpWebSocket(final X509Certificate[] certificates)
         {
             _netInputBuffer = QpidByteBuffer.allocateDirect(_broker.getNetworkBufferSize());
+            _certificates = certificates;
         }
 
-        @OnWebSocketConnect @SuppressWarnings("unused")
+        @OnWebSocketOpen
+        @SuppressWarnings("unused")
         public void onWebSocketConnect(final Session session)
         {
-            final SocketAddress localAddress = session.getLocalAddress();
-            final SocketAddress remoteAddress = session.getRemoteAddress();
+            final SocketAddress localAddress = session.getLocalSocketAddress();
+            final SocketAddress remoteAddress = session.getRemoteSocketAddress();
             _protocolEngine = _factory.newProtocolEngine(remoteAddress);
 
             // Let AMQP do timeout handling
             session.setIdleTimeout(Duration.ZERO);
 
             _connectionWrapper = new ConnectionWrapper(session, localAddress, remoteAddress, _protocolEngine, _server.getThreadPool());
-            if (session.getUpgradeRequest() instanceof JettyServerUpgradeRequest)
+
+            if (_certificates != null && _certificates.length > 0)
             {
-                JettyServerUpgradeRequest upgradeRequest = (JettyServerUpgradeRequest) session.getUpgradeRequest();
-                if (upgradeRequest.getCertificates() != null && upgradeRequest.getCertificates().length > 0)
-                {
-                    _connectionWrapper.setPeerCertificate(upgradeRequest.getCertificates()[0]);
-                }
+                _connectionWrapper.setPeerCertificate(_certificates[0]);
             }
             _protocolEngine.setNetworkConnection(_connectionWrapper);
             _protocolEngine.setWorkListener(object -> _server.getThreadPool().execute(() -> _connectionWrapper.doWork()));
@@ -359,8 +366,9 @@ class WebSocketProvider implements AcceptingTransport
             _idleTimeoutChecker.wakeup();
         }
 
-        @OnWebSocketMessage @SuppressWarnings("unused")
-        public void onWebSocketBinary(Session sess, final byte[] payload, int offset, final int len)
+        @OnWebSocketMessage
+        @SuppressWarnings("unused")
+        public void onWebSocketBinary(ByteBuffer payload, boolean last, Callback callback)
         {
             synchronized (_connectionWrapper)
             {
@@ -369,17 +377,21 @@ class WebSocketProvider implements AcceptingTransport
                 {
                     _protocolEngine.setIOThread(Thread.currentThread());
                     Iterator<Runnable> iter = _protocolEngine.processPendingIterator();
-                    while(iter.hasNext())
+                    while (iter.hasNext())
                     {
                         iter.next().run();
                     }
 
+                    byte[] bytes = new byte[payload.remaining()];
+                    payload.get(bytes);
+                    int len = bytes.length;
+                    int offset = 0;
                     int lastRead;
                     int remaining = len;
                     do
                     {
                         int chunkLen = Math.min(remaining, _netInputBuffer.remaining());
-                        _netInputBuffer.put(payload, offset, chunkLen);
+                        _netInputBuffer.put(bytes, offset, chunkLen);
                         remaining -= chunkLen;
                         offset += chunkLen;
 
@@ -458,7 +470,8 @@ class WebSocketProvider implements AcceptingTransport
             sess.close();
         }
 
-        @OnWebSocketClose @SuppressWarnings("unused")
+        @OnWebSocketClose
+        @SuppressWarnings("unused")
         public void onWebSocketClose(final int statusCode, final String reason)
         {
             if (_protocolEngine != null)
@@ -649,20 +662,12 @@ class WebSocketProvider implements AcceptingTransport
                 tmp.dispose();
                 offset += remaining;
             }
-            if(size > 0)
+            if (size > 0)
             {
-                try
+                _connection.sendBinary(ByteBuffer.wrap(data), Callback.NOOP);
+                if (LOGGER.isDebugEnabled())
                 {
-                    _connection.getRemote().sendBytes(ByteBuffer.wrap(data));
-                    if (LOGGER.isDebugEnabled())
-                    {
-                        LOGGER.debug("Written {} byte(s)", data.length);
-                    }
-                }
-                catch (IOException e)
-                {
-                    LOGGER.info("Exception on write: {}", e.getMessage());
-                    close();
+                    LOGGER.debug("Written {} byte(s)", data.length);
                 }
             }
         }
