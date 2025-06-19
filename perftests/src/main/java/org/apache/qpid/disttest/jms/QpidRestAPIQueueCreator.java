@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Iterator;
@@ -39,6 +40,7 @@ import javax.jms.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.auth.CredentialsStore;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.classic.methods.HttpDelete;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
@@ -321,18 +323,23 @@ public class QpidRestAPIQueueCreator implements QueueCreator
 
     private HttpClientContext getHttpClientContext(final HttpHost management)
     {
+        final HttpClientContext localContext = HttpClientContext.create();
         final BasicAuthCache authCache = new BasicAuthCache();
-        authCache.put(management, new BasicScheme());
-        HttpClientContext localContext = HttpClientContext.create();
+        final BasicScheme basicScheme = new BasicScheme();
+        basicScheme.initPreemptive(_credentialsProvider.getCredentials(new AuthScope(management), localContext));
+        authCache.put(management, basicScheme);
         localContext.setAuthCache(authCache);
         return localContext;
     }
 
     private CredentialsProvider getCredentialsProvider(final String managementUser, final String managementPassword)
     {
-        final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(new AuthScope("localhost", 8080), new UsernamePasswordCredentials(managementUser, managementPassword.toCharArray()));
+        final URI managementURI = URI.create(System.getProperty("perftests.manangement-url"));
+        final String hostname = managementURI.getHost();
+        final int port = managementURI.getPort();
+        final AuthScope authScope = new AuthScope(hostname, port);
+        final CredentialsStore credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(authScope, new UsernamePasswordCredentials(managementUser, managementPassword.toCharArray()));
         return credentialsProvider;
     }
-
 }
