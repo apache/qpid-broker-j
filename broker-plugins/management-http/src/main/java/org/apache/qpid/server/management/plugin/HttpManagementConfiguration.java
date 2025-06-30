@@ -47,17 +47,20 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
     @ManagedAttribute( defaultValue = "false" )
     boolean isHttpBasicAuthenticationEnabled();
 
+    @ManagedAttribute( defaultValue = "false" )
+    boolean isUseLegacyUriCompliance();
+
     @ManagedAttribute( defaultValue = "600", description = "The maximum time interval, in seconds, that Web Management will keep the session open between client accesses.")
     int getSessionTimeout();
 
-    @ManagedAttribute( defaultValue = "" )
-    String getCorsAllowOrigins();
+    @ManagedAttribute( defaultValue = "[]" )
+    Set<String> getCorsAllowOrigins();
 
     @ManagedAttribute( defaultValue = "[\"HEAD\",\"GET\",\"POST\"]", validValues = {"org.apache.qpid.server.management.plugin.HttpManagement#getAllAvailableCorsMethodCombinations()"} )
     Set<String> getCorsAllowMethods();
 
-    @ManagedAttribute( defaultValue = "Content-Type,Accept,Origin,X-Requested-With,X-Range" )
-    String getCorsAllowHeaders();
+    @ManagedAttribute( defaultValue = "[\"Content-Type\",\"Accept\",\"Origin\",\"X-Requested-With\",\"X-Range\"]" )
+    Set<String> getCorsAllowHeaders();
 
     @ManagedAttribute( defaultValue = "[\"Access-Control-Allow-Credentials\", \"Access-Control-Allow-Origin\", "
         + "\"Cache-Control\", \"Content-Encoding\", \"Content-Disposition\", \"Content-Length\", \"Content-Type\", "

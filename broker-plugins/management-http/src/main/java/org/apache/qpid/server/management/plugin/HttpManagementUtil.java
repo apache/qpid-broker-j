@@ -45,6 +45,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionBindingListener;
+import org.eclipse.jetty.server.Request;
 
 import org.apache.qpid.server.management.plugin.servlet.ServletConnectionPrincipal;
 import org.apache.qpid.server.management.plugin.session.LoginLogoutReporter;
@@ -98,7 +99,7 @@ public class HttpManagementUtil
         return name + "." + getPort(request).getId();
     }
 
-    static Action<HttpServletRequest> getPortAttributeAction(Port<?> port)
+    static Action<Request> getPortAttributeAction(Port<?> port)
     {
         return request -> request.setAttribute(ATTR_PORT, port);
     }
