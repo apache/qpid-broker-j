@@ -26,7 +26,7 @@ Apache Qpid Broker-J Bundles
 
 From: 'an unknown organization'
 
-  - Caffeine cache (https://github.com/ben-manes/caffeine) com.github.ben-manes.caffeine:caffeine:jar:3.1.8
+  - Caffeine cache (https://github.com/ben-manes/caffeine) com.github.ben-manes.caffeine:caffeine:jar:3.2.1
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
   - Prometheus Java Simpleclient (http://github.com/prometheus/client_java/simpleclient) io.prometheus:simpleclient:bundle:0.16.0
@@ -52,9 +52,6 @@ From: 'an unknown organization'
 
   - Bouncy Castle ASN.1 Extension and Utility APIs (https://www.bouncycastle.org/download/bouncy-castle-java/) org.bouncycastle:bcutil-jdk18on:jar:1.80
     License: Bouncy Castle Licence  (https://www.bouncycastle.org/licence.html)
-
-  - Checker Qual (https://checkerframework.org/) org.checkerframework:checker-qual:jar:3.37.0
-    License: The MIT License  (http://opensource.org/licenses/MIT)
 
   - dgrid (https://www.webjars.org) org.webjars.bower:dgrid:jar:1.3.3
     License: BSD 3-Clause  (https://spdx.org/licenses/BSD 3-Clause#licenseText)
@@ -92,12 +89,6 @@ From: 'FasterXML' (http://fasterxml.com/)
 
   - jackson-databind (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-databind:jar:2.19.1
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
-
-
-From: 'Google LLC' (http://www.google.com)
-
-  - error-prone annotations (https://errorprone.info/error_prone_annotations) com.google.errorprone:error_prone_annotations:jar:2.21.1
-    License: Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 
 From: 'Oracle Corporation' (http://www.oracle.com/)
