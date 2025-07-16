@@ -49,6 +49,12 @@
                         the HTTP session. It is set to 10 minutes by default.</para>
                 </listitem>
                 <listitem>
+                    <para><emphasis>Use Legacy URI Compliance</emphasis>. It is set to false
+                        (disabled) by default.</para>
+                    <para>For more information see
+                        https://jetty.org/docs/jetty/12/programming-guide/server/compliance.html#uri</para>
+                </listitem>
+                <listitem>
                     <para><emphasis>CORS Allow Origins</emphasis> is a comma separated list of origins that are allowed to access the REST API. Set to '*' to allow all origins. Default is empty, meaning CORS is disabled.</para>
                 </listitem>
                 <listitem>

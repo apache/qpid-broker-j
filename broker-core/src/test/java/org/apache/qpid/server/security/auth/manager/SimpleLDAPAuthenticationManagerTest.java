@@ -151,7 +151,7 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     public static final SystemPropertySetter SYSTEM_PROPERTY_SETTER = new SystemPropertySetter();
 
     private SimpleLDAPAuthenticationManager<?> _authenticationProvider;
-    private SimpleKdcServer kerbyServer;
+    private static SimpleKdcServer kerbyServer;
 
     @BeforeEach
     public void setUp()
@@ -387,16 +387,19 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         final LdapServer ldapServer = LDAP.getLdapServer();
         final int port = ldapServer.getPort() + 1;
 
-        kerbyServer = new SimpleKdcServer();
-        kerbyServer.setKdcHost("localhost");
-        kerbyServer.setKdcRealm("QPID.ORG");
-        kerbyServer.setAllowTcp(true);
-        kerbyServer.setAllowUdp(false);
-        kerbyServer.setKdcTcpPort(port);
-        kerbyServer.setWorkDir(FileSystems.getDefault().getPath("target").toFile());
-        kerbyServer.getKdcConfig().setBoolean(KdcConfigKey.PA_ENC_TIMESTAMP_REQUIRED, false);
-        kerbyServer.init();
-        kerbyServer.start();
+        if (kerbyServer == null)
+        {
+            kerbyServer = new SimpleKdcServer();
+            kerbyServer.setKdcHost("localhost");
+            kerbyServer.setKdcRealm("QPID.ORG");
+            kerbyServer.setAllowTcp(true);
+            kerbyServer.setAllowUdp(false);
+            kerbyServer.setKdcTcpPort(port);
+            kerbyServer.setWorkDir(FileSystems.getDefault().getPath("target").toFile());
+            kerbyServer.getKdcConfig().setBoolean(KdcConfigKey.PA_ENC_TIMESTAMP_REQUIRED, false);
+            kerbyServer.init();
+            kerbyServer.start();
+        }
 
         final String krb5confPath = createKrb5Conf(port);
         SYSTEM_PROPERTY_SETTER.setSystemProperty("java.security.krb5.conf", krb5confPath);
