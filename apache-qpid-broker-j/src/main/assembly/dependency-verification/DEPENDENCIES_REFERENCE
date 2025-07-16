@@ -44,13 +44,13 @@ From: 'an unknown organization'
   - Prometheus Java Span Context Supplier - OpenTelemetry Agent (http://github.com/prometheus/client_java/simpleclient_tracer/simpleclient_tracer_otel_agent) io.prometheus:simpleclient_tracer_otel_agent:bundle:0.16.0
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs (https://www.bouncycastle.org/download/bouncy-castle-java/) org.bouncycastle:bcpkix-jdk18on:jar:1.80
+  - Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs (https://www.bouncycastle.org/download/bouncy-castle-java/) org.bouncycastle:bcpkix-jdk18on:jar:1.81
     License: Bouncy Castle Licence  (https://www.bouncycastle.org/licence.html)
 
-  - Bouncy Castle Provider (https://www.bouncycastle.org/download/bouncy-castle-java/) org.bouncycastle:bcprov-jdk18on:jar:1.80
+  - Bouncy Castle Provider (https://www.bouncycastle.org/download/bouncy-castle-java/) org.bouncycastle:bcprov-jdk18on:jar:1.81
     License: Bouncy Castle Licence  (https://www.bouncycastle.org/licence.html)
 
-  - Bouncy Castle ASN.1 Extension and Utility APIs (https://www.bouncycastle.org/download/bouncy-castle-java/) org.bouncycastle:bcutil-jdk18on:jar:1.80
+  - Bouncy Castle ASN.1 Extension and Utility APIs (https://www.bouncycastle.org/download/bouncy-castle-java/) org.bouncycastle:bcutil-jdk18on:jar:1.81
     License: Bouncy Castle Licence  (https://www.bouncycastle.org/licence.html)
 
   - dgrid (https://www.webjars.org) org.webjars.bower:dgrid:jar:1.3.3
