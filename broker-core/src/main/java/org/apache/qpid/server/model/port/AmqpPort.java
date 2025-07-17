@@ -159,6 +159,18 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
             description = "The connection property enrichers to apply to connections created on this port.")
     String DEFAULT_CONNECTION_PROTOCOL_ENRICHERS = "[ \"STANDARD\" ] ";
 
+    String FINAL_WRITE_THRESHOLD = "qpid.port.final_write_threshold";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = FINAL_WRITE_THRESHOLD, description = "Threshold to check for final write timeout.")
+    int DEFAULT_FINAL_WRITE_THRESHOLD = 100;
+
+    String FINAL_WRITE_TIMEOUT = "qpid.port.final_write_timeout";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = FINAL_WRITE_TIMEOUT,
+            description = "Maximum time allowed for a connection to be closed." +
+            " If the connection does not close this time, it will be aborted.")
+    long DEFAULT_FINAL_WRITE_TIMEOUT = 1000L;
+
     @ManagedAttribute( defaultValue = AmqpPort.DEFAULT_AMQP_TCP_NO_DELAY )
     boolean isTcpNoDelay();
 
