@@ -33,13 +33,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
-import org.apache.qpid.server.security.auth.database.HashedUser;
 import org.apache.qpid.server.security.auth.sasl.PasswordSource;
 import org.apache.qpid.server.security.auth.sasl.SaslUtil;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -288,8 +288,7 @@ public class CramMd5NegotiatorTest extends UnitTestBase
 
     private void hashPassword()
     {
-        final HashedUser hashedUser = new HashedUser(VALID_USERNAME, VALID_USERPASSWORD, _authenticationProvider);
-        final char[] password = hashedUser.getPassword();
+        final char[] password = hashPassword(VALID_USERPASSWORD);
         when(_passwordSource.getPassword(eq(VALID_USERNAME))).thenReturn(password);
     }
 
@@ -300,5 +299,46 @@ public class CramMd5NegotiatorTest extends UnitTestBase
         md.update(data);
         final char[] password = Base64.getEncoder().encodeToString(md.digest()).toCharArray();
         when(_passwordSource.getPassword(eq(VALID_USERNAME))).thenReturn(password);
+    }
+
+    private char[] hashPassword(char[] password)
+    {
+        byte[] byteArray = new byte[password.length];
+        int index = 0;
+        for (char c : password)
+        {
+            byteArray[index++] = (byte) c;
+        }
+
+        byte[] md5ByteArray = getMD5(byteArray);
+
+        char[] result = new char[md5ByteArray.length];
+
+        index = 0;
+        for (byte c : md5ByteArray)
+        {
+            result[index++] = (char) c;
+        }
+        return result;
+    }
+
+    private byte[] getMD5(byte[] data)
+    {
+        MessageDigest md = null;
+        try
+        {
+            md = MessageDigest.getInstance("MD5");
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            throw new ServerScopedRuntimeException("MD5 not supported although Java compliance requires it");
+        }
+
+        for (byte b : data)
+        {
+            md.update(b);
+        }
+
+        return md.digest();
     }
 }
