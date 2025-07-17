@@ -60,8 +60,6 @@
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Security-Authentication-Providers-Anonymous.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Security-Authentication-Providers-ScramSha.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Security-Authentication-Providers-Plain.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Security-Authentication-Providers-PlainPasswordFile.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Security-Authentication-Providers-MD5.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Security-Authentication-Providers-Base64MD5PasswordFile.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Security-Authentication-Providers-Composite.xml"/>
  </section>

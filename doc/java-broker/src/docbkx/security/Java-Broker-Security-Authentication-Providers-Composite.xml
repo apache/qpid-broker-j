@@ -27,7 +27,6 @@
         against them in order defined. It can contains following authentication providers:
         <itemizedlist>
             <listitem><para><emphasis><link linkend="Java-Broker-Security-MD5-Provider">MD5 Provider</link></emphasis></para></listitem>
-            <listitem><para><emphasis><link linkend="Java-Broker-Security-Plain-Provider">Plain Provider</link></emphasis></para></listitem>
             <listitem><para><emphasis><link linkend="Java-Broker-Security-ScramSha-Providers">SCRAM SHA Providers</link></emphasis></para></listitem>
             <listitem><para><emphasis><link linkend="Java-Broker-Security-LDAP-Provider">Simple LDAP Providers</link></emphasis></para></listitem>
         </itemizedlist>
@@ -54,10 +53,6 @@
                 <row xml:id="Java-Broker-Security-Composite-Provider-Delegate-SASL-Mechanisms-MD5">
                     <entry><link linkend="Java-Broker-Security-MD5-Provider">MD5 Provider</link></entry>
                     <entry>PLAIN, CRAM-MD5-HASHED, CRAM-MD5-HEX</entry>
-                </row>
-                <row xml:id="Java-Broker-Security-Composite-Provider-Delegate-SASL-Mechanisms-Plain">
-                    <entry><link linkend="Java-Broker-Security-Plain-Provider">Plain</link></entry>
-                    <entry>PLAIN, CRAM-MD5, SCRAM-SHA-1, SCRAM-SHA-256</entry>
                 </row>
                 <row xml:id="Java-Broker-Security-Composite-Provider-Delegate-SASL-Mechanisms-ScramSha">
                     <entry><link linkend="Java-Broker-Security-ScramSha-Providers">SCRAM SHA Providers</link></entry>
