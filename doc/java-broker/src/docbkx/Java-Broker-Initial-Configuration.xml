@@ -361,8 +361,7 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
 </programlisting>
             <para>In the configuration above the following entries are stored: <itemizedlist>
                     <listitem>
-                        <para> Authentication Provider of type
-                                <emphasis>PlainPasswordFile</emphasis> with name "passwordFile".
+                        <para> Authentication Provider of type <emphasis>Plain</emphasis> with name "Plain".
                         </para>
                     </listitem>
                     <listitem>

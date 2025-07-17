@@ -42,11 +42,6 @@
       enabled/disabled via the <link linkend="Java-Broker-Management-Managing-Broker">Broker attributes</link>
       within the Web Management Console. On enabling the provider, any existing passwords within the
       configuration will be automatically rewritten in the encrypted form.</para>
-    <para>Note that passwords stored by the Authentication Providers <link linkend="Java-Broker-Security-PlainPasswordFile-Provider">PlainPasswordFile</link> and.
-      <link linkend="Java-Broker-Security-Base64MD5PasswordFile-Provider">PlainPasswordFile</link>
-      with the external password files are <emphasis>not</emphasis> encrypted by the key. Use the
-      Scram Authentication Managers instead; these make use of the Configuration Encryption when
-      storing the users' passwords. </para>
   </section>
   <section xml:id="Java-Broker-Security-Configuration-Encryption-Alternate-Implementations">
     <title>Alternate Implementations</title>
