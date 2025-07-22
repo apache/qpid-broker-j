@@ -28,8 +28,8 @@ import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.TypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
@@ -39,7 +39,7 @@ public class AmqpValueSectionConstructor implements DescribedTypeConstructor<Amq
 
     private static final Object[] DESCRIPTORS =
             {
-                    Symbol.valueOf("amqp:amqp-value:*"),UnsignedLong.valueOf(0x0000000000000077L),
+                    Symbols.AMQP_VALUE, UnsignedLong.valueOf(0x0000000000000077L),
             };
 
     private static final AmqpValueSectionConstructor INSTANCE = new AmqpValueSectionConstructor();

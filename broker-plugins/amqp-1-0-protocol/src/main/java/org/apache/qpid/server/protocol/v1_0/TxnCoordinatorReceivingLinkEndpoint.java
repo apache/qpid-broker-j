@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.Session;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
@@ -121,7 +122,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
                             {
                                 outcome = new Accepted();
                             }
-                            else if (CollectionUtils.nullSafeList(getSource().getOutcomes()).contains(Rejected.REJECTED_SYMBOL))
+                            else if (CollectionUtils.nullSafeList(getSource().getOutcomes()).contains(Symbols.AMQP_REJECTED))
                             {
                                 final Rejected rejected = new Rejected();
                                 rejected.setError(error);

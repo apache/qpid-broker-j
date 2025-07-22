@@ -41,6 +41,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 
@@ -107,7 +108,7 @@ public class DeliveryDelayTest extends JmsTestBase
             }
             catch (JMSRuntimeException e)
             {
-                assertTrue(e.getMessage().contains("amqp:precondition-failed"),
+                assertTrue(e.getMessage().contains(SymbolTexts.AMQP_ERR_PRECONDITION_FAILED),
                         "Unexpected exception message: " + e.getMessage());
             }
         }
@@ -147,7 +148,7 @@ public class DeliveryDelayTest extends JmsTestBase
             }
             catch (JMSRuntimeException e)
             {
-                assertTrue(e.getMessage().contains("amqp:precondition-failed"),
+                assertTrue(e.getMessage().contains(SymbolTexts.AMQP_ERR_PRECONDITION_FAILED),
                         "Unexpected exception message: " + e.getMessage());
             }
         }

@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,22 +19,20 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
-
 
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-@CompositeType( symbolicDescriptor = "amqp:modified:list", numericDescriptor = 0x0000000000000027L)
+@CompositeType(symbolicDescriptor = SymbolTexts.AMQP_MODIFIED, numericDescriptor = 0x0000000000000027L)
 public class Modified implements Outcome
 {
-    public static final Symbol MODIFIED_SYMBOL = Symbol.valueOf("amqp:modified:list");
-
     @CompositeTypeField(index = 0)
     private Boolean _deliveryFailed;
 
@@ -78,7 +75,7 @@ public class Modified implements Outcome
     @Override
     public Symbol getSymbol()
     {
-        return MODIFIED_SYMBOL;
+        return Symbols.AMQP_MODIFIED;
     }
 
     @Override

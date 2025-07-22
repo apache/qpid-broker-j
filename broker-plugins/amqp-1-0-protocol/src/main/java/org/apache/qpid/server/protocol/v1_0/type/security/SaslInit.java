@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,18 +19,17 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.security;
 
-
 import org.apache.qpid.server.protocol.v1_0.SASLEndpoint;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-@CompositeType( symbolicDescriptor = "amqp:sasl-init:list", numericDescriptor = 0x0000000000000041L)
+@CompositeType( symbolicDescriptor = SymbolTexts.AMQP_SASL_INIT, numericDescriptor = 0x0000000000000041L)
 public class SaslInit implements SaslFrameBody
 {
 

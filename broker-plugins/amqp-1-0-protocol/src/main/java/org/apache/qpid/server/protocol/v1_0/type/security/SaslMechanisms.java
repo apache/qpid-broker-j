@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,19 +19,18 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.security;
-
 
 import java.util.Arrays;
 
 import org.apache.qpid.server.protocol.v1_0.SASLEndpoint;
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.SaslFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-@CompositeType( symbolicDescriptor = "amqp:sasl-mechanisms:list", numericDescriptor = 0x0000000000000040L)
+@CompositeType(symbolicDescriptor = SymbolTexts.AMQP_SASL_MECHANISMS, numericDescriptor = 0x0000000000000040L)
 public class SaslMechanisms implements SaslFrameBody
 {
     @CompositeTypeField(index = 0, mandatory = true)

@@ -36,11 +36,11 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
@@ -65,10 +65,6 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     private static final byte VERSION_BYTE = 1;
 
     private final long _contentSize;
-
-    // TODO move to somewhere more useful
-    private static final Symbol DELIVERY_TIME = Symbol.valueOf("x-opt-delivery-time");
-    private static final Symbol NOT_VALID_BEFORE = Symbol.valueOf("x-qpid-not-valid-before");
 
     private HeaderSection _headerSection;
     private PropertiesSection _propertiesSection;
@@ -577,12 +573,12 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             Object annotation;
 
             if (_messageAnnotationsSection != null && (annotation =
-                    _messageAnnotationsSection.getValue().get(DELIVERY_TIME)) instanceof Number)
+                    _messageAnnotationsSection.getValue().get(Symbols.DELIVERY_TIME)) instanceof Number)
             {
                 notValidBefore = ((Number) annotation).longValue();
             }
             else if (_messageAnnotationsSection != null && (annotation =
-                    _messageAnnotationsSection.getValue().get(NOT_VALID_BEFORE)) instanceof Number)
+                    _messageAnnotationsSection.getValue().get(Symbols.NOT_VALID_BEFORE)) instanceof Number)
             {
                 notValidBefore = ((Number) annotation).longValue();
             }

@@ -25,7 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
 
@@ -33,7 +33,7 @@ public class AmqpSequenceSectionConstructor extends DescribedListSectionConstruc
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("amqp:amqp-sequence:list"),UnsignedLong.valueOf(0x0000000000000076L),
+            Symbols.AMQP_SEQUENCE, UnsignedLong.valueOf(0x0000000000000076L),
     };
 
     private static final AmqpSequenceSectionConstructor INSTANCE = new AmqpSequenceSectionConstructor();

@@ -19,18 +19,17 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transport;
-
 
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-@CompositeType( symbolicDescriptor = "amqp:error:list", numericDescriptor = 0x000000000000001DL)
+@CompositeType(symbolicDescriptor = SymbolTexts.AMQP_ERROR, numericDescriptor = 0x000000000000001DL)
 public class Error
 {
     @CompositeTypeField(index = 0, mandatory = true,

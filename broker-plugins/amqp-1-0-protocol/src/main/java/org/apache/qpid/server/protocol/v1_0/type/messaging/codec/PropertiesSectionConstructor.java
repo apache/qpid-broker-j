@@ -25,7 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
 
@@ -33,7 +33,7 @@ public class PropertiesSectionConstructor extends DescribedListSectionConstructo
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("amqp:properties:list"),UnsignedLong.valueOf(0x0000000000000073L),
+            Symbols.AMQP_PROPERTIES,UnsignedLong.valueOf(0x0000000000000073L),
     };
 
     private static final PropertiesSectionConstructor INSTANCE = new PropertiesSectionConstructor();

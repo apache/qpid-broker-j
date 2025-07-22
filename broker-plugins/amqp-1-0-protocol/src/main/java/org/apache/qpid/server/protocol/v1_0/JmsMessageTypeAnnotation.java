@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
-
 public enum JmsMessageTypeAnnotation
 {
     MESSAGE((byte) 0),
@@ -31,7 +29,6 @@ public enum JmsMessageTypeAnnotation
     STREAM_MESSAGE((byte) 4),
     TEXT_MESSAGE((byte) 5);
 
-    public static final Symbol ANNOTATION_KEY = Symbol.valueOf("x-opt-jms-msg-type");
     private final byte _type;
 
     JmsMessageTypeAnnotation(byte value)

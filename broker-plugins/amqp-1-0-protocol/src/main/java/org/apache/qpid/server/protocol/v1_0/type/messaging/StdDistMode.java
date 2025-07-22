@@ -24,6 +24,7 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.DistributionMode;
 import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -32,9 +33,9 @@ public class StdDistMode implements DistributionMode, RestrictedType<Symbol>
 {
     private final Symbol _val;
 
-    public static final StdDistMode MOVE = new StdDistMode(Symbol.valueOf("move"));
+    public static final StdDistMode MOVE = new StdDistMode(Symbols.MOVE);
 
-    public static final StdDistMode COPY = new StdDistMode(Symbol.valueOf("copy"));
+    public static final StdDistMode COPY = new StdDistMode(Symbols.COPY);
 
     private StdDistMode(Symbol val)
     {

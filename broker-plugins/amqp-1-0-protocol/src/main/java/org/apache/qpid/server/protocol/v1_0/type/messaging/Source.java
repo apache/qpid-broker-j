@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,9 +19,7 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
-
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -30,13 +27,14 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.DistributionMode;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-@CompositeType( symbolicDescriptor = "amqp:source:list", numericDescriptor = 0x0000000000000028L)
+@CompositeType(symbolicDescriptor = SymbolTexts.AMQP_SOURCE, numericDescriptor = 0x0000000000000028L)
 public class Source implements BaseSource, Terminus
 {
     @CompositeTypeField(index = 0)
