@@ -25,6 +25,8 @@
 // ----------------------------------------------------------------------------
 options {
 
+  STATIC = false;
+
   UNICODE_INPUT = true;
 
   ERROR_REPORTING = true;
