@@ -291,7 +291,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
         try (final CloseableHttpClient httpClient = HttpClients.custom()
                     .setDefaultCredentialsProvider(_credentialsProvider)
                     .build();
-             final CloseableHttpResponse response = httpClient.execute(_management, httpRequest, context))
+             final CloseableHttpResponse response = httpClient.execute(_management, httpRequest, context, reply -> (CloseableHttpResponse) reply))
         {
             final int status = response.getCode();
             final ProtocolVersion version = response.getVersion();

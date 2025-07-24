@@ -41,13 +41,12 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TlsResource implements Extension, AfterEachCallback, BeforeEachCallback, BeforeAllCallback, ExtensionContext.Store.CloseableResource
+public class TlsResource implements AfterEachCallback, BeforeEachCallback, BeforeAllCallback, AutoCloseable
 {
     private static final String PRIVATE_KEY_ALIAS = "private-key-alias";
     private static final String CERTIFICATE_ALIAS = "certificate-alias";

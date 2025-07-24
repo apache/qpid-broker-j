@@ -90,8 +90,8 @@ class TrustAnchorValidatingTrustManager implements X509TrustManager
             LOGGER.warn("Authentication failed for peer bearing certificate (subject DN '{}') "
                         + "as the trust anchor (subject DN '{}') within truststore '{}' "
                         + "is either expired or not yet valid. Validity range {} - {}",
-                        peerCertificate.getSubjectDN(),
-                        trustAnchorCert.getSubjectDN(),
+                        peerCertificate.getSubjectX500Principal().getName(),
+                        trustAnchorCert.getSubjectX500Principal().getName(),
                         _trustStoreName,
                         trustAnchorCert.getNotBefore(),
                         trustAnchorCert.getNotAfter());

@@ -63,7 +63,10 @@ class RootServletTest
         when(request.getServletPath()).thenReturn("expectedPath");
 
         try (final StringWriter stringWriter = new StringWriter();
-             final OutputStream outputStream = new WriterOutputStream(stringWriter, StandardCharsets.UTF_8))
+             final OutputStream outputStream = WriterOutputStream.builder()
+                     .setWriter(stringWriter)
+                     .setCharset(StandardCharsets.UTF_8)
+                     .get())
         {
             final ServletOutputStream servletOutputStream = mock(ServletOutputStream.class);
             doAnswer(invocationOnMock ->
@@ -93,7 +96,10 @@ class RootServletTest
         when(request.getServletPath()).thenReturn("expectedPath");
 
         try (final StringWriter stringWriter = new StringWriter();
-             final OutputStream outputStream = new WriterOutputStream(stringWriter, StandardCharsets.UTF_8))
+             final OutputStream outputStream = WriterOutputStream.builder()
+                     .setWriter(stringWriter)
+                     .setCharset(StandardCharsets.UTF_8)
+                     .get())
         {
             final ServletOutputStream servletOutputStream = mock(ServletOutputStream.class);
             doAnswer(invocationOnMock ->
@@ -116,7 +122,10 @@ class RootServletTest
         when(request.getServletPath()).thenReturn("unknown");
 
         try (final StringWriter stringWriter = new StringWriter();
-             final OutputStream outputStream = new WriterOutputStream(stringWriter, StandardCharsets.UTF_8))
+             final OutputStream outputStream = WriterOutputStream.builder()
+                     .setWriter(stringWriter)
+                     .setCharset(StandardCharsets.UTF_8)
+                     .get())
         {
             final ServletOutputStream servletOutputStream = mock(ServletOutputStream.class);
             doAnswer(invocationOnMock ->
@@ -140,7 +149,10 @@ class RootServletTest
         when(request.getServletPath()).thenReturn("<unknown> & \"test\" 'test' ");
 
         try (final StringWriter stringWriter = new StringWriter();
-             final OutputStream outputStream = new WriterOutputStream(stringWriter, StandardCharsets.UTF_8))
+             final OutputStream outputStream = WriterOutputStream.builder()
+                     .setWriter(stringWriter)
+                     .setCharset(StandardCharsets.UTF_8)
+                     .get())
         {
             final ServletOutputStream servletOutputStream = mock(ServletOutputStream.class);
             doAnswer(invocationOnMock ->
@@ -164,7 +176,10 @@ class RootServletTest
         when(request.getServletPath()).thenReturn("expectedPath");
 
         try (final StringWriter stringWriter = new StringWriter();
-             final OutputStream outputStream = new WriterOutputStream(stringWriter, StandardCharsets.UTF_8))
+             final OutputStream outputStream = WriterOutputStream.builder()
+                     .setWriter(stringWriter)
+                     .setCharset(StandardCharsets.UTF_8)
+                     .get())
         {
             final ServletOutputStream servletOutputStream = mock(ServletOutputStream.class);
             doAnswer(invocationOnMock ->

@@ -107,7 +107,7 @@ public final class QpidLoggerTurboFilter extends TurboFilter
     private void resetCacheAndSetMinimumLevel()
     {
         // Disable the 'decide' optimisation until the new minimum is established
-        _minimumFilterLevel = Level.ALL.levelInt;
+        _minimumFilterLevel = Level.TRACE.levelInt;
         _effectiveLevels.set(new ConcurrentHashMap<>());
         synchronized (_minimumFilterLevelUpdateLock)
         {
