@@ -46,12 +46,8 @@
                         local database</para></listitem>
                 <listitem><para><link linkend="Java-Broker-Security-Plain-Provider">Plain</link>: authenticate users against credentials stored in a local
                             database.</para></listitem>
-                <listitem><para><link linkend="Java-Broker-Security-PlainPasswordFile-Provider">PlainPasswordFile</link>: authenticate users against credentials stored
-                        in plain text in a local file.</para></listitem>
                 <listitem><para><link linkend="Java-Broker-Security-MD5-Provider">MD5</link>: authenticate users against credentials
                         stored in a local database.</para></listitem>
-                <listitem><para><link linkend="Java-Broker-Security-Base64MD5PasswordFile-Provider">Base64MD5PasswordFile</link>: authenticate users against credentials
-                        stored encoded in a local file.</para></listitem>
             </itemizedlist>
             </para>
             <para>The last five providers offer user management facilities too, that is, users can
