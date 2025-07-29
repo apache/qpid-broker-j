@@ -23,7 +23,7 @@
 <section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Security-MD5-Provider">
     <title>MD5 Provider</title>
 
-    <para> MD5 Provider  uses the Broker configuration itself to store the database of users. Rather than store the
+    <para> MD5 Provider uses the Broker configuration itself to store the database of users. Rather than store the
         unencrypted user password (as the Plain provider does) it instead stores the MD5 password digest.
         This can be further encrypted using the
         facilities described in <xref linkend="Java-Broker-Security-Configuration-Encryption"/>.</para>
