@@ -40,6 +40,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.NetworkMessages;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -66,6 +69,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private volatile boolean _partialRead = false;
 
     private final AmqpPort _port;
+    private final EventLogger _eventLogger;
     private final AtomicBoolean _scheduled = new AtomicBoolean();
     private volatile long _scheduledTime;
     private volatile boolean _unexpectedByteBufferSizeReported;
@@ -114,6 +118,9 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         }
         _finalWriteThreshold = port.getContextValue(Integer.class, AmqpPort.FINAL_WRITE_THRESHOLD);
         _finalWriteTimeout = port.getContextValue(Long.class, AmqpPort.FINAL_WRITE_TIMEOUT);
+
+        final Broker broker = (Broker<?>) port.getParent();
+        _eventLogger = broker.getEventLogger();
     }
 
     String getThreadName()
@@ -139,6 +146,8 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     @Override
     public void start()
     {
+        final String localAddressStr = formattedLocalAddress();
+        _eventLogger.message(NetworkMessages.OPEN(_port.getName(), localAddressStr, _remoteSocketAddress));
     }
 
     @Override
@@ -398,6 +407,8 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                 finally
                 {
                     _socketChannel.close();
+                    final String localAddressStr = formattedLocalAddress();
+                    _eventLogger.message(NetworkMessages.CLOSED(_port.getName(), localAddressStr, _remoteSocketAddress));
                 }
             }
             catch (IOException e)
