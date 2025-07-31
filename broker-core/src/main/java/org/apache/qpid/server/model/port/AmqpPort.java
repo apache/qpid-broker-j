@@ -81,18 +81,6 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
     @ManagedContextDefault( name = PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD)
     long DEFAULT_PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD = 1005;
 
-    String PORT_IGNORE_INVALID_SNI = "qpid.port.amqp.ignoreInvalidSni";
-
-    /**
-     * In Java 17 logic SNI hostname validation became stricter and this flag will not help with the syntax errors
-     * in SNI hostnames provided by client. They will result in SSLPeerUnverifiedException thrown by SSLEngine.
-     * Therefore, usage of this flag is discouraged. It may be deleted in one of the future broker releases.
-     */
-    @Deprecated
-    @SuppressWarnings("unused")
-    @ManagedContextDefault(name = PORT_IGNORE_INVALID_SNI)
-    boolean DEFAULT_PORT_IGNORE_INVALID_SNI = false;
-
     @SuppressWarnings("unused")
     @ManagedContextDefault( name = PORT_AMQP_THREAD_POOL_SIZE)
     long DEFAULT_PORT_AMQP_THREAD_POOL_SIZE = 8;
@@ -199,9 +187,6 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
 
     @ManagedAttribute( defaultValue = "${" + PORT_MAX_OPEN_CONNECTIONS + "}" )
     int getMaxOpenConnections();
-
-    @DerivedAttribute
-    boolean isIgnoreInvalidSni();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT,
             label = "Open Connections",
