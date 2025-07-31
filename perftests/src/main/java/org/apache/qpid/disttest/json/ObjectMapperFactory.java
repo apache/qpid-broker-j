@@ -41,6 +41,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
@@ -58,22 +59,15 @@ public class ObjectMapperFactory
         module.addDeserializer(PropertyValue.class, new PropertyValueDeserializer());
         module.addSerializer(SimplePropertyValue.class, new SimplePropertyValueSerializer());
 
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-
-        objectMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
-        objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-
-        objectMapper.configure(MapperFeature.AUTO_DETECT_GETTERS, false);
-        objectMapper.registerModule(module);
-
-        objectMapper.registerModule(module);
-
-        return objectMapper;
+        return JsonMapper.builder()
+                .visibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .configure(SerializationFeature.INDENT_OUTPUT, true)
+                .configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)
+                .configure(JsonParser.Feature.ALLOW_COMMENTS, true)
+                .configure(MapperFeature.AUTO_DETECT_GETTERS, false)
+                .addModule(module)
+                .build();
     }
 
     private static class SimplePropertyValueSerializer extends JsonSerializer<SimplePropertyValue>
@@ -175,7 +169,7 @@ public class ObjectMapperFactory
             else
             {
                 ObjectNode objectNode = (ObjectNode) root;
-                Iterator<Map.Entry<String, JsonNode>> fieldIterator = objectNode.fields();
+                Iterator<Map.Entry<String, JsonNode>> fieldIterator = objectNode.properties().iterator();
                 String definition = null;
                 Map<String, Object> result = new HashMap<>();
                 while (fieldIterator.hasNext())

@@ -232,7 +232,7 @@ public class ManageQpidJMSResources
                                                         .setDefaultCredentialsProvider(_credentialsProvider)
                                                         .build())
         {
-            try (CloseableHttpResponse response = httpClient.execute(_management, httpRequest, _httpClientContext))
+            try (CloseableHttpResponse response = httpClient.execute(_management, httpRequest, _httpClientContext, reply -> (CloseableHttpResponse) reply))
             {
                 return response.getCode();
             }

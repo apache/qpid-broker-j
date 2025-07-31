@@ -585,7 +585,7 @@ class WebSocketProvider implements AcceptingTransport
         @Override
         public Principal getPeerPrincipal()
         {
-            return _certificate instanceof X509Certificate ? ((X509Certificate)_certificate).getSubjectDN() : null;
+            return _certificate instanceof X509Certificate ? ((X509Certificate)_certificate).getSubjectX500Principal() : null;
         }
 
         @Override

@@ -19,19 +19,11 @@
 
 package org.apache.qpid.tests.protocol;
 
-import io.netty.util.concurrent.Future;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-
-import java.net.InetSocketAddress;
-import java.util.Objects;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -42,9 +34,18 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.Future;
+
+import java.net.InetSocketAddress;
+import java.util.Objects;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractFrameTransport<I extends AbstractInteraction<I>> implements AutoCloseable
 {
@@ -68,7 +69,7 @@ public abstract class AbstractFrameTransport<I extends AbstractInteraction<I>> i
         _brokerAddress = brokerAddress;
         _inputHandler = new InputHandler(_queue, inputDecoder);
         _outputHandler = new OutputHandler(outputEncoder);
-        _workerGroup = new NioEventLoopGroup();
+        _workerGroup = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
     }
 
     public InetSocketAddress getBrokerAddress()

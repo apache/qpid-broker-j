@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * lifecycle. After it will fully migrate to JUnit 5 and expose functionality needed this class can be replaced
  * with the Apache DS one.
  */
-public class EmbeddedKdcExtension implements BeforeAllCallback, ExtensionContext.Store.CloseableResource
+public class EmbeddedKdcExtension implements BeforeAllCallback, AutoCloseable
 {
     /**
      * Logger
