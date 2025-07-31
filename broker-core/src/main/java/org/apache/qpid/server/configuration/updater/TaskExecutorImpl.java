@@ -221,7 +221,7 @@ public class TaskExecutorImpl implements TaskExecutor
         }
     }
 
-    Subject effectiveSubject()
+    private Subject effectiveSubject()
     {
         final Subject contextSubject = Subject.getSubject(AccessController.getContext());
 
