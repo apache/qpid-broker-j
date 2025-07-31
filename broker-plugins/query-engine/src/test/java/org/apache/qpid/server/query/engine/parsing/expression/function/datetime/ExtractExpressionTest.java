@@ -312,7 +312,7 @@ public class ExtractExpressionTest
         catch (Exception e)
         {
             assertEquals(QueryParsingException.class, e.getClass());
-            assertEquals("Encountered \" \",\" \",\"\" at line 1, column 20. Was expecting: \"FROM\" ...", e.getMessage());
+            assertEquals("Encountered \" \",\" \", \"\" at line 1, column 20. Was expecting: \"FROM\" ...", e.getMessage());
         }
     }
 }
