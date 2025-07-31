@@ -56,13 +56,13 @@ From: 'Apache Software Foundation' (http://www.apache.org)
 
 From: 'FasterXML' (http://fasterxml.com/)
 
-  - Jackson-annotations (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:jar:2.19.1
+  - Jackson-annotations (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:jar:2.19.2
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Jackson-core (https://github.com/FasterXML/jackson-core) com.fasterxml.jackson.core:jackson-core:jar:2.19.1
+  - Jackson-core (https://github.com/FasterXML/jackson-core) com.fasterxml.jackson.core:jackson-core:jar:2.19.2
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - jackson-databind (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-databind:jar:2.19.1
+  - jackson-databind (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-databind:jar:2.19.2
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 

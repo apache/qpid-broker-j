@@ -735,6 +735,45 @@
     </tgroup>
   </table>
 
+  <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-Network">
+    <title>Network Log Messages</title>
+    <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
+      <thead>
+        <row>
+          <entry>Message Id</entry>
+          <entry>Message Text / Purpose</entry>
+        </row>
+      </thead>
+      <tbody>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-NET-1001">
+          <entry morerows="1">NET-1001</entry>
+          <entry>Open : Destination : <replaceable>target host and port</replaceable> : Source
+            <replaceable>source host and port</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an attempt to establish a connection has been performed. The Broker logs one of these message
+              each time a client tries to open a connection. This message indicates a socket channel being opened
+              unrelated to protocol version or correctness. It may be used e.g. to check network connectivity.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-NET-1002">
+          <entry morerows="1">NET-1002</entry>
+          <entry>Close</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a socket channel has been closed. This message is logged regardless of
+              if the connection is closed normally, or if the connection is somehow lost e.g network
+              error.</para>
+          </entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </table>
+
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-Connection">
     <title>Connection Log Messages</title>
     <tgroup cols="2">

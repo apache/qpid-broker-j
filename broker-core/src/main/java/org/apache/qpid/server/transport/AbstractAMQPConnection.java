@@ -765,17 +765,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     {
         runAsSubject(() ->
         {
-            SocketAddress localAddress = _network.getLocalAddress();
-            final String localAddressStr;
-            if (localAddress instanceof InetSocketAddress)
-            {
-                InetSocketAddress inetAddress = (InetSocketAddress) localAddress;
-                localAddressStr = inetAddress.getAddress().getHostAddress() + ":" + inetAddress.getPort();
-            }
-            else
-            {
-                localAddressStr = localAddress.toString();
-            }
+            final String localAddressStr = _network.formattedLocalAddress();
             getEventLogger().message(ConnectionMessages.OPEN(getPort().getName(),
                                                              localAddressStr,
                                                              getProtocol().getProtocolVersion(),
