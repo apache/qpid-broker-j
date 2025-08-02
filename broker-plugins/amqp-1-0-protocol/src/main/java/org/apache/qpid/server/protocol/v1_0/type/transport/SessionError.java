@@ -23,18 +23,17 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
 import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
 public class SessionError implements ErrorCondition, RestrictedType<Symbol>
 {
-    public static final SessionError WINDOW_VIOLATION =
-            new SessionError(Symbol.valueOf("amqp:session:window-violation"));
-    public static final SessionError ERRANT_LINK = new SessionError(Symbol.valueOf("amqp:session:errant-link"));
-    public static final SessionError HANDLE_IN_USE = new SessionError(Symbol.valueOf("amqp:session:handle-in-use"));
-    public static final SessionError UNATTACHED_HANDLE =
-            new SessionError(Symbol.valueOf("amqp:session:unattached-handle"));
+    public static final SessionError WINDOW_VIOLATION = new SessionError(Symbols.AMQP_SESSION_WINDOW_VIOLATION);
+    public static final SessionError ERRANT_LINK = new SessionError(Symbols.AMQP_SESSION_ERRANT_LINK);
+    public static final SessionError HANDLE_IN_USE = new SessionError(Symbols.AMQP_SESSION_HANDLE_IN_USE);
+    public static final SessionError UNATTACHED_HANDLE = new SessionError(Symbols.AMQP_SESSION_UNATTACHED_HANDLE);
 
     private final Symbol _val;
 

@@ -25,8 +25,8 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MatchingSubjectFilter;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
@@ -35,7 +35,7 @@ public class MatchingSubjectFilterConstructor extends AbstractDescribedTypeConst
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("apache.org:legacy-amqp-topic-binding:string"), UnsignedLong.valueOf(0x0000468C00000001L)
+            Symbols.APACHE_LEGACY_TOPIC_BINDING, UnsignedLong.valueOf(0x0000468C00000001L)
     };
 
     private static final MatchingSubjectFilterConstructor INSTANCE = new MatchingSubjectFilterConstructor();

@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,22 +19,21 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-@CompositeType( symbolicDescriptor = "amqp:accepted:list", numericDescriptor = 0x0000000000000024L)
+@CompositeType( symbolicDescriptor = SymbolTexts.AMQP_ACCEPTED, numericDescriptor = 0x0000000000000024L)
 public class Accepted implements Outcome
 {
-    public static final Symbol ACCEPTED_SYMBOL = Symbol.valueOf("amqp:accepted:list");
-
     @Override
     public Symbol getSymbol()
     {
-        return ACCEPTED_SYMBOL;
+        return Symbols.AMQP_ACCEPTED;
     }
 
     @Override

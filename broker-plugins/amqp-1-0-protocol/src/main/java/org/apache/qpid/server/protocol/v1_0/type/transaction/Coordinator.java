@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,18 +19,17 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transaction;
-
 
 import java.util.Arrays;
 
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.TxnCapability;
 
-@CompositeType(symbolicDescriptor = "amqp:coordinator:list", numericDescriptor = 0x0000000000000030L)
+@CompositeType(symbolicDescriptor = SymbolTexts.AMQP_TXN_COORDINATOR, numericDescriptor = 0x0000000000000030L)
 public class Coordinator implements BaseTarget
 {
     @CompositeTypeField(index = 0, deserializationConverter = "org.apache.qpid.server.protocol.v1_0.DeserializationFactories.convertToTxnCapability")

@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import static org.apache.qpid.server.protocol.v1_0.Session_1_0.DELAYED_DELIVERY;
-
 import java.util.Arrays;
 import java.util.Map;
 
@@ -34,6 +32,7 @@ import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.DestinationAddress;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
@@ -68,7 +67,7 @@ public class NodeReceivingDestination implements ReceivingDestination
 
         if (_destination instanceof Exchange)
         {
-            _discardUnroutable = ((capabilities != null && Arrays.asList(capabilities).contains(DISCARD_UNROUTABLE))
+            _discardUnroutable = ((capabilities != null && Arrays.asList(capabilities).contains(Symbols.DISCARD_UNROUTABLE))
                                      || ((Exchange)_destination).getUnroutableMessageBehaviour() == Exchange.UnroutableMessageBehaviour.DISCARD);
             _routingAddress = destinationAddress.getRoutingKey();
             _address = _destination.getName();
@@ -205,8 +204,8 @@ public class NodeReceivingDestination implements ReceivingDestination
     public Symbol[] getCapabilities()
     {
         Symbol[] capabilities = new Symbol[2];
-        capabilities[0] = _discardUnroutable ? DISCARD_UNROUTABLE : REJECT_UNROUTABLE;
-        capabilities[1] = DELAYED_DELIVERY;
+        capabilities[0] = _discardUnroutable ? Symbols.DISCARD_UNROUTABLE : Symbols.REJECT_UNROUTABLE;
+        capabilities[1] = Symbols.DELAYED_DELIVERY;
         return capabilities;
     }
 }

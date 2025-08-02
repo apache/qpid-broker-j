@@ -77,7 +77,6 @@ public class CompositeTypeConstructorGenerator  extends AbstractProcessor
             "org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy",
             "org.apache.qpid.server.protocol.v1_0.type.transaction.TxnCapability");
 
-
     @Override
     public SourceVersion getSupportedSourceVersion()
     {
@@ -97,6 +96,8 @@ public class CompositeTypeConstructorGenerator  extends AbstractProcessor
         {
             return true;
         }
+
+        SymbolMapper.initialize(processingEnv);
 
         Filer filer = processingEnv.getFiler();
         try
@@ -135,6 +136,8 @@ public class CompositeTypeConstructorGenerator  extends AbstractProcessor
         final String compositeTypeConstructorPackage = packageElement.getQualifiedName() + ".codec";
         String compositeTypeConstructorName = compositeTypeConstructorPackage + "." + compositeTypeConstructorNameSimpleName;
         final CompositeType annotation = typeElement.getAnnotation(CompositeType.class);
+        final String symbol = SymbolMapper.getConstantName(annotation.symbolicDescriptor());
+        final boolean isConstant = symbol.startsWith("Symbols.");
 
         processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Generating composite constructor file for " + objectQualifiedClassName);
 
@@ -158,8 +161,15 @@ public class CompositeTypeConstructorGenerator  extends AbstractProcessor
             pw.println();
             pw.println("import org.apache.qpid.server.protocol.v1_0.codec.AbstractCompositeTypeConstructor;");
             pw.println("import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;");
+            if (isConstant)
+            {
+                pw.println("import org.apache.qpid.server.protocol.v1_0.constants.Symbols;");
+            }
             pw.println("import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;");
-            pw.println("import org.apache.qpid.server.protocol.v1_0.type.Symbol;");
+            if (!isConstant)
+            {
+                pw.println("import org.apache.qpid.server.protocol.v1_0.type.Symbol;");
+            }
             pw.println("import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;");
             pw.println("import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;");
             pw.println("import org.apache.qpid.server.protocol.v1_0.type.transport.Error;");
@@ -173,7 +183,7 @@ public class CompositeTypeConstructorGenerator  extends AbstractProcessor
 
             pw.println("    public static void register(DescribedTypeConstructorRegistry registry)");
             pw.println("    {");
-            pw.println("        registry.register(Symbol.valueOf(\"" + annotation.symbolicDescriptor() + "\"), INSTANCE);");
+            pw.println("        registry.register(%s, INSTANCE);".formatted(symbol));
             pw.println(String.format("        registry.register(UnsignedLong.valueOf(%#016x), INSTANCE);", annotation.numericDescriptor()));
             pw.println("    }");
             pw.println();

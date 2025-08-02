@@ -24,6 +24,7 @@
 package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
 
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
@@ -31,17 +32,11 @@ public class TxnCapability implements org.apache.qpid.server.protocol.v1_0.type.
 {
     private final Symbol _val;
 
-    public static final TxnCapability LOCAL_TXN = new TxnCapability(Symbol.valueOf("amqp:local-transactions"));
-
-    public static final TxnCapability DISTRIBUTED_TXN =
-            new TxnCapability(Symbol.valueOf("amqp:distributed-transactions"));
-
-    public static final TxnCapability PROMOTABLE_TXN =
-            new TxnCapability(Symbol.valueOf("amqp:promotable-transactions"));
-
-    public static final TxnCapability MULTI_TXNS_PER_SSN = new TxnCapability(Symbol.valueOf("amqp:multi-txns-per-ssn"));
-
-    public static final TxnCapability MULTI_SSNS_PER_TXN = new TxnCapability(Symbol.valueOf("amqp:multi-ssns-per-txn"));
+    public static final TxnCapability LOCAL_TXN = new TxnCapability(Symbols.AMQP_LOCAL_TXN);
+    public static final TxnCapability DISTRIBUTED_TXN = new TxnCapability(Symbols.AMQP_DISTRIBUTED_TXN);
+    public static final TxnCapability PROMOTABLE_TXN = new TxnCapability(Symbols.AMQP_PROMOTABLE_TXN);
+    public static final TxnCapability MULTI_TXNS_PER_SSN = new TxnCapability(Symbols.AMQP_MULTI_TXN_PER_SESSION);
+    public static final TxnCapability MULTI_SSNS_PER_TXN = new TxnCapability(Symbols.AMQP_MULTI_SESSIONS_PER_TXN);
 
     private TxnCapability(Symbol val)
     {

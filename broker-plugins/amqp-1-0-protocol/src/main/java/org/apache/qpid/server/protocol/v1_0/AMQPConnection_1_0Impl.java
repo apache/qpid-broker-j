@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_ENFORCEMENT_POLICY;
-
 import java.net.SocketAddress;
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
@@ -53,6 +51,7 @@ import java.util.stream.Stream;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ResourceLimitMessages;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.security.limit.ConnectionLimitException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +86,6 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties;
 import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionDetectionPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicyException;
@@ -250,9 +248,9 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         _subjectCreator = port.getSubjectCreator(transport.isSecure(), network.getSelectedHost());
 
         List<Symbol> offeredCapabilities = new ArrayList<>();
-        offeredCapabilities.add(ANONYMOUS_RELAY);
-        offeredCapabilities.add(SHARED_SUBSCRIPTIONS);
-        offeredCapabilities.add(SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER);
+        offeredCapabilities.add(Symbols.ANONYMOUS_RELAY);
+        offeredCapabilities.add(Symbols.SHARED_SUBSCRIPTIONS);
+        offeredCapabilities.add(Symbols.SOLE_CONNECTION_FOR_CONTAINER);
 
         setOfferedCapabilities(offeredCapabilities);
 
@@ -857,23 +855,23 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 : Collections.unmodifiableMap(new LinkedHashMap<>(open.getProperties()));
         _remoteDesiredCapabilities = open.getDesiredCapabilities() == null ? Set.of() : Stream.of(open.getDesiredCapabilities())
                 .collect(Collectors.toSet());
-        if (remoteProperties.containsKey(Symbol.valueOf("product")))
+        if (remoteProperties.containsKey(Symbols.PRODUCT))
         {
-            setClientProduct(remoteProperties.get(Symbol.valueOf("product")).toString());
+            setClientProduct(remoteProperties.get(Symbols.PRODUCT).toString());
         }
-        if (remoteProperties.containsKey(Symbol.valueOf("version")))
+        if (remoteProperties.containsKey(Symbols.VERSION))
         {
-            setClientVersion(remoteProperties.get(Symbol.valueOf("version")).toString());
+            setClientVersion(remoteProperties.get(Symbols.VERSION).toString());
         }
         setClientId(_remoteContainerId);
-        if (_remoteDesiredCapabilities.contains(SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER))
+        if (_remoteDesiredCapabilities.contains(Symbols.SOLE_CONNECTION_FOR_CONTAINER))
         {
-            if (remoteProperties != null && remoteProperties.containsKey(SOLE_CONNECTION_ENFORCEMENT_POLICY))
+            if (remoteProperties != null && remoteProperties.containsKey(Symbols.SOLE_CONNECTION_ENFORCEMENT_POLICY))
             {
                 try
                 {
                     _soleConnectionEnforcementPolicy = SoleConnectionEnforcementPolicy.valueOf(remoteProperties.get(
-                            SOLE_CONNECTION_ENFORCEMENT_POLICY));
+                            Symbols.SOLE_CONNECTION_ENFORCEMENT_POLICY));
                 }
                 catch (IllegalArgumentException e)
                 {
@@ -979,10 +977,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         if (e.getPolicy() == SoleConnectionEnforcementPolicy.REFUSE_CONNECTION)
         {
             LOGGER.debug("Closing newly open connection: {}", e.getMessage());
-            _properties.put(Symbol.valueOf("amqp:connection-establishment-failed"), true);
+            _properties.put(Symbols.AMQP_CONN_ESTABLISHMENT_FAILED, true);
             final Error error = new Error(AmqpError.INVALID_FIELD,
                     String.format("Connection closed due to sole-connection-enforcement-policy '%s'", e.getPolicy()));
-            error.setInfo(Map.of(Symbol.valueOf("invalid-field"), Symbol.valueOf("container-id")));
+            error.setInfo(Map.of(Symbols.INVALID_FIELD, Symbols.CONTAINER_ID));
             closeConnection(error);
             getEventLogger().message(ResourceLimitMessages.REJECTED(
                     "Opening", "connection", String.format("container '%s'", e.getContainerID()), e.getMessage()));
@@ -991,7 +989,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         {
             final Error error = new Error(AmqpError.RESOURCE_LOCKED,
                     String.format("Connection closed due to sole-connection-enforcement-policy '%s'", e.getPolicy()));
-            error.setInfo(Map.of(Symbol.valueOf("sole-connection-enforcement"), true));
+            error.setInfo(Map.of(Symbols.SOLE_CONNECTION_ENFORCEMENT, true));
 
             final EventLogger logger = getEventLogger();
             final List<CompletableFuture<Void>> rescheduleFutures = new ArrayList<>();
@@ -1060,10 +1058,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 }
             }
             final Map<Symbol, Object> infoMap = new HashMap<>();
-            infoMap.put(Symbol.valueOf("network-host"), networkHost);
+            infoMap.put(Symbols.NETWORK_HOST, networkHost);
             if(port > 0)
             {
-                infoMap.put(Symbol.valueOf("port"), UnsignedInteger.valueOf(port));
+                infoMap.put(Symbols.PORT, UnsignedInteger.valueOf(port));
             }
             err.setInfo(infoMap);
         }
@@ -1724,15 +1722,15 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
 
         if (_remoteDesiredCapabilities != null
-                && _remoteDesiredCapabilities.contains(SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER))
+                && _remoteDesiredCapabilities.contains(Symbols.SOLE_CONNECTION_FOR_CONTAINER))
         {
-            _properties.put(SoleConnectionConnectionProperties.SOLE_CONNECTION_DETECTION_POLICY,
+            _properties.put(Symbols.SOLE_CONNECTION_DETECTION_POLICY,
                     SoleConnectionDetectionPolicy.STRONG);
         }
 
         if (_soleConnectionEnforcementPolicy == SoleConnectionEnforcementPolicy.CLOSE_EXISTING)
         {
-            _properties.put(SOLE_CONNECTION_ENFORCEMENT_POLICY, SoleConnectionEnforcementPolicy.CLOSE_EXISTING.getValue());
+            _properties.put(Symbols.SOLE_CONNECTION_ENFORCEMENT_POLICY, SoleConnectionEnforcementPolicy.CLOSE_EXISTING.getValue());
         }
 
         open.setProperties(_properties);

@@ -37,9 +37,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
@@ -68,9 +68,6 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
 {
-    private static final Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
-    private static final Symbol DELIVERY_TAG = Symbol.valueOf("delivery-tag");
-
     private Binary _deliveryTag;
 
     @BeforeEach
@@ -145,7 +142,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
             assertThat(error.getInfo(), is(notNullValue()));
-            assertThat(error.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
+            assertThat(error.getInfo().get(Symbols.DELIVERY_TAG), is(equalTo(_deliveryTag)));
         }
     }
 
@@ -171,7 +168,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Begin.class)
 
                        .attachRole(Role.SENDER)
-                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL)
+                       .attachSourceOutcomes(Symbols.AMQP_ACCEPTED, Symbols.AMQP_REJECTED)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
                        .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
@@ -192,7 +189,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(oneOf(AmqpError.NOT_FOUND, AmqpError.NOT_ALLOWED)));
             assertThat(error.getInfo(), is(notNullValue()));
-            assertThat(error.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
+            assertThat(error.getInfo().get(Symbols.DELIVERY_TAG), is(equalTo(_deliveryTag)));
         }
     }
 
@@ -218,7 +215,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .consumeResponse(Begin.class)
 
                        .attachRole(Role.SENDER)
-                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
+                       .attachSourceOutcomes(Symbols.AMQP_ACCEPTED)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
                        .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
@@ -232,7 +229,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             assertThat(error, is(notNullValue()));
             assertThat(error.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
             assertThat(error.getInfo(), is(notNullValue()));
-            assertThat(error.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
+            assertThat(error.getInfo().get(Symbols.DELIVERY_TAG), is(equalTo(_deliveryTag)));
         }
     }
 
@@ -333,7 +330,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .txnDeclare()
 
                        .attachRole(Role.SENDER)
-                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL)
+                       .attachSourceOutcomes(Symbols.AMQP_ACCEPTED, Symbols.AMQP_REJECTED)
                        .attachHandle(linkHandle)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
@@ -359,7 +356,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             final Error rejectedError = ((Rejected) receivedTxnState.getOutcome()).getError();
             assertThat(rejectedError.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
             assertThat(rejectedError.getInfo(), is(notNullValue()));
-            assertThat(rejectedError.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
+            assertThat(rejectedError.getInfo().get(Symbols.DELIVERY_TAG), is(equalTo(_deliveryTag)));
 
             interaction.txnDischarge(false);
 
@@ -381,7 +378,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
                        .txnDeclare()
 
                        .attachRole(Role.SENDER)
-                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
+                       .attachSourceOutcomes(Symbols.AMQP_ACCEPTED)
                        .attachHandle(linkHandle)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
@@ -400,7 +397,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             assertThat(senderLinkDetachError, is(notNullValue()));
             assertThat(senderLinkDetachError.getCondition(), is(equalTo(AmqpError.NOT_FOUND)));
             assertThat(senderLinkDetachError.getInfo(), is(notNullValue()));
-            assertThat(senderLinkDetachError.getInfo().get(DELIVERY_TAG), is(equalTo(_deliveryTag)));
+            assertThat(senderLinkDetachError.getInfo().get(Symbols.DELIVERY_TAG), is(equalTo(_deliveryTag)));
 
             interaction.txnDischarge(false);
 
@@ -453,7 +450,7 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
 
                        .attachRole(Role.SENDER)
                        .attachHandle(linkHandle)
-                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL)
+                       .attachSourceOutcomes(Symbols.AMQP_ACCEPTED, Symbols.AMQP_REJECTED)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
                        .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
@@ -513,14 +510,14 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
             interaction.begin()
                        .consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected, Accepted.ACCEPTED_SYMBOL)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected, Symbols.AMQP_ACCEPTED)
                        .txnDeclare()
 
                        .attachRole(Role.SENDER)
                        .attachHandle(linkHandle)
                        .attachTarget(new Target())
                        .attachName("link-" + linkHandle)
-                       .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL)
+                       .attachSourceOutcomes(Symbols.AMQP_ACCEPTED, Symbols.AMQP_REJECTED)
                        .attach().consumeResponse(Attach.class)
                        .consumeResponse(Flow.class)
                        .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
@@ -547,10 +544,10 @@ public class AnonymousTerminusTest extends BrokerAdminUsingTestBase
     private Interaction openInteractionWithAnonymousRelayCapability(final FrameTransport transport) throws Exception
     {
         final Interaction interaction = transport.newInteraction();
-        interaction.openDesiredCapabilities(ANONYMOUS_RELAY).negotiateOpen();
+        interaction.openDesiredCapabilities(Symbols.ANONYMOUS_RELAY).negotiateOpen();
 
         Open open = interaction.getLatestResponse(Open.class);
-        assumeTrue(hasItemInArray((ANONYMOUS_RELAY)).matches(open.getOfferedCapabilities()));
+        assumeTrue(hasItemInArray((Symbols.ANONYMOUS_RELAY)).matches(open.getOfferedCapabilities()));
         return interaction;
     }
 

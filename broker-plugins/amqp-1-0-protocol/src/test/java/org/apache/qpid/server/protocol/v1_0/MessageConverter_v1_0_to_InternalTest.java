@@ -46,6 +46,7 @@ import org.mockito.ArgumentCaptor;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequence;
@@ -64,17 +65,17 @@ import org.apache.qpid.test.utils.UnitTestBase;
 class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
 {
     private static final MessageAnnotations MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 0));
+            new MessageAnnotations(Map.of(Symbols.ANNOTATION_KEY, (byte) 0));
     private static final MessageAnnotations OBJECT_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 1));
+            new MessageAnnotations(Map.of(Symbols.ANNOTATION_KEY, (byte) 1));
     private static final MessageAnnotations MAP_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 2));
+            new MessageAnnotations(Map.of(Symbols.ANNOTATION_KEY, (byte) 2));
     private static final MessageAnnotations BYTE_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 3));
+            new MessageAnnotations(Map.of(Symbols.ANNOTATION_KEY, (byte) 3));
     private static final MessageAnnotations STREAM_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 4));
+            new MessageAnnotations(Map.of(Symbols.ANNOTATION_KEY, (byte) 4));
     private static final MessageAnnotations TEXT_MESSAGE_MESSAGE_ANNOTATION =
-            new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 5));
+            new MessageAnnotations(Map.of(Symbols.ANNOTATION_KEY, (byte) 5));
     private MessageConverter_v1_0_to_Internal _converter;
 
     @BeforeAll
@@ -175,7 +176,7 @@ class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
         final Object expected = null;
         final AmqpValue amqpValue = new AmqpValue(expected);
         final Message_1_0 sourceMessage =
-                createTestMessage(new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 11)),
+                createTestMessage(new MessageAnnotations(Map.of(Symbols.ANNOTATION_KEY, (byte) 11)),
                         amqpValue.createEncodingRetainingSection());
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
@@ -440,7 +441,7 @@ class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     void dataWithUnsupportedMessageAnnotation()
     {
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
-                new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 11)), null, "application/octet-stream");
+                new MessageAnnotations(Map.of(Symbols.ANNOTATION_KEY, (byte) 11)), null, "application/octet-stream");
     }
 
     @Test
@@ -448,7 +449,7 @@ class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     {
         final String mimeType = "foo/bar";
         doTestDataWithAnnotation("helloworld".getBytes(UTF_8),
-                new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 11)), mimeType, mimeType);
+                new MessageAnnotations(Map.of(Symbols.ANNOTATION_KEY, (byte) 11)), mimeType, mimeType);
     }
 
     @Test
@@ -564,7 +565,7 @@ class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
     void noBodyWithUnknownMessageAnnotation()
     {
         final Message_1_0 sourceMessage =
-                createTestMessage(new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"), (byte) 11)), null);
+                createTestMessage(new MessageAnnotations(Map.of(Symbols.ANNOTATION_KEY, (byte) 11)), null);
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
 
@@ -579,7 +580,7 @@ class MessageConverter_v1_0_to_InternalTest extends UnitTestBase
         final Properties properties = new Properties();
         properties.setContentType(Symbol.valueOf(mimeType));
         final Message_1_0 sourceMessage =
-                createTestMessage(properties, new MessageAnnotations(Map.of(Symbol.valueOf("x-opt-jms-msg-type"),
+                createTestMessage(properties, new MessageAnnotations(Map.of(Symbols.ANNOTATION_KEY,
                                                                                   (byte) 11)), null);
 
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));

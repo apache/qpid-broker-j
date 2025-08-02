@@ -27,8 +27,8 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DeliveryAnnotations;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
@@ -37,7 +37,7 @@ public class DeliveryAnnotationsConstructor extends AbstractDescribedTypeConstru
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("amqp:delivery-annotations:map"),UnsignedLong.valueOf(0x0000000000000071L),
+            Symbols.AMQP_DELIVERY_ANNOTATIONS, UnsignedLong.valueOf(0x0000000000000071L),
     };
 
     private static final DeliveryAnnotationsConstructor INSTANCE = new DeliveryAnnotationsConstructor();
