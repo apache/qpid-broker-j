@@ -41,7 +41,7 @@
 
   <ciManagement>
     <system>Jenkins</system>
-    <url>https://builds.apache.org/view/M-R/view/Qpid/</url>
+    <url>https://ci-builds.apache.org/job/Qpid/</url>
   </ciManagement>
 
   <mailingLists>
@@ -50,14 +50,14 @@
       <subscribe>users-subscribe@qpid.apache.org</subscribe>
       <unsubscribe>users-unsubscribe@qpid.apache.org</unsubscribe>
       <post>users@qpid.apache.org</post>
-      <archive>http://mail-archives.apache.org/mod_mbox/qpid-users/</archive>
+      <archive>https://mail-archives.apache.org/mod_mbox/qpid-users/</archive>
     </mailingList>
     <mailingList>
       <name>Apache Qpid Developers</name>
       <subscribe>dev-subscribe@qpid.apache.org</subscribe>
       <unsubscribe>dev-unsubscribe@qpid.apache.org</unsubscribe>
       <post>dev@qpid.apache.org</post>
-      <archive>http://mail-archives.apache.org/mod_mbox/qpid-dev/</archive>
+      <archive>https://mail-archives.apache.org/mod_mbox/qpid-dev/</archive>
     </mailingList>
   </mailingLists>
 
