@@ -49,8 +49,8 @@ import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.http.HttpServletRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.ee10.servlet.ServletHandler;
+import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee11.servlet.ServletHandler;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Connection;
@@ -68,9 +68,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.ee10.servlet.FilterHolder;
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee11.servlet.FilterHolder;
+import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -348,12 +348,12 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         final ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler()
         {
             @Override
-            protected void writeErrorPageBody(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks)
+            protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause)
                     throws IOException
             {
-                final String uri = request.getRequestURI();
+                String uri = request.getHttpURI().toString();
 
-                writeErrorPageMessage(request,writer,code,message,uri);
+                writeErrorHtmlMessage(request, writer, code, message, cause, uri);
 
                 for (int i= 0; i < 20; i++)
                 {
