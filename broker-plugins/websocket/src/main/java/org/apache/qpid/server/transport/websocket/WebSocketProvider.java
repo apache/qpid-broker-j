@@ -41,10 +41,10 @@ import javax.net.ssl.SSLParameters;
 
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketCreator;
-import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServerContainer;
+import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -53,8 +53,8 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
