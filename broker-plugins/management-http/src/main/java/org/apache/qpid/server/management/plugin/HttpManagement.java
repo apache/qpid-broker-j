@@ -351,7 +351,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause)
                     throws IOException
             {
-                String uri = request.getHttpURI().toString();
+                final String uri = request.getHttpURI().toString();
 
                 writeErrorHtmlMessage(request, writer, code, message, cause, uri);
 
