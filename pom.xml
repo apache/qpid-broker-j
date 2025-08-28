@@ -136,7 +136,7 @@
     <maven-resolver-provider-version>3.8.6</maven-resolver-provider-version>
     <maven-resolver-version>1.9.22</maven-resolver-version>
     <httpclient-version>5.5</httpclient-version>
-    <qpid-jms-client-version>1.13.0</qpid-jms-client-version>
+    <qpid-jms-client-version>1.14.0</qpid-jms-client-version>
     <qpid-jms-client-amqp-0-x-version>6.4.0</qpid-jms-client-amqp-0-x-version>
     <nashorn-version>15.6</nashorn-version>
 
