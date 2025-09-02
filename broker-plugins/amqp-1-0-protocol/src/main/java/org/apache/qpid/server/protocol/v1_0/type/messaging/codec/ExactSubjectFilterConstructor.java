@@ -25,8 +25,8 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ExactSubjectFilter;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
@@ -34,7 +34,7 @@ public class ExactSubjectFilterConstructor extends AbstractDescribedTypeConstruc
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("apache.org:legacy-amqp-direct-binding:string"), 0x0000468C00000000L
+            Symbols.APACHE_LEGACY_DIRECT_BINDING, 0x0000468C00000000L
     };
 
     private static final ExactSubjectFilterConstructor INSTANCE = new ExactSubjectFilterConstructor();

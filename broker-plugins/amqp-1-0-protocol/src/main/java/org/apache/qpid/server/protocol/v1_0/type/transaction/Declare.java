@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,15 +19,14 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transaction;
-
 
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.GlobalTxId;
 
-@CompositeType( symbolicDescriptor = "amqp:declare:list", numericDescriptor = 0x0000000000000031L)
+@CompositeType( symbolicDescriptor = SymbolTexts.AMQP_TXN_DECLARE, numericDescriptor = 0x0000000000000031L)
 public class Declare
 {
     @CompositeTypeField(index = 0)

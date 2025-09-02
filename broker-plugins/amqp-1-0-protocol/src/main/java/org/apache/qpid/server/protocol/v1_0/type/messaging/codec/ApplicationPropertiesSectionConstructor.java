@@ -25,7 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationPropertiesSection;
 
@@ -33,7 +33,7 @@ public class ApplicationPropertiesSectionConstructor extends DescribedMapSection
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("amqp:application-properties:map"),UnsignedLong.valueOf(0x0000000000000074L),
+            Symbols.AMQP_APPLICATION_PROPERTIES, UnsignedLong.valueOf(0x0000000000000074L),
     };
 
     private static final ApplicationPropertiesSectionConstructor INSTANCE = new ApplicationPropertiesSectionConstructor();

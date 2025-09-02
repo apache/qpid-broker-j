@@ -19,16 +19,15 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transport;
-
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 
-@CompositeType( symbolicDescriptor = "amqp:end:list", numericDescriptor = 0x0000000000000017L)
+@CompositeType(symbolicDescriptor = SymbolTexts.AMQP_END, numericDescriptor = 0x0000000000000017L)
 public class End implements ErrorCarryingFrameBody
 {
 

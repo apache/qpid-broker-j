@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,21 +19,19 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
-
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-@CompositeType( symbolicDescriptor = "amqp:declared:list", numericDescriptor = 0x0000000000000033L)
+@CompositeType( symbolicDescriptor = SymbolTexts.AMQP_TXN_DECLARED, numericDescriptor = 0x0000000000000033L)
 public class Declared implements Outcome
 {
-    public static final Symbol DECLARED_SYMBOL = Symbol.valueOf("amqp:declared:list");
-
     @CompositeTypeField(index = 0, mandatory = true)
     private Binary _txnId;
 
@@ -71,6 +68,6 @@ public class Declared implements Outcome
     @Override
     public Symbol getSymbol()
     {
-        return DECLARED_SYMBOL;
+        return Symbols.AMQP_TXN_DECLARED;
     }
 }

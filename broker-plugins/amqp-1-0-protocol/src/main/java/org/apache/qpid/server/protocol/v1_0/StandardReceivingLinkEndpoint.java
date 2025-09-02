@@ -49,6 +49,7 @@ import org.apache.qpid.server.model.Producer;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.plugin.MessageFormat;
 import org.apache.qpid.server.protocol.MessageFormatRegistry;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorRuntimeException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -80,7 +81,6 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         implements AsyncAutoCommitTransaction.FutureRecorder
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardReceivingLinkEndpoint.class);
-    private static final Symbol DELIVERY_TAG = Symbol.valueOf("delivery-tag");
     private static final Accepted ACCEPTED = new Accepted();
     private static final String LINK = "link";
 
@@ -309,7 +309,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                             String targetAddress = getTarget().getAddress();
                             if (targetAddress == null || "".equals(targetAddress.trim()))
                             {
-                                error.setInfo(Collections.singletonMap(DELIVERY_TAG, delivery.getDeliveryTag()));
+                                error.setInfo(Collections.singletonMap(Symbols.DELIVERY_TAG, delivery.getDeliveryTag()));
                             }
                             if (!_rejectedOutcomeSupportedBySource ||
                                 (delivery.isSettled() && !(transaction instanceof LocalTransaction)))
@@ -449,10 +449,10 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         if (Boolean.TRUE.equals(attachTarget.getDynamic()) && attachTarget.getDynamicNodeProperties() != null)
         {
             Map<Symbol, Object> dynamicNodeProperties = new HashMap<>();
-            if (attachTarget.getDynamicNodeProperties().containsKey(Session_1_0.LIFETIME_POLICY))
+            if (attachTarget.getDynamicNodeProperties().containsKey(Symbols.LIFETIME_POLICY))
             {
-                dynamicNodeProperties.put(Session_1_0.LIFETIME_POLICY,
-                                          attachTarget.getDynamicNodeProperties().get(Session_1_0.LIFETIME_POLICY));
+                dynamicNodeProperties.put(Symbols.LIFETIME_POLICY,
+                                          attachTarget.getDynamicNodeProperties().get(Symbols.LIFETIME_POLICY));
             }
             target.setDynamicNodeProperties(dynamicNodeProperties);
         }
@@ -462,17 +462,17 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         if (attachTarget.getCapabilities() != null)
         {
             final List<Symbol> desiredCapabilities = Arrays.asList(attachTarget.getCapabilities());
-            if (desiredCapabilities.contains(Symbol.valueOf("temporary-topic")))
+            if (desiredCapabilities.contains(Symbols.TEMPORARY_TOPIC))
             {
-                targetCapabilities.add(Symbol.valueOf("temporary-topic"));
+                targetCapabilities.add(Symbols.TEMPORARY_TOPIC);
             }
-            if (desiredCapabilities.contains(Symbol.valueOf("temporary-queue")))
+            if (desiredCapabilities.contains(Symbols.TEMPORARY_QUEUE))
             {
-                targetCapabilities.add(Symbol.valueOf("temporary-queue"));
+                targetCapabilities.add(Symbols.TEMPORARY_QUEUE);
             }
-            if (desiredCapabilities.contains(Symbol.valueOf("topic")))
+            if (desiredCapabilities.contains(Symbols.TOPIC))
             {
-                targetCapabilities.add(Symbol.valueOf("topic"));
+                targetCapabilities.add(Symbols.TOPIC);
             }
             target.setCapabilities(targetCapabilities.toArray(new Symbol[targetCapabilities.size()]));
         }
@@ -501,7 +501,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         }
         getLink().setTermini(source, target);
         _rejectedOutcomeSupportedBySource =
-                source.getOutcomes() != null && Arrays.asList(source.getOutcomes()).contains(Rejected.REJECTED_SYMBOL);
+                source.getOutcomes() != null && Arrays.asList(source.getOutcomes()).contains(Symbols.AMQP_REJECTED);
     }
 
     public ReceivingDestination getReceivingDestination()

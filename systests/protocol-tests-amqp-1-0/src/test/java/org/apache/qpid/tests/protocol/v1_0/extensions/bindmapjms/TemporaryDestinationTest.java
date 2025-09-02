@@ -32,7 +32,7 @@ import java.util.Map;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import org.apache.qpid.server.protocol.v1_0.Session_1_0;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnClose;
@@ -54,9 +54,6 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
 {
-    private static final Symbol TEMPORARY_QUEUE = Symbol.valueOf("temporary-queue");
-    private static final Symbol TEMPORARY_TOPIC = Symbol.valueOf("temporary-topic");
-
     @Test
     @SpecificationTest(section = "5.3",
             description = "To create a node with the required lifecycle properties, establish a uniquely named sending link with "
@@ -64,7 +61,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                           + "dynamic-node-properties field of target containing the “lifetime-policy” symbol key mapped to delete-on-close.")
     public void deleteOnCloseWithConnectionCloseForQueue() throws Exception
     {
-        deleteOnCloseWithConnectionClose(new Symbol[]{TEMPORARY_QUEUE});
+        deleteOnCloseWithConnectionClose(new Symbol[]{Symbols.TEMPORARY_QUEUE});
     }
 
     @Test
@@ -74,7 +71,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                           + "dynamic-node-properties field of target containing the “lifetime-policy” symbol key mapped to delete-on-close.")
     public void deleteOnCloseWithConnectionCloseForTopic() throws Exception
     {
-        deleteOnCloseWithConnectionClose(new Symbol[]{TEMPORARY_TOPIC});
+        deleteOnCloseWithConnectionClose(new Symbol[]{Symbols.TEMPORARY_TOPIC});
     }
 
     private void deleteOnCloseWithConnectionClose(final Symbol[] targetCapabilities) throws Exception
@@ -129,7 +126,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                           + "TemporaryQueue Terminus capability : 'temporary-queue'")
     public void createTemporaryQueueReceivingLink() throws Exception
     {
-        final Symbol[] capabilities = new Symbol[]{TEMPORARY_QUEUE};
+        final Symbol[] capabilities = new Symbol[]{Symbols.TEMPORARY_QUEUE};
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Target target = createTarget(capabilities);
@@ -189,7 +186,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                           + "TemporaryQueue Terminus capability : 'temporary-queue'")
     public void createTemporaryQueueReceivingLinkFromOtherConnectionDisallowed() throws Exception
     {
-        final Symbol[] capabilities = new Symbol[]{TEMPORARY_QUEUE};
+        final Symbol[] capabilities = new Symbol[]{Symbols.TEMPORARY_QUEUE};
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Target target = createTarget(capabilities);
@@ -228,7 +225,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                           + " is allowed to create consumer objects for them.")
     public void createTemporaryQueueSendingLinkFromOtherConnectionAllowed() throws Exception
     {
-        final Symbol[] capabilities = new Symbol[]{TEMPORARY_QUEUE};
+        final Symbol[] capabilities = new Symbol[]{Symbols.TEMPORARY_QUEUE};
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             Target target = createTarget(capabilities);
@@ -279,11 +276,11 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                           + "TemporaryTopic Terminus capability : 'temporary-topic'")
     public void createTemporaryTopicSubscriptionReceivingLink() throws Exception
     {
-        final Symbol[] capabilities = new Symbol[]{TEMPORARY_TOPIC};
+        final Symbol[] capabilities = {Symbols.TEMPORARY_TOPIC};
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
-            source.setDynamicNodeProperties(Map.of(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
+            source.setDynamicNodeProperties(Map.of(Symbols.LIFETIME_POLICY, new DeleteOnClose()));
             source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
             source.setCapabilities(capabilities);
             source.setDynamic(true);
@@ -305,7 +302,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
             assertThat(newTemporaryNodeAddress, is(notNullValue()));
 
             Target target = new Target();
-            target.setDynamicNodeProperties(Map.of(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
+            target.setDynamicNodeProperties(Map.of(Symbols.LIFETIME_POLICY, new DeleteOnClose()));
             target.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
             target.setCapabilities(capabilities);
             target.setAddress(newTemporaryNodeAddress);
@@ -343,11 +340,11 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                           + "TemporaryTopic Terminus capability : 'temporary-topic'")
     public void createTemporaryTopicSubscriptionReceivingLinkFromOtherConnectionDisallowed() throws Exception
     {
-        final Symbol[] capabilities = new Symbol[]{TEMPORARY_TOPIC};
+        final Symbol[] capabilities = {Symbols.TEMPORARY_TOPIC};
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
-            source.setDynamicNodeProperties(Map.of(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
+            source.setDynamicNodeProperties(Map.of(Symbols.LIFETIME_POLICY, new DeleteOnClose()));
             source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
             source.setCapabilities(capabilities);
             source.setDynamic(true);
@@ -384,11 +381,11 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
                           + " is allowed to create consumer objects for them.")
     public void createTemporaryTopicSendingLinkFromOtherConnectionAllowed() throws Exception
     {
-        final Symbol[] capabilities = new Symbol[]{TEMPORARY_TOPIC};
+        final Symbol[] capabilities = {Symbols.TEMPORARY_TOPIC};
         try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
         {
             final Source source = new Source();
-            source.setDynamicNodeProperties(Map.of(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
+            source.setDynamicNodeProperties(Map.of(Symbols.LIFETIME_POLICY, new DeleteOnClose()));
             source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
             source.setCapabilities(capabilities);
             source.setDynamic(true);
@@ -459,7 +456,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
     private Target createTarget(final Symbol[] capabilities)
     {
         Target target = new Target();
-        target.setDynamicNodeProperties(Map.of(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
+        target.setDynamicNodeProperties(Map.of(Symbols.LIFETIME_POLICY, new DeleteOnClose()));
         target.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
         target.setDynamic(true);
         target.setCapabilities(capabilities);
@@ -469,7 +466,7 @@ public class TemporaryDestinationTest extends BrokerAdminUsingTestBase
     private Source createSource(final String name, final Symbol[] capabilities)
     {
         final Source source = new Source();
-        source.setDynamicNodeProperties(Map.of(Session_1_0.LIFETIME_POLICY, new DeleteOnClose()));
+        source.setDynamicNodeProperties(Map.of(Symbols.LIFETIME_POLICY, new DeleteOnClose()));
         source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
         source.setCapabilities(capabilities);
         source.setAddress(name);

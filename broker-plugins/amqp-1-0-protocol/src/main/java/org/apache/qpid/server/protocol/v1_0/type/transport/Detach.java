@@ -19,17 +19,16 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transport;
-
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-@CompositeType( symbolicDescriptor = "amqp:detach:list", numericDescriptor = 0x0000000000000016L)
+@CompositeType( symbolicDescriptor = SymbolTexts.AMQP_DETACH, numericDescriptor = 0x0000000000000016L)
 public class Detach implements ErrorCarryingFrameBody
 {
 

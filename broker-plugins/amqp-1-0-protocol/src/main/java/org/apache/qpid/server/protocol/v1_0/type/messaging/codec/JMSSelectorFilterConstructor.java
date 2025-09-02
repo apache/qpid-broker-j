@@ -25,8 +25,8 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
@@ -35,10 +35,10 @@ public class JMSSelectorFilterConstructor extends AbstractDescribedTypeConstruct
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("apache.org:selector-filter:string"),
+            Symbols.APACHE_SELECTOR_FILTER,
             UnsignedLong.valueOf(0x0000468C00000004L),
             // This incorrect value was originally specified here - retaining solely for backwards compatibility
-            Symbol.valueOf("apache.org:jms-selector-filter:string")
+            Symbols.APACHE_LEGACY_SELECTOR_FILTER
     };
 
     private static final JMSSelectorFilterConstructor INSTANCE = new JMSSelectorFilterConstructor();

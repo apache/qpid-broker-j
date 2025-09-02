@@ -20,9 +20,6 @@
 
 package org.apache.qpid.tests.protocol.v1_0.extensions.soleconn;
 
-import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_DETECTION_POLICY;
-import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_ENFORCEMENT_POLICY;
-import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionConnectionProperties.SOLE_CONNECTION_FOR_CONTAINER;
 import static org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy.CLOSE_EXISTING;
 import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assertEnforcementPolicyCloseExisting;
 import static org.apache.qpid.tests.protocol.v1_0.extensions.soleconn.SoleConnectionAsserts.assertResourceLocked;
@@ -37,6 +34,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionDetectionPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
@@ -55,9 +53,9 @@ public class CloseExistingPolicyTest extends BrokerAdminUsingTestBase
         {
             Open responseOpen = transport.newInteraction()
                                          .openContainerId("testContainerId")
-                                         .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                                         .openDesiredCapabilities(Symbols.SOLE_CONNECTION_FOR_CONTAINER)
                                          .openProperties(Map.of(
-                                                 SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                                 Symbols.SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                  CLOSE_EXISTING))
                                          .negotiateOpen()
                                          .getLatestResponse(Open.class);
@@ -65,9 +63,9 @@ public class CloseExistingPolicyTest extends BrokerAdminUsingTestBase
             assumeSoleConnectionCapability(responseOpen);
             assumeEnforcementPolicyCloseExisting(responseOpen);
 
-            if (responseOpen.getProperties().containsKey(SOLE_CONNECTION_DETECTION_POLICY))
+            if (responseOpen.getProperties().containsKey(Symbols.SOLE_CONNECTION_DETECTION_POLICY))
             {
-                assertThat(responseOpen.getProperties().get(SOLE_CONNECTION_DETECTION_POLICY),
+                assertThat(responseOpen.getProperties().get(Symbols.SOLE_CONNECTION_DETECTION_POLICY),
                            in(new UnsignedInteger[]{SoleConnectionDetectionPolicy.STRONG.getValue(),
                                    SoleConnectionDetectionPolicy.WEAK.getValue()}));
             }
@@ -81,8 +79,8 @@ public class CloseExistingPolicyTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction1 = transport1.newInteraction();
             interaction1.openContainerId("testContainerId")
-                        .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                        .openProperties(Map.of(SOLE_CONNECTION_ENFORCEMENT_POLICY, CLOSE_EXISTING))
+                        .openDesiredCapabilities(Symbols.SOLE_CONNECTION_FOR_CONTAINER)
+                        .openProperties(Map.of(Symbols.SOLE_CONNECTION_ENFORCEMENT_POLICY, CLOSE_EXISTING))
                         .negotiateOpen();
 
             final Open responseOpen = interaction1.getLatestResponse(Open.class);
@@ -93,8 +91,8 @@ public class CloseExistingPolicyTest extends BrokerAdminUsingTestBase
             {
                 final Interaction interaction2 = transport2.newInteraction();
                 interaction2.openContainerId("testContainerId")
-                            .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                            .openProperties(Map.of(SOLE_CONNECTION_ENFORCEMENT_POLICY, CLOSE_EXISTING))
+                            .openDesiredCapabilities(Symbols.SOLE_CONNECTION_FOR_CONTAINER)
+                            .openProperties(Map.of(Symbols.SOLE_CONNECTION_ENFORCEMENT_POLICY, CLOSE_EXISTING))
                             .sendOpen()
                             .sync();
 
@@ -126,8 +124,8 @@ public class CloseExistingPolicyTest extends BrokerAdminUsingTestBase
             {
                 final Interaction interaction2 = transport2.newInteraction();
                 interaction2.openContainerId("testContainerId")
-                            .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
-                            .openProperties(Map.of(SOLE_CONNECTION_ENFORCEMENT_POLICY, CLOSE_EXISTING))
+                            .openDesiredCapabilities(Symbols.SOLE_CONNECTION_FOR_CONTAINER)
+                            .openProperties(Map.of(Symbols.SOLE_CONNECTION_ENFORCEMENT_POLICY, CLOSE_EXISTING))
                             .negotiateOpen();
 
                 final Open responseOpen2 = interaction2.getLatestResponse(Open.class);
@@ -146,9 +144,9 @@ public class CloseExistingPolicyTest extends BrokerAdminUsingTestBase
         {
             final Interaction interaction1 = transport1.newInteraction();
             Open responseOpen = interaction1.openContainerId("testContainerId")
-                                            .openDesiredCapabilities(SOLE_CONNECTION_FOR_CONTAINER)
+                                            .openDesiredCapabilities(Symbols.SOLE_CONNECTION_FOR_CONTAINER)
                                             .openProperties(Map.of(
-                                                    SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                                    Symbols.SOLE_CONNECTION_ENFORCEMENT_POLICY,
                                                     CLOSE_EXISTING))
                                             .negotiateOpen()
                                             .getLatestResponse(Open.class);
