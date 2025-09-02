@@ -58,6 +58,7 @@ import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.ProtocolVersion;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.qpid.disttest.json.ObjectMapperFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -325,6 +326,8 @@ public class QpidRestAPIQueueCreator implements QueueCreator
 
     static class ResponseHandler implements HttpClientResponseHandler<Object>
     {
+        private static final ObjectMapper OBJECT_MAPPER = new ObjectMapperFactory().createObjectMapper();
+
         @Override
         public Object handleResponse(ClassicHttpResponse response) throws IOException
         {
@@ -344,7 +347,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
                     response.getEntity().writeTo(bos);
                     if (bos.size() > 0)
                     {
-                        return new ObjectMapper().readValue(bos.toByteArray(), Object.class);
+                        return OBJECT_MAPPER.readValue(bos.toByteArray(), Object.class);
                     }
                 }
             }
