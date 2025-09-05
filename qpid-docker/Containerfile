@@ -56,12 +56,11 @@ ENV QPID_ADMIN_USER="admin"
 ENV QPID_ADMIN_PASSWORD="admin"
 
 # Create work folder and subfolders
-RUN mkdir -p /qpid-broker-j/etc && \
-    mkdir -p /qpid-broker-j/work && \
-    mkdir -p /qpid-broker-j/work-init && \
-    mkdir -p /qpid-broker-j/work-override && \
-    chmod -R 770 /qpid-broker-j && \
-    chown -R 1001:root /qpid-broker-j
+RUN install -d -o 1001 -g 0 -m 0770 /qpid-broker-j && \
+    install -d -o 1001 -g 0 -m 0770 /qpid-broker-j/etc && \
+    install -d -o 1001 -g 0 -m 0770 /qpid-broker-j/work && \
+    install -d -o 1001 -g 0 -m 0770 /qpid-broker-j/work-init && \
+    install -d -o 1001 -g 0 -m 0770 /qpid-broker-j/work-override
 
 # Declare volume
 VOLUME ["/qpid-broker-j/work"]
