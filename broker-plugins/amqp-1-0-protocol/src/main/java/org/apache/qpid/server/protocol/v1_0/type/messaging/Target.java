@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,20 +19,19 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
-
 
 import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-@CompositeType( symbolicDescriptor = "amqp:target:list", numericDescriptor = 0x0000000000000029L)
+@CompositeType( symbolicDescriptor = SymbolTexts.AMQP_TARGET, numericDescriptor = 0x0000000000000029L)
 public class Target implements BaseTarget, Terminus
 {
     @CompositeTypeField(index = 0)

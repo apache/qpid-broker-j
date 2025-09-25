@@ -23,19 +23,17 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
 import org.apache.qpid.server.protocol.v1_0.type.RestrictedType;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
 public class ConnectionError implements ErrorCondition, RestrictedType<Symbol>
 {
-    public static final ConnectionError CONNECTION_FORCED =
-            new ConnectionError(Symbol.valueOf("amqp:connection:forced"));
-    public static final ConnectionError FRAMING_ERROR =
-            new ConnectionError(Symbol.valueOf("amqp:connection:framing-error"));
-    public static final ConnectionError REDIRECT = new ConnectionError(Symbol.valueOf("amqp:connection:redirect"));
-    public static final ConnectionError SOCKET_ERROR =
-            new ConnectionError(Symbol.valueOf("amqp:connection:socket-error"));
+    public static final ConnectionError CONNECTION_FORCED = new ConnectionError(Symbols.AMQP_CONN_FORCED);
+    public static final ConnectionError FRAMING_ERROR = new ConnectionError(Symbols.AMQP_CONN_FRAMING_ERROR);
+    public static final ConnectionError REDIRECT = new ConnectionError(Symbols.AMQP_CONN_REDIRECT);
+    public static final ConnectionError SOCKET_ERROR = new ConnectionError(Symbols.AMQP_CONN_SOCKET_ERROR);
 
     private final Symbol _val;
 
