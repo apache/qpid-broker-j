@@ -218,63 +218,63 @@ From: 'The CometD Project' (https://cometd.org)
 
 From: 'Webtide' (https://webtide.com)
 
-  - Core :: HTTP (https://jetty.org/jetty-core/jetty-http) org.eclipse.jetty:jetty-http:jar:12.1.0
+  - Core :: HTTP (https://jetty.org/jetty-core/jetty-http) org.eclipse.jetty:jetty-http:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - Core :: IO (https://jetty.org/jetty-core/jetty-io) org.eclipse.jetty:jetty-io:jar:12.1.0
+  - Core :: IO (https://jetty.org/jetty-core/jetty-io) org.eclipse.jetty:jetty-io:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - Core :: Rewrite (https://jetty.org/jetty-core/jetty-rewrite) org.eclipse.jetty:jetty-rewrite:jar:12.1.0
+  - Core :: Rewrite (https://jetty.org/jetty-core/jetty-rewrite) org.eclipse.jetty:jetty-rewrite:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - Core :: Security (https://jetty.org/jetty-core/jetty-security) org.eclipse.jetty:jetty-security:jar:12.1.0
+  - Core :: Security (https://jetty.org/jetty-core/jetty-security) org.eclipse.jetty:jetty-security:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - Core :: Server (https://jetty.org/jetty-core/jetty-server) org.eclipse.jetty:jetty-server:jar:12.1.0
+  - Core :: Server (https://jetty.org/jetty-core/jetty-server) org.eclipse.jetty:jetty-server:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - Core :: Sessions (https://jetty.org/jetty-core/jetty-session) org.eclipse.jetty:jetty-session:jar:12.1.0
+  - Core :: Sessions (https://jetty.org/jetty-core/jetty-session) org.eclipse.jetty:jetty-session:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - Core :: Utilities (https://jetty.org/jetty-core/jetty-util) org.eclipse.jetty:jetty-util:jar:12.1.0
+  - Core :: Utilities (https://jetty.org/jetty-core/jetty-util) org.eclipse.jetty:jetty-util:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - EE11 :: Servlet (https://jetty.org/jetty-ee11/jetty-ee11-servlet) org.eclipse.jetty.ee11:jetty-ee11-servlet:jar:12.1.0
+  - EE11 :: Servlet (https://jetty.org/jetty-ee11/jetty-ee11-servlet) org.eclipse.jetty.ee11:jetty-ee11-servlet:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - EE11 :: Websocket :: Jetty Server (https://jetty.org/jetty-ee11/jetty-ee11-websocket/jetty-ee11-websocket-jetty-server) org.eclipse.jetty.ee11.websocket:jetty-ee11-websocket-jetty-server:jar:12.1.0
+  - EE11 :: Websocket :: Jetty Server (https://jetty.org/jetty-ee11/jetty-ee11-websocket/jetty-ee11-websocket-jetty-server) org.eclipse.jetty.ee11.websocket:jetty-ee11-websocket-jetty-server:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - EE11 :: Websocket :: Servlet (https://jetty.org/jetty-ee11/jetty-ee11-websocket/jetty-ee11-websocket-servlet) org.eclipse.jetty.ee11.websocket:jetty-ee11-websocket-servlet:jar:12.1.0
+  - EE11 :: Websocket :: Servlet (https://jetty.org/jetty-ee11/jetty-ee11-websocket/jetty-ee11-websocket-servlet) org.eclipse.jetty.ee11.websocket:jetty-ee11-websocket-servlet:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - Core :: Websocket :: Common (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-core-common) org.eclipse.jetty.websocket:jetty-websocket-core-common:jar:12.1.0
+  - Core :: Websocket :: Common (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-core-common) org.eclipse.jetty.websocket:jetty-websocket-core-common:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - Core :: Websocket :: Server (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-core-server) org.eclipse.jetty.websocket:jetty-websocket-core-server:jar:12.1.0
+  - Core :: Websocket :: Server (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-core-server) org.eclipse.jetty.websocket:jetty-websocket-core-server:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - Core :: Websocket :: Jetty API (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-jetty-api) org.eclipse.jetty.websocket:jetty-websocket-jetty-api:jar:12.1.0
+  - Core :: Websocket :: Jetty API (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-jetty-api) org.eclipse.jetty.websocket:jetty-websocket-jetty-api:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - Core :: Websocket :: Jetty Common (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-jetty-common) org.eclipse.jetty.websocket:jetty-websocket-jetty-common:jar:12.1.0
+  - Core :: Websocket :: Jetty Common (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-jetty-common) org.eclipse.jetty.websocket:jetty-websocket-jetty-common:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
-  - Core :: Websocket :: Jetty Server (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-jetty-server) org.eclipse.jetty.websocket:jetty-websocket-jetty-server:jar:12.1.0
+  - Core :: Websocket :: Jetty Server (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-jetty-server) org.eclipse.jetty.websocket:jetty-websocket-jetty-server:jar:12.1.1
     License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
     License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
 
