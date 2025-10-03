@@ -87,6 +87,7 @@
       <artifactId>derby</artifactId>
       <scope>provided</scope>
     </dependency>
+
     <dependency>
       <groupId>org.apache.derby</groupId>
       <artifactId>derbytools</artifactId>
@@ -109,6 +110,13 @@
       <artifactId>qpid-test-utils</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.openjdk.nashorn</groupId>
+      <artifactId>nashorn-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -399,19 +407,6 @@
           <groupId>org.apache.qpid</groupId>
           <artifactId>qpid-client</artifactId>
           <scope>runtime</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>nashorn</id>
-      <activation>
-        <jdk>[15,)</jdk>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.openjdk.nashorn</groupId>
-          <artifactId>nashorn-core</artifactId>
-          <scope>test</scope>
         </dependency>
       </dependencies>
     </profile>
