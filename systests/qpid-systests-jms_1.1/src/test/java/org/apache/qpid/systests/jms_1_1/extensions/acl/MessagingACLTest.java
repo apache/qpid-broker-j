@@ -31,7 +31,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -51,8 +49,6 @@ import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 import javax.jms.TemporaryTopic;
 import javax.jms.TextMessage;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
 
@@ -72,6 +68,9 @@ import org.apache.qpid.server.security.access.plugins.AclRule;
 import org.apache.qpid.server.security.access.plugins.RuleBasedVirtualHostAccessControlProvider;
 import org.apache.qpid.server.security.group.GroupProviderImpl;
 import org.apache.qpid.systests.JmsTestBase;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.cfg.EnumFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 public class MessagingACLTest extends JmsTestBase
 {
@@ -85,6 +84,11 @@ public class MessagingACLTest extends JmsTestBase
     private static final String RULE_BASED_VIRTUAL_HOST_ACCESS_CONTROL_PROVIDER_TYPE =
             "org.apache.qpid.RuleBaseVirtualHostAccessControlProvider";
     private static final String EXCHANGE_TYPE = "org.apache.qpid.Exchange";
+
+    private static final ObjectMapper MAPPER = JsonMapper.builder()
+            .disable(EnumFeature.READ_ENUMS_USING_TO_STRING)
+            .disable(EnumFeature.WRITE_ENUMS_USING_TO_STRING)
+            .build();
 
     @Test
     public void testAccessAuthorizedSuccess() throws Exception
@@ -839,7 +843,7 @@ public class MessagingACLTest extends JmsTestBase
         when(eventLoggerProvider.getEventLogger()).thenReturn(eventLogger);
 
         List<AclRule> aclRules = new ArrayList<>();
-        try(StringReader stringReader = new StringReader(Arrays.stream(rules).collect(Collectors.joining(LINE_SEPARATOR))))
+        try(StringReader stringReader = new StringReader(String.join(LINE_SEPARATOR, rules)))
         {
             RuleSet ruleSet = AclFileParser.parse(stringReader, eventLoggerProvider);
             for (final Rule rule: ruleSet)
@@ -848,12 +852,12 @@ public class MessagingACLTest extends JmsTestBase
             }
         }
 
-        configureACL(aclRules.toArray(new AclRule[aclRules.size()]));
+        configureACL(aclRules.toArray(new AclRule[0]));
     }
 
     private void configureACL(AclRule... rules) throws Exception
     {
-        final String serializedRules = new ObjectMapper().writeValueAsString(rules);
+        final String serializedRules = MAPPER.writeValueAsString(rules);
         final Map<String, Object> attributes = new HashMap<>();
         attributes.put(RuleBasedVirtualHostAccessControlProvider.RULES, serializedRules);
         attributes.put(RuleBasedVirtualHostAccessControlProvider.DEFAULT_RESULT, "DENIED");

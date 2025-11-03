@@ -42,8 +42,8 @@ import javax.jms.Session;
 import javax.jms.StreamMessage;
 import javax.jms.TemporaryQueue;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.Protocol;
 
@@ -319,7 +319,7 @@ public class AmqpManagementFacade
                 {
                     jsonifiedValue = objectMapper.writeValueAsString(value);
                 }
-                catch (JsonProcessingException e)
+                catch (JacksonException e)
                 {
                     throw new IllegalArgumentException(String.format(
                             "Cannot convert the argument '%s' to JSON to meet JMS type restrictions",

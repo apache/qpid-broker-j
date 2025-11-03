@@ -24,12 +24,12 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.disttest.json.ObjectMapperFactory;
+import tools.jackson.databind.ObjectMapper;
 
+import org.apache.qpid.disttest.json.ObjectMapperFactory;
 
 public class ConfigReader
 {

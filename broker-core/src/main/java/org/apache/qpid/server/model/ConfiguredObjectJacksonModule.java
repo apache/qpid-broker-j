@@ -20,19 +20,20 @@
  */
 package org.apache.qpid.server.model;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.Version;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 public class ConfiguredObjectJacksonModule extends SimpleModule
 {
@@ -58,13 +59,13 @@ public class ConfiguredObjectJacksonModule extends SimpleModule
         for(final ConfiguredObjectCustomSerialization.Converter converter :
                 ConfiguredObjectCustomSerialization.getConverters(forPersistence))
         {
-            addSerializer(converter.getConversionClass(), new JsonSerializer()
+            addSerializer(converter.getConversionClass(), new ValueSerializer<>()
             {
                 @Override
-                public void serialize(final Object value, final JsonGenerator gen, final SerializerProvider serializers)
-                        throws IOException, JsonProcessingException
+                public void serialize(final Object value, final JsonGenerator gen, final SerializationContext serializers)
+                        throws JacksonException
                 {
-                    gen.writeObject(converter.convert(value));
+                    gen.writePOJO(converter.convert(value));
                 }
             });
         }
@@ -73,9 +74,16 @@ public class ConfiguredObjectJacksonModule extends SimpleModule
 
     public static ObjectMapper newObjectMapper(final boolean forPersistence)
     {
-        final ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(forPersistence ? PERSISTENCE_INSTANCE : INSTANCE);
-        return objectMapper;
+        return JsonMapper.builder()
+                .addModule(forPersistence ? PERSISTENCE_INSTANCE : INSTANCE)
+                .build();
     }
 
+    public static ObjectMapper newObjectMapper(final boolean forPersistence, final SerializationFeature serializationFeature)
+    {
+        return JsonMapper.builder()
+                .addModule(forPersistence ? PERSISTENCE_INSTANCE : INSTANCE)
+                .enable(serializationFeature)
+                .build();
+    }
 }

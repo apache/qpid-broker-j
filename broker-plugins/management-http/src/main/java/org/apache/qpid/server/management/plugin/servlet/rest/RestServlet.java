@@ -41,10 +41,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.ManagementController;
@@ -292,8 +293,7 @@ public class RestServlet extends AbstractServlet
                                                                       response,
                                                                       getManagementConfiguration()))
         {
-            ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper(false);
-            mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+            ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper(false, SerializationFeature.INDENT_OUTPUT);
             mapper.writeValue(stream, formattedResponse);
         }
     }

@@ -21,7 +21,7 @@ package org.apache.qpid.disttest.json;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.disttest.message.Command;
 

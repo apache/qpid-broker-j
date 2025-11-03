@@ -48,9 +48,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.core.JacksonException;
 
 import org.apache.qpid.server.plugin.ConfiguredObjectAttributeInjector;
 import org.apache.qpid.server.plugin.ConfiguredObjectRegistration;
@@ -1008,7 +1009,7 @@ public class ConfiguredObjectTypeRegistry
                             {
                                 stringValue = ConfiguredObjectJacksonModule.newObjectMapper(false).writeValueAsString(value);
                             }
-                            catch (JsonProcessingException e)
+                            catch (JacksonException e)
                             {
                                 throw new ServerScopedRuntimeException("Unable to convert value of type '"
                                                                        + value.getClass()

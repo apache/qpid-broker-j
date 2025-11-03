@@ -33,10 +33,11 @@ import java.security.Principal;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -49,6 +50,7 @@ import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2IdentityResolve
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2Utils;
 import org.apache.qpid.server.util.ConnectionBuilder;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * An identity resolver that calls GitHubs's user API https://developer.github.com/v3/users/
@@ -64,7 +66,7 @@ public class GitHubOAuth2IdentityResolverService implements OAuth2IdentityResolv
 
     public static final String TYPE = "GitHubUser";
 
-    private final ObjectMapper _objectMapper = new ObjectMapper();
+    private final ObjectMapper _objectMapper = JsonMapper.builder().build();
 
     @Override
     public String getType()
@@ -129,7 +131,7 @@ public class GitHubOAuth2IdentityResolverService implements OAuth2IdentityResolv
             {
                 responseMap = _objectMapper.readValue(input, Map.class);
             }
-            catch (JsonProcessingException e)
+            catch (JacksonException e)
             {
                 throw new IOException(String.format("Identity resolver '%s' did not return json",
                                                     userInfoEndpoint), e);

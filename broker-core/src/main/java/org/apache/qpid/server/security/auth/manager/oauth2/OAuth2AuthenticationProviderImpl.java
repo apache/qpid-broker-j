@@ -40,10 +40,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -64,6 +65,7 @@ import org.apache.qpid.server.util.ConnectionBuilder;
 import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.Strings;
+import tools.jackson.databind.json.JsonMapper;
 
 public class OAuth2AuthenticationProviderImpl
         extends AbstractAuthenticationManager<OAuth2AuthenticationProviderImpl>
@@ -72,7 +74,7 @@ public class OAuth2AuthenticationProviderImpl
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuth2AuthenticationProviderImpl.class);
 
-    private final ObjectMapper _objectMapper = new ObjectMapper();
+    private final ObjectMapper _objectMapper = JsonMapper.builder().build();
 
     @ManagedAttributeField
     private URI _authorizationEndpointURI;
@@ -326,7 +328,7 @@ public class OAuth2AuthenticationProviderImpl
 
                 return authenticateViaAccessToken(accessToken, addressSpace);
             }
-            catch (JsonProcessingException e)
+            catch (JacksonException e)
             {
                 IllegalStateException ise = new IllegalStateException(String.format("Token endpoint '%s' did not return json",
                                                                                     tokenEndpoint), e);

@@ -30,8 +30,6 @@ import java.util.Map;
 
 import javax.net.ssl.SSLEngine;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,6 +41,10 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
@@ -180,7 +182,7 @@ public class OAuth2MockEndpointHolder
             {
                 listOfStrings = new ObjectMapper().readValue(listAsString.getBytes(UTF_8), new TypeReference<>() { });
             }
-            catch (IOException e)
+            catch (JacksonException e)
             {
                 listOfStrings = Arrays.asList(listAsString.split("\\s*,\\s*"));
             }

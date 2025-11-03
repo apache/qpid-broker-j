@@ -48,7 +48,6 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.http.HttpServletRequest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee11.servlet.ServletHandler;
 import org.eclipse.jetty.http.HttpFields;
@@ -76,8 +75,12 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -918,9 +921,9 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             {
                 combinationsAsString.add(mapper.writeValueAsString(combination));
             }
-            catch (IOException e)
+            catch (JacksonException e)
             {
-                throw new IllegalArgumentException("Unexpected IO Exception generating JSON string", e);
+                throw new IllegalArgumentException("Unexpected exception generating JSON string", e);
             }
         }
         return Collections.unmodifiableSet(combinationsAsString);

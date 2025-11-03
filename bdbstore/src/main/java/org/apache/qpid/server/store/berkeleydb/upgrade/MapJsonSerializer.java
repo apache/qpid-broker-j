@@ -24,9 +24,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 public class MapJsonSerializer
 {
@@ -48,9 +47,8 @@ public class MapJsonSerializer
         return stringWriter.toString();
     }
 
-    public Map<String, Object> deserialize(String json) throws IOException
+    public Map<String, Object> deserialize(String json)
     {
-        Map<String, Object> attributesMap = _mapper.readValue(json, MAP_TYPE_REFERENCE);
-        return attributesMap;
+        return _mapper.readValue(json, MAP_TYPE_REFERENCE);
     }
 }

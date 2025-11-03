@@ -56,7 +56,6 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.TransactionRolledBackException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sleepycat.je.Durability;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.rep.ReplicatedEnvironment;
@@ -64,6 +63,8 @@ import com.sleepycat.je.rep.ReplicationConfig;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.State;

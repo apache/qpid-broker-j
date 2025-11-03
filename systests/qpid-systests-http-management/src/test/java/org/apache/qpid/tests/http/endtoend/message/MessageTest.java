@@ -53,10 +53,11 @@ import javax.jms.Session;
 import javax.jms.StreamMessage;
 import javax.jms.TextMessage;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import tools.jackson.core.type.TypeReference;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.tests.http.HttpRequestConfig;

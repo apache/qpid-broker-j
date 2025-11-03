@@ -21,30 +21,33 @@
 
 package org.apache.qpid.disttest.json;
 
-
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.ValueNode;
+
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.core.StreamReadFeature;
+import tools.jackson.core.TreeNode;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.cfg.EnumFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ValueNode;
 
 import org.apache.qpid.disttest.client.property.PropertyValue;
 import org.apache.qpid.disttest.client.property.PropertyValueFactory;
@@ -55,27 +58,35 @@ public class ObjectMapperFactory
 
     public ObjectMapper createObjectMapper()
     {
-        SimpleModule module = new SimpleModule();
-        module.addDeserializer(PropertyValue.class, new PropertyValueDeserializer());
-        module.addSerializer(SimplePropertyValue.class, new SimplePropertyValueSerializer());
+        SimpleModule module = new SimpleModule()
+                .addDeserializer(PropertyValue.class, new PropertyValueDeserializer())
+                .addSerializer(SimplePropertyValue.class, new SimplePropertyValueSerializer());
 
         return JsonMapper.builder()
-                .visibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .configure(SerializationFeature.INDENT_OUTPUT, true)
-                .configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true)
-                .configure(JsonParser.Feature.ALLOW_COMMENTS, true)
-                .configure(MapperFeature.AUTO_DETECT_GETTERS, false)
+                .changeDefaultVisibility(visibilityChecker -> visibilityChecker
+                        .withVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+                        .withVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE)
+                        .withVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE)
+                        .withVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE)
+                        .withVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.DEFAULT))
+                .enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)
+                .disable(EnumFeature.READ_ENUMS_USING_TO_STRING)
+                .disable(EnumFeature.WRITE_ENUMS_USING_TO_STRING)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .enable(SerializationFeature.INDENT_OUTPUT)
+                .enable(JsonReadFeature.ALLOW_SINGLE_QUOTES)
+                .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+                .enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION)
                 .addModule(module)
                 .build();
     }
 
-    private static class SimplePropertyValueSerializer extends JsonSerializer<SimplePropertyValue>
+    private static class SimplePropertyValueSerializer extends ValueSerializer<SimplePropertyValue>
     {
         @Override
         public void serialize(final SimplePropertyValue simplePropertyValue,
                               final JsonGenerator jsonGenerator,
-                              final SerializerProvider serializerProvider) throws IOException
+                              final SerializationContext serializerContext)
         {
             if (simplePropertyValue == null)
             {
@@ -119,17 +130,16 @@ public class ObjectMapperFactory
         }
     }
 
-    public static class PropertyValueDeserializer extends JsonDeserializer<PropertyValue>
+    public static class PropertyValueDeserializer extends ValueDeserializer<PropertyValue>
     {
         private static final String DEF_FIELD = "@def";
         private final PropertyValueFactory _factory = new PropertyValueFactory();
 
         @Override
         public PropertyValue deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext)
-                throws IOException
         {
-            ObjectMapper objectMapper = (ObjectMapper) jsonParser.getCodec();
-            TreeNode root = objectMapper.readTree(jsonParser);
+            TreeNode root = deserializationContext.readTree(jsonParser);
+            ObjectReadContext objectReadContext = jsonParser.objectReadContext();
 
             if (root.isValueNode())
             {
@@ -186,7 +196,9 @@ public class ObjectMapperFactory
                     try
                     {
                         Class<PropertyValue> classInstance = _factory.getPropertyValueClass(definition);
-                        PropertyValue propertyValue = objectMapper.readValue(objectNode.traverse(objectMapper), classInstance);
+                        JsonParser treeParser = objectNode.traverse(deserializationContext);
+                        treeParser.nextToken();
+                        PropertyValue propertyValue = objectReadContext.readValue(treeParser, classInstance);
                         return propertyValue;
                     }
                     catch (ClassNotFoundException e)

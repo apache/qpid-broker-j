@@ -31,8 +31,8 @@ import javax.jms.JMSException;
 import javax.jms.Session;
 import javax.naming.NamingException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -107,7 +107,7 @@ public class BrokerManagementHelper implements Closeable
             sslPortAttributes.put(Port.TRUST_STORES, new ObjectMapper().writeValueAsString(trustStoreName));
             createEntity(portName, "org.apache.qpid.AmqpPort", sslPortAttributes);
         }
-        catch (JsonProcessingException e)
+        catch (JacksonException e)
         {
             throw new RuntimeException("Unexpected json processing exception", e);
         }

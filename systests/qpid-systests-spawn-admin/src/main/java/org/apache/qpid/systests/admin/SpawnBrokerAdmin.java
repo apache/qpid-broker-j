@@ -61,8 +61,8 @@ import javax.jms.JMSException;
 import javax.jms.Session;
 import javax.naming.NamingException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -520,7 +520,7 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
                     new ObjectMapper().writeValueAsString(Collections.singletonMap("virtualhostBlueprint",
                                                                                    blueprint));
         }
-        catch (JsonProcessingException e)
+        catch (JacksonException e)
         {
             throw new BrokerAdminException("Cannot create virtual host as context serialization failed", e);
         }

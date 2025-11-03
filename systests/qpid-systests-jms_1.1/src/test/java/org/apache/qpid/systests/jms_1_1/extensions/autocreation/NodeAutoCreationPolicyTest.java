@@ -54,9 +54,10 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.junit.jupiter.api.Test;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.AlternateBinding;
@@ -217,7 +218,7 @@ public class NodeAutoCreationPolicyTest extends JmsTestBase
 
             return mapper.writeValueAsString(Arrays.asList(policies));
         }
-        catch (IOException e)
+        catch (JacksonException e)
         {
             throw new RuntimeException(e);
         }

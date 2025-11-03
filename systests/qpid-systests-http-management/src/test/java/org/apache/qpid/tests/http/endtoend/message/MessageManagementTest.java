@@ -43,10 +43,11 @@ import java.util.stream.Stream;
 
 import jakarta.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import tools.jackson.core.type.TypeReference;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.queue.PriorityQueue;
