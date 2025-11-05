@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,16 +19,15 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
-
 
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-@CompositeType( symbolicDescriptor = "amqp:header:list", numericDescriptor = 0x0000000000000070L)
+@CompositeType(symbolicDescriptor = SymbolTexts.AMQP_HEADER, numericDescriptor = 0x0000000000000070L)
 public class Header implements NonEncodingRetainingSection<Header>
 {
 

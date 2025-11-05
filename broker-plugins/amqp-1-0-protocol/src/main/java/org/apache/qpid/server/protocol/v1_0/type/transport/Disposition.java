@@ -19,18 +19,17 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transport;
-
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-@CompositeType( symbolicDescriptor = "amqp:disposition:list", numericDescriptor = 0x0000000000000015L)
+@CompositeType(symbolicDescriptor = SymbolTexts.AMQP_DISPOSITION, numericDescriptor = 0x0000000000000015L)
 public class Disposition implements FrameBody
 {
 

@@ -50,6 +50,7 @@ import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterR
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -86,7 +87,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
             }
             else if (BYTES_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
             {
-                contentType = Symbol.valueOf("application/octet-stream");
+                contentType = Symbols.APP_OCTET_STREAM;
             }
             else if (MAP_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
             {
@@ -98,7 +99,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
             }
             else if (OBJECT_MESSAGE_CONTENT_TYPES.matcher(contentMimeType).matches())
             {
-                contentType = Symbol.valueOf("application/x-java-serialized-object");
+                contentType = Symbols.APP_X_JAVA_SERIALIZED_OBJ;
             }
             else
             {
@@ -112,7 +113,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                                                              final String contentMimeType)
     {
         MessageAnnotations messageAnnotations = null;
-        final Symbol key = Symbol.valueOf("x-opt-jms-msg-type");
+        final Symbol key = Symbols.ANNOTATION_KEY;
         if (contentMimeType != null)
         {
             if (TEXT_CONTENT_TYPES.matcher(contentMimeType).matches())

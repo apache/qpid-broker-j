@@ -36,6 +36,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -82,7 +83,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
             interaction.negotiateOpen()
                        .begin().consumeResponse(Begin.class)
 
-                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected, Rejected.REJECTED_SYMBOL)
+                       .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected, Symbols.AMQP_REJECTED)
                        .txnDeclare();
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Declared.class)));
@@ -113,7 +114,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
                                            .begin().consumeResponse(Begin.class)
-                                           .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected, Accepted.ACCEPTED_SYMBOL)
+                                           .txnAttachCoordinatorLink(UnsignedInteger.ZERO, this::coordinatorAttachExpected, Symbols.AMQP_ACCEPTED)
                                            .txnDeclare();
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Declared.class)));
