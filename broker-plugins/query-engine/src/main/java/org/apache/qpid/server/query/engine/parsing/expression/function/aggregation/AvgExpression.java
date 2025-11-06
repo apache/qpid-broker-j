@@ -81,6 +81,12 @@ public class AvgExpression<T> extends AbstractAggregationExpression<T, Double>
     {
         final List<?> args = getArguments(items, _typeValidator);
         final OptionalDouble optionalDouble = args.stream().mapToDouble(NumberConverter::toDouble).average();
-        return optionalDouble.isPresent() ? NumberConverter.narrow(BigDecimal.valueOf(optionalDouble.getAsDouble())) : null;
+        if (optionalDouble.isEmpty())
+        {
+            return null;
+        }
+        final BigDecimal bigDecimal = BigDecimal.valueOf(optionalDouble.getAsDouble());
+        final Number narrowed = NumberConverter.narrow(bigDecimal);
+        return Double.valueOf(narrowed.doubleValue());
     }
 }
