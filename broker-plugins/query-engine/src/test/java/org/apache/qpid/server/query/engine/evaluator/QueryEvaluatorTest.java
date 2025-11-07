@@ -30,6 +30,9 @@ import org.apache.qpid.server.query.engine.evaluator.settings.QuerySettings;
 import org.apache.qpid.server.query.engine.exception.Errors;
 import org.apache.qpid.server.query.engine.exception.QueryValidationException;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Tests designed to verify the {@link QueryEvaluator} functionality
  */
@@ -150,6 +153,21 @@ public class QueryEvaluatorTest
         {
             assertEquals(NullPointerException.class, e.getClass());
             assertEquals(Errors.EVALUATION.QUERY_NOT_SUPPLIED, e.getMessage());
+        }
+    }
+
+    @Test
+    public void multiLineQuery()
+    {
+        final QueryEvaluator evaluator = new QueryEvaluator(null, new QuerySettings(), TestBroker.createBroker());
+        final List<String> delimiters = List.of("\n", "\r", "\r\n");
+        for (final String delimiter : delimiters)
+        {
+            final String query = "select * " + delimiter +
+                    "from queue " + delimiter +
+                    "where name = 'QUEUE_1'";
+            final List<Map<String, Object>> result = evaluator.execute(query).getResults();
+            assertEquals(1, result.size());
         }
     }
 }
