@@ -129,36 +129,36 @@
     <dgrid-version>1.3.3</dgrid-version>
 
     <!-- test dependency version numbers -->
-    <junit-version>5.13.4</junit-version>
-    <mockito-version>5.19.0</mockito-version>
-    <netty-version>4.2.6.Final</netty-version>
+    <junit-version>6.0.1</junit-version>
+    <mockito-version>5.20.0</mockito-version>
+    <netty-version>4.2.7.Final</netty-version>
     <hamcrest-version>3.0</hamcrest-version>
     <maven-resolver-provider-version>3.8.6</maven-resolver-provider-version>
     <maven-resolver-version>1.9.22</maven-resolver-version>
-    <httpclient-version>5.5</httpclient-version>
+    <httpclient-version>5.5.1</httpclient-version>
     <qpid-jms-client-version>1.15.0</qpid-jms-client-version>
     <qpid-jms-client-amqp-0-x-version>6.4.0</qpid-jms-client-amqp-0-x-version>
     <nashorn-version>15.7</nashorn-version>
 
-    <exec-maven-plugin-version>3.5.1</exec-maven-plugin-version>
+    <exec-maven-plugin-version>3.6.2</exec-maven-plugin-version>
     <javacc-maven-plugin-version>3.1.1</javacc-maven-plugin-version>
-    <maven-enforcer-plugin-version>3.6.1</maven-enforcer-plugin-version>
+    <maven-enforcer-plugin-version>3.6.2</maven-enforcer-plugin-version>
     <maven-rar-plugin-version>3.0.0</maven-rar-plugin-version>
-    <license-maven-plugin-version>2.6.0</license-maven-plugin-version>
+    <license-maven-plugin-version>2.7.0</license-maven-plugin-version>
     <maven-jxr-plugin-version>3.6.0</maven-jxr-plugin-version>
     <findbugs-maven-plugin-version>3.0.5</findbugs-maven-plugin-version>
-    <jacoco-plugin-version>0.8.13</jacoco-plugin-version>
+    <jacoco-plugin-version>0.8.14</jacoco-plugin-version>
     <apache-rat-plugin-version>0.16.1</apache-rat-plugin-version>
     <maven-docbx-plugin-version>2.0.17</maven-docbx-plugin-version>
     <maven-docbook-xml-plugin-version>5.0-all</maven-docbook-xml-plugin-version>
     <buildnumber-maven-plugin-version>3.2.1</buildnumber-maven-plugin-version>
-    <maven-compiler-plugin-version>3.14.0</maven-compiler-plugin-version>
-    <maven-jar-plugin-version>3.4.2</maven-jar-plugin-version>
+    <maven-compiler-plugin-version>3.14.1</maven-compiler-plugin-version>
+    <maven-jar-plugin-version>3.5.0</maven-jar-plugin-version>
     <maven-surefire-plugin-version>3.5.4</maven-surefire-plugin-version>
     <maven-surefire-report-plugin-version>3.5.4</maven-surefire-report-plugin-version>
-    <h2.version>2.3.232</h2.version>
+    <h2.version>2.4.240</h2.version>
     <apache-directory-version>2.0.0.AM27</apache-directory-version>
-    <kerby-version>2.1.0</kerby-version>
+    <kerby-version>2.1.1</kerby-version>
     <bcprov-version>1.82</bcprov-version>
     <bcpkix-version>1.82</bcpkix-version>
     <logback-gelf-version>6.1.1</logback-gelf-version>
