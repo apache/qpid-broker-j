@@ -27,7 +27,6 @@ import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -100,9 +99,10 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
         final ConfiguredObject<?> managedObject
     ) throws IOException
     {
+        String content = "";
         try
         {
-            final String content = request.getReader().lines().collect(Collectors.joining());
+            content = String.join(" ", request.getReader().lines().toList());
             if (content.isEmpty())
             {
                 performQuery(request, response, managedObject);
@@ -119,7 +119,7 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
         catch (Exception e)
         {
             sendJsonErrorResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, GENERIC_ERROR_MESSAGE);
-            LOGGER.error("Error when executing query", e);
+            LOGGER.error("Error when executing query '%s'".formatted(content), e);
         }
     }
 
