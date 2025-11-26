@@ -110,7 +110,7 @@
     <fasterxml-jackson-version>2.20.0</fasterxml-jackson-version>
     <fasterxml-jackson-databind-version>2.20.0</fasterxml-jackson-databind-version>
     <slf4j-version>2.0.17</slf4j-version>
-    <jetty-version>12.1.1</jetty-version>
+    <jetty-version>12.1.4</jetty-version>
 
     <!-- dependency version numbers -->
     <hikari-cp-version>7.0.2</hikari-cp-version>
