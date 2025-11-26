@@ -87,6 +87,6 @@ public class AvgExpression<T> extends AbstractAggregationExpression<T, Double>
         }
         final BigDecimal bigDecimal = BigDecimal.valueOf(optionalDouble.getAsDouble());
         final Number narrowed = NumberConverter.narrow(bigDecimal);
-        return Double.valueOf(narrowed.doubleValue());
+        return narrowed.doubleValue();
     }
 }
