@@ -118,7 +118,7 @@
 
     <geronimo-jms-1-1-version>1.1.1</geronimo-jms-1-1-version>
     <geronimo-jms-2-0-version>1.0-alpha-2</geronimo-jms-2-0-version>
-    <asm-version>9.8</asm-version>
+    <asm-version>9.9</asm-version>
 
     <velocity-version>1.4</velocity-version>
     <csvjdbc-version>1.0.46</csvjdbc-version>

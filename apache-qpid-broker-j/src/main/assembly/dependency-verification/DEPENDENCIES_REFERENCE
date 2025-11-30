@@ -99,10 +99,10 @@ From: 'Oracle Corporation' (http://www.oracle.com/)
 
 From: 'OW2' (http://www.ow2.org/)
 
-  - asm (http://asm.ow2.io/) org.ow2.asm:asm:jar:9.8
+  - asm (http://asm.ow2.io/) org.ow2.asm:asm:jar:9.9
     License: BSD-3-Clause  (https://asm.ow2.io/license.html)
 
-  - asm-tree (http://asm.ow2.io/) org.ow2.asm:asm-tree:jar:9.8
+  - asm-tree (http://asm.ow2.io/) org.ow2.asm:asm-tree:jar:9.9
     License: BSD-3-Clause  (https://asm.ow2.io/license.html)
 
 
