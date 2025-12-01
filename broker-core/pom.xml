@@ -166,10 +166,10 @@
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
-          <excludes>
-            <exclude>src/test/resources/ssl/**</exclude>
-            <exclude>src/main/resources/org/apache/qpid/server/configuration/fallback-version.txt</exclude>
-          </excludes>
+          <inputExcludes>
+            <inputExclude>src/test/resources/ssl/**</inputExclude>
+            <inputExclude>src/main/resources/org/apache/qpid/server/configuration/fallback-version.txt</inputExclude>
+          </inputExcludes>
         </configuration>
       </plugin>
 

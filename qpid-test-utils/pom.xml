@@ -122,9 +122,9 @@
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
-          <excludes>
-            <exclude>src/main/resources/ssl/**</exclude>
-          </excludes>
+          <inputExcludes>
+            <inputExclude>src/main/resources/ssl/**</inputExclude>
+          </inputExcludes>
         </configuration>
       </plugin>
     </plugins>

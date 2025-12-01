@@ -181,12 +181,12 @@
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
-          <excludes>
-            <exclude>src/main/java/json2.js</exclude>
-            <exclude>src/test/java/org/apache/qpid/disttest/controller/config/sampleConfig.json</exclude>
-            <exclude>src/test/java/org/apache/qpid/disttest/results/formatting/expectedOutput.csv</exclude>
-            <exclude>visualisation-jfc/**</exclude>
-          </excludes>
+          <inputExcludes>
+            <inputExclude>src/main/java/json2.js</inputExclude>
+            <inputExclude>src/test/java/org/apache/qpid/disttest/controller/config/sampleConfig.json</inputExclude>
+            <inputExclude>src/test/java/org/apache/qpid/disttest/results/formatting/expectedOutput.csv</inputExclude>
+            <inputExclude>visualisation-jfc/**</inputExclude>
+          </inputExcludes>
         </configuration>
       </plugin>
       <plugin>

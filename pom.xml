@@ -148,7 +148,7 @@
     <maven-jxr-plugin-version>3.6.0</maven-jxr-plugin-version>
     <findbugs-maven-plugin-version>3.0.5</findbugs-maven-plugin-version>
     <jacoco-plugin-version>0.8.14</jacoco-plugin-version>
-    <apache-rat-plugin-version>0.16.1</apache-rat-plugin-version>
+    <apache-rat-plugin-version>0.17</apache-rat-plugin-version>
     <maven-docbx-plugin-version>2.0.17</maven-docbx-plugin-version>
     <maven-docbook-xml-plugin-version>5.0-all</maven-docbook-xml-plugin-version>
     <buildnumber-maven-plugin-version>3.2.1</buildnumber-maven-plugin-version>
@@ -1220,14 +1220,14 @@
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
-          <excludes>
-            <exclude>test-profiles/test_resources/ssl/**</exclude>
-            <exclude>specs/**</exclude>
-            <exclude>**/*.md</exclude>
-            <exclude>DEPENDENCIES</exclude>
-            <exclude>appveyor.yml</exclude>
-          </excludes>
-        </configuration>
+          <inputExcludes>
+            <inputExclude>test-profiles/test_resources/ssl/**</inputExclude>
+            <inputExclude>specs/**</inputExclude>
+            <inputExclude>**/*.md</inputExclude>
+            <inputExclude>DEPENDENCIES</inputExclude>
+            <inputExclude>appveyor.yml</inputExclude>
+          </inputExcludes>
+          </configuration>
       </plugin>
     </plugins>
 
@@ -1297,12 +1297,12 @@
         <artifactId>apache-rat-plugin</artifactId>
         <version>${apache-rat-plugin-version}</version>
         <configuration>
-          <excludes>
-            <exclude>build/**</exclude>
-            <exclude>lib/**</exclude>
-            <exclude>test-profiles/test_resources/ssl/**</exclude>
-            <exclude>DEPENDENCIES</exclude>
-          </excludes>
+          <inputExcludes>
+            <inputExclude>build/**</inputExclude>
+            <inputExclude>lib/**</inputExclude>
+            <inputExclude>test-profiles/test_resources/ssl/**</inputExclude>
+            <inputExclude>DEPENDENCIES</inputExclude>
+          </inputExcludes>
         </configuration>
       </plugin>
 

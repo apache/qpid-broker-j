@@ -43,10 +43,10 @@
                 <groupId>org.apache.rat</groupId>
                 <artifactId>apache-rat-plugin</artifactId>
                 <configuration>
-                    <excludes>
-                        <exclude>**/*.gliffy</exclude>
-                        <exclude>**/*.md</exclude>
-                    </excludes>
+                  <inputExcludes>
+                    <inputExclude>**/*.gliffy</inputExclude>
+                    <inputExclude>**/*.md</inputExclude>
+                  </inputExcludes>
                 </configuration>
             </plugin>
         </plugins>

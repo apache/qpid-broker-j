@@ -159,9 +159,9 @@
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
-          <excludes>
-            <exclude>src/main/java/resources/js/crypto-js/**</exclude>
-          </excludes>
+          <inputExcludes>
+            <inputExclude>src/main/java/resources/js/crypto-js/**</inputExclude>
+          </inputExcludes>
         </configuration>
       </plugin>
     </plugins>

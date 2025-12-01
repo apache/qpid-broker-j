@@ -111,9 +111,9 @@
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
-          <excludes>
-            <exclude>systests/**</exclude>
-          </excludes>
+          <inputExcludes>
+            <inputExclude>systests/**</inputExclude>
+          </inputExcludes>
         </configuration>
       </plugin>
     </plugins>
