@@ -25,17 +25,39 @@ import java.util.concurrent.ThreadFactory;
 public final class DaemonThreadFactory implements ThreadFactory
 {
     private final String _threadName;
+    private final Thread.UncaughtExceptionHandler _uncaughtExceptionHandler;
+    private final ThreadGroup _threadGroup;
 
-    public DaemonThreadFactory(String threadName)
+    public DaemonThreadFactory(final String threadName)
     {
         _threadName = threadName;
+        _uncaughtExceptionHandler = null;
+        _threadGroup = null;
+    }
+
+    public DaemonThreadFactory(final String threadName, final Thread.UncaughtExceptionHandler uncaughtExceptionHandler)
+    {
+        _threadName = threadName;
+        _uncaughtExceptionHandler = uncaughtExceptionHandler;
+        _threadGroup = null;
+    }
+
+    public DaemonThreadFactory(final String threadName, final Thread.UncaughtExceptionHandler uncaughtExceptionHandler, final ThreadGroup threadGroup)
+    {
+        _threadName = threadName;
+        _uncaughtExceptionHandler = uncaughtExceptionHandler;
+        _threadGroup = threadGroup;
     }
 
     @Override
-    public Thread newThread(Runnable r)
+    public Thread newThread(final Runnable runnable)
     {
-        Thread thread = new Thread(r, _threadName);
+        final Thread thread = _threadGroup == null ? new Thread(runnable, _threadName) : new Thread(_threadGroup, runnable, _threadName);
         thread.setDaemon(true);
+        if (_uncaughtExceptionHandler != null)
+        {
+            thread.setUncaughtExceptionHandler(_uncaughtExceptionHandler);
+        }
         return thread;
     }
 }
