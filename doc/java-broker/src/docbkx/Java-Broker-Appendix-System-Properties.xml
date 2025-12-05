@@ -62,6 +62,36 @@
             <para>Feature names should be comma separated.</para>
           </entry>
         </row>
+        <row xml:id="Java-Broker-Appendix-System-Properties-Broker-Exception-Handler">
+          <entry>qpid.broker.exceptionHandler</entry>
+          <entry>org.apache.qpid.server.utils.FailFastExceptionHandler</entry>
+          <entry>
+            <para>Allows to set UncaughtExceptionHandler for the main broker thread. Out of box are provided
+              following options:
+            </para>
+            <itemizedlist>
+              <listitem>
+                <para>org.apache.qpid.server.utils.FailFastExceptionHandler</para>
+              </listitem>
+              <listitem>
+                <para>org.apache.qpid.server.utils.GracefulShutdownExceptionHandler</para>
+              </listitem>
+              <listitem>
+                <para>org.apache.qpid.server.utils.LogAndContinueExceptionHandler</para>
+              </listitem>
+            </itemizedlist>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-System-Properties-Broker-Exception-Handler-Continue">
+          <entry>qpid.broker.exceptionHandler.continue</entry>
+          <entry>false</entry>
+          <entry>
+            <para>When set to "true", FailFastExceptionHandler and GracefulShutdownExceptionHandler will only log
+              the uncaught exception without shutting the broker down. When set to "false" (default value),
+              FailFastExceptionHandler and GracefulShutdownExceptionHandler will log the exception and shut the broker down.
+            </para>
+          </entry>
+        </row>
       </tbody>
     </tgroup>
   </table>

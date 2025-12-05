@@ -38,8 +38,8 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.help.HelpFormatter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.qpid.server.utils.ExitHandler;
+import org.apache.qpid.server.utils.FailFastExceptionHandler;
 
 import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -428,37 +428,10 @@ public class Main
         
         if (handler == null)
         {
-            handler = (thread, exception) ->
-            {
-                final boolean continueOnError = Boolean.getBoolean("qpid.broker.exceptionHandler.continue");
-                try
-                {
-                    System.err.println("########################################################################");
-                    System.err.println("#");
-                    System.err.print("# Unhandled Exception ");
-                    System.err.print(exception.toString());
-                    System.err.print(" in Thread ");
-                    System.err.println(thread.getName());
-                    System.err.println("#");
-                    System.err.println(continueOnError ? "# Forced to continue by JVM setting 'qpid.broker.exceptionHandler.continue'" : "# Exiting");
-                    System.err.println("#");
-                    System.err.println("########################################################################");
-                    exception.printStackTrace(System.err);
+            handler = new FailFastExceptionHandler();
+        }
 
-                    final Logger logger = LoggerFactory.getLogger("org.apache.qpid.server.Main");
-                    logger.error("Uncaught exception, " + (continueOnError ? "continuing." : "shutting down."), exception);
-                }
-                finally
-                {
-                    if (!continueOnError)
-                    {
-                        Runtime.getRuntime().halt(1);
-                    }
-                }
-            };
-
-            Thread.setDefaultUncaughtExceptionHandler(handler);
-        } 
+        Thread.setDefaultUncaughtExceptionHandler(handler);
     }
 
     protected void startBroker(final Map<String,Object> attributes) throws Exception
@@ -481,7 +454,7 @@ public class Main
 
     protected void shutdown(final int status)
     {
-        System.exit(status);
+        ExitHandler.exit(status);
     }
 
     private void printHelp()
