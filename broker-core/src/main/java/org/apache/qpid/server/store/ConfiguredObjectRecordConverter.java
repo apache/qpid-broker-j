@@ -32,6 +32,7 @@ import java.util.UUID;
 
 import tools.jackson.core.json.JsonReadFeature;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -39,7 +40,6 @@ import org.apache.qpid.server.model.ContainerType;
 import org.apache.qpid.server.model.DynamicModel;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
-import tools.jackson.databind.json.JsonMapper;
 
 public class ConfiguredObjectRecordConverter
 {
