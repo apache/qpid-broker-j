@@ -18,6 +18,7 @@
  * under the License.
  *
  */
+
 package org.apache.qpid.server;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.UnitTestBase;
-
 
 /**
  * Test to verify the command line parsing within the Main class, by
