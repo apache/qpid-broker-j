@@ -24,6 +24,7 @@ import static jakarta.servlet.http.HttpServletResponse.SC_CREATED;
 import static jakarta.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -78,6 +79,8 @@ public class ReadTest extends HttpTestBase
         final Map<String, Object> queue = getHelper().getJsonAsMap(QUEUE1_URL);
         assertThat(queue.get(ConfiguredObject.NAME), is(equalTo(QUEUE1_NAME)));
         assertThat(queue.get(ConfiguredObject.ID), is(notNullValue()));
+        assertThat(queue.get(ConfiguredObject.CREATED_TIME), is(instanceOf(Long.class)));
+        assertThat(queue.get(ConfiguredObject.LAST_UPDATED_TIME), is(instanceOf(Long.class)));
     }
 
     @Test
@@ -92,6 +95,8 @@ public class ReadTest extends HttpTestBase
         final Map<String, Object> queue = getHelper().getJsonAsSingletonList(QUEUE1_URL + "?singletonModelObjectResponseAsList=true");
         assertThat(queue.get(ConfiguredObject.NAME), is(equalTo(QUEUE1_NAME)));
         assertThat(queue.get(ConfiguredObject.ID), is(notNullValue()));
+        assertThat(queue.get(ConfiguredObject.CREATED_TIME), is(instanceOf(Long.class)));
+        assertThat(queue.get(ConfiguredObject.LAST_UPDATED_TIME), is(instanceOf(Long.class)));
     }
 
     @Test
@@ -117,6 +122,8 @@ public class ReadTest extends HttpTestBase
         final Map<String, Object> queue = list.get(0);
         assertThat(queue.get(ConfiguredObject.NAME), is(equalTo(QUEUE1_NAME)));
         assertThat(queue.get(ConfiguredObject.ID), is(notNullValue()));
+        assertThat(queue.get(ConfiguredObject.CREATED_TIME), is(instanceOf(Long.class)));
+        assertThat(queue.get(ConfiguredObject.LAST_UPDATED_TIME), is(instanceOf(Long.class)));
     }
 
     @Test

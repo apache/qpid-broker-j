@@ -26,6 +26,7 @@ import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet.SC_UNPROCESSABLE_ENTITY;
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -58,6 +59,8 @@ public class CreateTest extends HttpTestBase
         final Map<String, Object> queue = getHelper().getJsonAsMap(queueUrl);
 
         assertThat(queue.get(ConfiguredObject.NAME), is(equalTo("myqueue")));
+        assertThat(queue.get(ConfiguredObject.CREATED_TIME), is(instanceOf(Long.class)));
+        assertThat(queue.get(ConfiguredObject.LAST_UPDATED_TIME), is(instanceOf(Long.class)));
     }
 
     @Test

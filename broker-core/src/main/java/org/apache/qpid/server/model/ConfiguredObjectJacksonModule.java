@@ -28,10 +28,14 @@ import java.util.Set;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.Version;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.ValueSerializer;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.cfg.EnumFeature;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.module.SimpleModule;
 
@@ -76,13 +80,24 @@ public class ConfiguredObjectJacksonModule extends SimpleModule
     {
         return JsonMapper.builder()
                 .addModule(forPersistence ? PERSISTENCE_INSTANCE : INSTANCE)
+                .enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)
+                .disable(EnumFeature.READ_ENUMS_USING_TO_STRING)
+                .disable(EnumFeature.WRITE_ENUMS_USING_TO_STRING)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .build();
     }
 
-    public static ObjectMapper newObjectMapper(final boolean forPersistence, final SerializationFeature serializationFeature)
+    public static ObjectMapper newObjectMapper(final boolean forPersistence,
+                                               final SerializationFeature serializationFeature)
     {
         return JsonMapper.builder()
                 .addModule(forPersistence ? PERSISTENCE_INSTANCE : INSTANCE)
+                .enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)
+                .disable(EnumFeature.READ_ENUMS_USING_TO_STRING)
+                .disable(EnumFeature.WRITE_ENUMS_USING_TO_STRING)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .enable(serializationFeature)
                 .build();
     }
