@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -49,7 +50,6 @@ import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2IdentityResolve
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2Utils;
 import org.apache.qpid.server.util.ConnectionBuilder;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * An identity resolver that calls Microsoft Live's REST API.
