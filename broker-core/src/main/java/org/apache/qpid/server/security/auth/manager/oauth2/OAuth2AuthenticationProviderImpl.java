@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.apache.qpid.server.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -65,7 +66,6 @@ import org.apache.qpid.server.util.ConnectionBuilder;
 import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.Strings;
-import tools.jackson.databind.json.JsonMapper;
 
 public class OAuth2AuthenticationProviderImpl
         extends AbstractAuthenticationManager<OAuth2AuthenticationProviderImpl>
