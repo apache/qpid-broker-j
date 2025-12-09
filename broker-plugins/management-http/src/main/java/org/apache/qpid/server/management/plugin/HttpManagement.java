@@ -18,6 +18,7 @@
  * under the License.
  *
  */
+
 package org.apache.qpid.server.management.plugin;
 
 import java.io.IOException;
@@ -36,7 +37,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.BiConsumer;
 
 import javax.net.ssl.SSLContext;
@@ -76,6 +76,8 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,9 +136,9 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implements HttpManagementConfiguration<HttpManagement>, PortManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpManagement.class);
-    
-    // 10 minutes by default
-    public static final int DEFAULT_TIMEOUT_IN_SECONDS = 60 * 10;
+
+    // 1 minute by default
+    public static final int DEFAULT_TIMEOUT_IN_SECONDS = 60;
     public static final String TIME_OUT = "sessionTimeout";
     public static final String HTTP_BASIC_AUTHENTICATION_ENABLED = "httpBasicAuthenticationEnabled";
     public static final String HTTPS_BASIC_AUTHENTICATION_ENABLED = "httpsBasicAuthenticationEnabled";
@@ -197,9 +199,13 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private final Map<HttpPort<?>, SslContextFactory.Server> _sslContextFactoryMap = new ConcurrentHashMap<>();
     private final BrokerChangeListener _brokerChangeListener = new BrokerChangeListener();
 
+    private final Thread.UncaughtExceptionHandler _uncaughtExceptionHandler = new JettyUncaughtExceptionHandler();
+    private final ThreadGroup _threadGroup = new JettyThreadGroup("Jetty-ThreadGroup", _uncaughtExceptionHandler);
+
     private volatile boolean _serveUncompressedDojo;
     private volatile Long _saslExchangeExpiry;
-    private volatile ThreadPoolExecutor _jettyServerExecutor;
+    private volatile ScheduledThreadPoolExecutor _jettyServerExecutor;
+    private volatile ScheduledThreadPoolExecutor _jettySchedulerExecutor;
 
     @ManagedObjectFactoryConstructor
     public HttpManagement(final Map<String, Object> attributes, final Broker<?> broker)
@@ -272,6 +278,10 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         {
             _jettyServerExecutor.shutdown();
         }
+        if (_jettySchedulerExecutor != null)
+        {
+            _jettySchedulerExecutor.shutdown();
+        }
         getBroker().getEventLogger().message(ManagementConsoleMessages.STOPPED(OPERATIONAL_LOGGING_NAME));
         return CompletableFuture.completedFuture(null);
     }
@@ -316,8 +326,14 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     {
         LOGGER.debug("Starting up web server on {}", ports);
 
-        _jettyServerExecutor = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("Jetty-Server-Thread"));
-        final Server server = new Server(new ExecutorThreadPool(_jettyServerExecutor));
+        final ThreadFactory serverThreadFactory = new DaemonThreadFactory("Jetty-Server-Thread", _uncaughtExceptionHandler, _threadGroup);
+        _jettyServerExecutor = new ScheduledThreadPoolExecutor(1, serverThreadFactory);
+        _jettyServerExecutor.setRemoveOnCancelPolicy(true);
+        final ThreadFactory schedulerThreadFactory = new DaemonThreadFactory("Jetty-Scheduler-Thread", _uncaughtExceptionHandler, _threadGroup);
+        _jettySchedulerExecutor = new ScheduledThreadPoolExecutor(1, schedulerThreadFactory);
+        _jettySchedulerExecutor.setRemoveOnCancelPolicy(true);
+        final Scheduler scheduler = new ScheduledExecutorScheduler(_jettySchedulerExecutor);
+        final Server server = new Server(new ExecutorThreadPool(_jettyServerExecutor), scheduler, null);
         int lastPort = -1;
         for (final HttpPort<?> port : ports)
         {
@@ -476,16 +492,16 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
 
         getModel().getSupportedCategories()
-                  .stream()
-                  .map(Class::getSimpleName)
-                  .map(String::toLowerCase)
-                  .forEach(name ->
-                  {
-                      root.addServlet(apiDocsServletHolder, "/apidocs/latest/" + name + "/");
-                      root.addServlet(apiDocsServletHolder, "/apidocs/" + version + "/" + name + "/");
-                      root.addServlet(apiDocsServletHolder, "/apidocs/latest/" + name);
-                      root.addServlet(apiDocsServletHolder, "/apidocs/" + version + "/" + name);
-                  });
+                .stream()
+                .map(Class::getSimpleName)
+                .map(String::toLowerCase)
+                .forEach(name ->
+                {
+                    root.addServlet(apiDocsServletHolder, "/apidocs/latest/" + name + "/");
+                    root.addServlet(apiDocsServletHolder, "/apidocs/" + version + "/" + name + "/");
+                    root.addServlet(apiDocsServletHolder, "/apidocs/latest/" + name);
+                    root.addServlet(apiDocsServletHolder, "/apidocs/" + version + "/" + name);
+                });
     }
 
     @Override
@@ -602,7 +618,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
 
         final ServerConnector connector = new ServerConnector(server,
-                new QBBTrackingThreadPool(port.getThreadPoolMaximum(), port.getThreadPoolMinimum()),
+                new QBBTrackingThreadPool(port.getThreadPoolMaximum(), port.getThreadPoolMinimum(), _uncaughtExceptionHandler, _threadGroup),
                 null,
                 null,
                 port.getDesiredNumberOfAcceptors(),
@@ -813,8 +829,8 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         for (final Transport transport: transports)
         {
             getBroker().getEventLogger().message(ManagementConsoleMessages.LISTENING(Protocol.HTTP.name(),
-                                                                                     transport.name(),
-                                                                                     localPort));
+                    transport.name(),
+                    localPort));
         }
     }
 
@@ -958,10 +974,20 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     {
         private final ThreadFactory _threadFactory;
 
-        public QBBTrackingThreadPool(@Name("maxThreads") final int maxThreads, @Name("minThreads") final int minThreads)
+        public QBBTrackingThreadPool(@Name("maxThreads") final int maxThreads,
+                                     @Name("minThreads") final int minThreads,
+                                     final Thread.UncaughtExceptionHandler uncaughtExceptionHandler,
+                                     final ThreadGroup threadGroup )
         {
-            super(maxThreads, minThreads);
-            _threadFactory = QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(QBBTrackingThreadPool.super::newThread);
+            super(maxThreads, minThreads, DEFAULT_TIMEOUT_IN_SECONDS * 1000, null, threadGroup);
+
+            final ThreadFactory connectorThreadFactory = runnable ->
+            {
+                final Thread thread = super.newThread(runnable);
+                thread.setUncaughtExceptionHandler(uncaughtExceptionHandler);
+                return thread;
+            };
+            _threadFactory = QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(connectorThreadFactory);
         }
 
         @Override
@@ -1093,6 +1119,55 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         public int getConnectionCount()
         {
             return _closeFutures.size();
+        }
+    }
+
+    /** 
+     * Defensive uncaught exception handler, preventing internal Jetty exception being propagated to the
+     * broker global UncaughtExceptionHandler
+     */
+    private static class JettyUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler
+    {
+        @Override
+        public void uncaughtException(final Thread thread, final Throwable throwable)
+        {
+            LOGGER.warn("Uncaught exception in HTTP management thread", throwable);
+
+            final Thread.UncaughtExceptionHandler defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
+
+            if (defaultUncaughtExceptionHandler != null && isCritical(throwable))
+            {
+                defaultUncaughtExceptionHandler.uncaughtException(thread, throwable);
+            }
+        }
+
+        private boolean isCritical(final Throwable throwable)
+        {
+            return throwable instanceof Error || throwable instanceof ServerScopedRuntimeException;
+        }
+    }
+
+    private static class JettyThreadGroup extends ThreadGroup
+    {
+        private final Thread.UncaughtExceptionHandler _uncaughtExceptionHandler;
+
+        JettyThreadGroup(final String name, final Thread.UncaughtExceptionHandler uncaughtExceptionHandler)
+        {
+            super(name);
+            _uncaughtExceptionHandler = uncaughtExceptionHandler;
+        }
+
+        @Override
+        public void uncaughtException(final Thread thread, final Throwable throwable)
+        {
+            if (_uncaughtExceptionHandler != null)
+            {
+                _uncaughtExceptionHandler.uncaughtException(thread, throwable);
+            }
+            else
+            {
+                LOGGER.warn("Uncaught exception in HTTP management thread, no default uncaught exception handler provided", throwable);
+            }
         }
     }
 }
