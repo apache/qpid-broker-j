@@ -159,8 +159,8 @@
     <h2.version>2.4.240</h2.version>
     <apache-directory-version>2.0.0.AM27</apache-directory-version>
     <kerby-version>2.1.1</kerby-version>
-    <bcprov-version>1.82</bcprov-version>
-    <bcpkix-version>1.82</bcpkix-version>
+    <bcprov-version>1.83</bcprov-version>
+    <bcpkix-version>1.83</bcpkix-version>
     <logback-gelf-version>6.1.1</logback-gelf-version>
     <prometheus-client-version>0.16.0</prometheus-client-version>
     <resilience4j-version>2.3.0</resilience4j-version>
