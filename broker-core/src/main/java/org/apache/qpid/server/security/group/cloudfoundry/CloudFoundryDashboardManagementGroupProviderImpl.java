@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -63,7 +64,6 @@ import org.apache.qpid.server.util.ConnectionBuilder;
 import org.apache.qpid.server.util.ExternalServiceException;
 import org.apache.qpid.server.util.ExternalServiceTimeoutException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import tools.jackson.databind.json.JsonMapper;
 
 /*
  * This GroupProvider checks a CloudFoundry service dashboard to see whether a certain user (represented by an
