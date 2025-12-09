@@ -1122,8 +1122,10 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
     }
 
-    /** Defensive uncaught exception handler, preventing internal Jetty exception being propagated to the
-     * broker global UncaughtExceptionHandler */
+    /** 
+     * Defensive uncaught exception handler, preventing internal Jetty exception being propagated to the
+     * broker global UncaughtExceptionHandler
+     */
     private static class JettyUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler
     {
         @Override
