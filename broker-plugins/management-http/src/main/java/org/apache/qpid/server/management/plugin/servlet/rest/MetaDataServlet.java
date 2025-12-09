@@ -38,6 +38,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
@@ -50,7 +51,6 @@ import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.OperationParameter;
-import tools.jackson.databind.json.JsonMapper;
 
 public class MetaDataServlet extends AbstractServlet
 {
