@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
@@ -72,7 +73,6 @@ import org.apache.qpid.server.transport.PortBindFailureException;
 import org.apache.qpid.server.transport.TransportProvider;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import tools.jackson.databind.json.JsonMapper;
 
 public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort<AmqpPortImpl>
 {
