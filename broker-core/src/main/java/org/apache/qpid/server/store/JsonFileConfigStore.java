@@ -37,10 +37,11 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
@@ -79,7 +80,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     public JsonFileConfigStore(Class<? extends ConfiguredObject> rootClass)
     {
         super();
-        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true).enable(SerializationFeature.INDENT_OUTPUT);
+        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true, SerializationFeature.INDENT_OUTPUT);
         _rootClass = rootClass;
     }
 

@@ -33,9 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import org.junit.jupiter.api.Test;
+
+import tools.jackson.core.type.TypeReference;
 
 import org.apache.qpid.server.management.plugin.preferences.QueryPreferenceValue;
 import org.apache.qpid.server.model.preferences.Preference;

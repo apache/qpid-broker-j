@@ -55,11 +55,11 @@ import javax.net.ssl.X509TrustManager;
 
 import jakarta.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.security.NonJavaKeyStore;

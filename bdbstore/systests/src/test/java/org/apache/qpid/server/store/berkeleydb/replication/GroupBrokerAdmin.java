@@ -41,9 +41,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sleepycat.je.rep.ReplicationConfig;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.virtualhostnode.AbstractVirtualHostNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHARemoteReplicationNode;
@@ -470,7 +471,7 @@ public class GroupBrokerAdmin
         {
             return new ObjectMapper().writeValueAsString(object);
         }
-        catch (JsonProcessingException e)
+        catch (JacksonException e)
         {
             throw new BrokerAdminException("Cannot convert object to json", e);
         }

@@ -43,13 +43,13 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.SystemLauncher;
 import org.apache.qpid.server.SystemLauncherListener.DefaultSystemLauncherListener;
@@ -252,7 +252,7 @@ public class SNITest extends UnitTestBase
         _boundPort = port.getBoundPort();
     }
 
-    private File createInitialContext() throws JsonProcessingException
+    private File createInitialContext() throws JacksonException
     {
         // create empty initial configuration
         final Map<String,Object> initialConfig = Map.of(ConfiguredObject.NAME, "test",

@@ -39,9 +39,11 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSessionContext;
 import javax.security.auth.Subject;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
@@ -474,7 +476,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
             last = current;
         }
         Set<String> combinationsAsString = new HashSet<>(protocolCombinations.size());
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JsonMapper.builder().build();
         for(Set<String> combination : protocolCombinations)
         {
             try(StringWriter writer = new StringWriter())
@@ -501,7 +503,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
         }
 
         Set<String> combinationsAsString = new HashSet<>(combinations.size());
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JsonMapper.builder().build();
         for(Set<Transport> combination : combinations)
         {
             try(StringWriter writer = new StringWriter())
@@ -521,7 +523,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     public static String getInstalledProtocolsAsString()
     {
         Set<Protocol> installedProtocols = getInstalledProtocols();
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JsonMapper.builder().build();
 
         try(StringWriter output = new StringWriter())
         {

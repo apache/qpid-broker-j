@@ -19,14 +19,15 @@
 
 package org.apache.qpid.server.store.berkeleydb.tuple;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.store.StoreException;
@@ -50,7 +51,7 @@ public class MapBinding extends TupleBinding<Map<String, Object>>
             Map<String, Object> value = mapper.readValue(json, Map.class);
             return value;
         }
-        catch (IOException e)
+        catch (JacksonException e)
         {
             //should never happen
             throw new StoreException(e);
@@ -67,7 +68,7 @@ public class MapBinding extends TupleBinding<Map<String, Object>>
             objectMapper.writeValue(writer, map);
             output.writeString(writer.toString());
         }
-        catch (IOException e)
+        catch (JacksonException e)
         {
             throw new StoreException(e);
         }

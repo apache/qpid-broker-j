@@ -27,9 +27,14 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
@@ -47,8 +52,6 @@ import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.io.entity.StringEntity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Used pre/post-integration-test to create/delete JMS resources required for the TCK run.
@@ -94,8 +97,9 @@ public class ManageQpidJMSResources
 
     public ManageQpidJMSResources() throws URISyntaxException
     {
-        _objectMapper = new ObjectMapper();
-        _objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+        _objectMapper = JsonMapper.builder()
+                .configure(JsonReadFeature.ALLOW_JAVA_COMMENTS, true)
+                .build();
 
         final String managementUser = System.getProperty("tck.management-username");
         final String managementPassword = System.getProperty("tck.management-password");

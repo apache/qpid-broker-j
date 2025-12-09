@@ -31,9 +31,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.junit.jupiter.api.Test;
+
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.test.utils.UnitTestBase;

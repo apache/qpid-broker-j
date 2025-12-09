@@ -44,13 +44,14 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-
 import org.junit.jupiter.api.condition.EnabledForJreRange;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;

@@ -34,10 +34,12 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -58,7 +60,7 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
 
     public static final String TYPE = "CloudFoundryIdentityResolver";
 
-    private final ObjectMapper _objectMapper = new ObjectMapper();
+    private final ObjectMapper _objectMapper = JsonMapper.builder().build();
 
     @Override
     public String getType()
@@ -129,7 +131,7 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
                 {
                     responseMap = _objectMapper.readValue(input, Map.class);
                 }
-                catch (JsonProcessingException e)
+                catch (JacksonException e)
                 {
                     throw new IOException(String.format("Identity resolver '%s' did not return json", checkTokenEndpoint), e);
                 }

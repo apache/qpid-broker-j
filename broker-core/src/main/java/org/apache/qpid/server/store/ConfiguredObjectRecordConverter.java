@@ -30,8 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -71,8 +72,9 @@ public class ConfiguredObjectRecordConverter
     {
         Map<UUID, ConfiguredObjectRecord> objectsById = new HashMap<>();
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+        ObjectMapper objectMapper = JsonMapper.builder()
+                .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+                .build();
         Map data = objectMapper.readValue(reader, Map.class);
         if(!data.isEmpty())
         {

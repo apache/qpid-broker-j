@@ -64,17 +64,16 @@ import java.util.stream.Collectors;
 import javax.security.auth.Subject;
 import javax.security.auth.SubjectDomainCombiner;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.logging.CreateLogMessage;
 import org.apache.qpid.server.logging.DeleteLogMessage;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.Outcome;
 import org.apache.qpid.server.logging.UpdateLogMessage;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;

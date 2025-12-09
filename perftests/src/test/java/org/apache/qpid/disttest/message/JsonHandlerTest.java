@@ -24,18 +24,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.qpid.disttest.client.property.ListPropertyValue;
-import org.apache.qpid.disttest.client.property.PropertyValue;
-import org.apache.qpid.disttest.json.JsonHandler;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.disttest.client.property.ListPropertyValue;
+import org.apache.qpid.disttest.client.property.PropertyValue;
+import org.apache.qpid.disttest.json.JsonHandler;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class JsonHandlerTest extends UnitTestBase
@@ -47,8 +44,8 @@ public class JsonHandlerTest extends UnitTestBase
     public void setUp() throws Exception
     {
         _jsonHandler = new JsonHandler();
-        _testCommand = new SendChristmasCards(CommandType.START_TEST, Collections.singletonMap(SendChristmasCards.CardType.FUNNY, 5));
-        _testCommand._persons = Arrays.asList(new Person("Phil"), new Person("Andrew"));
+        _testCommand = new SendChristmasCards(CommandType.START_TEST, Map.of(SendChristmasCards.CardType.FUNNY, 5));
+        _testCommand._persons = List.of(new Person("Phil"), new Person("Andrew"));
     }
 
     @Test
@@ -87,7 +84,7 @@ public class JsonHandlerTest extends UnitTestBase
     }
 
     @Test
-    public void testGeneratorDesrialization() throws Exception
+    public void testGeneratorDeserialization() throws Exception
     {
         String json = "{'_messageProperties': {'test': 1, 'generator': {'@def': 'list',  '_cyclic': false, '_items': ['first', " +
                 "{'@def': 'range', '_upper':10, '_type':'int'}]}}}";

@@ -50,11 +50,11 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.naming.NamingException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.Protocol;
