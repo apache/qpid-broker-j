@@ -293,7 +293,8 @@ public class RestServlet extends AbstractServlet
                                                                       response,
                                                                       getManagementConfiguration()))
         {
-            ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper(false, SerializationFeature.INDENT_OUTPUT);
+            ObjectMapper mapper = ConfiguredObjectJacksonModule
+                    .newObjectMapper(false, SerializationFeature.INDENT_OUTPUT);
             mapper.writeValue(stream, formattedResponse);
         }
     }
