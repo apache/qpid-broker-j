@@ -28,9 +28,6 @@ import org.apache.qpid.server.txn.ServerTransaction;
 
 public interface ReceivingDestination
 {
-    Symbol REJECT_UNROUTABLE = Symbol.valueOf("REJECT_UNROUTABLE");
-    Symbol DISCARD_UNROUTABLE = Symbol.valueOf("DISCARD_UNROUTABLE");
-
     Symbol[] getCapabilities();
 
     void send(final ServerMessage<?> message,

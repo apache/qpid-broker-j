@@ -27,8 +27,8 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Footer;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
@@ -37,7 +37,7 @@ public class FooterConstructor extends AbstractDescribedTypeConstructor<Footer>
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("amqp:footer:map"),UnsignedLong.valueOf(0x0000000000000078L),
+            Symbols.AMQP_FOOTER, UnsignedLong.valueOf(0x0000000000000078L),
     };
 
     private static final FooterConstructor INSTANCE = new FooterConstructor();
