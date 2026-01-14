@@ -24,7 +24,6 @@ import static org.apache.qpid.test.utils.JvmVendor.IBM;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static org.junit.jupiter.api.condition.JRE.JAVA_11;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -45,7 +44,6 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,7 +170,6 @@ public class TCPandSSLTransportTest extends UnitTestBase
     }
 
     @Test
-    @EnabledForJreRange(min = JAVA_11)
     public void testTLSv1_3SupportOnSSLOnlyPort()
     {
         assertDoesNotThrow(() -> checkHandshakeWithTlsProtocol("TLSv1.3", Transport.SSL),
@@ -180,7 +177,6 @@ public class TCPandSSLTransportTest extends UnitTestBase
     }
 
     @Test
-    @EnabledForJreRange(min = JAVA_11)
     public void testTLSv1_3SupportOnSharedPort()
     {
         assertDoesNotThrow(() -> checkHandshakeWithTlsProtocol("TLSv1.3", Transport.TCP, Transport.SSL),
