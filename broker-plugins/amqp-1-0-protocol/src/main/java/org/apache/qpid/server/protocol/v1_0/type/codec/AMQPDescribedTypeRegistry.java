@@ -69,8 +69,9 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.codec.*;
 
 public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegistry, ValueWriter.Registry
 {
-
+    /** Is initialized once during startup, treated as read-only afterward */
     private final Map<Object, DescribedTypeConstructor> _constructorRegistry = new HashMap<>();
+    /** Is initialized once during startup, treated as read-only afterward */
     private final Map<Object, DescribedTypeConstructor> _sectionDecoderRegistryMap = new HashMap<>();
 
 

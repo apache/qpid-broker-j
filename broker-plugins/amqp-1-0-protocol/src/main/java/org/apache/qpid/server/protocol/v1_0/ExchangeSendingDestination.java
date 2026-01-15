@@ -58,7 +58,7 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class ExchangeSendingDestination extends StandardSendingDestination
 {
-    private static final Accepted ACCEPTED = new Accepted();
+    private static final Accepted ACCEPTED = Accepted.INSTANCE;
     private static final Rejected REJECTED = new Rejected();
     private static final Outcome[] OUTCOMES = { ACCEPTED, REJECTED};
     public static final Symbol TOPIC_CAPABILITY = Symbol.getSymbol("topic");

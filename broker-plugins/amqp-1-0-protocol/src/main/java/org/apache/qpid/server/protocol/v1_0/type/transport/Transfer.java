@@ -295,6 +295,12 @@ public class Transfer implements FrameBody
         conn.receiveTransfer(channel, this);
     }
 
+    public int getPayloadRemaining()
+    {
+        final QpidByteBuffer payload = _payload;
+        return payload == null ? 0 : payload.remaining();
+    }
+
     public QpidByteBuffer getPayload()
     {
         if (_payload == null)

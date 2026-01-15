@@ -25,6 +25,7 @@ import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 
+/** {@link ValueHandler} is thread safe */
 public class ValueHandler implements DescribedTypeConstructorRegistry.Source
 {
     public static final byte DESCRIBED_TYPE = (byte)0;

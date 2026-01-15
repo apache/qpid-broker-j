@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,6 +41,7 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
+import org.apache.qpid.server.protocol.v1_0.constants.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -82,6 +84,12 @@ import org.apache.qpid.test.utils.UnitTestBase;
 @SuppressWarnings({"rawtypes"})
 class ProtocolEngine_1_0_0Test extends UnitTestBase
 {
+    private static final byte[] ORIGINAL_AMQP_HEADER = { (byte) 'A', (byte) 'M', (byte) 'Q', (byte) 'P',
+            (byte) 0, (byte) 1, (byte) 0, (byte) 0 };
+
+    private static final byte[] ORIGINAL_SASL_HEADER = { (byte) 'A', (byte) 'M', (byte) 'Q', (byte) 'P',
+            (byte) 3, (byte) 1, (byte) 0, (byte) 0 };
+
     private AMQPConnection_1_0Impl _protocolEngine_1_0_0;
     private ServerNetworkConnection _networkConnection;
     private Broker<?> _broker;
@@ -197,6 +205,9 @@ class ProtocolEngine_1_0_0Test extends UnitTestBase
         final AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal, new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
+
+        assertArrayEquals(ORIGINAL_AMQP_HEADER, Bytes.amqpHeader(), "AMQP header should not be changed");
+        assertArrayEquals(ORIGINAL_SASL_HEADER, Bytes.saslHeader(), "SASL header should not be changed");
     }
 
     @Test
@@ -214,6 +225,9 @@ class ProtocolEngine_1_0_0Test extends UnitTestBase
 
         verify(_virtualHost, never()).registerConnection(any(AMQPConnection.class));
         verify(_networkConnection).close();
+
+        assertArrayEquals(ORIGINAL_AMQP_HEADER, Bytes.amqpHeader(), "AMQP header should not be changed");
+        assertArrayEquals(ORIGINAL_SASL_HEADER, Bytes.saslHeader(), "SASL header should not be changed");
     }
 
     @Test
@@ -235,6 +249,9 @@ class ProtocolEngine_1_0_0Test extends UnitTestBase
         final AuthenticatedPrincipal authPrincipal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(authPrincipal);
         assertEquals(authPrincipal, new AuthenticatedPrincipal(principal));
+
+        assertArrayEquals(ORIGINAL_AMQP_HEADER, Bytes.amqpHeader(), "AMQP header should not be changed");
+        assertArrayEquals(ORIGINAL_SASL_HEADER, Bytes.saslHeader(), "SASL header should not be changed");
     }
 
     @Test
@@ -269,6 +286,9 @@ class ProtocolEngine_1_0_0Test extends UnitTestBase
         final AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal, new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
+
+        assertArrayEquals(ORIGINAL_AMQP_HEADER, Bytes.amqpHeader(), "AMQP header should not be changed");
+        assertArrayEquals(ORIGINAL_SASL_HEADER, Bytes.saslHeader(), "SASL header should not be changed");
     }
 
     private void createEngine(final Transport transport)

@@ -62,7 +62,6 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 @PluggableService
 public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<InternalMessage>
 {
-
     private static final Set<Class<?>> TYPES_EXPRESSIBLE_AS_AMQP_1_0_VALUE = Set.of(String.class,
             Character.class,
             Boolean.class,
@@ -163,8 +162,7 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
         {
             contentTypeAnnotationValue = isSectionValidForJmsMap(convertedMessageBody) ? MAP_MESSAGE.getType() : null;
         }
-        else if (originalMessageBody != null
-                 && TYPES_EXPRESSIBLE_AS_AMQP_1_0_VALUE.stream().anyMatch(clazz -> clazz.isAssignableFrom(originalMessageBody.getClass())))
+        else if (originalMessageBody != null && expressibleAsAmqpValue(originalMessageBody))
         {
             contentTypeAnnotationValue = null;
         }
@@ -211,8 +209,7 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
         {
             contentTypeAsString = null;
         }
-        else if (messageBody != null
-                 && TYPES_EXPRESSIBLE_AS_AMQP_1_0_VALUE.stream().anyMatch(clazz -> clazz.isAssignableFrom(messageBody.getClass())))
+        else if (messageBody != null && expressibleAsAmqpValue(messageBody))
         {
             contentTypeAsString = mimeType;
         }
@@ -280,8 +277,7 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
 
     public NonEncodingRetainingSection<?> convertToBody(Object object)
     {
-        if (object == null
-            || TYPES_EXPRESSIBLE_AS_AMQP_1_0_VALUE.stream().anyMatch(clazz -> clazz.isAssignableFrom(object.getClass())))
+        if (object == null || expressibleAsAmqpValue(object))
         {
             return new AmqpValue(object);
         }
@@ -312,4 +308,20 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
         }
     }
 
+    private static boolean expressibleAsAmqpValue(final Object object)
+    {
+        if (object == null)
+        {
+            return true;
+        }
+        final Class<?> type = object.getClass();
+        for (final Class<?> amqpType : TYPES_EXPRESSIBLE_AS_AMQP_1_0_VALUE)
+        {
+            if (amqpType.isAssignableFrom(type))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }

@@ -37,6 +37,8 @@ import org.apache.qpid.server.txn.ServerTransaction;
 
 public class AnonymousRelayDestination implements ReceivingDestination
 {
+    private static final Symbol[] CAPABILITIES = { DELAYED_DELIVERY };
+
     private final Target _target;
     private final NamedAddressSpace _addressSpace;
     private final EventLogger _eventLogger;
@@ -53,10 +55,17 @@ public class AnonymousRelayDestination implements ReceivingDestination
                                                                        .contains(DISCARD_UNROUTABLE);
     }
 
+    /**
+     * Returns the target capabilities for an anonymous relay.
+     * <br>
+     * Note: returns a shared array instance to avoid per-call allocation. The returned array must be treated as
+     * immutable and must not be modified by callers.
+     * @return {@link Symbol} array
+     */
     @Override
     public Symbol[] getCapabilities()
     {
-        return new Symbol[]{DELAYED_DELIVERY};
+        return CAPABILITIES;
     }
 
     @Override

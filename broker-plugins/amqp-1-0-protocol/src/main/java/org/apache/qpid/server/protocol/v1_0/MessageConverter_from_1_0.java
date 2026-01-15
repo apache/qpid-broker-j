@@ -23,7 +23,6 @@ package org.apache.qpid.server.protocol.v1_0;
 import static org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry.getBestFitObjectToMimeContentConverter;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,6 +62,8 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class MessageConverter_from_1_0
 {
+    private static final SectionDecoderImpl SECTION_DECODER =
+            new SectionDecoderImpl(MessageConverter_v1_0_to_Internal.TYPE_REGISTRY.getSectionDecoderRegistry());
 
     private static final Set<Class> STANDARD_TYPES = new HashSet<>(Arrays.<Class>asList(Boolean.class,
                                                                                         Byte.class,
@@ -79,15 +80,13 @@ public class MessageConverter_from_1_0
 
     static Object convertBodyToObject(final Message_1_0 serverMessage)
     {
-        final SectionDecoderImpl sectionDecoder = new SectionDecoderImpl(MessageConverter_v1_0_to_Internal.TYPE_REGISTRY.getSectionDecoderRegistry());
-
         Object bodyObject = null;
         List<EncodingRetainingSection<?>> sections = null;
         try
         {
             try (QpidByteBuffer allData = serverMessage.getContent())
             {
-                sections = sectionDecoder.parseAll(allData);
+                sections = SECTION_DECODER.parseAll(allData);
             }
 
             final int size = sections == null ? 0 : sections.size();
@@ -127,10 +126,12 @@ public class MessageConverter_from_1_0
                         totalSize += ((DataSection)section).getValue().getArray().length;
                     }
                     final byte[] bodyData = new byte[totalSize];
-                    final ByteBuffer buf = ByteBuffer.wrap(bodyData);
+                    int pos = 0;
                     for(EncodingRetainingSection<?> section : bodySections)
                     {
-                        buf.put(((DataSection) section).getValue().asByteBuffer());
+                        final byte[] src = ((DataSection) section).getValue().getArray();
+                        System.arraycopy(src, 0, bodyData, pos, src.length);
+                        pos += src.length;
                     }
                     bodyObject = bodyData;
                 }
