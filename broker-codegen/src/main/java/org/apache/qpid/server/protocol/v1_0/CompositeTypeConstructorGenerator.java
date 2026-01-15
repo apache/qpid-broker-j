@@ -77,6 +77,7 @@ public class CompositeTypeConstructorGenerator  extends AbstractProcessor
             "org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy",
             "org.apache.qpid.server.protocol.v1_0.type.transaction.TxnCapability");
 
+    private static final List<String> SINGLETONS = List.of("Accepted");
 
     @Override
     public SourceVersion getSupportedSourceVersion()
@@ -188,7 +189,14 @@ public class CompositeTypeConstructorGenerator  extends AbstractProcessor
             pw.println("    @Override");
             pw.println("    protected " + objectSimpleName + " construct(final FieldValueReader fieldValueReader) throws AmqpErrorException");
             pw.println("    {");
-            pw.println("        " + objectSimpleName + " obj = new " + objectSimpleName + "();");
+            if (SINGLETONS.contains(objectSimpleName))
+            {
+                pw.println("        " + objectSimpleName + " obj = " + objectSimpleName + ".INSTANCE;");
+            }
+            else
+            {
+                pw.println("        " + objectSimpleName + " obj = new " + objectSimpleName + "();");
+            }
             pw.println();
             generateAssigners(pw, typeElement);
             pw.println("        return obj;");

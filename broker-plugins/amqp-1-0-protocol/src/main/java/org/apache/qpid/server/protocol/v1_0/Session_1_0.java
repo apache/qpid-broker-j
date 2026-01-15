@@ -316,9 +316,12 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
     private SortedSet<UnsignedInteger> getDeliveryIds(final Set<Binary> deliveryTags, final LinkEndpoint<?, ?> linkEndpoint)
     {
         final DeliveryRegistry deliveryRegistry = getDeliveryRegistry(linkEndpoint.getRole());
-        return deliveryTags.stream()
-                           .map(deliveryTag -> getDeliveryId(deliveryRegistry, deliveryTag, linkEndpoint))
-                           .collect(Collectors.toCollection(TreeSet::new));
+        final SortedSet<UnsignedInteger> ids = new TreeSet<>();
+        for (final Binary tag : deliveryTags)
+        {
+            ids.add(getDeliveryId(deliveryRegistry, tag, linkEndpoint));
+        }
+        return ids;
     }
 
     private UnsignedInteger getDeliveryId(final Binary deliveryTag, final LinkEndpoint<?, ?> linkEndpoint)
@@ -390,24 +393,22 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         {
             long remaining = payload == null ? 0 : (long) payload.remaining();
             int payloadSent = _connection.sendFrame(_sendingChannel, xfr, payload);
-            if(payload != null)
+            if (payload != null)
             {
                 while (payloadSent < remaining && payloadSent >= 0)
                 {
-                    Transfer continuationTransfer = new Transfer();
-
+                    final Transfer continuationTransfer = new Transfer();
                     continuationTransfer.setHandle(xfr.getHandle());
                     continuationTransfer.setRcvSettleMode(xfr.getRcvSettleMode());
                     continuationTransfer.setState(xfr.getState());
-                    continuationTransfer.setPayload(payload);
+                    // no need to pass payload to continuationTransfer as AMQPConnection_1_0Impl#sendFrame()
+                    // takes payload as an argument
 
                     _nextOutgoingId.incr();
                     _remoteIncomingWindow--;
 
-                    remaining = (long) payload.remaining();
+                    remaining = payload.remaining();
                     payloadSent = _connection.sendFrame(_sendingChannel, continuationTransfer, payload);
-
-                    continuationTransfer.dispose();
                 }
             }
         }

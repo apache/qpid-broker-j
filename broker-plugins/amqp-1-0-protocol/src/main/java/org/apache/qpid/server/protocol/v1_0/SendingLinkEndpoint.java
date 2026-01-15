@@ -533,7 +533,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
 
         while(!_resumeAcceptedTransfers.isEmpty() && hasCreditToSend())
         {
-            Accepted accepted = new Accepted();
+            Accepted accepted = Accepted.INSTANCE;
             Transfer xfr = new Transfer();
             Binary dt = _resumeAcceptedTransfers.remove(0);
             xfr.setDeliveryTag(dt);

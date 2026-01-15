@@ -22,15 +22,22 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -49,6 +56,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.filter.AMQPFilterTypes;
@@ -64,12 +72,14 @@ import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnClose;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Filter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
@@ -80,7 +90,9 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -555,6 +567,288 @@ class Session_1_0Test extends UnitTestBase
         _session.receiveAttach(attach);
 
         assertQueueDurability(getDynamicNodeAddressFromAttachResponse(), true);
+    }
+
+    @Test
+    void sendTransferDoesNotSetPayloadOnContinuationTransfers()
+    {
+        // Arrange: payload 25 bytes -> 3 sendFrame calls if "wire" writes 10 bytes per call
+        final byte[] bytes = createSequentialBytes(25);
+
+        final Transfer xfr = new Transfer();
+        xfr.setSettled(true);
+        xfr.setHandle(UnsignedInteger.valueOf(0));
+        xfr.setDeliveryTag(new Binary(new byte[]{0x01}));
+        try (final QpidByteBuffer buf = QpidByteBuffer.wrap(bytes))
+        {
+            xfr.setPayload(buf);
+        }
+
+        when(_connection.sendFrame(eq(0), any(), any(QpidByteBuffer.class))).thenAnswer(inv ->
+        {
+            final QpidByteBuffer payload = inv.getArgument(2);
+            if (payload == null)
+            {
+                return 0;
+            }
+            final int chunk = Math.min(10, payload.remaining());
+            payload.position(payload.position() + chunk);
+            return chunk;
+        });
+
+        final ArgumentCaptor<FrameBody> bodyCaptor = ArgumentCaptor.forClass(FrameBody.class);
+        final SendingLinkEndpoint endpoint = mock(SendingLinkEndpoint.class);
+
+        _session.sendTransfer(xfr, endpoint);
+
+        verify(_connection, times(3)).sendFrame(eq(0), bodyCaptor.capture(), any(QpidByteBuffer.class));
+        final List<FrameBody> bodies = bodyCaptor.getAllValues();
+        assertInstanceOf(Transfer.class, bodies.get(0));
+        assertNull(((Transfer) bodies.get(1)).getPayload(), "Continuation transfer must not carry payload");
+        assertNull(((Transfer) bodies.get(2)).getPayload(), "Continuation transfer must not carry payload");
+
+        xfr.dispose();
+    }
+
+    @Test
+    void sendTransferChunksPayloadPreservesByteOrderAndSetsMoreFlag()
+    {
+        // Arrange: payload 25 bytes -> 3 sendFrame calls if the transport writes 10 bytes per call
+        final byte[] bytes = createSequentialBytes(25);
+
+        final Transfer xfr = new Transfer();
+        xfr.setSettled(true);
+        xfr.setHandle(UnsignedInteger.valueOf(0));
+        xfr.setRcvSettleMode(ReceiverSettleMode.FIRST);
+        xfr.setState(Accepted.INSTANCE);
+        xfr.setDeliveryTag(new Binary(new byte[]{0x01}));
+        try (final QpidByteBuffer buf = QpidByteBuffer.wrap(bytes))
+        {
+            xfr.setPayload(buf);
+        }
+
+        final ByteArrayOutputStream capturedPayload = stubSendFrameToWriteAtMostAndCapturePayload(10);
+        final ArgumentCaptor<FrameBody> bodyCaptor = ArgumentCaptor.forClass(FrameBody.class);
+        final SendingLinkEndpoint endpoint = mock(SendingLinkEndpoint.class);
+
+        // Act
+        _session.sendTransfer(xfr, endpoint);
+
+        // Assert
+        verify(_connection, times(3)).sendFrame(eq(0), bodyCaptor.capture(), nullable(QpidByteBuffer.class));
+        assertArrayEquals(bytes, capturedPayload.toByteArray(), "Payload bytes were not preserved across chunks");
+
+        final List<FrameBody> bodies = bodyCaptor.getAllValues();
+        assertEquals(3, bodies.size(), "Unexpected number of frames");
+
+        assertSame(xfr, bodies.get(0), "First frame body should be the original Transfer");
+        assertNotSame(xfr, bodies.get(1), "Continuation frame should use a new Transfer instance");
+        assertNotSame(xfr, bodies.get(2), "Continuation frame should use a new Transfer instance");
+
+        final Transfer first = (Transfer) bodies.get(0);
+        final Transfer second = (Transfer) bodies.get(1);
+        final Transfer third = (Transfer) bodies.get(2);
+
+        assertEquals(Boolean.TRUE, first.getMore(), "First transfer should have more=true when payload is chunked");
+        assertEquals(Boolean.TRUE, second.getMore(), "Intermediate continuation transfer should have more=true");
+        assertNotEquals(Boolean.TRUE, third.getMore(), "Last transfer must not have more=true");
+
+        assertNull(second.getPayload(), "Continuation transfer must not carry payload");
+        assertNull(third.getPayload(), "Continuation transfer must not carry payload");
+
+        // Continuations should preserve key delivery settings
+        assertEquals(first.getHandle(), second.getHandle(), "Handle must be preserved on continuation transfer");
+        assertEquals(first.getHandle(), third.getHandle(), "Handle must be preserved on continuation transfer");
+        assertEquals(first.getRcvSettleMode(), second.getRcvSettleMode(), "RcvSettleMode must be preserved");
+        assertEquals(first.getRcvSettleMode(), third.getRcvSettleMode(), "RcvSettleMode must be preserved");
+        assertEquals(first.getState(), second.getState(), "State must be preserved");
+        assertEquals(first.getState(), third.getState(), "State must be preserved");
+
+        // Delivery-id is assigned only to the first transfer
+        assertNotNull(first.getDeliveryId(), "DeliveryId should be assigned to the first transfer");
+        assertNull(second.getDeliveryId(), "Continuation transfer must not set delivery-id");
+        assertNull(third.getDeliveryId(), "Continuation transfer must not set delivery-id");
+
+        xfr.dispose();
+    }
+
+    @Test
+    void sendTransferSendsSingleFrameWhenPayloadFitsWithinChunk()
+    {
+        final byte[] bytes = createSequentialBytes(9);
+
+        final Transfer xfr = new Transfer();
+        xfr.setSettled(true);
+        xfr.setHandle(UnsignedInteger.valueOf(0));
+        xfr.setDeliveryTag(new Binary(new byte[]{0x01}));
+        try (final QpidByteBuffer buf = QpidByteBuffer.wrap(bytes))
+        {
+            xfr.setPayload(buf);
+        }
+
+        final ByteArrayOutputStream capturedPayload = stubSendFrameToWriteAtMostAndCapturePayload(10);
+        final ArgumentCaptor<FrameBody> bodyCaptor = ArgumentCaptor.forClass(FrameBody.class);
+
+        _session.sendTransfer(xfr, mock(SendingLinkEndpoint.class));
+
+        verify(_connection, times(1)).sendFrame(eq(0), bodyCaptor.capture(), nullable(QpidByteBuffer.class));
+        assertArrayEquals(bytes, capturedPayload.toByteArray(), "Payload bytes were not written as a single chunk");
+
+        final Transfer body = (Transfer) bodyCaptor.getValue();
+        assertNotEquals(Boolean.TRUE, body.getMore(), "Single-frame transfer must not have more=true");
+
+        xfr.dispose();
+    }
+
+    @Test
+    void sendTransferSendsSingleFrameWhenPayloadExactlyEqualsChunk()
+    {
+        final byte[] bytes = createSequentialBytes(10);
+
+        final Transfer xfr = new Transfer();
+        xfr.setSettled(true);
+        xfr.setHandle(UnsignedInteger.valueOf(0));
+        xfr.setDeliveryTag(new Binary(new byte[]{0x01}));
+        try (final QpidByteBuffer buf = QpidByteBuffer.wrap(bytes))
+        {
+            xfr.setPayload(buf);
+        }
+
+        final ByteArrayOutputStream capturedPayload = stubSendFrameToWriteAtMostAndCapturePayload(10);
+        final ArgumentCaptor<FrameBody> bodyCaptor = ArgumentCaptor.forClass(FrameBody.class);
+
+        _session.sendTransfer(xfr, mock(SendingLinkEndpoint.class));
+
+        verify(_connection, times(1)).sendFrame(eq(0), bodyCaptor.capture(), nullable(QpidByteBuffer.class));
+        assertArrayEquals(bytes, capturedPayload.toByteArray(), "Payload bytes were not written as a single chunk");
+
+        final Transfer body = (Transfer) bodyCaptor.getValue();
+        assertNotEquals(Boolean.TRUE, body.getMore(), "Single-frame transfer must not have more=true");
+
+        xfr.dispose();
+    }
+
+    @Test
+    void sendTransferSendsTwoFramesWhenPayloadIsOneByteOverChunk()
+    {
+        final byte[] bytes = createSequentialBytes(11);
+
+        final Transfer xfr = new Transfer();
+        xfr.setSettled(true);
+        xfr.setHandle(UnsignedInteger.valueOf(0));
+        xfr.setDeliveryTag(new Binary(new byte[]{0x01}));
+        try (final QpidByteBuffer buf = QpidByteBuffer.wrap(bytes))
+        {
+            xfr.setPayload(buf);
+        }
+
+        final ByteArrayOutputStream capturedPayload = stubSendFrameToWriteAtMostAndCapturePayload(10);
+        final ArgumentCaptor<FrameBody> bodyCaptor = ArgumentCaptor.forClass(FrameBody.class);
+
+        _session.sendTransfer(xfr, mock(SendingLinkEndpoint.class));
+
+        verify(_connection, times(2)).sendFrame(eq(0), bodyCaptor.capture(), nullable(QpidByteBuffer.class));
+        assertArrayEquals(bytes, capturedPayload.toByteArray(), "Payload bytes were not preserved across two chunks");
+
+        final List<FrameBody> bodies = bodyCaptor.getAllValues();
+        final Transfer first = (Transfer) bodies.get(0);
+        final Transfer second = (Transfer) bodies.get(1);
+
+        assertEquals(Boolean.TRUE, first.getMore(), "First transfer should have more=true when payload is chunked");
+        assertNotEquals(Boolean.TRUE, second.getMore(), "Last transfer must not have more=true");
+        assertNull(second.getPayload(), "Continuation transfer must not carry payload");
+
+        xfr.dispose();
+    }
+
+    @Test
+    void sendTransferWithEmptyPayloadDoesNotSendContinuation()
+    {
+        final Transfer xfr = new Transfer();
+        xfr.setSettled(true);
+        xfr.setHandle(UnsignedInteger.valueOf(0));
+        xfr.setDeliveryTag(new Binary(new byte[]{0x01}));
+        try (final QpidByteBuffer buf = QpidByteBuffer.wrap(new byte[0]))
+        {
+            xfr.setPayload(buf);
+        }
+
+        final ByteArrayOutputStream capturedPayload = stubSendFrameToWriteAtMostAndCapturePayload(10);
+        final ArgumentCaptor<FrameBody> bodyCaptor = ArgumentCaptor.forClass(FrameBody.class);
+
+        _session.sendTransfer(xfr, mock(SendingLinkEndpoint.class));
+
+        verify(_connection, times(1)).sendFrame(eq(0), bodyCaptor.capture(), nullable(QpidByteBuffer.class));
+        assertEquals(0, capturedPayload.size(), "Empty payload should not produce any bytes");
+
+        xfr.dispose();
+    }
+
+    @Test
+    void sendTransferWithNullPayloadDoesNotThrowAndDoesNotSendContinuation()
+    {
+        final Transfer xfr = new Transfer();
+        xfr.setSettled(true);
+        xfr.setHandle(UnsignedInteger.valueOf(0));
+        xfr.setDeliveryTag(new Binary(new byte[]{0x01}));
+        // No payload set
+
+        when(_connection.sendFrame(eq(0), any(), nullable(QpidByteBuffer.class))).thenReturn(0);
+        final ArgumentCaptor<QpidByteBuffer> payloadCaptor = ArgumentCaptor.forClass(QpidByteBuffer.class);
+
+        _session.sendTransfer(xfr, mock(SendingLinkEndpoint.class));
+
+        verify(_connection, times(1)).sendFrame(eq(0), any(), payloadCaptor.capture());
+        assertNull(payloadCaptor.getValue(), "Expected payload argument to be null");
+
+        xfr.dispose();
+    }
+
+    private static byte[] createSequentialBytes(final int length)
+    {
+        final byte[] bytes = new byte[length];
+        for (int i = 0; i < bytes.length; i++)
+        {
+            bytes[i] = (byte) i;
+        }
+        return bytes;
+    }
+
+    private ByteArrayOutputStream stubSendFrameToWriteAtMostAndCapturePayload(final int maxBytesPerCall)
+    {
+        final ByteArrayOutputStream captured = new ByteArrayOutputStream();
+
+        when(_connection.sendFrame(eq(0), any(), nullable(QpidByteBuffer.class))).thenAnswer(inv ->
+        {
+            final FrameBody body = inv.getArgument(1);
+            final QpidByteBuffer payload = inv.getArgument(2);
+            if (payload == null)
+            {
+                return 0;
+            }
+
+            final int remaining = payload.remaining();
+            final int chunk = Math.min(maxBytesPerCall, remaining);
+
+            if (body instanceof Transfer)
+            {
+                // Simulate the AMQP transport behaviour: set 'more' when not all payload is written.
+                ((Transfer) body).setMore(remaining > chunk);
+            }
+
+            // Copy the bytes without affecting the original payload buffer position.
+            try (final QpidByteBuffer dup = payload.duplicate())
+            {
+                final byte[] bytes = new byte[chunk];
+                dup.get(bytes);
+                captured.write(bytes);
+            }
+
+            payload.position(payload.position() + chunk);
+            return chunk;
+        });
+
+        return captured;
     }
 
     private Source createDynamicSource(final DeleteOnClose lifetimePolicy)
