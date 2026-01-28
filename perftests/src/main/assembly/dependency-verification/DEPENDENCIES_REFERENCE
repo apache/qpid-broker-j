@@ -82,13 +82,13 @@ From: 'QOS.ch' (http://www.qos.ch)
 
 From: 'The Apache Software Foundation' (https://www.apache.org/)
 
-  - Apache HttpClient (https://hc.apache.org/httpcomponents-client-5.5.x/5.5.1/httpclient5/) org.apache.httpcomponents.client5:httpclient5:jar:5.5.1
+  - Apache HttpClient (https://hc.apache.org/httpcomponents-client-5.5.x/5.6/httpclient5/) org.apache.httpcomponents.client5:httpclient5:jar:5.6
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Apache HttpComponents Core HTTP/1.1 (https://hc.apache.org/httpcomponents-core-5.3.x/5.3.6/httpcore5/) org.apache.httpcomponents.core5:httpcore5:jar:5.3.6
+  - Apache HttpComponents Core HTTP/1.1 (https://hc.apache.org/httpcomponents-core-5.4.x/5.4/httpcore5/) org.apache.httpcomponents.core5:httpcore5:jar:5.4
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Apache HttpComponents Core HTTP/2 (https://hc.apache.org/httpcomponents-core-5.3.x/5.3.6/httpcore5-h2/) org.apache.httpcomponents.core5:httpcore5-h2:jar:5.3.6
+  - Apache HttpComponents Core HTTP/2 (https://hc.apache.org/httpcomponents-core-5.4.x/5.4/httpcore5-h2/) org.apache.httpcomponents.core5:httpcore5-h2:jar:5.4
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 
