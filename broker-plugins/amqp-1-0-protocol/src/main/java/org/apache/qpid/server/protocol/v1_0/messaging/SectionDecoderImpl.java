@@ -29,6 +29,7 @@ import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
+/** {@link SectionDecoderImpl} is thread safe */
 public class SectionDecoderImpl implements SectionDecoder
 {
 

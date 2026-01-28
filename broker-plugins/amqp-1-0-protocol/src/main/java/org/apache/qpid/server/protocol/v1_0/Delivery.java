@@ -170,13 +170,8 @@ public class Delivery
             }
         }
 
-        try (QpidByteBuffer payload = transfer.getPayload())
-        {
-            if (payload != null)
-            {
-                _totalPayloadSize += (long) payload.remaining();
-            }
-        }
+        final int remaining = transfer.getPayloadRemaining();
+        _totalPayloadSize += (long) remaining;
     }
 
     public LinkEndpoint<? extends BaseSource, ? extends BaseTarget> getLinkEndpoint()
@@ -186,6 +181,20 @@ public class Delivery
 
     public QpidByteBuffer getPayload()
     {
+        final int size = _transfers.size();
+        if (size == 0)
+        {
+            return QpidByteBuffer.emptyQpidByteBuffer();
+        }
+        else if (size == 1)
+        {
+            final Transfer transfer = _transfers.get(0);
+            final QpidByteBuffer payload = transfer.getPayload();
+            transfer.dispose();
+            _transfers.clear();
+            return payload == null ? QpidByteBuffer.emptyQpidByteBuffer() : payload;
+        }
+
         List<QpidByteBuffer> transferBuffers = new ArrayList<>(_transfers.size());
         for (Transfer t : _transfers)
         {
