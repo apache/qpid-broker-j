@@ -65,6 +65,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupMember;
 import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.security.access.config.AclFileParser;
 import org.apache.qpid.server.security.access.config.Rule;
 import org.apache.qpid.server.security.access.config.RuleSet;
@@ -903,13 +904,13 @@ public class MessagingACLTest extends JmsTestBase
                 "create session should be successful");
     }
 
-    private void assertAccessDeniedException(JMSException e) throws Exception
+    private void assertAccessDeniedException(final JMSException e)
     {
         assertTrue(e.getMessage().contains("Permission PERFORM_ACTION(connect) is denied"),
                 "Unexpected exception message:" + e.getMessage());
         if (getProtocol() == Protocol.AMQP_1_0)
         {
-            assertTrue(e.getMessage().contains("amqp:not-allowed"),
+            assertTrue(e.getMessage().contains(SymbolTexts.AMQP_ERR_NOT_ALLOWED),
                     "Unexpected error condition reported:" + e.getMessage());
         }
     }

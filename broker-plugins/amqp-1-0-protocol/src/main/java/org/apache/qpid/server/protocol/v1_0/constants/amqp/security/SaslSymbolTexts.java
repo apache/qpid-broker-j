@@ -18,13 +18,13 @@
  *
  */
 
-package org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn;
+package org.apache.qpid.server.protocol.v1_0.constants.amqp.security;
 
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
-
-public class SoleConnectionConnectionProperties
+public interface SaslSymbolTexts
 {
-    public static final Symbol SOLE_CONNECTION_ENFORCEMENT_POLICY = Symbol.valueOf("sole-connection-enforcement-policy");
-    public static final Symbol SOLE_CONNECTION_DETECTION_POLICY = Symbol.valueOf("sole-connection-detection-policy");
-    public static final Symbol SOLE_CONNECTION_FOR_CONTAINER = Symbol.valueOf("sole-connection-for-container");
+    String AMQP_SASL_CHALLENGE = "amqp:sasl-challenge:list";
+    String AMQP_SASL_INIT = "amqp:sasl-init:list";
+    String AMQP_SASL_MECHANISMS = "amqp:sasl-mechanisms:list";
+    String AMQP_SASL_OUTCOME = "amqp:sasl-outcome:list";
+    String AMQP_SASL_RESPONSE = "amqp:sasl-response:list";
 }

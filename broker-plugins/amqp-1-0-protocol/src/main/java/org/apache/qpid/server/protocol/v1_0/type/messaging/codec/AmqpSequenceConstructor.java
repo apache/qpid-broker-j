@@ -27,8 +27,8 @@ import java.util.List;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequence;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
@@ -37,7 +37,7 @@ public class AmqpSequenceConstructor extends AbstractDescribedTypeConstructor<Am
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("amqp:amqp-sequence:list"),UnsignedLong.valueOf(0x0000000000000076L),
+            Symbols.AMQP_SEQUENCE, UnsignedLong.valueOf(0x0000000000000076L),
     };
 
     private static final AmqpSequenceConstructor INSTANCE = new AmqpSequenceConstructor();

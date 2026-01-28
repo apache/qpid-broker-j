@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,17 +19,16 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
-
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 
-@CompositeType( symbolicDescriptor = "amqp:transactional-state:list", numericDescriptor = 0x0000000000000034L)
+@CompositeType( symbolicDescriptor = SymbolTexts.AMQP_TXN_STATE, numericDescriptor = 0x0000000000000034L)
 public class TransactionalState implements DeliveryState
 {
     @CompositeTypeField(index = 0, mandatory = true)

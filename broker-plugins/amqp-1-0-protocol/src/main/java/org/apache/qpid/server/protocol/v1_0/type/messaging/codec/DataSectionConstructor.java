@@ -28,8 +28,8 @@ import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.TypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
@@ -40,7 +40,7 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
 
     private static final Object[] DESCRIPTORS =
             {
-                    Symbol.valueOf("amqp:data:binary"), UnsignedLong.valueOf(0x0000000000000075L),
+                    Symbols.AMQP_DATA, UnsignedLong.valueOf(0x0000000000000075L),
             };
 
     private static final DataSectionConstructor INSTANCE = new DataSectionConstructor();

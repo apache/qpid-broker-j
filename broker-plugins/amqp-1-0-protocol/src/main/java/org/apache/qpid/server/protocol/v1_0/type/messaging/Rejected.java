@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,21 +19,19 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
-
 
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 
-@CompositeType( symbolicDescriptor = "amqp:rejected:list", numericDescriptor = 0x0000000000000025L)
+@CompositeType( symbolicDescriptor = SymbolTexts.AMQP_REJECTED, numericDescriptor = 0x0000000000000025L)
 public class Rejected implements Outcome
 {
-    public static final Symbol REJECTED_SYMBOL = Symbol.valueOf("amqp:rejected:list");
-
     @CompositeTypeField(index = 0)
     private Error _error;
 
@@ -51,7 +48,7 @@ public class Rejected implements Outcome
     @Override
     public Symbol getSymbol()
     {
-        return REJECTED_SYMBOL;
+        return Symbols.AMQP_REJECTED;
     }
 
     @Override

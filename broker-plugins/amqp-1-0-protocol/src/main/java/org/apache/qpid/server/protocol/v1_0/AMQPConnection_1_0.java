@@ -27,7 +27,6 @@ import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
@@ -50,9 +49,6 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
     String SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE = "connection.sendSaslFinalResponseAsChallenge";
     @ManagedContextDefault(name = SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE)
     boolean DEFAULT_SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE = false;
-
-    Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
-    Symbol SHARED_SUBSCRIPTIONS = Symbol.valueOf("SHARED-SUBS");
 
     @DerivedAttribute(description = "The idle timeout (in milliseconds) for incoming traffic.")
     long getIncomingIdleTimeout();

@@ -64,6 +64,7 @@ import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -561,7 +562,7 @@ class Session_1_0Test extends UnitTestBase
     {
         final Source source = new Source();
         source.setDynamic(true);
-        source.setDynamicNodeProperties(Map.of(Session_1_0.LIFETIME_POLICY, lifetimePolicy));
+        source.setDynamicNodeProperties(Map.of(Symbols.LIFETIME_POLICY, lifetimePolicy));
         return source;
     }
 

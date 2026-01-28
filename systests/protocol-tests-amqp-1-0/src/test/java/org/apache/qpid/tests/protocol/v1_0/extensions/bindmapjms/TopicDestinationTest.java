@@ -34,6 +34,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
@@ -53,10 +54,6 @@ import org.apache.qpid.tests.utils.BrokerSpecific;
 @BrokerSpecific(kind = KIND_BROKER_J)
 public class TopicDestinationTest extends BrokerAdminUsingTestBase
 {
-    private static final Symbol TOPIC = Symbol.valueOf("topic");
-    private static final Symbol GLOBAL = Symbol.valueOf("global");
-    private static final Symbol SHARED = Symbol.valueOf("shared");
-
     @Test
     @SpecificationTest(section = "5.2",
             description = "In order to facilitate these actions for the various Destination types that JMS supports,"
@@ -70,7 +67,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
         {
             final Source source = new Source();
             source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
-            source.setCapabilities(new Symbol[]{TOPIC});
+            source.setCapabilities(new Symbol[]{Symbols.TOPIC});
             source.setAddress("amq.topic");
             source.setDurable(TerminusDurability.NONE);
 
@@ -104,7 +101,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
         {
             final Source source = new Source();
             source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
-            source.setCapabilities(new Symbol[]{TOPIC});
+            source.setCapabilities(new Symbol[]{Symbols.TOPIC});
             source.setAddress("amq.topic");
             source.setDurable(TerminusDurability.UNSETTLED_STATE);
 
@@ -139,7 +136,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
         {
             final Source source = new Source();
             source.setExpiryPolicy(TerminusExpiryPolicy.LINK_DETACH);
-            source.setCapabilities(new Symbol[]{TOPIC, GLOBAL, SHARED});
+            source.setCapabilities(new Symbol[]{Symbols.TOPIC, Symbols.GLOBAL_CAPABILITY, Symbols.SHARED_CAPABILITY});
             source.setAddress("amq.topic");
             source.setDurable(TerminusDurability.NONE);
 
@@ -197,7 +194,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
         {
             final Source source = new Source();
             source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
-            source.setCapabilities(new Symbol[]{TOPIC, GLOBAL, SHARED});
+            source.setCapabilities(new Symbol[]{Symbols.TOPIC, Symbols.GLOBAL_CAPABILITY, Symbols.SHARED_CAPABILITY});
             source.setAddress("amq.topic");
             source.setDurable(TerminusDurability.CONFIGURATION);
 
@@ -279,7 +276,7 @@ public class TopicDestinationTest extends BrokerAdminUsingTestBase
         {
             final Source source = new Source();
             source.setExpiryPolicy(TerminusExpiryPolicy.NEVER);
-            source.setCapabilities(new Symbol[]{TOPIC, GLOBAL, SHARED});
+            source.setCapabilities(new Symbol[]{Symbols.TOPIC, Symbols.GLOBAL_CAPABILITY, Symbols.SHARED_CAPABILITY});
             source.setAddress("amq.topic");
             source.setDurable(TerminusDurability.CONFIGURATION);
 
