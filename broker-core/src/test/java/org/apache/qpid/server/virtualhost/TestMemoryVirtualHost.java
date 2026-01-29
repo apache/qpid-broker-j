@@ -25,9 +25,11 @@ import java.util.Map;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TestMemoryMessageStore;
 
+@PluggableService
 @ManagedObject(category = false, type = TestMemoryVirtualHost.VIRTUAL_HOST_TYPE)
 public class TestMemoryVirtualHost extends AbstractVirtualHost<TestMemoryVirtualHost>
 {

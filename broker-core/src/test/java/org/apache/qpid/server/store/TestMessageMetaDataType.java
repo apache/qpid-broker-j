@@ -25,7 +25,9 @@ import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
+import org.apache.qpid.server.plugin.PluggableService;
 
+@PluggableService
 public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageMetaData>
 {
     //largest metadata type value the BDBMessageStore can store (it uses a byte)
