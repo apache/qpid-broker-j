@@ -108,13 +108,13 @@ From: 'OW2' (http://www.ow2.org/)
 
 From: 'QOS.ch' (http://www.qos.ch)
 
-  - Logback Classic Module (http://logback.qos.ch/logback-classic) ch.qos.logback:logback-classic:jar:1.5.26
-    License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)
-    License: GNU Lesser General Public License  (http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
+  - Logback Classic Module (http://logback.qos.ch/logback-classic) ch.qos.logback:logback-classic:jar:1.5.31
+    License: Eclipse Public License - v 2.0  (https://www.eclipse.org/legal/epl-v20.html)
+    License: GNU Lesser General Public License  (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 
-  - Logback Core Module (http://logback.qos.ch/logback-core) ch.qos.logback:logback-core:jar:1.5.26
-    License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)
-    License: GNU Lesser General Public License  (http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
+  - Logback Core Module (http://logback.qos.ch/logback-core) ch.qos.logback:logback-core:jar:1.5.31
+    License: Eclipse Public License - v 2.0  (https://www.eclipse.org/legal/epl-v20.html)
+    License: GNU Lesser General Public License  (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 
   - Logback DBAppender Classic Module (http://logback.qos.ch/logback-classic-db) ch.qos.logback.db:logback-classic-db:jar:1.2.11.1
     License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)
