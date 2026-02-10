@@ -22,25 +22,13 @@ package org.apache.qpid.test.utils.tls;
 
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.Objects;
 
-public class KeyCertificatePair
+public record KeyCertificatePair(PrivateKey privateKey, X509Certificate certificate)
 {
-    private final PrivateKey _privateKey;
-    private final X509Certificate _certificate;
-
-    public KeyCertificatePair(final PrivateKey privateKey, final X509Certificate certificate)
+    public KeyCertificatePair
     {
-        _privateKey = privateKey;
-        _certificate = certificate;
-    }
-
-    public PrivateKey getPrivateKey()
-    {
-        return _privateKey;
-    }
-
-    public X509Certificate getCertificate()
-    {
-        return _certificate;
+        Objects.requireNonNull(privateKey, "privateKey must not be null");
+        Objects.requireNonNull(certificate, "certificate must not be null");
     }
 }

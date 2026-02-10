@@ -51,7 +51,7 @@ import javax.naming.NamingException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import tools.jackson.core.type.TypeReference;
 
@@ -63,19 +63,18 @@ import org.apache.qpid.server.security.NonJavaKeyStore;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.systests.ConnectionBuilder;
+import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 import org.apache.qpid.test.utils.tls.CertificateEntry;
+import org.apache.qpid.test.utils.tls.PemUtils;
 import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
 import org.apache.qpid.test.utils.tls.KeyCertificatePair;
 import org.apache.qpid.test.utils.tls.TlsResource;
-import org.apache.qpid.test.utils.tls.TlsResourceHelper;
 import org.apache.qpid.tests.http.HttpTestBase;
 import org.apache.qpid.tests.http.HttpTestHelper;
 
+@ExtendWith({ TlsResourceExtension.class })
 public class PortTest extends HttpTestBase
 {
-    @RegisterExtension
-    public static final TlsResource TLS_RESOURCE = new TlsResource();
-
     private static final String QUEUE_NAME = "testQueue";
     private static final TypeReference<Boolean> BOOLEAN = new TypeReference<>() { };
     private static final String CERTIFICATE_ALIAS = "certificate";
@@ -86,34 +85,33 @@ public class PortTest extends HttpTestBase
     private File _storeFile;
 
     @BeforeEach
-    public void setUp() throws Exception
+    public void setUp(final TlsResource tls) throws Exception
     {
         _portName = getTestName();
         _authenticationProvider = _portName + "AuthenticationProvider";
         _keyStoreName = _portName + "KeyStore";
         createAnonymousAuthenticationProvider();
         final KeyCertificatePair keyCertPair = generateSelfSignedCertificate();
-        final X509Certificate certificate = keyCertPair.getCertificate();
+        final X509Certificate certificate = keyCertPair.certificate();
         submitKeyStoreAttributes(_keyStoreName, SC_CREATED, keyCertPair);
-        _storeFile = TLS_RESOURCE.createKeyStore(new CertificateEntry(CERTIFICATE_ALIAS, certificate)).toFile();
-
+        _storeFile = tls.createKeyStore(new CertificateEntry(CERTIFICATE_ALIAS, certificate)).toFile();
         getBrokerAdmin().createQueue(QUEUE_NAME);
     }
 
     @Test
-    public void testSwapKeyStoreAndUpdateTlsOnAmqpPort() throws Exception
+    public void testSwapKeyStoreAndUpdateTlsOnAmqpPort(final TlsResource tls) throws Exception
     {
         final int port = createPort(Transport.SSL);
-        final Connection connection = createConnection(port, _storeFile.getAbsolutePath());
+        final Connection connection = createConnection(tls, port, _storeFile.getAbsolutePath());
         try
         {
             final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             final MessageProducer producer = session.createProducer(session.createQueue(QUEUE_NAME));
             producer.send(session.createTextMessage("A"));
 
-            final File storeFile = createNewKeyStoreAndSetItOnPort();
+            final File storeFile = createNewKeyStoreAndSetItOnPort(tls);
 
-            final Connection connection2 = createConnection(port, storeFile.getAbsolutePath());
+            final Connection connection2 = createConnection(tls, port, storeFile.getAbsolutePath());
             try
             {
                 producer.send(session.createTextMessage("B"));
@@ -137,18 +135,18 @@ public class PortTest extends HttpTestBase
     }
 
     @Test
-    public void testUpdateKeyStoreAndUpdateTlsOnAmqpPort() throws Exception
+    public void testUpdateKeyStoreAndUpdateTlsOnAmqpPort(final TlsResource tls) throws Exception
     {
         final int port = createPort(Transport.SSL);
-        final Connection connection = createConnection(port, _storeFile.getAbsolutePath());
+        final Connection connection = createConnection(tls, port, _storeFile.getAbsolutePath());
         try
         {
             final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             final MessageProducer producer = session.createProducer(session.createQueue(QUEUE_NAME));
             producer.send(session.createTextMessage("A"));
 
-            final File trustStoreFile = updateKeyStoreAndUpdatePortTls();
-            final Connection connection2 = createConnection(port, trustStoreFile.getAbsolutePath());
+            final File trustStoreFile = updateKeyStoreAndUpdatePortTls(tls);
+            final Connection connection2 = createConnection(tls, port, trustStoreFile.getAbsolutePath());
             try
             {
                 producer.send(session.createTextMessage("B"));
@@ -172,11 +170,11 @@ public class PortTest extends HttpTestBase
     }
 
     @Test
-    public void testSwapKeyStoreAndUpdateTlsOnWssPort() throws Exception
+    public void testSwapKeyStoreAndUpdateTlsOnWssPort(final TlsResource tls) throws Exception
     {
         assumeTrue(is(equalTo(Protocol.AMQP_1_0)).matches(getProtocol()));
         final int port = createPort(Transport.WSS);
-        final Connection connection = createConnectionBuilder(port, _storeFile.getAbsolutePath())
+        final Connection connection = createConnectionBuilder(tls, port, _storeFile.getAbsolutePath())
                 .setTransport("amqpws").build();
         try
         {
@@ -184,8 +182,8 @@ public class PortTest extends HttpTestBase
             final MessageProducer producer = session.createProducer(session.createQueue(QUEUE_NAME));
             producer.send(session.createTextMessage("A"));
 
-            final File storeFile = createNewKeyStoreAndSetItOnPort();
-            final Connection connection2 = createConnectionBuilder(port, storeFile.getAbsolutePath())
+            final File storeFile = createNewKeyStoreAndSetItOnPort(tls);
+            final Connection connection2 = createConnectionBuilder(tls, port, storeFile.getAbsolutePath())
                     .setTransport("amqpws").build();
             try
             {
@@ -210,20 +208,20 @@ public class PortTest extends HttpTestBase
     }
 
     @Test
-    public void testSwapKeyStoreAndUpdateTlsOnHttpPort() throws Exception
+    public void testSwapKeyStoreAndUpdateTlsOnHttpPort(final TlsResource tls) throws Exception
     {
         final int port = createHttpPort();
 
         HttpTestHelper helper = new HttpTestHelper(getBrokerAdmin(), null, port);
         helper.setTls(true);
-        helper.setKeyStore(_storeFile.getAbsolutePath(), TLS_RESOURCE.getSecret());
+        helper.setKeyStore(_storeFile.getAbsolutePath(), tls.getSecret());
 
         final Map<String, Object> attributes = getHelper().getJsonAsMap("port/" + _portName);
         final Map<String, Object> ownAttributes = helper.getJsonAsMap("port/" + _portName);
         assertEquals(attributes, ownAttributes);
 
-        final File storeFile = createNewKeyStoreAndSetItOnPort();
-        helper.setKeyStore(storeFile.getAbsolutePath(), TLS_RESOURCE.getSecret());
+        final File storeFile = createNewKeyStoreAndSetItOnPort(tls);
+        helper.setKeyStore(storeFile.getAbsolutePath(), tls.getSecret());
 
         final Map<String, Object> attributes2 = getHelper().getJsonAsMap("port/" + _portName);
         final Map<String, Object> ownAttributes2 = helper.getJsonAsMap("port/" + _portName);
@@ -244,29 +242,27 @@ public class PortTest extends HttpTestBase
         final Map<String, Object> attributes = new HashMap<>();
         attributes.put(NonJavaKeyStore.NAME, keyStoreName);
         attributes.put(NonJavaKeyStore.PRIVATE_KEY_URL,
-                       DataUrlUtils.getDataUrlForBytes(TlsResourceHelper.toPEM(keyCertPair.getPrivateKey())
-                                                                        .getBytes(UTF_8)));
+                       DataUrlUtils.getDataUrlForBytes(PemUtils.toPEM(keyCertPair.privateKey()).getBytes(UTF_8)));
         attributes.put(NonJavaKeyStore.CERTIFICATE_URL,
-                       DataUrlUtils.getDataUrlForBytes(TlsResourceHelper.toPEM(keyCertPair.getCertificate())
-                                                                        .getBytes(UTF_8)));
+                       DataUrlUtils.getDataUrlForBytes(PemUtils.toPEM(keyCertPair.certificate()).getBytes(UTF_8)));
         attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
 
         getHelper().submitRequest("keystore/" + keyStoreName, "PUT", attributes, status);
     }
 
-    private ConnectionBuilder createConnectionBuilder(final int port, final String absolutePath)
+    private ConnectionBuilder createConnectionBuilder(final TlsResource tls, final int port, final String absolutePath)
     {
         return getConnectionBuilder().setPort(port)
                                      .setTls(true)
                                      .setVerifyHostName(false)
                                      .setTrustStoreLocation(absolutePath)
-                                     .setTrustStorePassword(TLS_RESOURCE.getSecret());
+                                     .setTrustStorePassword(tls.getSecret());
     }
 
-    private Connection createConnection(final int port, final String absolutePath)
+    private Connection createConnection(final TlsResource tls, final int port, final String absolutePath)
             throws NamingException, JMSException
     {
-        return createConnectionBuilder(port, absolutePath).build();
+        return createConnectionBuilder(tls, port, absolutePath).build();
     }
 
     private int createPort(final Transport transport) throws IOException
@@ -315,28 +311,28 @@ public class PortTest extends HttpTestBase
         assertThat(((TextMessage) messageA).getText(), is(equalTo(a)));
     }
 
-    private File createNewKeyStoreAndSetItOnPort() throws Exception
+    private File createNewKeyStoreAndSetItOnPort(final TlsResource tls) throws Exception
     {
         String newKeyStoreName = _keyStoreName + "_2";
         final KeyCertificatePair keyCertPair = generateSelfSignedCertificate();
         submitKeyStoreAttributes(newKeyStoreName, SC_CREATED, keyCertPair);
         getHelper().submitRequest("port/" + _portName,"POST", Map.of(Port.KEY_STORE, newKeyStoreName), SC_OK);
         updatePortTls();
-        return createTrustStore(keyCertPair);
+        return createTrustStore(tls, keyCertPair);
     }
 
-    private File updateKeyStoreAndUpdatePortTls() throws Exception
+    private File updateKeyStoreAndUpdatePortTls(final TlsResource tls) throws Exception
     {
         final KeyCertificatePair keyCertPair = generateSelfSignedCertificate();
         submitKeyStoreAttributes(_keyStoreName, SC_OK, keyCertPair);
         updatePortTls();
-        return createTrustStore(keyCertPair);
+        return createTrustStore(tls, keyCertPair);
     }
 
-    private File createTrustStore(final KeyCertificatePair keyCertPair) throws Exception
+    private File createTrustStore(final TlsResource tls, final KeyCertificatePair keyCertPair) throws Exception
     {
-        final CertificateEntry entry = new CertificateEntry(CERTIFICATE_ALIAS, keyCertPair.getCertificate());
-        final Path keyStore = TLS_RESOURCE.createKeyStore(entry);
+        final CertificateEntry entry = new CertificateEntry(CERTIFICATE_ALIAS, keyCertPair.certificate());
+        final Path keyStore = tls.createKeyStore(entry);
         return keyStore.toFile();
     }
 

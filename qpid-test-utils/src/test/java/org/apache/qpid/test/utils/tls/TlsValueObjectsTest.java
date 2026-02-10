@@ -21,22 +21,30 @@
 
 package org.apache.qpid.test.utils.tls;
 
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.cert.Certificate;
-import java.util.Objects;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public record CertificateEntry(String alias, Certificate certificate) implements KeyStoreEntry
+import java.time.Instant;
+
+import org.junit.jupiter.api.Test;
+
+class TlsValueObjectsTest
 {
-    public CertificateEntry
+    @Test
+    void validityPeriodRejectsEndBeforeStart()
     {
-        Objects.requireNonNull(alias, "alias must not be null");
-        Objects.requireNonNull(certificate, "certificate must not be null");
+        final Instant from = Instant.now();
+        final Instant to = from.minusSeconds(1);
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                new ValidityPeriod(from, to));
+        assertEquals("'to' must not be before 'from'", ex.getMessage());
     }
 
-    @Override
-    public void addToKeyStore(final KeyStore keyStore, final char[] secret) throws KeyStoreException
+    @Test
+    void alternativeNameRejectsNullType()
     {
-        keyStore.setCertificateEntry(alias(), certificate());
+        final NullPointerException ex = assertThrows(NullPointerException.class, () ->
+                new AlternativeName(null, "value"));
+        assertEquals("type must not be null", ex.getMessage());
     }
 }

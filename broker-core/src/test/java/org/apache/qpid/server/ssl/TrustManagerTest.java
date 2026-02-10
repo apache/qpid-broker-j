@@ -65,10 +65,10 @@ public class TrustManagerTest extends UnitTestBase
         final KeyPair keyPair2 = TlsResourceBuilder.createRSAKeyPair();
         final KeyCertificatePair untrustedKeyCertPair = TlsResourceBuilder.createSelfSigned(DN_UNTRUSTED);
 
-        _ca = caPair.getCertificate();
+        _ca = caPair.certificate();
         _app1 = TlsResourceBuilder.createCertificateForClientAuthorization(keyPair1, caPair, DN_APP1);
         _app2 = TlsResourceBuilder.createCertificateForClientAuthorization(keyPair2, caPair, DN_APP2);
-        _untrusted = untrustedKeyCertPair.getCertificate();
+        _untrusted = untrustedKeyCertPair.certificate();
     }
 
     /**
