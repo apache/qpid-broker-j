@@ -22,34 +22,21 @@ package org.apache.qpid.test.utils.tls;
 
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.util.Objects;
 
 import javax.crypto.SecretKey;
 
-public class SecretKeyEntry implements KeyStoreEntry
+public record SecretKeyEntry(String alias, SecretKey secretKey) implements KeyStoreEntry
 {
-    private final String _alias;
-    private final SecretKey _secretKey;
-
-    public SecretKeyEntry(final String alias, final SecretKey secretKey)
+    public SecretKeyEntry
     {
-        _alias = alias;
-        _secretKey = secretKey;
+        Objects.requireNonNull(alias, "alias must not be null");
+        Objects.requireNonNull(secretKey, "secretKey must not be null");
     }
 
     @Override
-    public void addEntryToKeyStore(final KeyStore keyStore, char[] secret) throws KeyStoreException
+    public void addToKeyStore(final KeyStore keyStore, char[] secret) throws KeyStoreException
     {
-        keyStore.setKeyEntry(getAlias(), getSecretKey(), secret, null);
+        keyStore.setKeyEntry(alias(), secretKey(), secret, null);
     }
-
-    public String getAlias()
-    {
-        return _alias;
-    }
-
-    public SecretKey getSecretKey()
-    {
-        return _secretKey;
-    }
-
 }

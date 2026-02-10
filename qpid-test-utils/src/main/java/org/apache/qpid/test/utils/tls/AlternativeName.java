@@ -20,33 +20,13 @@
  */
 package org.apache.qpid.test.utils.tls;
 
-public class AlternativeName
+import java.util.Objects;
+
+public record AlternativeName(AltNameType type, String value)
 {
-    private final AltNameType _type;
-    private final String _name;
-
-    public AlternativeName(final AltNameType type, final String name)
+    public AlternativeName
     {
-        _type = type;
-        _name = name;
-    }
-
-    public AltNameType getType()
-    {
-        return _type;
-    }
-
-    public String getName()
-    {
-        return _name;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "AlternativeName{" +
-               "_type=" + _type +
-               ", _name='" + _name + '\'' +
-               '}';
+        Objects.requireNonNull(type, "type must not be null");
+        Objects.requireNonNull(value, "value must not be null");
     }
 }

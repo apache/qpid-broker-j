@@ -34,7 +34,7 @@ import java.util.Map;
 import javax.net.ssl.KeyManager;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
@@ -50,13 +50,12 @@ import org.apache.qpid.test.utils.tls.TlsResource;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
+import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 import org.apache.qpid.test.utils.tls.TlsResourceHelper;
 
+@ExtendWith({ TlsResourceExtension.class })
 public class FileKeyStoreTest extends UnitTestBase
 {
-    @RegisterExtension
-    public static final TlsResource TLS_RESOURCE = new TlsResource();
-
     private static final Broker<?> BROKER = BrokerTestHelper.createBrokerMock();
     private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
     private static final String DN_FOO = "CN=foo";
@@ -65,13 +64,13 @@ public class FileKeyStoreTest extends UnitTestBase
     private static final String SECRET_KEY_ALIAS = "secret-key-alias";
 
     @Test
-    void testCreateKeyStoreFromFile_Success() throws Exception
+    void testCreateKeyStoreFromFile_Success(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStore(DN_FOO);
+        final Path keyStoreFile = tls.createSelfSignedKeyStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
                 FileKeyStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
-                FileKeyStore.KEY_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileKeyStore.PASSWORD, tls.getSecret(),
+                FileKeyStore.KEY_STORE_TYPE, tls.getKeyStoreType());
         final KeyStore<?> fileKeyStore = createFileKeyStore(attributes);
         final KeyManager[] keyManager = fileKeyStore.getKeyManagers();
 
@@ -81,14 +80,14 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    void testCreateKeyStoreWithAliasFromFile_Success() throws Exception
+    void testCreateKeyStoreWithAliasFromFile_Success(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStore(DN_FOO);
+        final Path keyStoreFile = tls.createSelfSignedKeyStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
                 FileKeyStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
-                FileKeyStore.CERTIFICATE_ALIAS, TLS_RESOURCE.getPrivateKeyAlias(),
-                FileKeyStore.KEY_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileKeyStore.PASSWORD, tls.getSecret(),
+                FileKeyStore.CERTIFICATE_ALIAS, tls.getPrivateKeyAlias(),
+                FileKeyStore.KEY_STORE_TYPE, tls.getKeyStoreType());
         final KeyStore<?> fileKeyStore = createFileKeyStore(attributes);
         final KeyManager[] keyManager = fileKeyStore.getKeyManagers();
         assertNotNull(keyManager);
@@ -97,54 +96,54 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    void testCreateKeyStoreFromFile_WrongPassword() throws Exception
+    void testCreateKeyStoreFromFile_WrongPassword(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStore(DN_FOO);
+        final Path keyStoreFile = tls.createSelfSignedKeyStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
                 FileKeyStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret() + "_",
-                FileKeyStore.KEY_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileKeyStore.PASSWORD, tls.getSecret() + "_",
+                FileKeyStore.KEY_STORE_TYPE, tls.getKeyStoreType());
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
                 "Check key store password");
     }
 
     @Test
-    void testCreateKeyStoreFromFile_UnknownAlias() throws Exception
+    void testCreateKeyStoreFromFile_UnknownAlias(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStore(DN_FOO);
-        final String unknownAlias = TLS_RESOURCE.getPrivateKeyAlias() + "_";
+        final Path keyStoreFile = tls.createSelfSignedKeyStore(DN_FOO);
+        final String unknownAlias = tls.getPrivateKeyAlias() + "_";
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
                 FileKeyStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileKeyStore.PASSWORD, tls.getSecret(),
                 FileKeyStore.CERTIFICATE_ALIAS, unknownAlias,
-                FileKeyStore.KEY_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileKeyStore.KEY_STORE_TYPE, tls.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
                 String.format("Cannot find a certificate with alias '%s' in key store", unknownAlias));
     }
 
     @Test
-    void testCreateKeyStoreFromFile_NonKeyAlias() throws Exception
+    void testCreateKeyStoreFromFile_NonKeyAlias(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = TLS_RESOURCE.createSelfSignedTrustStore(DN_FOO);
+        final Path keyStoreFile = tls.createSelfSignedTrustStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
                 FileKeyStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
-                FileKeyStore.CERTIFICATE_ALIAS, TLS_RESOURCE.getCertificateAlias(),
-                FileKeyStore.KEY_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileKeyStore.PASSWORD, tls.getSecret(),
+                FileKeyStore.CERTIFICATE_ALIAS, tls.getCertificateAlias(),
+                FileKeyStore.KEY_STORE_TYPE, tls.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
                 "does not identify a private key");
     }
 
     @Test
-    void testCreateKeyStoreFromDataUrl_Success() throws Exception
+    void testCreateKeyStoreFromDataUrl_Success(final TlsResource tls) throws Exception
     {
-        final String keyStoreAsDataUrl = TLS_RESOURCE.createSelfSignedKeyStoreAsDataUrl(DN_FOO);
+        final String keyStoreAsDataUrl = tls.createSelfSignedKeyStoreAsDataUrl(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
                 FileKeyStore.STORE_URL, keyStoreAsDataUrl,
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
-                FileKeyStore.KEY_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileKeyStore.PASSWORD, tls.getSecret(),
+                FileKeyStore.KEY_STORE_TYPE, tls.getKeyStoreType());
         final KeyStore<?> fileKeyStore = createFileKeyStore(attributes);
         final KeyManager[] keyManagers = fileKeyStore.getKeyManagers();
         assertNotNull(keyManagers);
@@ -153,14 +152,14 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    void testCreateKeyStoreWithAliasFromDataUrl_Success() throws Exception
+    void testCreateKeyStoreWithAliasFromDataUrl_Success(final TlsResource tls) throws Exception
     {
-        final String keyStoreAsDataUrl = TLS_RESOURCE.createSelfSignedKeyStoreAsDataUrl(DN_FOO);
+        final String keyStoreAsDataUrl = tls.createSelfSignedKeyStoreAsDataUrl(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
                 FileKeyStore.STORE_URL, keyStoreAsDataUrl,
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
-                FileKeyStore.CERTIFICATE_ALIAS, TLS_RESOURCE.getPrivateKeyAlias(),
-                FileKeyStore.KEY_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileKeyStore.PASSWORD, tls.getSecret(),
+                FileKeyStore.CERTIFICATE_ALIAS, tls.getPrivateKeyAlias(),
+                FileKeyStore.KEY_STORE_TYPE, tls.getKeyStoreType());
         final KeyStore<?> fileKeyStore = createFileKeyStore(attributes);
         final KeyManager[] keyManagers = fileKeyStore.getKeyManagers();
         assertNotNull(keyManagers);
@@ -169,11 +168,11 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    void testCreateKeyStoreFromDataUrl_WrongPassword() throws Exception
+    void testCreateKeyStoreFromDataUrl_WrongPassword(final TlsResource tls) throws Exception
     {
-        final String keyStoreAsDataUrl = TLS_RESOURCE.createSelfSignedKeyStoreAsDataUrl(DN_FOO);
+        final String keyStoreAsDataUrl = tls.createSelfSignedKeyStoreAsDataUrl(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret() + "_",
+                FileKeyStore.PASSWORD, tls.getSecret() + "_",
                 FileKeyStore.STORE_URL, keyStoreAsDataUrl);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
@@ -181,11 +180,11 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    void testCreateKeyStoreFromDataUrl_BadKeystoreBytes()
+    void testCreateKeyStoreFromDataUrl_BadKeystoreBytes(final TlsResource tls)
     {
         final String keyStoreAsDataUrl = DataUrlUtils.getDataUrlForBytes("notatruststore".getBytes());
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileKeyStore.PASSWORD, tls.getSecret(),
                 FileKeyStore.STORE_URL, keyStoreAsDataUrl);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
@@ -193,26 +192,26 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    void testCreateKeyStoreFromDataUrl_UnknownAlias() throws Exception
+    void testCreateKeyStoreFromDataUrl_UnknownAlias(final TlsResource tls) throws Exception
     {
-        final String keyStoreAsDataUrl = TLS_RESOURCE.createSelfSignedKeyStoreAsDataUrl(DN_FOO);
-        final String unknownAlias = TLS_RESOURCE.getPrivateKeyAlias() + "_";
+        final String keyStoreAsDataUrl = tls.createSelfSignedKeyStoreAsDataUrl(DN_FOO);
+        final String unknownAlias = tls.getPrivateKeyAlias() + "_";
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileKeyStore.PASSWORD, tls.getSecret(),
                 FileKeyStore.STORE_URL, keyStoreAsDataUrl,
                 FileKeyStore.CERTIFICATE_ALIAS, unknownAlias,
-                FileKeyStore.KEY_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileKeyStore.KEY_STORE_TYPE, tls.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
                 String.format("Cannot find a certificate with alias '%s' in key store", unknownAlias));
     }
 
     @Test
-    void testEmptyKeystoreRejected() throws Exception
+    void testEmptyKeystoreRejected(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = TLS_RESOURCE.createKeyStore();
+        final Path keyStoreFile = tls.createKeyStore();
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileKeyStore.PASSWORD, tls.getSecret(),
                 FileKeyStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
@@ -220,25 +219,25 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    void testKeystoreWithNoPrivateKeyRejected() throws Exception
+    void testKeystoreWithNoPrivateKeyRejected(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = TLS_RESOURCE.createSelfSignedTrustStore(DN_FOO);
+        final Path keyStoreFile = tls.createSelfSignedTrustStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, getTestName(),
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileKeyStore.PASSWORD, tls.getSecret(),
                 FileKeyStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileKeyStore.KEY_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileKeyStore.KEY_STORE_TYPE, tls.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
                 "must contain at least one private key");
     }
 
     @Test
-    void testSymmetricKeysIgnored() throws Exception
+    void testSymmetricKeysIgnored(final TlsResource tls) throws Exception
     {
         final String keyStoreType = "jceks"; // or jks
-        final Path keyStoreFile = createSelfSignedKeyStoreWithSecretKeyAndCertificate(keyStoreType, DN_FOO);
+        final Path keyStoreFile = createSelfSignedKeyStoreWithSecretKeyAndCertificate(keyStoreType, DN_FOO, tls);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileKeyStore.PASSWORD, tls.getSecret(),
                 FileKeyStore.STORE_URL, keyStoreFile,
                 FileKeyStore.KEY_STORE_TYPE, keyStoreType);
         final KeyStore<?> keyStore = createFileKeyStore(attributes);
@@ -246,18 +245,18 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    void testUpdateKeyStore_Success() throws Exception
+    void testUpdateKeyStore_Success(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStore(DN_FOO);
+        final Path keyStoreFile = tls.createSelfSignedKeyStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
                 FileKeyStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
-                FileKeyStore.KEY_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileKeyStore.PASSWORD, tls.getSecret(),
+                FileKeyStore.KEY_STORE_TYPE, tls.getKeyStoreType());
         final FileKeyStore<?> fileKeyStore = createFileKeyStore(attributes);
 
         assertNull(fileKeyStore.getCertificateAlias(), "Unexpected alias value before change");
 
-        final String unknownAlias = TLS_RESOURCE.getSecret() + "_";
+        final String unknownAlias = tls.getSecret() + "_";
         final Map<String, Object> unacceptableAttributes = Map.of(FileKeyStore.CERTIFICATE_ALIAS, unknownAlias);
         final IllegalConfigurationException thrown = assertThrows(IllegalConfigurationException.class,
                 () -> fileKeyStore.setAttributes(unacceptableAttributes),
@@ -268,21 +267,21 @@ public class FileKeyStoreTest extends UnitTestBase
                 "Exception text not as unexpected:" + thrown.getMessage());
         assertNull(fileKeyStore.getCertificateAlias(), "Unexpected alias value after failed change");
 
-        final Map<String, Object> changedAttributes = Map.of(FileKeyStore.CERTIFICATE_ALIAS, TLS_RESOURCE.getPrivateKeyAlias());
+        final Map<String, Object> changedAttributes = Map.of(FileKeyStore.CERTIFICATE_ALIAS, tls.getPrivateKeyAlias());
         fileKeyStore.setAttributes(changedAttributes);
 
-        assertEquals(TLS_RESOURCE.getPrivateKeyAlias(), fileKeyStore.getCertificateAlias(),
+        assertEquals(tls.getPrivateKeyAlias(), fileKeyStore.getCertificateAlias(),
                      "Unexpected alias value after change that is expected to be successful");
     }
 
     @Test
-    void testReloadKeystore() throws Exception
+    void testReloadKeystore(final TlsResource tls) throws Exception
     {
-        final Path keyStorePath = TLS_RESOURCE.createSelfSignedKeyStoreWithCertificate(DN_FOO);
-        final Path keyStorePath2 = TLS_RESOURCE.createSelfSignedKeyStoreWithCertificate(DN_BAR);
+        final Path keyStorePath = tls.createSelfSignedKeyStoreWithCertificate(DN_FOO);
+        final Path keyStorePath2 = tls.createSelfSignedKeyStoreWithCertificate(DN_BAR);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, getTestName(),
                 FileKeyStore.STORE_URL, keyStorePath.toFile().getAbsolutePath(),
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret());
+                FileKeyStore.PASSWORD, tls.getSecret());
         final FileKeyStore<?> keyStoreObject = createFileKeyStore(attributes);
         final CertificateDetails certificate = getCertificate(keyStoreObject);
         assertEquals(DN_FOO, certificate.getIssuerName());
@@ -296,18 +295,18 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    void privateKeyEntryCertificate() throws Exception
+    void privateKeyEntryCertificate(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStoreWithCertificate(DN_FOO);
+        final Path keyStoreFile = tls.createSelfSignedKeyStoreWithCertificate(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, getTestName(),
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileKeyStore.PASSWORD, tls.getSecret(),
                 FileKeyStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileKeyStore.KEY_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileKeyStore.KEY_STORE_TYPE, tls.getKeyStoreType());
         final FileKeyStore<?> keyStore = createFileKeyStore(attributes);
         final List<CertificateDetails> certificateDetails = keyStore.getCertificateDetails();
 
         final int keyCertificates = KeyStoreTestHelper
-                .getNumberOfCertificates(keyStoreFile, "PKCS12", TLS_RESOURCE.getSecret().toCharArray(), true);
+                .getNumberOfCertificates(keyStoreFile, "PKCS12", tls.getSecret().toCharArray(), true);
         assertEquals(keyCertificates, certificateDetails.size(), "Unexpected number of certificates");
         assertEquals("private-key-alias", certificateDetails.get(0).getAlias(), "Unexpected alias name");
     }
@@ -329,14 +328,13 @@ public class FileKeyStoreTest extends UnitTestBase
     }
 
 
-    public Path createSelfSignedKeyStoreWithSecretKeyAndCertificate(final String keyStoreType, final String dn)
+    public Path createSelfSignedKeyStoreWithSecretKeyAndCertificate(final String keyStoreType, final String dn, final TlsResource tls)
             throws Exception
     {
         final KeyCertificatePair keyCertPair = TlsResourceBuilder.createSelfSigned(dn);
-        return TLS_RESOURCE.createKeyStore(keyStoreType, new PrivateKeyEntry(TLS_RESOURCE.getPrivateKeyAlias(),
-                                                                             keyCertPair.getPrivateKey(),
-                                                                             keyCertPair.getCertificate()),
-                                           new CertificateEntry(TLS_RESOURCE.getCertificateAlias(), keyCertPair.getCertificate()),
-                                           new SecretKeyEntry(SECRET_KEY_ALIAS, TlsResourceHelper.createAESSecretKey()));
+        final PrivateKeyEntry privateKeyEntry = new PrivateKeyEntry(tls.getPrivateKeyAlias(), keyCertPair);
+        final CertificateEntry certificateEntry = new CertificateEntry(tls.getCertificateAlias(), keyCertPair.certificate());
+        final SecretKeyEntry secretKeyEntry = new SecretKeyEntry(SECRET_KEY_ALIAS, TlsResourceHelper.createAESSecretKey());
+        return tls.createKeyStore(keyStoreType, privateKeyEntry, certificateEntry, secretKeyEntry);
     }
 }

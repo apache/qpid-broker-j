@@ -47,8 +47,8 @@ import javax.net.ssl.KeyManager;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -63,16 +63,15 @@ import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.test.utils.tls.KeyCertificatePair;
 import org.apache.qpid.test.utils.tls.TlsResource;
+import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
+import org.apache.qpid.test.utils.tls.PemUtils;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
-import org.apache.qpid.test.utils.tls.TlsResourceHelper;
 
+@ExtendWith({ TlsResourceExtension.class })
 public class NonJavaKeyStoreTest extends UnitTestBase
 {
-    @RegisterExtension
-    public static final TlsResource TLS_RESOURCE = new TlsResource();
-
     private static final String DN_FOO = "CN=foo";
     private static final String NAME = "myTestTrustStore";
     private static final String NON_JAVA_KEY_STORE = "NonJavaKeyStore";
@@ -91,18 +90,18 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    void testCreationOfTrustStoreFromValidPrivateKeyAndCertificateInDERFormat() throws Exception
+    void testCreationOfTrustStoreFromValidPrivateKeyAndCertificateInDERFormat(final TlsResource tls) throws Exception
     {
-        final Path privateKeyFile = TLS_RESOURCE.savePrivateKeyAsDer(_keyCertPair.getPrivateKey());
-        final Path certificateFile = TLS_RESOURCE.saveCertificateAsDer(_keyCertPair.getCertificate());
+        final Path privateKeyFile = tls.savePrivateKeyAsDer(_keyCertPair.privateKey());
+        final Path certificateFile = tls.saveCertificateAsDer(_keyCertPair.certificate());
         assertCreationOfTrustStoreFromValidPrivateKeyAndCertificate(privateKeyFile, certificateFile);
     }
 
     @Test
-    void testCreationOfTrustStoreFromValidPrivateKeyAndCertificateInPEMFormat() throws Exception
+    void testCreationOfTrustStoreFromValidPrivateKeyAndCertificateInPEMFormat(final TlsResource tls) throws Exception
     {
-        final Path privateKeyFile = TLS_RESOURCE.savePrivateKeyAsPem(_keyCertPair.getPrivateKey());
-        final Path certificateFile = TLS_RESOURCE.saveCertificateAsPem(_keyCertPair.getCertificate());
+        final Path privateKeyFile = tls.savePrivateKeyAsPem(_keyCertPair.privateKey());
+        final Path certificateFile = tls.saveCertificateAsPem(_keyCertPair.certificate());
         assertCreationOfTrustStoreFromValidPrivateKeyAndCertificate(privateKeyFile, certificateFile);
     }
 
@@ -121,10 +120,10 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    void testCreationOfTrustStoreFromValidPrivateKeyAndInvalidCertificate()throws Exception
+    void testCreationOfTrustStoreFromValidPrivateKeyAndInvalidCertificate(final TlsResource tls) throws Exception
     {
-        final Path privateKeyFile = TLS_RESOURCE.savePrivateKeyAsPem(_keyCertPair.getPrivateKey());
-        final Path certificateFile = TLS_RESOURCE.createFile(".cer");
+        final Path privateKeyFile = tls.savePrivateKeyAsPem(_keyCertPair.privateKey());
+        final Path certificateFile = tls.createFile(".cer");
         final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, NAME,
                 "privateKeyUrl", privateKeyFile.toFile().getAbsolutePath(),
                 "certificateUrl", certificateFile.toFile().getAbsolutePath(),
@@ -135,10 +134,10 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    void testCreationOfTrustStoreFromInvalidPrivateKeyAndValidCertificate()throws Exception
+    void testCreationOfTrustStoreFromInvalidPrivateKeyAndValidCertificate(final TlsResource tls) throws Exception
     {
-        final Path privateKeyFile =  TLS_RESOURCE.createFile(".pk");
-        final Path certificateFile = TLS_RESOURCE.saveCertificateAsPem(_keyCertPair.getCertificate());
+        final Path privateKeyFile =  tls.createFile(".pk");
+        final Path certificateFile = tls.saveCertificateAsPem(_keyCertPair.certificate());
         final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, NAME,
                 "privateKeyUrl", privateKeyFile.toFile().getAbsolutePath(),
                 "certificateUrl", certificateFile.toFile().getAbsolutePath(),
@@ -150,27 +149,27 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     }
 
     @Test
-    void testExpiryCheckingFindsExpired() throws Exception
+    void testExpiryCheckingFindsExpired(final TlsResource tls) throws Exception
     {
-        doCertExpiryChecking(1);
+        doCertExpiryChecking(tls, 1);
         verify(_messageLogger, times(1)).message(argThat(new LogMessageArgumentMatcher()));
     }
 
     @Test
-    void testExpiryCheckingIgnoresValid() throws Exception
+    void testExpiryCheckingIgnoresValid(final TlsResource tls) throws Exception
     {
-        doCertExpiryChecking(-1);
+        doCertExpiryChecking(tls, -1);
         verify(_messageLogger, never()).message(argThat(new LogMessageArgumentMatcher()));
     }
 
     @SuppressWarnings("unchecked")
-    private void doCertExpiryChecking(final int expiryOffset) throws Exception
+    private void doCertExpiryChecking(final TlsResource tls, final int expiryOffset) throws Exception
     {
         when(BROKER.scheduleHouseKeepingTask(anyLong(), any(TimeUnit.class), any(Runnable.class))).thenReturn(mock(ScheduledFuture.class));
 
-        final Path privateKeyFile =  TLS_RESOURCE.savePrivateKeyAsDer(_keyCertPair.getPrivateKey());
-        final Path certificateFile = TLS_RESOURCE.saveCertificateAsDer(_keyCertPair.getCertificate());
-        final long expiryDays = ChronoUnit.DAYS.between(Instant.now(), _keyCertPair.getCertificate().getNotAfter().toInstant());
+        final Path privateKeyFile =  tls.savePrivateKeyAsDer(_keyCertPair.privateKey());
+        final Path certificateFile = tls.saveCertificateAsDer(_keyCertPair.certificate());
+        final long expiryDays = ChronoUnit.DAYS.between(Instant.now(), _keyCertPair.certificate().getNotAfter().toInstant());
         final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, NAME,
                 "privateKeyUrl", privateKeyFile.toFile().getAbsolutePath(),
                 "certificateUrl", certificateFile.toFile().getAbsolutePath(),
@@ -184,8 +183,8 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     {
         final KeyCertificatePair keyCertPair2 = generateSelfSignedCertificate();
         final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, NAME,
-                NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.getPrivateKey()),
-                NonJavaKeyStore.CERTIFICATE_URL, getCertificateAsDataUrl(keyCertPair2.getCertificate()),
+                NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.privateKey()),
+                NonJavaKeyStore.CERTIFICATE_URL, getCertificateAsDataUrl(keyCertPair2.certificate()),
                 NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, KeyStore.class, attributes,
@@ -196,12 +195,12 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     void testUpdateKeyStoreToNonMatchingCertificate()throws Exception
     {
         final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, getTestName(),
-                NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.getPrivateKey()),
-                NonJavaKeyStore.CERTIFICATE_URL, getCertificateAsDataUrl(_keyCertPair.getCertificate()),
+                NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.privateKey()),
+                NonJavaKeyStore.CERTIFICATE_URL, getCertificateAsDataUrl(_keyCertPair.certificate()),
                 NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
         final KeyStore<?> trustStore = createTestKeyStore(attributes);
         final KeyCertificatePair keyCertPair2 = generateSelfSignedCertificate();
-        final String certUrl = getCertificateAsDataUrl(keyCertPair2.getCertificate());
+        final String certUrl = getCertificateAsDataUrl(keyCertPair2.certificate());
         final Map<String,Object> newAttributes = Map.of("certificateUrl", certUrl);
 
         assertThrows(IllegalConfigurationException.class, () -> trustStore.setAttributes(newAttributes),
@@ -212,8 +211,8 @@ public class NonJavaKeyStoreTest extends UnitTestBase
     void privateKeyEntryCertificate() throws Exception
     {
         final Map<String,Object> attributes = Map.of(NonJavaKeyStore.NAME, getTestName(),
-                NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.getPrivateKey()),
-                NonJavaKeyStore.CERTIFICATE_URL, getCertificateAsDataUrl(_keyCertPair.getCertificate()),
+                NonJavaKeyStore.PRIVATE_KEY_URL, getPrivateKeyAsDataUrl(_keyCertPair.privateKey()),
+                NonJavaKeyStore.CERTIFICATE_URL, getCertificateAsDataUrl(_keyCertPair.certificate()),
                 NonJavaKeyStore.TYPE, NON_JAVA_KEY_STORE);
         final KeyStore<?> keyStore = createTestKeyStore(attributes);
         final List<CertificateDetails> certificateDetails = keyStore.getCertificateDetails();
@@ -229,12 +228,12 @@ public class NonJavaKeyStoreTest extends UnitTestBase
 
     private String getCertificateAsDataUrl(final X509Certificate certificate) throws CertificateEncodingException
     {
-        return DataUrlUtils.getDataUrlForBytes(TlsResourceHelper.toPEM(certificate).getBytes(UTF_8));
+        return DataUrlUtils.getDataUrlForBytes(PemUtils.toPEM(certificate).getBytes(UTF_8));
     }
 
     private String getPrivateKeyAsDataUrl(final PrivateKey privateKey)
     {
-        return DataUrlUtils.getDataUrlForBytes(TlsResourceHelper.toPEM(privateKey).getBytes(UTF_8));
+        return DataUrlUtils.getDataUrlForBytes(PemUtils.toPEM(privateKey).getBytes(UTF_8));
     }
 
     private KeyCertificatePair generateSelfSignedCertificate() throws Exception

@@ -37,8 +37,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import org.junit.jupiter.api.Test;
-
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
@@ -49,13 +48,12 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.test.utils.tls.KeyCertificatePair;
 import org.apache.qpid.test.utils.tls.TlsResource;
 import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
+import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@ExtendWith({ TlsResourceExtension.class })
 public class NonJavaTrustStoreTest extends UnitTestBase
 {
-    @RegisterExtension
-    public static final TlsResource TLS_RESOURCE = new TlsResource();
-
     private static final Broker<?> BROKER = BrokerTestHelper.createBrokerMock();
     private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
     private static final String NAME = "myTestTrustStore";
@@ -66,10 +64,10 @@ public class NonJavaTrustStoreTest extends UnitTestBase
     private static final String NOT_A_CRL = "/not/a/crl";
 
     @Test
-    public void testCreationOfTrustStoreWithoutCRL() throws Exception
+    public void testCreationOfTrustStoreWithoutCRL(final TlsResource tls) throws Exception
     {
         final KeyCertificatePair keyCertPair = TlsResourceBuilder.createSelfSigned(DN_FOO);
-        final Path certificateFile = TLS_RESOURCE.saveCertificateAsPem(keyCertPair.getCertificate());
+        final Path certificateFile = tls.saveCertificateAsPem(keyCertPair.certificate());
         final Map<String, Object> attributes = Map.of(NonJavaTrustStore.NAME, NAME,
                 NonJavaTrustStore.CERTIFICATES_URL, certificateFile.toFile().getAbsolutePath(),
                 NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE,
@@ -83,9 +81,9 @@ public class NonJavaTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreationOfTrustStoreFromValidCertificate() throws Exception
+    public void testCreationOfTrustStoreFromValidCertificate(final TlsResource tls) throws Exception
     {
-        final CertificateAndCrl<File> data = generateCertificateAndCrl();
+        final CertificateAndCrl<File> data = generateCertificateAndCrl(tls);
         final Map<String, Object> attributes = Map.of(NonJavaTrustStore.NAME, NAME,
                 NonJavaTrustStore.CERTIFICATES_URL, data.getCertificate().getAbsolutePath(),
                 NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE,
@@ -100,9 +98,9 @@ public class NonJavaTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testChangeOfCrlInTrustStoreFromValidCertificate() throws Exception
+    public void testChangeOfCrlInTrustStoreFromValidCertificate(final TlsResource tls) throws Exception
     {
-        final CertificateAndCrl<File> data = generateCertificateAndCrl();
+        final CertificateAndCrl<File> data = generateCertificateAndCrl(tls);
         final Map<String, Object> attributes = Map.of(NonJavaTrustStore.NAME, NAME,
                 NonJavaTrustStore.CERTIFICATES_URL, data.getCertificate().getAbsolutePath(),
                 NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE,
@@ -119,7 +117,7 @@ public class NonJavaTrustStoreTest extends UnitTestBase
         assertEquals(data.getCrl().getAbsolutePath(), trustStore.getCertificateRevocationListUrl(),
                 "Unexpected CRL path value after failed change");
 
-        final Path emptyCrl = TLS_RESOURCE.createCrl(data.getCa());
+        final Path emptyCrl = tls.createCrl(data.getCa());
         trustStore.setAttributes(Map.of(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, emptyCrl.toFile().getAbsolutePath()));
 
         assertEquals(emptyCrl.toFile().getAbsolutePath(), trustStore.getCertificateRevocationListUrl(),
@@ -127,10 +125,10 @@ public class NonJavaTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testUseOfExpiredTrustAnchorDenied() throws Exception
+    public void testUseOfExpiredTrustAnchorDenied(final TlsResource tls) throws Exception
     {
         final KeyCertificatePair keyCertPair = createExpiredCertificate();
-        final Path certificatePath = TLS_RESOURCE.saveCertificateAsPem(keyCertPair.getCertificate());
+        final Path certificatePath = tls.saveCertificateAsPem(keyCertPair.certificate());
         final Map<String, Object> attributes = Map.of(NonJavaTrustStore.NAME, NAME,
                 NonJavaTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true,
                 NonJavaTrustStore.CERTIFICATES_URL, certificatePath.toFile().getAbsolutePath(),
@@ -146,7 +144,7 @@ public class NonJavaTrustStoreTest extends UnitTestBase
         final X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
 
         final CertificateException thrown = assertThrows(CertificateException.class,
-                () -> trustManager.checkClientTrusted(new X509Certificate[]{keyCertPair.getCertificate()}, "NULL"),
+                () -> trustManager.checkClientTrusted(new X509Certificate[]{keyCertPair.certificate()}, "NULL"),
                 "Exception not thrown");
 
         // IBMJSSE2 does not throw CertificateExpiredException, it throws a CertificateException
@@ -154,9 +152,9 @@ public class NonJavaTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreationOfTrustStoreWithoutCertificate() throws Exception
+    public void testCreationOfTrustStoreWithoutCertificate(final TlsResource tls) throws Exception
     {
-        final CertificateAndCrl<File> data = generateCertificateAndCrl();
+        final CertificateAndCrl<File> data = generateCertificateAndCrl(tls);
         final Map<String, Object> attributes = Map.of(
                 NonJavaTrustStore.NAME, NAME,
                 NonJavaTrustStore.CERTIFICATES_URL, data.getCrl().getAbsolutePath(),
@@ -167,10 +165,10 @@ public class NonJavaTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreationOfTrustStoreFromValidCertificate_MissingCrlFile() throws Exception
+    public void testCreationOfTrustStoreFromValidCertificate_MissingCrlFile(final TlsResource tls) throws Exception
     {
         final KeyCertificatePair keyCertPair = TlsResourceBuilder.createSelfSigned(DN_FOO);
-        final Path certificateFile = TLS_RESOURCE.saveCertificateAsPem(keyCertPair.getCertificate());
+        final Path certificateFile = tls.saveCertificateAsPem(keyCertPair.certificate());
         final Map<String, Object> attributes = Map.of(NonJavaTrustStore.NAME, NAME,
                 NonJavaTrustStore.CERTIFICATES_URL, certificateFile.toFile().getAbsolutePath(),
                 NonJavaTrustStore.TYPE, NON_JAVA_TRUST_STORE,
@@ -194,14 +192,14 @@ public class NonJavaTrustStoreTest extends UnitTestBase
         return (NonJavaTrustStore<?>) FACTORY.create(TrustStore.class, attributes, BROKER);
     }
 
-    private CertificateAndCrl<File> generateCertificateAndCrl() throws Exception
+    private CertificateAndCrl<File> generateCertificateAndCrl(final TlsResource tls) throws Exception
     {
         final KeyCertificatePair caPair = TlsResourceBuilder.createKeyPairAndRootCA(DN_CA);
         final KeyCertificatePair keyCertPair1 = TlsResourceBuilder.createKeyPairAndCertificate(DN_FOO, caPair);
         final KeyCertificatePair keyCertPair2 = TlsResourceBuilder.createKeyPairAndCertificate(DN_BAR, caPair);
         final Path clrFile =
-                TLS_RESOURCE.createCrl(caPair, keyCertPair1.getCertificate(), keyCertPair2.getCertificate());
-        final Path caCertificateFile = TLS_RESOURCE.saveCertificateAsPem(caPair.getCertificate());
+                tls.createCrl(caPair, keyCertPair1.certificate(), keyCertPair2.certificate());
+        final Path caCertificateFile = tls.saveCertificateAsPem(caPair.certificate());
         return new CertificateAndCrl<>(caCertificateFile.toFile(), clrFile.toFile(), caPair);
     }
 

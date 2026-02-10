@@ -45,6 +45,12 @@
       <artifactId>junit-jupiter-params</artifactId>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-testkit</artifactId>
+      <version>${junit-version}</version>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>ch.qos.logback</groupId>
@@ -123,6 +129,7 @@
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
           <inputExcludes>
+            <inputExclude>README.md</inputExclude>
             <inputExclude>src/main/resources/ssl/**</inputExclude>
           </inputExcludes>
         </configuration>
