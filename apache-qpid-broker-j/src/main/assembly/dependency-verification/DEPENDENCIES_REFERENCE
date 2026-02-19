@@ -84,10 +84,10 @@ From: 'FasterXML' (http://fasterxml.com/)
   - Jackson-annotations (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:jar:2.20
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Jackson-core (https://github.com/FasterXML/jackson-core) tools.jackson.core:jackson-core:jar:3.0.3
+  - Jackson-core (https://github.com/FasterXML/jackson-core) tools.jackson.core:jackson-core:jar:3.0.4
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - jackson-databind (https://github.com/FasterXML/jackson) tools.jackson.core:jackson-databind:jar:3.0.3
+  - jackson-databind (https://github.com/FasterXML/jackson) tools.jackson.core:jackson-databind:jar:3.0.4
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 
@@ -108,11 +108,11 @@ From: 'OW2' (http://www.ow2.org/)
 
 From: 'QOS.ch' (http://www.qos.ch)
 
-  - Logback Classic Module (http://logback.qos.ch/logback-classic) ch.qos.logback:logback-classic:jar:1.5.21
+  - Logback Classic Module (http://logback.qos.ch/logback-classic) ch.qos.logback:logback-classic:jar:1.5.26
     License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)
     License: GNU Lesser General Public License  (http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 
-  - Logback Core Module (http://logback.qos.ch/logback-core) ch.qos.logback:logback-core:jar:1.5.21
+  - Logback Core Module (http://logback.qos.ch/logback-core) ch.qos.logback:logback-core:jar:1.5.26
     License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)
     License: GNU Lesser General Public License  (http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 

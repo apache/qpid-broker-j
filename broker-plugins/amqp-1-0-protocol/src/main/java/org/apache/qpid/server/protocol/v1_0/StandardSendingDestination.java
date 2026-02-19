@@ -34,7 +34,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 
 public class StandardSendingDestination implements SendingDestination
 {
-    private static final Accepted ACCEPTED = new Accepted();
+    private static final Accepted ACCEPTED = Accepted.INSTANCE;
     private static final Outcome[] OUTCOMES = new Outcome[] { ACCEPTED };
 
 
