@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
-    <version>35</version>
+    <version>37</version>
   </parent>
 
   <groupId>org.apache.qpid</groupId>
@@ -76,8 +76,9 @@
   </distributionManagement>
 
   <properties>
+    <javaVersion>17</javaVersion>
     <minimum-maven-version>3.0.0</minimum-maven-version>
-    <minimum-java-version>17</minimum-java-version>
+    <minimum-java-version>${javaVersion}</minimum-java-version>
     <maven.compiler.source>${minimum-java-version}</maven.compiler.source>
     <maven.compiler.target>${minimum-java-version}</maven.compiler.target>
     <skipTests>false</skipTests>
@@ -104,13 +105,13 @@
 
     <bdb-version>7.4.5</bdb-version>
     <derby-version>10.16.1.1</derby-version>
-    <logback-version>1.5.26</logback-version>
+    <logback-version>1.5.31</logback-version>
     <logback-db-version>1.2.11.1</logback-db-version>
     <caffeine-version>3.2.3</caffeine-version>
-    <fasterxml-jackson-version>3.0.3</fasterxml-jackson-version>
-    <fasterxml-jackson-databind-version>3.0.3</fasterxml-jackson-databind-version>
+    <fasterxml-jackson-version>3.0.4</fasterxml-jackson-version>
+    <fasterxml-jackson-databind-version>3.0.4</fasterxml-jackson-databind-version>
     <slf4j-version>2.0.17</slf4j-version>
-    <jetty-version>12.1.5</jetty-version>
+    <jetty-version>12.1.6</jetty-version>
 
     <!-- dependency version numbers -->
     <hikari-cp-version>7.0.2</hikari-cp-version>
@@ -118,7 +119,7 @@
 
     <geronimo-jms-1-1-version>1.1.1</geronimo-jms-1-1-version>
     <geronimo-jms-2-0-version>1.0-alpha-2</geronimo-jms-2-0-version>
-    <asm-version>9.9</asm-version>
+    <asm-version>9.9.1</asm-version>
 
     <velocity-version>1.4</velocity-version>
     <csvjdbc-version>1.0.46</csvjdbc-version>
@@ -136,12 +137,12 @@
     <maven-resolver-provider-version>3.8.6</maven-resolver-provider-version>
     <maven-resolver-version>1.9.22</maven-resolver-version>
     <httpclient-version>5.6</httpclient-version>
-    <qpid-jms-client-version>1.15.0</qpid-jms-client-version>
+    <qpid-jms-client-version>1.16.0</qpid-jms-client-version>
     <qpid-jms-client-amqp-0-x-version>6.4.0</qpid-jms-client-amqp-0-x-version>
     <nashorn-version>15.7</nashorn-version>
 
     <exec-maven-plugin-version>3.6.3</exec-maven-plugin-version>
-    <javacc-maven-plugin-version>3.1.1</javacc-maven-plugin-version>
+    <javacc-maven-plugin-version>3.2.0</javacc-maven-plugin-version>
     <maven-enforcer-plugin-version>3.6.2</maven-enforcer-plugin-version>
     <maven-rar-plugin-version>3.0.0</maven-rar-plugin-version>
     <license-maven-plugin-version>2.7.1</license-maven-plugin-version>
@@ -151,7 +152,7 @@
     <apache-rat-plugin-version>0.17</apache-rat-plugin-version>
     <maven-docbx-plugin-version>2.0.17</maven-docbx-plugin-version>
     <maven-docbook-xml-plugin-version>5.0-all</maven-docbook-xml-plugin-version>
-    <buildnumber-maven-plugin-version>3.2.1</buildnumber-maven-plugin-version>
+    <buildnumber-maven-plugin-version>3.3.0</buildnumber-maven-plugin-version>
     <maven-compiler-plugin-version>3.15.0</maven-compiler-plugin-version>
     <maven-jar-plugin-version>3.5.0</maven-jar-plugin-version>
     <maven-surefire-plugin-version>3.5.4</maven-surefire-plugin-version>
