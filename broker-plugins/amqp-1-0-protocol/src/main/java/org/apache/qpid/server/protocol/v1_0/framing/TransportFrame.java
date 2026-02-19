@@ -19,6 +19,8 @@
 package org.apache.qpid.server.protocol.v1_0.framing;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 
 public final class TransportFrame extends AMQFrame<FrameBody>
@@ -27,15 +29,57 @@ public final class TransportFrame extends AMQFrame<FrameBody>
 
     private final int _channel;
 
+    /**
+     * Base Transport frame.
+     * @param channel channel
+     * @param frameBody frame body (may be null for heartbeat-like frames)
+     */
     public TransportFrame(int channel, FrameBody frameBody)
     {
         super(frameBody);
         _channel = channel;
     }
 
+    /**
+     * Base Transport frame.
+     * @param channel channel
+     * @param frameBody frame body (may be null for heartbeat-like frames)
+     * @param frameBodyWriter  optional cached writer for {@code frameBody}.
+     * Use only when the writer was resolved for this exact instance/state of {@code frameBody}
+     * and the body will not be mutated afterwards; otherwise pass null and let {@link FrameWriter}
+     * resolve the writer from the registry.
+     */
+    public TransportFrame(int channel, FrameBody frameBody, ValueWriter<FrameBody> frameBodyWriter)
+    {
+        super(frameBody, null, frameBodyWriter);
+        _channel = channel;
+    }
+
+    /**
+     * Base Transport frame.
+     * @param channel channel
+     * @param frameBody frame body (may be null for heartbeat-like frames)
+     * @param payload optional payload; remaining bytes will be written
+     */
     public TransportFrame(int channel, FrameBody frameBody, QpidByteBuffer payload)
     {
         super(frameBody, payload);
+        _channel = channel;
+    }
+
+    /**
+     * Base Transport frame.
+     * @param channel channel
+     * @param frameBody frame body (may be null for heartbeat-like frames)
+     * @param payload optional payload; remaining bytes will be written
+     * @param frameBodyWriter  optional cached writer for {@code frameBody}.
+     * Use only when the writer was resolved for this exact instance/state of {@code frameBody}
+     * and the body will not be mutated afterwards; otherwise pass null and let {@link FrameWriter}
+     * resolve the writer from the registry.
+     */
+    public TransportFrame(int channel, FrameBody frameBody, QpidByteBuffer payload, ValueWriter<FrameBody> frameBodyWriter)
+    {
+        super(frameBody, payload, frameBodyWriter);
         _channel = channel;
     }
 

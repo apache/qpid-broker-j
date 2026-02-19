@@ -31,6 +31,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 public class Accepted implements Outcome
 {
     public static final Symbol ACCEPTED_SYMBOL = Symbol.valueOf("amqp:accepted:list");
+    public static final Accepted INSTANCE = new Accepted();
 
     @Override
     public Symbol getSymbol()

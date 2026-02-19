@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,6 +67,8 @@ import org.apache.qpid.server.util.StateChangeListener;
 class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerTarget_1_0.class);
+    private static final UnsettledAction DO_NOTHING_ACTION = new DoNothingAction();
+
     private final boolean _acquires;
 
     private long _deliveryTag = 0L;
@@ -189,55 +190,82 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
                 headerSection = header.createEncodingRetainingSection();
             }
-            List<QpidByteBuffer> payload = new ArrayList<>();
-            if(headerSection != null)
+
+            final EncodingRetainingSection<?> deliveryAnnotationsSection = message.getDeliveryAnnotationsSection();
+            final EncodingRetainingSection<?> messageAnnotationsSection = message.getMessageAnnotationsSection();
+            final EncodingRetainingSection<?> propertiesSection = message.getPropertiesSection();
+            final EncodingRetainingSection<?> applicationPropertiesSection = message.getApplicationPropertiesSection();
+            final EncodingRetainingSection<?> footerSection = message.getFooterSection();
+
+            final boolean bodyOnly = headerSection == null &&
+                    deliveryAnnotationsSection == null &&
+                    messageAnnotationsSection == null &&
+                    propertiesSection == null &&
+                    applicationPropertiesSection == null &&
+                    footerSection == null;
+
+            if (bodyOnly)
             {
-                payload.add(headerSection.getEncodedForm());
-                headerSection.dispose();
+                if (bodyContent != null)
+                {
+                    transfer.setPayload(bodyContent);
+                    bodyContent.dispose();
+                }
             }
-            EncodingRetainingSection<?> section;
-            if((section = message.getDeliveryAnnotationsSection()) != null)
+            else
             {
-                payload.add(section.getEncodedForm());
-                section.dispose();
+                final List<QpidByteBuffer> payload = new ArrayList<>();
+
+                if (headerSection != null)
+                {
+                    payload.add(headerSection.getEncodedForm());
+                    headerSection.dispose();
+                }
+
+                if (deliveryAnnotationsSection != null)
+                {
+                    payload.add(deliveryAnnotationsSection.getEncodedForm());
+                    deliveryAnnotationsSection.dispose();
+                }
+
+                if (messageAnnotationsSection != null)
+                {
+                    payload.add(messageAnnotationsSection.getEncodedForm());
+                    messageAnnotationsSection.dispose();
+                }
+
+                if (propertiesSection != null)
+                {
+                    payload.add(propertiesSection.getEncodedForm());
+                    propertiesSection.dispose();
+                }
+
+                if (applicationPropertiesSection != null)
+                {
+                    payload.add(applicationPropertiesSection.getEncodedForm());
+                    applicationPropertiesSection.dispose();
+                }
+
+                if (bodyContent != null)
+                {
+                    payload.add(bodyContent);
+                }
+
+                if (footerSection != null)
+                {
+                    payload.add(footerSection.getEncodedForm());
+                    footerSection.dispose();
+                }
+
+                try (QpidByteBuffer combined = QpidByteBuffer.concatenate(payload))
+                {
+                    transfer.setPayload(combined);
+                }
+
+                payload.forEach(QpidByteBuffer::dispose);
             }
 
-            if((section = message.getMessageAnnotationsSection()) != null)
-            {
-                payload.add(section.getEncodedForm());
-                section.dispose();
-            }
-
-            if((section = message.getPropertiesSection()) != null)
-            {
-                payload.add(section.getEncodedForm());
-                section.dispose();
-            }
-
-            if((section = message.getApplicationPropertiesSection()) != null)
-            {
-                payload.add(section.getEncodedForm());
-                section.dispose();
-            }
-
-            payload.add(bodyContent);
-
-            if((section = message.getFooterSection()) != null)
-            {
-                payload.add(section.getEncodedForm());
-                section.dispose();
-            }
-
-            try (QpidByteBuffer combined = QpidByteBuffer.concatenate(payload))
-            {
-                transfer.setPayload(combined);
-            }
-
-            payload.forEach(QpidByteBuffer::dispose);
-
-            byte[] data = new byte[8];
-            ByteBuffer.wrap(data).putLong(_deliveryTag++);
-            final Binary tag = new Binary(data);
+            final Binary tag = Binary.ofDeliveryTag(_deliveryTag++);
 
             transfer.setDeliveryTag(tag);
 
@@ -249,7 +277,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                     transfer.setSettled(true);
                     if (_acquires && _transactionId == null)
                     {
-                        transfer.setState(new Accepted());
+                        transfer.setState(Accepted.INSTANCE);
                     }
                 }
                 else
@@ -262,7 +290,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                     }
                     else
                     {
-                        action = new DoNothingAction();
+                        action = DO_NOTHING_ACTION;
                     }
 
                     _linkEndpoint.addUnsettled(tag, action, entry);

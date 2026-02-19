@@ -404,6 +404,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData_1_0>
     {
         private final AMQPDescribedTypeRegistry _typeRegistry = AMQPDescribedTypeRegistry.newInstance();
+        private final SectionDecoder _sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
 
         private MetaDataFactory()
         {
@@ -449,9 +450,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
                             versionByte));
                 }
 
-                SectionDecoder sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
-
-                List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(buf);
+                List<EncodingRetainingSection<?>> sections = _sectionDecoder.parseAll(buf);
 
                 if (versionByte == 0)
                 {

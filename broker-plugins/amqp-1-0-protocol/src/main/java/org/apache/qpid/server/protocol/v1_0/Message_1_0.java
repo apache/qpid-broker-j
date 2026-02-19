@@ -55,6 +55,8 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
                                                                                                       .registerSecurityLayer();
     private static final MessageMetaData_1_0 DELETED_MESSAGE_METADATA = new MessageMetaData_1_0(null, null, null, null, null, null, 0L, 0L);
     private static final String AMQP_1_0 = "AMQP 1.0";
+    private static final SectionDecoder SECTION_DECODER =
+            new SectionDecoderImpl(DESCRIBED_TYPE_REGISTRY.getSectionDecoderRegistry());
 
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage)
     {
@@ -176,8 +178,6 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
     {
         if(getMessageMetaData().getVersion() == 0)
         {
-            SectionDecoder sectionDecoder = new SectionDecoderImpl(DESCRIBED_TYPE_REGISTRY.getSectionDecoderRegistry());
-
             try
             {
                 List<EncodingRetainingSection<?>> sections;
@@ -185,7 +185,7 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
                 // not just #getSize()
                 try (QpidByteBuffer allSectionsContent = super.getContent(0, Integer.MAX_VALUE))
                 {
-                    sections = sectionDecoder.parseAll(allSectionsContent);
+                    sections = SECTION_DECODER.parseAll(allSectionsContent);
                 }
                 List<QpidByteBuffer> bodySectionContent = new ArrayList<>();
 

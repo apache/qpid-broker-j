@@ -45,7 +45,7 @@ public class AmqpValue implements NonEncodingRetainingSection<Object>
     @Override
     public String toString()
     {
-        return "AmqpValue{(" + _value.getClass().getName() + ')' + _value + '}';
+        return "AmqpValue{(" + (_value == null ? "null" : _value.getClass().getName()) + ')' + _value + '}';
     }
 
 
