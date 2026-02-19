@@ -152,7 +152,7 @@
     <apache-rat-plugin-version>0.17</apache-rat-plugin-version>
     <maven-docbx-plugin-version>2.0.17</maven-docbx-plugin-version>
     <maven-docbook-xml-plugin-version>5.0-all</maven-docbook-xml-plugin-version>
-    <buildnumber-maven-plugin-version>3.2.1</buildnumber-maven-plugin-version>
+    <buildnumber-maven-plugin-version>3.3.0</buildnumber-maven-plugin-version>
     <maven-compiler-plugin-version>3.14.1</maven-compiler-plugin-version>
     <maven-jar-plugin-version>3.5.0</maven-jar-plugin-version>
     <maven-surefire-plugin-version>3.5.4</maven-surefire-plugin-version>
