@@ -155,8 +155,8 @@
     <buildnumber-maven-plugin-version>3.3.0</buildnumber-maven-plugin-version>
     <maven-compiler-plugin-version>3.15.0</maven-compiler-plugin-version>
     <maven-jar-plugin-version>3.5.0</maven-jar-plugin-version>
-    <maven-surefire-plugin-version>3.5.4</maven-surefire-plugin-version>
-    <maven-surefire-report-plugin-version>3.5.4</maven-surefire-report-plugin-version>
+    <maven-surefire-plugin-version>3.5.5</maven-surefire-plugin-version>
+    <maven-surefire-report-plugin-version>3.5.5</maven-surefire-report-plugin-version>
     <h2.version>2.4.240</h2.version>
     <apache-directory-version>2.0.0.AM27</apache-directory-version>
     <kerby-version>2.1.1</kerby-version>
