@@ -19,7 +19,6 @@
 
 package org.apache.qpid.server.store.preferences;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,8 +26,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
@@ -50,7 +50,7 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
         super();
         _storePath = path;
         _posixFilePermissions = posixFilePermissions;
-        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true).enable(SerializationFeature.INDENT_OUTPUT);
+        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true, SerializationFeature.INDENT_OUTPUT);
         _recordMap = new LinkedHashMap<>();
     }
 
@@ -74,7 +74,7 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
             {
                 storeContent = _objectMapper.readValue(getConfigFile(), StoreContent.class);
             }
-            catch (IOException e)
+            catch (JacksonException e)
             {
                 throw new StoreException("Failed to read preferences from store", e);
             }

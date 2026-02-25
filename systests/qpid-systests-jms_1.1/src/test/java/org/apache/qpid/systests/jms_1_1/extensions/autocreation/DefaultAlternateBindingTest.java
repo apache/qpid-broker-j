@@ -35,11 +35,11 @@ import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -133,7 +133,7 @@ public class DefaultAlternateBindingTest extends JmsTestBase
         updateEntityUsingAmqpManagement(getVirtualHostName(), "org.apache.qpid.VirtualHost", attributes);
     }
 
-    private String createAutoCreationPolicies() throws JsonProcessingException
+    private String createAutoCreationPolicies() throws JacksonException
     {
         List<NodeAutoCreationPolicy> objects = Collections.singletonList(new NodeAutoCreationPolicy()
         {
@@ -170,7 +170,7 @@ public class DefaultAlternateBindingTest extends JmsTestBase
         return objectToJsonString(objects);
     }
 
-    private String objectToJsonString(final Object objects) throws JsonProcessingException
+    private String objectToJsonString(final Object objects) throws JacksonException
     {
         return new ObjectMapper().writeValueAsString(objects);
     }

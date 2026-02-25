@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.server.management.amqp;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 class ManagementInputConverter
 {
@@ -75,7 +75,7 @@ class ManagementInputConverter
                     {
                         return objectMapper.readValue(input.toString(), clazz);
                     }
-                    catch (IOException e)
+                    catch (JacksonException e)
                     {
                         throw new IllegalArgumentException("Cannot convert String '"
                                                            + input.toString() + "' to a " + clazz.getSimpleName());

@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache.qpid</groupId>
     <artifactId>qpid-broker-parent</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>qpid-broker-core</artifactId>
@@ -46,12 +46,12 @@
     </dependency>
 
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
+      <groupId>tools.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
+      <groupId>tools.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
     </dependency>
 
@@ -84,8 +84,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-servlet</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -122,7 +122,7 @@
       <resource>
         <directory>src/main/java</directory>
         <excludes>
-          <exclude>**/*.java/</exclude>
+          <exclude>**/*.java</exclude>
         </excludes>
       </resource>
     </resources>
@@ -131,7 +131,7 @@
         <testResource>
             <directory>${basedir}/src/test/java</directory>
             <excludes>
-              <exclude>**/*.java/</exclude>
+              <exclude>**/*.java</exclude>
             </excludes>
         </testResource>
         <testResource>
@@ -166,10 +166,10 @@
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
-          <excludes>
-            <exclude>src/test/resources/ssl/**</exclude>
-            <exclude>src/main/resources/org/apache/qpid/server/configuration/fallback-version.txt</exclude>
-          </excludes>
+          <inputExcludes>
+            <inputExclude>src/test/resources/ssl/**</inputExclude>
+            <inputExclude>src/main/resources/org/apache/qpid/server/configuration/fallback-version.txt</inputExclude>
+          </inputExcludes>
         </configuration>
       </plugin>
 
@@ -242,6 +242,7 @@
                   <includes>
                     <include>SelectorParser.jj</include>
                   </includes>
+                  <jdkVersion>17</jdkVersion>
                 </configuration>
               </execution>
             </executions>

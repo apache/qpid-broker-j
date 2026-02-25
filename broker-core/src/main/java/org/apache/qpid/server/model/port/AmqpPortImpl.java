@@ -39,9 +39,11 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSessionContext;
 import javax.security.auth.Subject;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
@@ -74,9 +76,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort<AmqpPortImpl>
 {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(AmqpPortImpl.class);
-
 
     @ManagedAttributeField
     private boolean _tcpNoDelay;
@@ -108,7 +108,6 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     private volatile int _tlsSessionTimeout;
     private volatile int _tlsSessionCacheSize;
     private volatile List<ConnectionPropertyEnricher> _connectionPropertyEnrichers;
-    private volatile boolean _ignoreInvalidSni;
 
 
     @ManagedObjectFactoryConstructor
@@ -147,12 +146,6 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     public int getMaxOpenConnections()
     {
         return _maxOpenConnections;
-    }
-
-    @Override
-    public boolean isIgnoreInvalidSni()
-    {
-        return _ignoreInvalidSni;
     }
 
     @Override
@@ -195,7 +188,6 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
         _heartBeatDelay = getContextValue(Integer.class, AmqpPort.HEART_BEAT_DELAY);
         _tlsSessionTimeout = getContextValue(Integer.class, AmqpPort.TLS_SESSION_TIMEOUT);
         _tlsSessionCacheSize = getContextValue(Integer.class, AmqpPort.TLS_SESSION_CACHE_SIZE);
-        _ignoreInvalidSni = getContextValue(Boolean.class, AmqpPort.PORT_IGNORE_INVALID_SNI);
 
         @SuppressWarnings("unchecked")
         List<String> configurationPropertyEnrichers = getContextValue(List.class, AmqpPort.CONNECTION_PROPERTY_ENRICHERS);
@@ -484,7 +476,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
             last = current;
         }
         Set<String> combinationsAsString = new HashSet<>(protocolCombinations.size());
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JsonMapper.builder().build();
         for(Set<String> combination : protocolCombinations)
         {
             try(StringWriter writer = new StringWriter())
@@ -511,7 +503,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
         }
 
         Set<String> combinationsAsString = new HashSet<>(combinations.size());
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JsonMapper.builder().build();
         for(Set<Transport> combination : combinations)
         {
             try(StringWriter writer = new StringWriter())
@@ -531,7 +523,7 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
     public static String getInstalledProtocolsAsString()
     {
         Set<Protocol> installedProtocols = getInstalledProtocols();
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JsonMapper.builder().build();
 
         try(StringWriter output = new StringWriter())
         {

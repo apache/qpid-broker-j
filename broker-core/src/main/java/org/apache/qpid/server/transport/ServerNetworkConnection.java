@@ -19,6 +19,9 @@
 
 package org.apache.qpid.server.transport;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+
 import org.apache.qpid.server.transport.network.NetworkConnection;
 
 public interface ServerNetworkConnection extends NetworkConnection
@@ -32,4 +35,12 @@ public interface ServerNetworkConnection extends NetworkConnection
     void removeSchedulingDelayNotificationListeners(SchedulingDelayNotificationListener listener);
 
     String getSelectedHost();
+
+    default String formattedLocalAddress()
+    {
+        final SocketAddress localAddress = getLocalAddress();
+        return localAddress instanceof final InetSocketAddress inetAddress
+                ? "%s:%s".formatted(inetAddress.getAddress().getHostAddress(), inetAddress.getPort())
+                : localAddress.toString();
+    }
 }

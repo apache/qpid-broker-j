@@ -22,8 +22,6 @@ package org.apache.qpid.server.transport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.condition.JRE.JAVA_16;
-import static org.junit.jupiter.api.condition.JRE.JAVA_17;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -45,16 +43,13 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.apache.qpid.server.model.port.AmqpPort;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.SystemLauncher;
 import org.apache.qpid.server.SystemLauncherListener.DefaultSystemLauncherListener;
@@ -131,58 +126,49 @@ public class SNITest extends UnitTestBase
     @Test
     public void testValidCertChosen() throws Exception
     {
-        performTest(true, "fooinvalid", "foo", _fooValid, false);
+        performTest(true, "fooinvalid", "foo", _fooValid);
     }
 
     @Test
     public void testMatchCertChosenEvenIfInvalid() throws Exception
     {
-        performTest(true, "fooinvalid", "bar", _barInvalid, false);
+        performTest(true, "fooinvalid", "bar", _barInvalid);
     }
 
     @Test
     public void testDefaultCertChose() throws Exception
     {
-        performTest(true, "fooinvalid", null, _fooInvalid, false);
+        performTest(true, "fooinvalid", null, _fooInvalid);
     }
 
     @Test
     public void testMatchingCanBeDisabled() throws Exception
     {
-        performTest(false, "fooinvalid", "foo", _fooInvalid, false);
+        performTest(false, "fooinvalid", "foo", _fooInvalid);
     }
 
     @Test
     public void testInvalidHostname()
     {
         assertThrows(SSLPeerUnverifiedException.class,
-                () -> performTest(false, "fooinvalid", "_foo", _fooInvalid, false),
+                () -> performTest(false, "fooinvalid", "_foo", _fooInvalid),
                 "Expected exception not thrown");
     }
 
     @Test
-    @EnabledForJreRange(max = JAVA_16)
-    public void testBypassInvalidSniHostname() throws Exception
-    {
-        performTest(false, "foovalid", "_foo", _fooValid, true);
-    }
-
-    @Test
-    @EnabledForJreRange(min = JAVA_17)
     public void testBypassInvalidSniHostnameWithJava17()
     {
         assertThrows(SSLPeerUnverifiedException.class,
-                () -> performTest(false, "foovalid", "_foo", _fooValid, true),
+                () -> performTest(false, "foovalid", "_foo", _fooValid),
                 "Expected exception not thrown");
     }
 
     private void performTest(final boolean useMatching,
                              final String defaultAlias,
                              final String sniHostName,
-                             final KeyCertificatePair expectedCert,
-                             final boolean ignoreInvalidSni) throws Exception
+                             final KeyCertificatePair expectedCert) throws Exception
     {
-        doBrokerStartup(useMatching, defaultAlias, ignoreInvalidSni);
+        doBrokerStartup(useMatching, defaultAlias);
         final SSLContext context = SSLUtil.tryGetSSLContext();
         context.init(null, new TrustManager[]
         {
@@ -225,8 +211,7 @@ public class SNITest extends UnitTestBase
     }
 
     private void doBrokerStartup(final boolean useMatching,
-                                 final String defaultAlias,
-                                 final boolean ignoreInvalidSni) throws Exception
+                                 final String defaultAlias) throws Exception
     {
         final File initialConfiguration = createInitialContext();
         _brokerWork = TestFileUtils.createTestDirectory("qpid-work", true);
@@ -261,14 +246,13 @@ public class SNITest extends UnitTestBase
                 Port.TRANSPORTS, Set.of(Transport.SSL),
                 Port.PORT, 0,
                 Port.AUTHENTICATION_PROVIDER, authProvider,
-                Port.KEY_STORE, keyStore,
-                Port.CONTEXT, Map.of(AmqpPort.PORT_IGNORE_INVALID_SNI, String.valueOf(ignoreInvalidSni)));
+                Port.KEY_STORE, keyStore);
         final Port<?> port = _broker.createChild(Port.class, portAttr);
 
         _boundPort = port.getBoundPort();
     }
 
-    private File createInitialContext() throws JsonProcessingException
+    private File createInitialContext() throws JacksonException
     {
         // create empty initial configuration
         final Map<String,Object> initialConfig = Map.of(ConfiguredObject.NAME, "test",

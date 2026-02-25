@@ -24,7 +24,6 @@ import static org.apache.qpid.test.utils.JvmVendor.IBM;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
-import static org.junit.jupiter.api.condition.JRE.JAVA_11;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -44,13 +43,13 @@ import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
-import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
@@ -171,7 +170,6 @@ public class TCPandSSLTransportTest extends UnitTestBase
     }
 
     @Test
-    @EnabledForJreRange(min = JAVA_11)
     public void testTLSv1_3SupportOnSSLOnlyPort()
     {
         assertDoesNotThrow(() -> checkHandshakeWithTlsProtocol("TLSv1.3", Transport.SSL),
@@ -179,7 +177,6 @@ public class TCPandSSLTransportTest extends UnitTestBase
     }
 
     @Test
-    @EnabledForJreRange(min = JAVA_11)
     public void testTLSv1_3SupportOnSharedPort()
     {
         assertDoesNotThrow(() -> checkHandshakeWithTlsProtocol("TLSv1.3", Transport.TCP, Transport.SSL),
@@ -213,6 +210,8 @@ public class TCPandSSLTransportTest extends UnitTestBase
         when(port.getContextValue(Boolean.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING)).thenReturn(false);
         when(port.getContextValue(Integer.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_WARN_THRESHOLD)).thenReturn(1000);
         when(port.getContextValue(Integer.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD)).thenReturn(1005);
+        when(port.getContextValue(Integer.class, AmqpPort.FINAL_WRITE_THRESHOLD)).thenReturn(100);
+        when(port.getContextValue(Long.class, AmqpPort.FINAL_WRITE_TIMEOUT)).thenReturn(100L);
         final ObjectMapper mapper = new ObjectMapper();
         final JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, String.class);
         final List<String> allowList = mapper.readValue(Broker.DEFAULT_SECURITY_TLS_PROTOCOL_ALLOW_LIST, type);

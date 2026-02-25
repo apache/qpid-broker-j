@@ -18,27 +18,27 @@
  * under the License.
  *
  */
-define(["dojo/query", "dijit/registry", "qpid/common/util"], function (query, registry, util)
+
+package org.apache.qpid.server.utils;
+
+/** UncaughtExceptionHandler implementation logs an exception and gracefully stops the broker */
+public class GracefulShutdownExceptionHandler extends AbstractExceptionHandler implements Thread.UncaughtExceptionHandler
 {
-    return {
-        show: function (data)
+    @Override
+    public void uncaughtException(final Thread thread, final Throwable throwable)
+    {
+        final boolean continueOnError = Boolean.getBoolean(CONTINUE_ON_ERROR_PROPERTY_NAME);
+        try
         {
-            util.parseHtmlIntoDiv(data.containerNode, "authenticationprovider/filebased/add.html", function ()
-            {
-                if (!!data.data)
-                {
-                    util.applyToWidgets(data.containerNode,
-                        "AuthenticationProvider",
-                        "Base64MD5PasswordFile",
-                        data.data,
-                        data.metadata);
-                }
-
-                var pathWidget = registry.byNode(query(".path", data.containerNode)[0]);
-                pathWidget.set("disabled", !!(data.data && data.data.id));
-                pathWidget.set("value", data.data ? data.data.path : "");
-            });
+            printDiagnostic(thread, throwable, continueOnError);
+            logError(throwable, continueOnError);
         }
-    };
-});
-
+        finally
+        {
+            if (!continueOnError)
+            {
+                ExitHandler.exit(1);
+            }
+        }
+    }
+}

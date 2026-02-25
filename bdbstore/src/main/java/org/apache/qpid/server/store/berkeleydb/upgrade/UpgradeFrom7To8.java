@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -36,8 +35,6 @@ import org.apache.qpid.server.store.berkeleydb.tuple.ConfiguredObjectBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.MessageMetaDataBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.UUIDTupleBinding;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sleepycat.bind.tuple.LongBinding;
 import com.sleepycat.je.Sequence;
 import com.sleepycat.je.SequenceConfig;
@@ -54,6 +51,10 @@ import com.sleepycat.je.Environment;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 public class UpgradeFrom7To8 extends AbstractStoreUpgrade
 {
@@ -183,7 +184,7 @@ public class UpgradeFrom7To8 extends AbstractStoreUpgrade
                         TupleBinding.outputToEntry(tupleOutput, value);
                         objectsCursor.putCurrent(value);
                     }
-                    catch (IOException e)
+                    catch (JacksonException e)
                     {
                         throw new StoreException(e);
                     }

@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.qpid</groupId>
         <artifactId>qpid-systests-parent</artifactId>
-        <version>10.0.0-SNAPSHOT</version>
+        <version>10.0.2-SNAPSHOT</version>
         <relativePath>../../qpid-systests-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -147,7 +147,7 @@
             <testResource>
                 <directory>${basedir}/src/test/java</directory>
                 <excludes>
-                    <exclude>**/*.java/</exclude>
+                    <exclude>**/*.java</exclude>
                 </excludes>
             </testResource>
             <testResource>

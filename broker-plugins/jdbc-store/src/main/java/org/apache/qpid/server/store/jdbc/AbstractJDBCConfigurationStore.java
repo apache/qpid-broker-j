@@ -43,8 +43,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
@@ -197,7 +199,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
                     }
                 }
-                catch (IOException e)
+                catch (JacksonException e)
                 {
                     throw new StoreException("Error recovering persistent state: " + e.getMessage(), e);
                 }
@@ -480,7 +482,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                         }
                     }
                 }
-                catch (IOException e)
+                catch (JacksonException e)
                 {
                     throw new StoreException("Error recovering persistent state: " + e.getMessage(), e);
                 }
@@ -546,7 +548,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                     stmt.execute();
                 }
             }
-            catch (IOException e)
+            catch (JacksonException e)
             {
                 throw new StoreException("Error recovering persistent state: " + e.getMessage(), e);
             }
@@ -829,7 +831,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             }
 
         }
-        catch (IOException | SQLException e)
+        catch (JacksonException | SQLException e)
         {
             throw new StoreException("Error inserting of configured object " + configuredObject + " into database: " + e.getMessage(), e);
         }
@@ -980,7 +982,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                 }
             }
         }
-        catch (IOException e)
+        catch (JacksonException e)
         {
             throw new StoreException("Error updating configured object "
                                      + configuredObject

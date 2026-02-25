@@ -22,7 +22,6 @@ package org.apache.qpid.server.store.jdbc;
 import static org.apache.qpid.server.store.jdbc.JdbcUtils.tableExists;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -37,9 +36,10 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
@@ -279,7 +279,7 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
 
     private void updateOrCreateInternal(final Connection conn,
                                         final Collection<PreferenceRecord> preferenceRecords)
-            throws SQLException, JsonProcessingException
+            throws SQLException, JacksonException
     {
         for (PreferenceRecord record : preferenceRecords)
         {
@@ -366,7 +366,7 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
     private void setAttributesAsBlob(final PreparedStatement preparedSqlStatement,
                                      final int parameterIndex,
                                      final Map<String, Object> attributes)
-            throws JsonProcessingException, SQLException
+            throws JacksonException, SQLException
     {
         final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
         if (attributes != null)
@@ -469,7 +469,7 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
                     records.add(preferenceRecord);
                 }
             }
-            catch (IOException e)
+            catch (JacksonException e)
             {
                 throw new StoreException("Error recovering persistent state: " + e.getMessage(), e);
             }

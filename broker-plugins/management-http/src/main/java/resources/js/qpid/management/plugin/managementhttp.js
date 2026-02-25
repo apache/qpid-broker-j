@@ -112,6 +112,7 @@ define(["dojo/dom",
             this.httpsSaslAuthenticationEnabled = query(".httpsSaslAuthenticationEnabled", node)[0];
             this.httpSaslAuthenticationEnabled = query(".httpSaslAuthenticationEnabled", node)[0];
             this.compressResponses = query(".compressResponses", node)[0];
+            this.useLegacyUriCompliance = query(".useLegacyUriCompliance", node)[0];
             this.corsAllowOrigins = query(".corsAllowOrigins", node)[0];
             this.corsAllowMethods = query(".corsAllowMethods", node)[0];
             this.corsAllowHeaders = query(".corsAllowHeaders", node)[0];
@@ -146,6 +147,7 @@ define(["dojo/dom",
                     that.httpSaslAuthenticationEnabled.innerHTML =
                         showBoolean(that.pluginData.httpSaslAuthenticationEnabled);
                     that.compressResponses.innerHTML = showBoolean(that.pluginData.compressResponses);
+                    that.useLegacyUriCompliance.innerHTML = showBoolean(that.pluginData.useLegacyUriCompliance);
                     that.sessionTimeout.innerHTML = that.pluginData.sessionTimeout;
                     that.httpSaslAuthenticationEnabled.innerHTML =
                         showBoolean(that.pluginData.httpSaslAuthenticationEnabled);

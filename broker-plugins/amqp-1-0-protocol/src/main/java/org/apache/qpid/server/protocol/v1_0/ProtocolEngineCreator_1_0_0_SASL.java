@@ -20,30 +20,20 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
-import org.apache.qpid.server.transport.ServerNetworkConnection;
+import org.apache.qpid.server.protocol.v1_0.constants.Bytes;
 import org.apache.qpid.server.transport.AggregateTicker;
+import org.apache.qpid.server.transport.ProtocolEngine;
+import org.apache.qpid.server.transport.ServerNetworkConnection;
 
 @PluggableService
 public class ProtocolEngineCreator_1_0_0_SASL implements ProtocolEngineCreator
 {
-    private static final byte[] AMQP_SASL_1_0_0_HEADER =
-            new byte[] { (byte) 'A',
-                         (byte) 'M',
-                         (byte) 'Q',
-                         (byte) 'P',
-                         (byte) 3,
-                         (byte) 1,
-                         (byte) 0,
-                         (byte) 0
-            };
-
     public ProtocolEngineCreator_1_0_0_SASL()
     {
     }
@@ -54,11 +44,15 @@ public class ProtocolEngineCreator_1_0_0_SASL implements ProtocolEngineCreator
         return Protocol.AMQP_1_0;
     }
 
-
+    /**
+     * Returns a AMQP header shared array instance to avoid per-call allocation.
+     * The returned array must be treated as immutable and must not be modified by callers.
+     * @return AMQP header byte array
+     */
     @Override
     public byte[] getHeaderIdentifier()
     {
-        return AMQP_SASL_1_0_0_HEADER;
+        return Bytes.saslHeader();
     }
 
     @Override

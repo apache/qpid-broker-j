@@ -81,18 +81,6 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
     @ManagedContextDefault( name = PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD)
     long DEFAULT_PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD = 1005;
 
-    String PORT_IGNORE_INVALID_SNI = "qpid.port.amqp.ignoreInvalidSni";
-
-    /**
-     * In Java 17 logic SNI hostname validation became stricter and this flag will not help with the syntax errors
-     * in SNI hostnames provided by client. They will result in SSLPeerUnverifiedException thrown by SSLEngine.
-     * Therefore, usage of this flag is discouraged. It may be deleted in one of the future broker releases.
-     */
-    @Deprecated
-    @SuppressWarnings("unused")
-    @ManagedContextDefault(name = PORT_IGNORE_INVALID_SNI)
-    boolean DEFAULT_PORT_IGNORE_INVALID_SNI = false;
-
     @SuppressWarnings("unused")
     @ManagedContextDefault( name = PORT_AMQP_THREAD_POOL_SIZE)
     long DEFAULT_PORT_AMQP_THREAD_POOL_SIZE = 8;
@@ -159,6 +147,18 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
             description = "The connection property enrichers to apply to connections created on this port.")
     String DEFAULT_CONNECTION_PROTOCOL_ENRICHERS = "[ \"STANDARD\" ] ";
 
+    String FINAL_WRITE_THRESHOLD = "qpid.port.final_write_threshold";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = FINAL_WRITE_THRESHOLD, description = "Threshold to check for final write timeout.")
+    int DEFAULT_FINAL_WRITE_THRESHOLD = 100;
+
+    String FINAL_WRITE_TIMEOUT = "qpid.port.final_write_timeout";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = FINAL_WRITE_TIMEOUT,
+            description = "Maximum time allowed for a connection to be closed." +
+            " If the connection does not close this time, it will be aborted.")
+    long DEFAULT_FINAL_WRITE_TIMEOUT = 1000L;
+
     @ManagedAttribute( defaultValue = AmqpPort.DEFAULT_AMQP_TCP_NO_DELAY )
     boolean isTcpNoDelay();
 
@@ -187,9 +187,6 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
 
     @ManagedAttribute( defaultValue = "${" + PORT_MAX_OPEN_CONNECTIONS + "}" )
     int getMaxOpenConnections();
-
-    @DerivedAttribute
-    boolean isIgnoreInvalidSni();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT,
             label = "Open Connections",

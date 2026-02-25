@@ -26,7 +26,7 @@ Apache Qpid Broker-J Bundles
 
 From: 'an unknown organization'
 
-  - Caffeine cache (https://github.com/ben-manes/caffeine) com.github.ben-manes.caffeine:caffeine:jar:3.2.1
+  - Caffeine cache (https://github.com/ben-manes/caffeine) com.github.ben-manes.caffeine:caffeine:jar:3.2.3
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
   - Prometheus Java Simpleclient (http://github.com/prometheus/client_java/simpleclient) io.prometheus:simpleclient:bundle:0.16.0
@@ -44,13 +44,13 @@ From: 'an unknown organization'
   - Prometheus Java Span Context Supplier - OpenTelemetry Agent (http://github.com/prometheus/client_java/simpleclient_tracer/simpleclient_tracer_otel_agent) io.prometheus:simpleclient_tracer_otel_agent:bundle:0.16.0
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs (https://www.bouncycastle.org/download/bouncy-castle-java/) org.bouncycastle:bcpkix-jdk18on:jar:1.81
+  - Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs (https://www.bouncycastle.org/download/bouncy-castle-java/) org.bouncycastle:bcpkix-jdk18on:jar:1.83
     License: Bouncy Castle Licence  (https://www.bouncycastle.org/licence.html)
 
-  - Bouncy Castle Provider (https://www.bouncycastle.org/download/bouncy-castle-java/) org.bouncycastle:bcprov-jdk18on:jar:1.81
+  - Bouncy Castle Provider (https://www.bouncycastle.org/download/bouncy-castle-java/) org.bouncycastle:bcprov-jdk18on:jar:1.83
     License: Bouncy Castle Licence  (https://www.bouncycastle.org/licence.html)
 
-  - Bouncy Castle ASN.1 Extension and Utility APIs (https://www.bouncycastle.org/download/bouncy-castle-java/) org.bouncycastle:bcutil-jdk18on:jar:1.81
+  - Bouncy Castle ASN.1 Extension and Utility APIs (https://www.bouncycastle.org/download/bouncy-castle-java/) org.bouncycastle:bcutil-jdk18on:jar:1.83
     License: Bouncy Castle Licence  (https://www.bouncycastle.org/licence.html)
 
   - dgrid (https://www.webjars.org) org.webjars.bower:dgrid:jar:1.3.3
@@ -74,20 +74,20 @@ From: 'Apache Software Foundation' (http://db.apache.org/)
 
 From: 'Eclipse Foundation' (https://www.eclipse.org)
 
-  - Jakarta Servlet (https://projects.eclipse.org/projects/ee4j.servlet) jakarta.servlet:jakarta.servlet-api:jar:6.0.0
+  - Jakarta Servlet (https://projects.eclipse.org/projects/ee4j.servlet) jakarta.servlet:jakarta.servlet-api:jar:6.1.0
     License: EPL 2.0  (http://www.eclipse.org/legal/epl-2.0)
     License: GPL2 w/ CPE  (https://www.gnu.org/software/classpath/license.html)
 
 
 From: 'FasterXML' (http://fasterxml.com/)
 
-  - Jackson-annotations (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:jar:2.19.1
+  - Jackson-annotations (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:jar:2.20
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Jackson-core (https://github.com/FasterXML/jackson-core) com.fasterxml.jackson.core:jackson-core:jar:2.19.1
+  - Jackson-core (https://github.com/FasterXML/jackson-core) tools.jackson.core:jackson-core:jar:3.0.4
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - jackson-databind (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-databind:jar:2.19.1
+  - jackson-databind (https://github.com/FasterXML/jackson) tools.jackson.core:jackson-databind:jar:3.0.4
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 
@@ -99,22 +99,22 @@ From: 'Oracle Corporation' (http://www.oracle.com/)
 
 From: 'OW2' (http://www.ow2.org/)
 
-  - asm (http://asm.ow2.io/) org.ow2.asm:asm:jar:9.7.1
+  - asm (http://asm.ow2.io/) org.ow2.asm:asm:jar:9.9.1
     License: BSD-3-Clause  (https://asm.ow2.io/license.html)
 
-  - asm-tree (http://asm.ow2.io/) org.ow2.asm:asm-tree:jar:9.7.1
+  - asm-tree (http://asm.ow2.io/) org.ow2.asm:asm-tree:jar:9.9.1
     License: BSD-3-Clause  (https://asm.ow2.io/license.html)
 
 
 From: 'QOS.ch' (http://www.qos.ch)
 
-  - Logback Classic Module (http://logback.qos.ch/logback-classic) ch.qos.logback:logback-classic:jar:1.5.18
-    License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)
-    License: GNU Lesser General Public License  (http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
+  - Logback Classic Module (http://logback.qos.ch/logback-classic) ch.qos.logback:logback-classic:jar:1.5.31
+    License: Eclipse Public License - v 2.0  (https://www.eclipse.org/legal/epl-v20.html)
+    License: GNU Lesser General Public License  (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 
-  - Logback Core Module (http://logback.qos.ch/logback-core) ch.qos.logback:logback-core:jar:1.5.18
-    License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)
-    License: GNU Lesser General Public License  (http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
+  - Logback Core Module (http://logback.qos.ch/logback-core) ch.qos.logback:logback-core:jar:1.5.31
+    License: Eclipse Public License - v 2.0  (https://www.eclipse.org/legal/epl-v20.html)
+    License: GNU Lesser General Public License  (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 
   - Logback DBAppender Classic Module (http://logback.qos.ch/logback-classic-db) ch.qos.logback.db:logback-classic-db:jar:1.2.11.1
     License: Eclipse Public License - v 1.0  (http://www.eclipse.org/legal/epl-v10.html)
@@ -130,7 +130,7 @@ From: 'QOS.ch' (http://www.qos.ch)
 
 From: 'The Apache Software Foundation' (https://www.apache.org/)
 
-  - Apache Commons CLI (https://commons.apache.org/proper/commons-cli/) commons-cli:commons-cli:jar:1.9.0
+  - Apache Commons CLI (https://commons.apache.org/proper/commons-cli/) commons-cli:commons-cli:jar:1.11.0
     License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
   - Apache Qpid Broker-J BDB Message Store Plug-in (http://qpid.apache.org/components/qpid-bdbstore) org.apache.qpid:qpid-bdbstore:jar
@@ -218,66 +218,70 @@ From: 'The CometD Project' (https://cometd.org)
 
 From: 'Webtide' (https://webtide.com)
 
-  - Core :: HTTP (https://jetty.org/jetty-core/jetty-http) org.eclipse.jetty:jetty-http:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - Core :: HTTP (https://jetty.org/jetty-core/jetty-http) org.eclipse.jetty:jetty-http:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Core :: IO (https://jetty.org/jetty-core/jetty-io) org.eclipse.jetty:jetty-io:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - Core :: IO (https://jetty.org/jetty-core/jetty-io) org.eclipse.jetty:jetty-io:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Core :: Rewrite (https://jetty.org/jetty-core/jetty-rewrite) org.eclipse.jetty:jetty-rewrite:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - Core :: Rewrite (https://jetty.org/jetty-core/jetty-rewrite) org.eclipse.jetty:jetty-rewrite:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Core :: Security (https://jetty.org/jetty-core/jetty-security) org.eclipse.jetty:jetty-security:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - Core :: Security (https://jetty.org/jetty-core/jetty-security) org.eclipse.jetty:jetty-security:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Core :: Server (https://jetty.org/jetty-core/jetty-server) org.eclipse.jetty:jetty-server:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - Core :: Server (https://jetty.org/jetty-core/jetty-server) org.eclipse.jetty:jetty-server:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Core :: Sessions (https://jetty.org/jetty-core/jetty-session) org.eclipse.jetty:jetty-session:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - Core :: Sessions (https://jetty.org/jetty-core/jetty-session) org.eclipse.jetty:jetty-session:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Core :: Utilities (https://jetty.org/jetty-core/jetty-util) org.eclipse.jetty:jetty-util:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - Core :: Utilities (https://jetty.org/jetty-core/jetty-util) org.eclipse.jetty:jetty-util:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - EE10 :: Servlet (https://jetty.org/jetty-ee10/jetty-ee10-servlet) org.eclipse.jetty.ee10:jetty-ee10-servlet:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - EE11 :: Servlet (https://jetty.org/jetty-ee11/jetty-ee11-servlet) org.eclipse.jetty.ee11:jetty-ee11-servlet:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - EE10 :: Websocket :: Jetty Server (https://jetty.org/jetty-ee10/jetty-ee10-websocket/jetty-ee10-websocket-jetty-server) org.eclipse.jetty.ee10.websocket:jetty-ee10-websocket-jetty-server:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - EE11 :: Websocket :: Jetty Server (https://jetty.org/jetty-ee11/jetty-ee11-websocket/jetty-ee11-websocket-jetty-server) org.eclipse.jetty.ee11.websocket:jetty-ee11-websocket-jetty-server:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - EE10 :: Websocket :: Servlet (https://jetty.org/jetty-ee10/jetty-ee10-websocket/jetty-ee10-websocket-servlet) org.eclipse.jetty.ee10.websocket:jetty-ee10-websocket-servlet:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - EE11 :: Websocket :: Servlet (https://jetty.org/jetty-ee11/jetty-ee11-websocket/jetty-ee11-websocket-servlet) org.eclipse.jetty.ee11.websocket:jetty-ee11-websocket-servlet:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Core :: Websocket :: Common (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-core-common) org.eclipse.jetty.websocket:jetty-websocket-core-common:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - Core :: Websocket :: Common (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-core-common) org.eclipse.jetty.websocket:jetty-websocket-core-common:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Core :: Websocket :: Server (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-core-server) org.eclipse.jetty.websocket:jetty-websocket-core-server:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - Core :: Websocket :: Server (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-core-server) org.eclipse.jetty.websocket:jetty-websocket-core-server:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Core :: Websocket :: Jetty API (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-jetty-api) org.eclipse.jetty.websocket:jetty-websocket-jetty-api:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - Core :: Websocket :: Jetty API (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-jetty-api) org.eclipse.jetty.websocket:jetty-websocket-jetty-api:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Core :: Websocket :: Jetty Common (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-jetty-common) org.eclipse.jetty.websocket:jetty-websocket-jetty-common:jar:12.0.22
-    License: Eclipse Public License - Version 2.0  (https://www.eclipse.org/legal/epl-2.0/)
-    License: Apache Software License - Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0)
+  - Core :: Websocket :: Jetty Common (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-jetty-common) org.eclipse.jetty.websocket:jetty-websocket-jetty-common:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
+
+  - Core :: Websocket :: Jetty Server (https://jetty.org/jetty-core/jetty-websocket/jetty-websocket-jetty-server) org.eclipse.jetty.websocket:jetty-websocket-jetty-server:jar:12.1.6
+    License: EPL-2.0  (https://www.eclipse.org/legal/epl-2.0/)
+    License: Apache-2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 
 From: 'Zaxxer.com' (https://github.com/brettwooldridge)
 
-  - HikariCP (https://github.com/brettwooldridge/HikariCP) com.zaxxer:HikariCP:bundle:6.2.1
+  - HikariCP (https://github.com/brettwooldridge/HikariCP) com.zaxxer:HikariCP:bundle:7.0.2
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 

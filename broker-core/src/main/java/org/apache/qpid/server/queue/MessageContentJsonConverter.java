@@ -30,12 +30,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.std.StdArraySerializers;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.jdk.JDKArraySerializers;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 class MessageContentJsonConverter
 {
@@ -50,10 +51,9 @@ class MessageContentJsonConverter
     MessageContentJsonConverter(Object messageBody, long limit)
     {
         _messageBody = messageBody;
-        _objectMapper = new ObjectMapper();
-        SimpleModule module = new SimpleModule();
-        module.addSerializer(new NoneBase64ByteArraySerializer());
-        _objectMapper.registerModule(module);
+        _objectMapper = JsonMapper.builder()
+                .addModule(new SimpleModule().addSerializer(new NoneBase64ByteArraySerializer()))
+                .build();
         _remaining = limit;
     }
 
@@ -190,7 +190,7 @@ class MessageContentJsonConverter
 
     private static class NoneBase64ByteArraySerializer extends StdSerializer<byte[]>
     {
-        final StdArraySerializers.IntArraySerializer _underlying = new StdArraySerializers.IntArraySerializer();
+        final JDKArraySerializers.IntArraySerializer _underlying = new JDKArraySerializers.IntArraySerializer();
 
         public NoneBase64ByteArraySerializer()
         {
@@ -198,8 +198,7 @@ class MessageContentJsonConverter
         }
 
         @Override
-        public void serialize(final byte[] value, final JsonGenerator jgen, final SerializerProvider provider)
-                throws IOException
+        public void serialize(final byte[] value, final JsonGenerator jgen, final SerializationContext provider)
         {
             final int[] intArray = new int[value.length];
             for (int i = 0; i < value.length; i++)

@@ -19,27 +19,27 @@
 
 package org.apache.qpid.server.filter;
 
-public class OrderByExpression implements Expression
+public class OrderByExpression<T> implements Expression<T>
 {
     public enum Order
     { ASC, DESC }
 
-    private final Expression _expression;
+    private final Expression<T> _expression;
     private final Order _order;
 
-    public OrderByExpression(Expression expression)
+    public OrderByExpression(Expression<T> expression)
     {
         this(expression, Order.ASC);
     }
 
-    public OrderByExpression(Expression expression, Order order)
+    public OrderByExpression(Expression<T> expression, Order order)
     {
         _expression = expression;
         _order = order;
     }
 
     @Override
-    public Object evaluate(final Object object)
+    public Object evaluate(final T object)
     {
         return _expression.evaluate(object);
     }
@@ -51,11 +51,11 @@ public class OrderByExpression implements Expression
 
     public boolean isColumnIndex()
     {
-        return (_expression instanceof ConstantExpression && ((ConstantExpression)_expression).getValue() instanceof Number);
+        return (_expression instanceof ConstantExpression && ((ConstantExpression<T>) _expression).getValue() instanceof Number);
     }
 
     public int getColumnIndex()
     {
-        return ((Number)((ConstantExpression)_expression).getValue()).intValue();
+        return ((Number) ((ConstantExpression<T>) _expression).getValue()).intValue();
     }
 }

@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache.qpid</groupId>
     <artifactId>qpid-broker-parent</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>qpid-perftests</artifactId>
@@ -73,12 +73,12 @@
     </dependency>
 
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
+      <groupId>tools.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
+      <groupId>tools.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
     </dependency>
 
@@ -87,6 +87,7 @@
       <artifactId>derby</artifactId>
       <scope>provided</scope>
     </dependency>
+
     <dependency>
       <groupId>org.apache.derby</groupId>
       <artifactId>derbytools</artifactId>
@@ -109,6 +110,13 @@
       <artifactId>qpid-test-utils</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.openjdk.nashorn</groupId>
+      <artifactId>nashorn-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -120,7 +128,7 @@
       <resource>
         <directory>src/main/java</directory>
         <excludes>
-          <exclude>**/*.java/</exclude>
+          <exclude>**/*.java</exclude>
         </excludes>
       </resource>
     </resources>
@@ -173,12 +181,12 @@
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
-          <excludes>
-            <exclude>src/main/java/json2.js</exclude>
-            <exclude>src/test/java/org/apache/qpid/disttest/controller/config/sampleConfig.json</exclude>
-            <exclude>src/test/java/org/apache/qpid/disttest/results/formatting/expectedOutput.csv</exclude>
-            <exclude>visualisation-jfc/**</exclude>
-          </excludes>
+          <inputExcludes>
+            <inputExclude>src/main/java/json2.js</inputExclude>
+            <inputExclude>src/test/java/org/apache/qpid/disttest/controller/config/sampleConfig.json</inputExclude>
+            <inputExclude>src/test/java/org/apache/qpid/disttest/results/formatting/expectedOutput.csv</inputExclude>
+            <inputExclude>visualisation-jfc/**</inputExclude>
+          </inputExcludes>
         </configuration>
       </plugin>
       <plugin>
@@ -399,19 +407,6 @@
           <groupId>org.apache.qpid</groupId>
           <artifactId>qpid-client</artifactId>
           <scope>runtime</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-    <profile>
-      <id>nashorn</id>
-      <activation>
-        <jdk>[15,)</jdk>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.openjdk.nashorn</groupId>
-          <artifactId>nashorn-core</artifactId>
-          <scope>test</scope>
         </dependency>
       </dependencies>
     </profile>

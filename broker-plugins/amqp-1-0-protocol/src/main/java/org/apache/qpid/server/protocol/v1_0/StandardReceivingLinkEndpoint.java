@@ -81,7 +81,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
         implements AsyncAutoCommitTransaction.FutureRecorder
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(StandardReceivingLinkEndpoint.class);
-    private static final Accepted ACCEPTED = new Accepted();
+    private static final Accepted ACCEPTED = Accepted.INSTANCE;
     private static final String LINK = "link";
 
     private final java.util.Queue<AsyncCommand> _unfinishedCommandsQueue = new ConcurrentLinkedQueue<>();

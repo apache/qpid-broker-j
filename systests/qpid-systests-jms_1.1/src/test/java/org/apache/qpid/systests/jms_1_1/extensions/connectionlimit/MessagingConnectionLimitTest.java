@@ -29,9 +29,9 @@ import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.naming.NamingException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.junit.jupiter.api.Test;
+
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.user.connection.limits.plugins.ConnectionLimitRule;
 import org.apache.qpid.systests.JmsTestBase;

@@ -44,6 +44,9 @@ import org.apache.qpid.server.txn.TransactionMonitor;
 
 public class NodeReceivingDestination implements ReceivingDestination
 {
+    private static final Symbol[] CAPABILITIES_DISCARD = { Symbols.DISCARD_UNROUTABLE, Symbols.DELAYED_DELIVERY };
+    private static final Symbol[] CAPABILITIES_REJECT = { Symbols.REJECT_UNROUTABLE, Symbols.DELAYED_DELIVERY };
+
     private final boolean _discardUnroutable;
     private final EventLogger _eventLogger;
 
@@ -144,11 +147,13 @@ public class NodeReceivingDestination implements ReceivingDestination
         }
         else
         {
-            result.getRoutes()
-                  .stream()
-                  .filter(q -> q instanceof TransactionMonitor)
-                  .map(TransactionMonitor.class::cast)
-                  .forEach(tm -> tm.registerTransaction(txn));
+            for (final Object route : result.getRoutes())
+            {
+                if (route instanceof TransactionMonitor transactionMonitor)
+                {
+                    transactionMonitor.registerTransaction(txn);
+                }
+            }
         }
     }
 
@@ -200,12 +205,16 @@ public class NodeReceivingDestination implements ReceivingDestination
         return _destination;
     }
 
+    /**
+     * Returns the supported outcome capabilities for this node.
+     * <br>
+     * Note: returns a shared array to avoid per-call allocations. The returned array must be treated as
+     * immutable and must not be modified by callers.
+     * @return {@link Symbol} array
+     */
     @Override
     public Symbol[] getCapabilities()
     {
-        Symbol[] capabilities = new Symbol[2];
-        capabilities[0] = _discardUnroutable ? Symbols.DISCARD_UNROUTABLE : Symbols.REJECT_UNROUTABLE;
-        capabilities[1] = Symbols.DELAYED_DELIVERY;
-        return capabilities;
+        return _discardUnroutable ? CAPABILITIES_DISCARD : CAPABILITIES_REJECT;
     }
 }

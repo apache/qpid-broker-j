@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache.qpid</groupId>
     <artifactId>qpid-broker-parent</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.2-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -53,8 +53,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee11</groupId>
+      <artifactId>jetty-ee11-servlet</artifactId>
     </dependency>
 
     <dependency>
@@ -63,7 +63,7 @@
     </dependency>
 
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
+      <groupId>tools.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
     </dependency>
 
@@ -159,9 +159,9 @@
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
-          <excludes>
-            <exclude>src/main/java/resources/js/crypto-js/**</exclude>
-          </excludes>
+          <inputExcludes>
+            <inputExclude>src/main/java/resources/js/crypto-js/**</inputExclude>
+          </inputExcludes>
         </configuration>
       </plugin>
     </plugins>
@@ -196,6 +196,7 @@
                   <includes>
                     <include>ConfiguredObjectFilterParser.jj</include>
                   </includes>
+                  <jdkVersion>17</jdkVersion>
                 </configuration>
               </execution>
             </executions>

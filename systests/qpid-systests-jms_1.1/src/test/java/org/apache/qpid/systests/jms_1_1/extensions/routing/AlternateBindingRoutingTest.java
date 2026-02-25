@@ -32,9 +32,9 @@ import javax.jms.Connection;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.junit.jupiter.api.Test;
+
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.AlternateBinding;
 import org.apache.qpid.systests.JmsTestBase;

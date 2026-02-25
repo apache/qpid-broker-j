@@ -25,7 +25,9 @@ import java.util.Map;
 import org.apache.qpid.server.model.AbstractConfiguredObjectTypeFactory;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.plugin.PluggableService;
 
+@PluggableService
 public class TestVirtualHostNodeFactory extends AbstractConfiguredObjectTypeFactory<TestVirtualHostNode>
 {
     public TestVirtualHostNodeFactory()

@@ -149,7 +149,7 @@ Sources are kept in a Git repository. Thus a git client is required.
     * <https://repo1.maven.org/maven2/org/apache/qpid/qpid-broker/>
 11. Update Qpid web site pages for new release of Qpid Broker-J component and publish new release documentation
     following instructions [in site README.md](https://gitbox.apache.org/repos/asf?p=qpid-site.git;a=blob;f=README.md).
-    Here are sample commands which could be used to create 7.0.0 release pages on the website based on the 7.0.0 tag.
+    Here are sample commands which could be used to create 9.0.0 release pages on the website based on the 9.0.0 tag.
 
         git clone https://gitbox.apache.org/repos/asf/qpid-site.git
         cd ./qpid-site

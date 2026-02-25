@@ -20,15 +20,16 @@
  */
 package org.apache.qpid.server.store.berkeleydb.tuple;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.UUID;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
@@ -63,7 +64,7 @@ public class ConfiguredObjectBinding extends TupleBinding<ConfiguredObjectRecord
             BDBConfiguredObjectRecord configuredObject = new BDBConfiguredObjectRecord(_uuid, type, value);
             return configuredObject;
         }
-        catch (IOException e)
+        catch (JacksonException e)
         {
             //should never happen
             throw new StoreException(e);
@@ -82,7 +83,7 @@ public class ConfiguredObjectBinding extends TupleBinding<ConfiguredObjectRecord
             tupleOutput.writeString(object.getType());
             tupleOutput.writeString(writer.toString());
         }
-        catch (IOException e)
+        catch (JacksonException e)
         {
             throw new StoreException(e);
         }

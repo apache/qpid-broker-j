@@ -33,6 +33,7 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
+import org.apache.qpid.server.protocol.v1_0.constants.Bytes;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
@@ -44,17 +45,6 @@ public class ProtocolEngineCreator_1_0_0 implements ProtocolEngineCreator
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolEngineCreator_1_0_0.class);
 
-    private static final byte[] AMQP_1_0_0_HEADER =
-            new byte[] { (byte) 'A',
-                         (byte) 'M',
-                         (byte) 'Q',
-                         (byte) 'P',
-                         (byte) 0,
-                         (byte) 1,
-                         (byte) 0,
-                         (byte) 0
-            };
-
     public ProtocolEngineCreator_1_0_0()
     {
     }
@@ -65,11 +55,15 @@ public class ProtocolEngineCreator_1_0_0 implements ProtocolEngineCreator
         return Protocol.AMQP_1_0;
     }
 
-
+    /**
+     * Returns a AMQP header shared array instance to avoid per-call allocation.
+     * The returned array must be treated as immutable and must not be modified by callers.
+     * @return AMQP header byte array
+     */
     @Override
     public byte[] getHeaderIdentifier()
     {
-        return AMQP_1_0_0_HEADER;
+        return Bytes.amqpHeader();
     }
 
     @Override

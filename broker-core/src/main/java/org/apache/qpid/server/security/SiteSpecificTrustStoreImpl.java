@@ -244,7 +244,7 @@ public class SiteSpecificTrustStoreImpl
                         {
                             final X509Certificate x509Certificate = (X509Certificate) certificateChain[0];
                             LOGGER.debug("Successfully downloaded X509Certificate with DN {} certificate from {}",
-                                         x509Certificate.getSubjectDN(), url);
+                                         x509Certificate.getSubjectX500Principal().getName(), url);
                             return x509Certificate;
                         }
                         else

@@ -53,6 +53,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.junit.jupiter.api.BeforeEach;
@@ -288,10 +289,10 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
 
     private Map<String, String> getRedirectParameters(final String redirectLocation)
     {
-        final MultiMap<String> parameterMap = new MultiMap<>();
+        final Fields parameterMap = new Fields();
         UrlEncoded.decodeUtf8To(HttpURI.from(redirectLocation).getQuery(), parameterMap);
-        Map<String,String> parameters = new HashMap<>(parameterMap.size());
-        for (Map.Entry<String, List<String>> paramEntry : parameterMap.entrySet())
+        Map<String,String> parameters = new HashMap<>(parameterMap.getSize());
+        for (Map.Entry<String, List<String>> paramEntry : parameterMap.toMultiMap().entrySet())
         {
             assertEquals(1, (long) paramEntry.getValue().size(),
                     String.format("param '%s' specified more than once", paramEntry.getKey()));

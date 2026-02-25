@@ -36,12 +36,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectFinder;
+import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.ConfiguredObjectStatistic;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
@@ -86,8 +87,8 @@ public class MetaDataServlet extends AbstractServlet
         }
 
         final OutputStream stream = getOutputStream(request, response);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+        ObjectMapper mapper = ConfiguredObjectJacksonModule
+                .newObjectMapper(false, SerializationFeature.INDENT_OUTPUT);
         mapper.writeValue(stream, classToDataMap);
 
         response.setContentType("application/json");

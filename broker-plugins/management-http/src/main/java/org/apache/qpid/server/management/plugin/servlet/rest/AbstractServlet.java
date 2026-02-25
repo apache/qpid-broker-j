@@ -43,10 +43,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 
 import org.apache.qpid.server.management.plugin.GunzipOutputStream;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
@@ -279,8 +280,7 @@ public abstract class AbstractServlet extends HttpServlet
     private void writeObjectToResponse(Object object, HttpServletRequest request,  HttpServletResponse response) throws IOException
     {
         OutputStream stream = getOutputStream(request, response);
-        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper(false);
-        mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper(false, SerializationFeature.INDENT_OUTPUT);
         mapper.writeValue(stream, object);
     }
 

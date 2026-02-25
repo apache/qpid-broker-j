@@ -44,7 +44,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDelegate
@@ -63,7 +62,6 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     private QpidByteBuffer _netInputBuffer;
     private QpidByteBuffer _netOutputBuffer;
     private QpidByteBuffer _applicationBuffer;
-    private final boolean _ignoreInvalidSni;
     private final AtomicInteger _loopingCounter = new AtomicInteger(0);
     private final boolean _enableDiagnosisOfSslEngineLooping;
     private final long _diagnosisOfSslEngineLoopingWarnThreshold;
@@ -85,7 +83,6 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         _netInputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
         _applicationBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
         _netOutputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
-        _ignoreInvalidSni = port.isIgnoreInvalidSni();
         _enableDiagnosisOfSslEngineLooping = port.getContextValue(Boolean.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING);
         _diagnosisOfSslEngineLoopingWarnThreshold = port.getContextValue(Integer.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_WARN_THRESHOLD);
         _diagnosisOfSslEngineLoopingBreakThreshold = port.getContextValue(Integer.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD);
@@ -168,20 +165,10 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
 
     private SNIHostName getSNIHostName(final QpidByteBuffer buffer)
     {
-        try
+        final String name = SSLUtil.getServerNameFromTLSClientHello(buffer);
+        if (name != null)
         {
-            final String name = SSLUtil.getServerNameFromTLSClientHello(buffer);
-            if (name != null)
-            {
-                return SSLUtil.createSNIHostName(name);
-            }
-        }
-        catch (ConnectionScopedRuntimeException e)
-        {
-            if (!_ignoreInvalidSni)
-            {
-                throw e;
-            }
+            return SSLUtil.createSNIHostName(name);
         }
         return null;
     }

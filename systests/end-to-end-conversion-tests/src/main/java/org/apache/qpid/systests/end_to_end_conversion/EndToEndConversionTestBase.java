@@ -138,7 +138,7 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
                 LOGGER.warn(String.format("first client instructions should be a 'ConfigureDestination' but is '%s'!",
                                           clientInstructions.get(0).getClass().getSimpleName()));
             }
-            if (clientInstructions.stream().filter(item -> item instanceof ConfigureJndiContext).count() != 0)
+            if (clientInstructions.stream().anyMatch(item -> item instanceof ConfigureJndiContext))
             {
                 LOGGER.warn("Test should not set a 'ConfigureContext' client instruction!"
                             + " This is set by the base class.");
@@ -235,12 +235,17 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
             serverSocket.setSoTimeout(SERVER_SOCKET_TIMEOUT);
             String classPath = classpathQuery.getClasspath();
             final List<String> arguments = new ArrayList<>(List.of("java", "-showversion", "-cp", classPath));
+            if (System.getProperty("os.name").toLowerCase().contains("windows"))
+            {
+                arguments.add("-Djavax.net.ssl.trustStoreType=WINDOWS-ROOT");
+            }
             arguments.addAll(additionalJavaArguments);
             arguments.add(classpathQuery.getClientClass().getName());
             arguments.add(String.valueOf(serverSocket.getLocalPort()));
 
             LOGGER.debug("starting client process with arguments: {}", arguments);
             ProcessBuilder processBuilder = new ProcessBuilder(arguments);
+            processBuilder.redirectErrorStream(true);
             processBuilder.environment().put("PN_TRACE_FRM", "true");
             Process p = processBuilder.start();
             try (final InputStream pInputStream = p.getInputStream();
@@ -258,9 +263,8 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
                     clientSocket.setSoTimeout(CLIENT_SOCKET_TIMEOUT);
                     outputStream.writeObject(clientInstructions);
                     final Object result = inputStream.readObject();
-                    if (result instanceof ClientResult)
+                    if (result instanceof ClientResult clientResult)
                     {
-                        final ClientResult clientResult = (ClientResult) result;
                         if (clientResult.getException() != null)
                         {
                             throw clientResult.getException();
@@ -284,12 +288,12 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
         }
         catch (RuntimeException e)
         {
-            LOGGER.debug("client process finished with exception: {}", e);
+            LOGGER.debug("client process finished with exception:", e);
             throw e;
         }
         catch (Exception e)
         {
-            LOGGER.error("client process finished with exception: {}", e);
+            LOGGER.error("client process finished with exception:", e);
             throw new RuntimeException(e);
         }
         finally

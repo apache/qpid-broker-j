@@ -23,6 +23,6 @@ package org.apache.qpid.server.management.plugin.servlet.query;
 import org.apache.qpid.server.filter.Expression;
 import org.apache.qpid.server.model.ConfiguredObject;
 
-public interface ConfiguredObjectExpression extends Expression<ConfiguredObject<?>>
+public interface ConfiguredObjectExpression<E extends ConfiguredObject<?>> extends Expression<E>
 {
 }

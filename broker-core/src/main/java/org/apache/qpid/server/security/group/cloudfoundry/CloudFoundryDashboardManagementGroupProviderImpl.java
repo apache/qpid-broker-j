@@ -42,11 +42,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -76,7 +77,7 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudFoundryDashboardManagementGroupProviderImpl.class);
     private static final String UTF8 = StandardCharsets.UTF_8.name();
 
-    private final ObjectMapper _objectMapper = new ObjectMapper();
+    private final ObjectMapper _objectMapper = JsonMapper.builder().build();
 
     @ManagedAttributeField
     private URI _cloudFoundryEndpointURI;
@@ -245,7 +246,7 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
             }
             return (boolean) mayManageObject;
         }
-        catch (JsonProcessingException e)
+        catch (JacksonException e)
         {
             throw new ExternalServiceException(String.format("CloudFoundryDashboardManagementEndpoint '%s' did not return json.",
                                                                      cloudFoundryEndpoint), e);

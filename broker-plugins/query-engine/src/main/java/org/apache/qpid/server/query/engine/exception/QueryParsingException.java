@@ -32,7 +32,7 @@ public class QueryParsingException extends QueryEngineException
 {
     private String message;
 
-    private final static String INVALID_DATEPART_MARKER = " Was expecting one of: \"DAY\" ... \"HOUR\" ... "
+    private static final String INVALID_DATEPART_MARKER = " Was expecting one of: \"DAY\" ... \"HOUR\" ... "
         + "\"MILLISECOND\" ... \"MINUTE\" ... \"MONTH\" ... \"SECOND\" ... \"WEEK\" ... \"YEAR\"";
 
     protected QueryParsingException()
@@ -77,7 +77,7 @@ public class QueryParsingException extends QueryEngineException
                     final Matcher matcher = Pattern.compile("(?<=[^\\s][\"|>]\\s\")(.*?)(?=\"\")").matcher(errorMessage);
                     if (matcher.find())
                     {
-                        final String datepart = matcher.group(0);
+                        final String datepart = matcher.group(0).trim();
                         message = "Datepart '" + datepart + "' not supported";
                     }
                 }

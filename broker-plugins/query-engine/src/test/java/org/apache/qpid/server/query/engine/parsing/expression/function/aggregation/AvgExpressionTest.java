@@ -170,4 +170,13 @@ public class AvgExpressionTest
             assertEquals("QUEUE_" + i, result.get(i - 50).get("name"));
         }
     }
+
+    @Test
+    void avgOnZeroValues()
+    {
+        String query = "SELECT avg(queueDepthMessages) as AverageDepth FROM queue where name = 'QUEUE_1'";
+        List<Map<String, Object>> result = _queryEvaluator.execute(query).getResults();
+        assertEquals(1, result.size());
+        assertEquals(0.0, result.get(0).get("AverageDepth"));
+    }
 }

@@ -37,7 +37,6 @@ import javax.jms.MessageConsumer;
 import javax.jms.QueueBrowser;
 import javax.jms.Session;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.client5.http.auth.CredentialsStore;
@@ -50,15 +49,20 @@ import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.auth.BasicScheme;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.ProtocolVersion;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.qpid.disttest.json.ObjectMapperFactory;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.controller.config.QueueConfig;
@@ -290,30 +294,9 @@ public class QpidRestAPIQueueCreator implements QueueCreator
     {
         try (final CloseableHttpClient httpClient = HttpClients.custom()
                     .setDefaultCredentialsProvider(_credentialsProvider)
-                    .build();
-             final CloseableHttpResponse response = httpClient.execute(_management, httpRequest, context))
+                    .build())
         {
-            final int status = response.getCode();
-            final ProtocolVersion version = response.getVersion();
-            final String reason = response.getReasonPhrase();
-            if (status != 200 && status != 201)
-            {
-                final String msg = String.format("Failed: HTTP error code: %d, Version: %s, Reason: %s", status, version, reason);
-                throw new RuntimeException(msg);
-            }
-
-            if (response.getEntity() != null)
-            {
-                try (ByteArrayOutputStream bos = new ByteArrayOutputStream())
-                {
-                    response.getEntity().writeTo(bos);
-                    if (bos.size() > 0)
-                    {
-                        return new ObjectMapper().readValue(bos.toByteArray(), Object.class);
-                    }
-                }
-            }
-            return null;
+            return httpClient.execute(_management, httpRequest, context, new ResponseHandler());
         }
         catch (IOException e)
         {
@@ -341,5 +324,36 @@ public class QpidRestAPIQueueCreator implements QueueCreator
         final CredentialsStore credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(authScope, new UsernamePasswordCredentials(managementUser, managementPassword.toCharArray()));
         return credentialsProvider;
+    }
+
+    static class ResponseHandler implements HttpClientResponseHandler<Object>
+    {
+        private static final ObjectMapper OBJECT_MAPPER = new ObjectMapperFactory().createObjectMapper();
+
+        @Override
+        public Object handleResponse(ClassicHttpResponse response) throws IOException
+        {
+            final int status = response.getCode();
+            final ProtocolVersion version = response.getVersion();
+            final String reason = response.getReasonPhrase();
+            if (status != 200 && status != 201)
+            {
+                final String msg = String.format("Failed: HTTP error code: %d, Version: %s, Reason: %s", status, version, reason);
+                throw new RuntimeException(msg);
+            }
+
+            if (response.getEntity() != null)
+            {
+                try (ByteArrayOutputStream bos = new ByteArrayOutputStream())
+                {
+                    response.getEntity().writeTo(bos);
+                    if (bos.size() > 0)
+                    {
+                        return OBJECT_MAPPER.readValue(bos.toByteArray(), Object.class);
+                    }
+                }
+            }
+            return null;
+        }
     }
 }

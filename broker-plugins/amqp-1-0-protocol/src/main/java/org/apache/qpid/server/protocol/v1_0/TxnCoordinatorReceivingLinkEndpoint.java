@@ -120,7 +120,7 @@ public class TxnCoordinatorReceivingLinkEndpoint extends AbstractReceivingLinkEn
                             final DeliveryState outcome;
                             if (error == null)
                             {
-                                outcome = new Accepted();
+                                outcome = Accepted.INSTANCE;
                             }
                             else if (CollectionUtils.nullSafeList(getSource().getOutcomes()).contains(Symbols.AMQP_REJECTED))
                             {

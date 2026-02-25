@@ -59,7 +59,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
@@ -619,7 +620,7 @@ abstract class AttributeValueConverter<T>
         {
             return objectMapper.readValue(interpolated, valueType);
         }
-        catch (IOException e)
+        catch (JacksonException e)
         {
             throw new IllegalArgumentException("Cannot convert String '"
                   + value + "'"
@@ -873,7 +874,7 @@ abstract class AttributeValueConverter<T>
                     {
                         return convert(objectMapper.readValue(interpolated, List.class), object);
                     }
-                    catch (IOException e)
+                    catch (JacksonException e)
                     {
                         // fall through to the non-JSON single object case
                     }
@@ -924,7 +925,7 @@ abstract class AttributeValueConverter<T>
                     {
                         return convert(objectMapper.readValue(interpolated, Set.class), object);
                     }
-                    catch (IOException e)
+                    catch (JacksonException e)
                     {
                         // fall through to the non-JSON single object case
                     }
@@ -976,7 +977,7 @@ abstract class AttributeValueConverter<T>
                     {
                         return convert(objectMapper.readValue(interpolated, List.class), object);
                     }
-                    catch (IOException e)
+                    catch (JacksonException e)
                     {
                         // fall through to the non-JSON single object case
                     }
@@ -1029,7 +1030,7 @@ abstract class AttributeValueConverter<T>
                     {
                         return convert(objectMapper.readValue(interpolated, Map.class), object);
                     }
-                    catch (IOException e)
+                    catch (JacksonException e)
                     {
                         // fall through to the non-JSON single object case
                     }
@@ -1417,7 +1418,7 @@ abstract class AttributeValueConverter<T>
                 {
                     return convert(objectMapper.readValue(interpolated, Map.class), object);
                 }
-                catch (IOException e)
+                catch (JacksonException e)
                 {
                     throw new IllegalArgumentException("Cannot convert type " + value.getClass() + " to a " + _klazz.getName(), e);
                 }

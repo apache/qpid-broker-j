@@ -32,11 +32,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.junit.jupiter.api.Test;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.tests.http.HttpTestBase;
 
@@ -114,7 +113,7 @@ public class CompressedResponsesTest extends HttpTestBase
                 {
                     mapper.readValue(jsonStream, LinkedHashMap.class);
                 }
-                catch (JsonParseException | JsonMappingException e)
+                catch (JacksonException e)
                 {
                     fail("Message was not in correct format");
                 }

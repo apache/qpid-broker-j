@@ -20,14 +20,14 @@
 
 package org.apache.qpid.server.model;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.util.Strings;
 
@@ -112,7 +112,7 @@ public class AncestorAttributeResolver implements Strings.Resolver
 
                             returnString = writer.toString();
                         }
-                        catch (IOException e)
+                        catch (JacksonException e)
                         {
                             throw new IllegalArgumentException(e);
                         }

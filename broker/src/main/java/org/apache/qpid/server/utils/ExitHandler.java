@@ -18,24 +18,21 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.security.auth.database;
 
-import java.io.Serializable;
-import java.security.Principal;
+package org.apache.qpid.server.utils;
 
-interface PasswordPrincipal extends Principal, Serializable
+/** Wrapper for JVM shutdown functionality */
+public class ExitHandler
 {
-    char[] getPassword();
-    byte[] getEncodedPassword();
+    /** Initiates JVM shutdown */
+    public static void exit(final int status)
+    {
+        System.exit(status);
+    }
 
-    void setPassword(char[] password);
-    void restorePassword(char[] password);
-
-    boolean isDeleted();
-
-    boolean isModified();
-
-    void saved();
-
-    void delete();
+    /** Terminates JVM */
+    public static void halt(final int status)
+    {
+        Runtime.getRuntime().halt(status);
+    }
 }

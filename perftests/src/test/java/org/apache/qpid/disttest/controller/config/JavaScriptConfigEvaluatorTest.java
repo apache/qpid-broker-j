@@ -27,14 +27,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-
-import org.apache.qpid.test.utils.TestFileUtils;
-
 import org.junit.jupiter.api.Test;
 
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+
+import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class JavaScriptConfigEvaluatorTest extends UnitTestBase
@@ -99,9 +99,10 @@ public class JavaScriptConfigEvaluatorTest extends UnitTestBase
 
     private Map getObject(String jsonStringIn) throws Exception
     {
-        final ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-        objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+        final ObjectMapper objectMapper = JsonMapper.builder()
+                .configure(SerializationFeature.INDENT_OUTPUT, true)
+                .configure(JsonReadFeature.ALLOW_JAVA_COMMENTS, true)
+                .build();
         return objectMapper.readValue(jsonStringIn, TreeMap.class);
     }
 }

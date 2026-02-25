@@ -27,11 +27,11 @@ import static org.mockito.Mockito.mock;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;

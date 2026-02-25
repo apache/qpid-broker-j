@@ -40,7 +40,7 @@ public class LogbackLoggingSystemLauncherListener implements SystemLauncherListe
         _logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         if (!_logger.iteratorForAppenders().hasNext())
         {
-            _logger.setLevel(Level.ALL);
+            _logger.setLevel(Level.TRACE);
             _logger.setAdditive(true);
         }
 

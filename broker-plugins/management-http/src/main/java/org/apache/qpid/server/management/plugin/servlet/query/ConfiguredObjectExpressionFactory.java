@@ -126,7 +126,7 @@ public class ConfiguredObjectExpressionFactory
                     throw new IllegalArgumentException(TO_DATE.name() + " requires a single argument.");
                 }
 
-                return new ConfiguredObjectExpression()
+                return new ConfiguredObjectExpression<>()
                 {
                     @Override
                     public Object evaluate(final ConfiguredObject<?> object)
@@ -286,11 +286,12 @@ public class ConfiguredObjectExpressionFactory
         }
         catch(IllegalArgumentException e)
         {
-            throw new ParseException("Function parameter mismatch : '" + functionName + "'", e);
+            throw new ParseException("Function parameter mismatch : '" + functionName + "': " + e);
         }
     }
 
-    private static class ConfiguredObjectPropertyExpression implements ConfiguredObjectExpression, NamedExpression<ConfiguredObject<?>>
+    private static class ConfiguredObjectPropertyExpression<E extends ConfiguredObject<?>>
+            implements ConfiguredObjectExpression<E>, NamedExpression<E>
     {
 
         private final String _propertyName;
@@ -303,7 +304,7 @@ public class ConfiguredObjectExpressionFactory
         }
 
         @Override
-        public Object evaluate(final ConfiguredObject<?> object)
+        public Object evaluate(final E object)
         {
             return object == null ? null : getValue(object);
         }
@@ -337,7 +338,7 @@ public class ConfiguredObjectExpressionFactory
         }
     }
 
-    private static class ChainedConfiguredObjectExpression implements ConfiguredObjectExpression
+    private static class ChainedConfiguredObjectExpression<E extends ConfiguredObject<?>> implements ConfiguredObjectExpression<E>
     {
         private final ConfiguredObjectPropertyExpression _first;
         private final ConfiguredObjectExpression _chainedExpression;
@@ -349,12 +350,12 @@ public class ConfiguredObjectExpressionFactory
         }
 
         @Override
-        public Object evaluate(final ConfiguredObject<?> object)
+        public Object evaluate(final E object)
         {
             Object propertyValue = _first.evaluate(object);
             if(propertyValue instanceof ConfiguredObject)
             {
-                return _chainedExpression.evaluate((ConfiguredObject)propertyValue);
+                return _chainedExpression.evaluate(propertyValue);
             }
             else if(propertyValue instanceof Map && _chainedExpression instanceof ConfiguredObjectPropertyExpression)
             {
@@ -364,7 +365,7 @@ public class ConfiguredObjectExpressionFactory
         }
     }
 
-    private static class IndexedConfiguredObjectExpression implements ConfiguredObjectExpression
+    private static class IndexedConfiguredObjectExpression<E extends ConfiguredObject<?>> implements ConfiguredObjectExpression<E>
     {
         private final String _propertyName;
         private final int _index;
@@ -376,7 +377,7 @@ public class ConfiguredObjectExpressionFactory
         }
 
         @Override
-        public Object evaluate(final ConfiguredObject<?> object)
+        public Object evaluate(final E object)
         {
             Object propertyValue = object == null ? null : object.getAttribute(_propertyName);
             if(propertyValue instanceof Collection)

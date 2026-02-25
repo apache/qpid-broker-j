@@ -29,11 +29,11 @@ import java.io.File;
 import java.io.PrintStream;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.model.BrokerModel;

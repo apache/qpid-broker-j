@@ -180,9 +180,9 @@ TOKEN [IGNORE_CASE] :
 // ----------------------------------------------------------------------------
 // Grammer
 // ----------------------------------------------------------------------------
-BooleanExpression JmsSelector() :
+BooleanExpression<E> JmsSelector() :
 {
-    Expression left=null;
+    Expression<E> left=null;
 }
 {
     (
@@ -194,10 +194,10 @@ BooleanExpression JmsSelector() :
 
 }
 
-Expression orExpression() :
+Expression<E> orExpression() :
 {
-    Expression left;
-    Expression right;
+    Expression<E> left;
+    Expression<E> right;
 }
 {
     left = andExpression()
@@ -212,10 +212,10 @@ Expression orExpression() :
     }
 }
 
-Expression andExpression() :
+Expression<E> andExpression() :
 {
-    Expression left;
-    Expression right;
+    Expression<E> left;
+    Expression<E> right;
 }
 {
     left = equalityExpression()
@@ -230,10 +230,10 @@ Expression andExpression() :
     }
 }
 
-Expression equalityExpression() :
+Expression<E> equalityExpression() :
 {
-    Expression left;
-    Expression right;
+    Expression<E> left;
+    Expression<E> right;
 }
 {
     left = comparisonExpression()
@@ -263,15 +263,15 @@ Expression equalityExpression() :
     }
 }
 
-Expression comparisonExpression() :
+Expression<E> comparisonExpression() :
 {
-    Expression left;
-    Expression right;
-    Expression low;
-    Expression high;
+    Expression<E> left;
+    Expression<E> right;
+    Expression<E> low;
+    Expression<E> high;
     String t, u;
 	boolean not;
-	ArrayList list;
+	ArrayList<String> list;
 }
 {
     left = addExpression()
@@ -325,7 +325,7 @@ Expression comparisonExpression() :
         |
         <IN> "(" t = stringLiteral()
         {
-            list = new ArrayList();
+            list = new ArrayList<>();
             list.add( t );
         }
         ( "," t = stringLiteral()
@@ -339,7 +339,7 @@ Expression comparisonExpression() :
         |
         LOOKAHEAD(2) <NOT> <IN> "(" t = stringLiteral()
         {
-            list = new ArrayList();
+            list = new ArrayList<>();
             list.add( t );
         }
         ( "," t = stringLiteral()
@@ -356,10 +356,10 @@ Expression comparisonExpression() :
     }
 }
 
-Expression addExpression() :
+Expression<E> addExpression() :
 {
-    Expression left;
-    Expression right;
+    Expression<E> left;
+    Expression<E> right;
 }
 {
     left = multExpr()
@@ -382,10 +382,10 @@ Expression addExpression() :
     }
 }
 
-Expression multExpr() :
+Expression<E> multExpr() :
 {
-    Expression left;
-    Expression right;
+    Expression<E> left;
+    Expression<E> right;
 }
 {
     left = unaryExpr()
@@ -410,10 +410,10 @@ Expression multExpr() :
     }
 }
 
-Expression unaryExpr() :
+Expression<E> unaryExpr() :
 {
     String s=null;
-    Expression left=null;
+    Expression<E> left=null;
 }
 {
 	(
@@ -441,9 +441,9 @@ Expression unaryExpr() :
     }
 }
 
-Expression primaryExpr() :
+Expression<E> primaryExpr() :
 {
-    Expression left=null;
+    Expression<E> left=null;
 }
 {
     (
@@ -458,18 +458,18 @@ Expression primaryExpr() :
     }
 }
 
-ConstantExpression literal() :
+ConstantExpression<E> literal() :
 {
     Token t;
     String s;
-    ConstantExpression left=null;
+    ConstantExpression<E> left=null;
 }
 {
     (
         (
             s = stringLiteral()
             {
-                left = new ConstantExpression(s);
+                left = new ConstantExpression<>(s);
             }
         )
         |
@@ -550,11 +550,11 @@ String stringLiteral() :
     }
 }
 
-PropertyExpression variable() :
+PropertyExpression<E> variable() :
 {
     Token t;
     StringBuffer rc = new StringBuffer();
-    PropertyExpression left=null;
+    PropertyExpression<E> left=null;
 }
 {
     (

@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.qpid</groupId>
         <artifactId>qpid-java-doc</artifactId>
-        <version>10.0.0-SNAPSHOT</version>
+        <version>10.0.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>qpid-broker-j-developer-guide</artifactId>
@@ -43,10 +43,10 @@
                 <groupId>org.apache.rat</groupId>
                 <artifactId>apache-rat-plugin</artifactId>
                 <configuration>
-                    <excludes>
-                        <exclude>**/*.gliffy</exclude>
-                        <exclude>**/*.md</exclude>
-                    </excludes>
+                  <inputExcludes>
+                    <inputExclude>**/*.gliffy</inputExclude>
+                    <inputExclude>**/*.md</inputExclude>
+                  </inputExcludes>
                 </configuration>
             </plugin>
         </plugins>

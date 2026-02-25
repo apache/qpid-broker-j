@@ -18,18 +18,24 @@
  * under the License.
  *
  */
-define(["qpid/common/util", "dojo/domReady!"], function (util)
+
+package org.apache.qpid.server.utils;
+
+/** UncaughtExceptionHandler implementation logs an exception, but doesn't shut down the broker */
+public class LogAndContinueExceptionHandler extends AbstractExceptionHandler implements Thread.UncaughtExceptionHandler
 {
-
-    function Base64MD5PasswordFile(data)
+    @Override
+    public void uncaughtException(final Thread thread, final Throwable throwable)
     {
-        util.buildUI(data.containerNode, data.parent, "authenticationprovider/filebased/show.html", ["path"], this);
+        printDiagnostic(thread, throwable, true);
+        logError(throwable, true);
     }
 
-    Base64MD5PasswordFile.prototype.update = function (data)
-    {
-        util.updateUI(data, ["path"], this);
-    }
 
-    return Base64MD5PasswordFile;
-});
+    @Override
+    protected String getMessage(boolean continueOnError)
+    {
+        return "# Forced to continue by JVM setting 'qpid.broker.exceptionHandler=%s'"
+                .formatted(LogAndContinueExceptionHandler.class.getCanonicalName());
+    }
+}

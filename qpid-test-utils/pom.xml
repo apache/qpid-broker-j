@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache.qpid</groupId>
     <artifactId>qpid-broker-parent</artifactId>
-    <version>10.0.0-SNAPSHOT</version>
+    <version>10.0.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>qpid-test-utils</artifactId>
@@ -122,9 +122,9 @@
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
-          <excludes>
-            <exclude>src/main/resources/ssl/**</exclude>
-          </excludes>
+          <inputExcludes>
+            <inputExclude>src/main/resources/ssl/**</inputExclude>
+          </inputExcludes>
         </configuration>
       </plugin>
     </plugins>

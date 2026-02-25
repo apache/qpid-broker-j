@@ -30,6 +30,8 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 @CompositeType( symbolicDescriptor = SymbolTexts.AMQP_ACCEPTED, numericDescriptor = 0x0000000000000024L)
 public class Accepted implements Outcome
 {
+    public static final Accepted INSTANCE = new Accepted();
+
     @Override
     public Symbol getSymbol()
     {

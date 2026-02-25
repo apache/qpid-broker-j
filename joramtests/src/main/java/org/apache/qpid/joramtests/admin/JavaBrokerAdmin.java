@@ -236,7 +236,7 @@ public class JavaBrokerAdmin implements Admin
     private void executeManagement(final ClassicHttpRequest httpRequest)
     {
         try (final CloseableHttpClient httpClient = HttpClients.custom().setDefaultCredentialsProvider(_credentialsProvider).build();
-             final CloseableHttpResponse response = httpClient.execute(_management, httpRequest, _httpClientContext))
+             final CloseableHttpResponse response = httpClient.execute(_management, httpRequest, _httpClientContext, reply -> (CloseableHttpResponse) reply))
         {
             final int status = response.getCode();
             final ProtocolVersion version = response.getVersion();

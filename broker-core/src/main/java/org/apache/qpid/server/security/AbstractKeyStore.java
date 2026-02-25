@@ -146,7 +146,7 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
                     long timeToExpiry = cert.getNotAfter().getTime() - currentTime;
                     int days = Math.max(0,(int)(timeToExpiry / (ONE_DAY)));
 
-                    getEventLogger().message(KeyStoreMessages.EXPIRING(getName(), String.valueOf(days), cert.getSubjectDN().toString()));
+                    getEventLogger().message(KeyStoreMessages.EXPIRING(getName(), String.valueOf(days), cert.getSubjectX500Principal().getName()));
                 }
                 catch(CertificateNotYetValidException e)
                 {
