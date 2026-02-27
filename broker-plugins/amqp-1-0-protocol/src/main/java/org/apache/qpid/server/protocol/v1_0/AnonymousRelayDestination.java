@@ -1,4 +1,4 @@
-package org.apache.qpid.server.protocol.v1_0;/*
+/*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -19,7 +19,7 @@ package org.apache.qpid.server.protocol.v1_0;/*
  *
  */
 
-import static org.apache.qpid.server.protocol.v1_0.Session_1_0.DELAYED_DELIVERY;
+package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.Arrays;
 
@@ -29,6 +29,7 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.DestinationAddress;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
@@ -37,7 +38,7 @@ import org.apache.qpid.server.txn.ServerTransaction;
 
 public class AnonymousRelayDestination implements ReceivingDestination
 {
-    private static final Symbol[] CAPABILITIES = { DELAYED_DELIVERY };
+    private static final Symbol[] CAPABILITIES = { Symbols.DELAYED_DELIVERY };
 
     private final Target _target;
     private final NamedAddressSpace _addressSpace;
@@ -45,14 +46,14 @@ public class AnonymousRelayDestination implements ReceivingDestination
     private final boolean _discardUnroutable;
 
     AnonymousRelayDestination(final NamedAddressSpace addressSpace,
-                                     final Target target,
-                                     final EventLogger eventLogger)
+                              final Target target,
+                              final EventLogger eventLogger)
     {
         _addressSpace = addressSpace;
         _target = target;
         _eventLogger = eventLogger;
         _discardUnroutable = target.getCapabilities() != null && Arrays.asList(target.getCapabilities())
-                                                                       .contains(DISCARD_UNROUTABLE);
+                                                                       .contains(Symbols.DISCARD_UNROUTABLE);
     }
 
     /**

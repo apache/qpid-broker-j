@@ -25,7 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.NoLocalFilter;
 
@@ -33,10 +33,10 @@ public class NoLocalFilterConstructor extends AbstractDescribedTypeConstructor<N
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("apache.org:no-local-filter:list"),
+            Symbols.APACHE_NO_LOCAL_FILTER,
             UnsignedLong.valueOf(0x0000468C00000003L),
             // This incorrect value was originally specified here - retaining solely for backwards compatibility
-            Symbol.valueOf("apache.org:jms-no-local-filter:list")
+            Symbols.APACHE_LEGACY_NO_LOCAL_FILTER
     };
 
     private static final NoLocalFilterConstructor INSTANCE = new NoLocalFilterConstructor();

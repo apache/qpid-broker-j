@@ -19,14 +19,13 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transport;
-
 
 import java.util.Arrays;
 import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -38,7 +37,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 
-@CompositeType( symbolicDescriptor = "amqp:attach:list", numericDescriptor = 0x0000000000000012L)
+@CompositeType( symbolicDescriptor = SymbolTexts.AMQP_ATTACH, numericDescriptor = 0x0000000000000012L)
 public class Attach implements FrameBody
 {
 

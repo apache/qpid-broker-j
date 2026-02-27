@@ -35,9 +35,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionError;
@@ -495,7 +495,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                        .flowLinkCredit(UnsignedInteger.ONE)
                        .flowHandleFromLinkHandle()
-                       .flowProperties(Map.of(Symbol.valueOf("txn-id"), interaction.getCurrentTransactionId()))
+                       .flowProperties(Map.of(Symbols.TXN_ID, interaction.getCurrentTransactionId()))
                        .flow()
 
                        .receiveDelivery();
@@ -557,7 +557,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .flowNextOutgoingId(UnsignedInteger.ZERO)
                        .flowLinkCredit(UnsignedInteger.ONE)
                        .flowHandleFromLinkHandle()
-                       .flowProperties(Map.of(Symbol.valueOf("txn-id"), interaction.getCurrentTransactionId()))
+                       .flowProperties(Map.of(Symbols.TXN_ID, interaction.getCurrentTransactionId()))
                        .flow()
 
                        .receiveDelivery();
@@ -615,8 +615,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                               .flowIncomingWindow(UnsignedInteger.ONE)
                                               .flowLinkCredit(UnsignedInteger.ONE)
                                               .flowHandleFromLinkHandle()
-                                              .flowProperties(Map.of(Symbol.valueOf("txn-id"),
-                                                                                       integerToBinary(Integer.MAX_VALUE)))
+                                              .flowProperties(Map.of(Symbols.TXN_ID, integerToBinary(Integer.MAX_VALUE)))
                                               .flow()
                                               .consume(ErrorCarryingFrameBody.class, Flow.class);
 

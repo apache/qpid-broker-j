@@ -24,6 +24,7 @@ import java.lang.reflect.Array;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.DistributionMode;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
@@ -60,7 +61,7 @@ public class DeserializationFactories
                                                      "'node-properties' must have only keys of type 'symbol' but got '%s'",
                                                      key.getClass().getSimpleName()));
             }
-            if (Session_1_0.LIFETIME_POLICY.equals(key))
+            if (Symbols.LIFETIME_POLICY.equals(key))
             {
                 final Object lifetimePolicy = entry.getValue();
                 if (!(lifetimePolicy instanceof LifetimePolicy))
@@ -72,7 +73,7 @@ public class DeserializationFactories
                 }
                 nodeProperties.put((Symbol) key, lifetimePolicy);
             }
-            else if (Symbol.valueOf("supported-dist-modes").equals(key))
+            else if (Symbols.SUPPORTED_DIST_MODES.equals(key))
             {
                 final Object distributionMode = entry.getValue();
                 final DistributionMode[] converted;

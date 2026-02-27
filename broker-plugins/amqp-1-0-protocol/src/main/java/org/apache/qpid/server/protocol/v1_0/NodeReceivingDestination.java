@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import static org.apache.qpid.server.protocol.v1_0.Session_1_0.DELAYED_DELIVERY;
-
 import java.util.Arrays;
 import java.util.Map;
 
@@ -34,6 +32,7 @@ import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.DestinationAddress;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
@@ -45,8 +44,8 @@ import org.apache.qpid.server.txn.TransactionMonitor;
 
 public class NodeReceivingDestination implements ReceivingDestination
 {
-    private static final Symbol[] CAPABILITIES_DISCARD = { DISCARD_UNROUTABLE, DELAYED_DELIVERY };
-    private static final Symbol[] CAPABILITIES_REJECT = { REJECT_UNROUTABLE, DELAYED_DELIVERY };
+    private static final Symbol[] CAPABILITIES_DISCARD = { Symbols.DISCARD_UNROUTABLE, Symbols.DELAYED_DELIVERY };
+    private static final Symbol[] CAPABILITIES_REJECT = { Symbols.REJECT_UNROUTABLE, Symbols.DELAYED_DELIVERY };
 
     private final boolean _discardUnroutable;
     private final EventLogger _eventLogger;
@@ -71,7 +70,7 @@ public class NodeReceivingDestination implements ReceivingDestination
 
         if (_destination instanceof Exchange)
         {
-            _discardUnroutable = ((capabilities != null && Arrays.asList(capabilities).contains(DISCARD_UNROUTABLE))
+            _discardUnroutable = ((capabilities != null && Arrays.asList(capabilities).contains(Symbols.DISCARD_UNROUTABLE))
                                      || ((Exchange)_destination).getUnroutableMessageBehaviour() == Exchange.UnroutableMessageBehaviour.DISCARD);
             _routingAddress = destinationAddress.getRoutingKey();
             _address = _destination.getName();

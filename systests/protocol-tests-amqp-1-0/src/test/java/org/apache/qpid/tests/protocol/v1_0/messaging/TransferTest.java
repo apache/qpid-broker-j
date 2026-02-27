@@ -51,6 +51,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCarryingFrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -438,8 +439,8 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                              .begin().consumeResponse(Begin.class)
                                                              .attachRole(Role.SENDER)
                                                              .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                                                             .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL,
-                                                                                   Rejected.REJECTED_SYMBOL)
+                                                             .attachSourceOutcomes(Symbols.AMQP_ACCEPTED,
+                                                                                   Symbols.AMQP_REJECTED)
                                                              .attach().consumeResponse(Attach.class)
                                                              .consumeResponse(Flow.class)
                                                              .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
@@ -454,11 +455,11 @@ public class TransferTest extends BrokerAdminUsingTestBase
             assertThat(receivedDisposition.getState(), is(instanceOf(Outcome.class)));
             if (getBrokerAdmin().supportsRestart())
             {
-                assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Accepted.ACCEPTED_SYMBOL));
+                assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Symbols.AMQP_ACCEPTED));
             }
             else
             {
-                assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Rejected.REJECTED_SYMBOL));
+                assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Symbols.AMQP_REJECTED));
             }
         }
     }
@@ -485,7 +486,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                   .begin().consumeResponse(Begin.class)
                                                   .attachRole(Role.SENDER)
                                                   .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                                                  .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL)
+                                                  .attachSourceOutcomes(Symbols.AMQP_ACCEPTED)
                                                   .attach().consumeResponse(Attach.class)
                                                   .consumeResponse(Flow.class)
                                                   .assertLatestResponse(Flow.class, this::assumeSufficientCredits)
@@ -503,7 +504,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                 final Disposition receivedDisposition = (Disposition) response.getBody();
                 assertThat(receivedDisposition.getSettled(), is(true));
                 assertThat(receivedDisposition.getState(), is(instanceOf(Outcome.class)));
-                assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Accepted.ACCEPTED_SYMBOL));
+                assertThat(((Outcome) receivedDisposition.getState()).getSymbol(), is(Symbols.AMQP_ACCEPTED));
             }
             else
             {
@@ -648,7 +649,7 @@ public class TransferTest extends BrokerAdminUsingTestBase
                                                      .begin().consumeResponse()
                                                      .attachRole(Role.RECEIVER)
                                                      .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                                                     .attachSourceOutcomes(Accepted.ACCEPTED_SYMBOL, Rejected.REJECTED_SYMBOL)
+                                                     .attachSourceOutcomes(Symbols.AMQP_ACCEPTED, Symbols.AMQP_REJECTED)
                                                      .attachRcvSettleMode(ReceiverSettleMode.SECOND)
                                                      .attach().consumeResponse()
                                                      .assertLatestResponse(this::assumeAttach)

@@ -47,6 +47,7 @@ import org.apache.qpid.server.message.internal.InternalMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessageMetaData;
 import org.apache.qpid.server.message.internal.InternalMessageMetaDataType;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -340,7 +341,7 @@ class MessageConverter_Internal_to_1_0Test extends UnitTestBase
             final Map<Symbol, Object> messageAnnotations = messageAnnotationsSection.getValue();
             if (messageAnnotations != null)
             {
-                final Object annotation = messageAnnotations.get(Symbol.valueOf("x-opt-jms-msg-type"));
+                final Object annotation = messageAnnotations.get(Symbols.ANNOTATION_KEY);
                 if (annotation instanceof Byte)
                 {
                     return ((Byte) annotation);

@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,15 +19,14 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transaction;
 
-
+import org.apache.qpid.server.protocol.v1_0.constants.SymbolTexts;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.CompositeType;
 import org.apache.qpid.server.protocol.v1_0.CompositeTypeField;
 
-@CompositeType( symbolicDescriptor = "amqp:discharge:list", numericDescriptor = 0x0000000000000032L)
+@CompositeType( symbolicDescriptor = SymbolTexts.AMQP_TXN_DISCHARGE, numericDescriptor = 0x0000000000000032L)
 public class Discharge
 {
     @CompositeTypeField(index = 0, mandatory = true)

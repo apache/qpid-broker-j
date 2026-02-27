@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.StringWriter;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
@@ -107,7 +108,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
         {
             final Source source = new Source();
             source.setDynamic(Boolean.TRUE);
-            source.setDynamicNodeProperties(Map.of(Symbol.valueOf("lifetime-policy"), UnsignedInteger.MAX_VALUE));
+            source.setDynamicNodeProperties(Map.of(Symbols.LIFETIME_POLICY, UnsignedInteger.MAX_VALUE));
             final Interaction interaction = transport.newInteraction()
                                                         .negotiateOpen()
                                                         .begin().consumeResponse(Begin.class)
@@ -130,7 +131,7 @@ public class DecodeErrorTest extends BrokerAdminUsingTestBase
         {
             final Target target = new Target();
             target.setDynamic(Boolean.TRUE);
-            target.setDynamicNodeProperties(Map.of(Symbol.valueOf("supported-dist-modes"), UnsignedInteger.ZERO));
+            target.setDynamicNodeProperties(Map.of(Symbols.SUPPORTED_DIST_MODES, UnsignedInteger.ZERO));
             final Interaction interaction = transport.newInteraction()
                                                         .negotiateOpen()
                                                         .begin().consumeResponse(Begin.class)
