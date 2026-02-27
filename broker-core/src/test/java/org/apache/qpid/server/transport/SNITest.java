@@ -46,7 +46,7 @@ import javax.net.ssl.X509TrustManager;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
@@ -67,6 +67,7 @@ import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManag
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 import org.apache.qpid.test.utils.tls.AltNameType;
 import org.apache.qpid.test.utils.tls.AlternativeName;
 import org.apache.qpid.test.utils.tls.KeyCertificatePair;
@@ -74,11 +75,9 @@ import org.apache.qpid.test.utils.tls.PrivateKeyEntry;
 import org.apache.qpid.test.utils.tls.TlsResource;
 import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
 
+@ExtendWith({ TlsResourceExtension.class })
 public class SNITest extends UnitTestBase
 {
-    @RegisterExtension
-    public static final TlsResource TLS_RESOURCE = new TlsResource();
-
     private static final int SOCKET_TIMEOUT = 10000;
 
     private File _keyStoreFile;
@@ -89,9 +88,10 @@ public class SNITest extends UnitTestBase
     private Broker<?> _broker;
     private int _boundPort;
     private File _brokerWork;
+    private String _keyStorePassword;
 
     @BeforeAll
-    public void setUp() throws Exception
+    public void setUp(final TlsResource tls) throws Exception
     {
         final Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS);
         final Instant inOneHour = Instant.now().plus(1, ChronoUnit.HOURS);
@@ -103,10 +103,10 @@ public class SNITest extends UnitTestBase
         _barInvalid = TlsResourceBuilder.createSelfSigned("CN=Qpid", inOneHour,
                 inOneHour.plus(365, ChronoUnit.DAYS), new AlternativeName(AltNameType.DNS_NAME, "bar"));
 
-        _keyStoreFile = TLS_RESOURCE.createKeyStore(new PrivateKeyEntry("foovalid", _fooValid.getPrivateKey(),
-                _fooValid.getCertificate()),
-                new PrivateKeyEntry("fooinvalid", _fooInvalid.getPrivateKey(), _fooInvalid.getCertificate()),
-                new PrivateKeyEntry("barinvalid", _barInvalid.getPrivateKey(), _barInvalid.getCertificate())).toFile();
+        _keyStoreFile = tls.createKeyStore(new PrivateKeyEntry("foovalid", _fooValid.privateKey(), _fooValid.certificate()),
+                new PrivateKeyEntry("fooinvalid", _fooInvalid.privateKey(), _fooInvalid.certificate()),
+                new PrivateKeyEntry("barinvalid", _barInvalid.privateKey(), _barInvalid.certificate())).toFile();
+        _keyStorePassword = tls.getSecret();
     }
 
     @AfterAll
@@ -206,7 +206,7 @@ public class SNITest extends UnitTestBase
 
             final Certificate[] certs = socket.getSession().getPeerCertificates();
             assertEquals(1, (long) certs.length);
-            assertEquals(expectedCert.getCertificate(), certs[0]);
+            assertEquals(expectedCert.certificate(), certs[0]);
         }
     }
 
@@ -237,7 +237,7 @@ public class SNITest extends UnitTestBase
         final AuthenticationProvider<?> authProvider = _broker.createChild(AuthenticationProvider.class, authProviderAttr);
         final Map<String, Object> keyStoreAttr = Map.of(FileKeyStore.NAME, "myKeyStore",
                 FileKeyStore.STORE_URL, _keyStoreFile.toURI().toURL().toString(),
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileKeyStore.PASSWORD, _keyStorePassword,
                 FileKeyStore.USE_HOST_NAME_MATCHING, useMatching,
                 FileKeyStore.CERTIFICATE_ALIAS, defaultAlias);
         final KeyStore<?> keyStore = _broker.createChild(KeyStore.class, keyStoreAttr);

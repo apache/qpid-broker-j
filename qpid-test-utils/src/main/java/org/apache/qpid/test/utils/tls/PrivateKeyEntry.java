@@ -25,42 +25,32 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
+import java.util.Objects;
 
-public final class PrivateKeyEntry implements KeyStoreEntry
+public record PrivateKeyEntry(String alias, PrivateKey privateKey, Certificate... certificateChain) implements KeyStoreEntry
 {
-    private final String _alias;
-    private final PrivateKey _privateKey;
-    private final Certificate[] _certificates;
-
-    public PrivateKeyEntry(final String alias, final PrivateKey privateKey, Certificate... certificate)
+    public PrivateKeyEntry
     {
-        _alias = alias;
-        _privateKey = privateKey;
-        _certificates = certificate;
-    }
-
-    String getAlias()
-    {
-        return _alias;
+        Objects.requireNonNull(alias, "alias must not be null");
+        Objects.requireNonNull(privateKey, "privateKey must not be null");
+        Objects.requireNonNull(certificateChain, "certificateChain must not be null");
+        certificateChain = certificateChain.clone();
     }
 
     @Override
-    public void addEntryToKeyStore(final KeyStore keyStore, final char[] secret) throws KeyStoreException
+    public Certificate[] certificateChain()
     {
-        keyStore.setKeyEntry(getAlias(),
-                       getPrivateKey(),
-                             secret,
-                       getCertificates());
+        return certificateChain.clone();
     }
 
-    PrivateKey getPrivateKey()
+    public PrivateKeyEntry(String alias, KeyCertificatePair keyCertPair)
     {
-        return _privateKey;
+        this(alias, keyCertPair.privateKey(), new Certificate[]{ keyCertPair.certificate() });
     }
 
-    Certificate[] getCertificates()
+    @Override
+    public void addToKeyStore(final KeyStore keyStore, final char[] secret) throws KeyStoreException
     {
-        return _certificates;
+        keyStore.setKeyEntry(alias, privateKey, secret, certificateChain);
     }
-
 }

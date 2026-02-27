@@ -20,23 +20,13 @@
  */
 package org.apache.qpid.test.utils.tls;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.cert.CRLException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509CRL;
-import java.security.cert.X509Certificate;
 import java.util.Base64;
 
 import javax.crypto.KeyGenerator;
@@ -44,120 +34,69 @@ import javax.crypto.SecretKey;
 
 public class TlsResourceHelper
 {
-    private static final byte[] LINE_SEPARATOR = new byte[]{'\r', '\n'};
-    private static final String BEGIN_X_509_CRL = "-----BEGIN X509 CRL-----";
-    private static final String END_X_509_CRL = "-----END X509 CRL-----";
-    private static final String BEGIN_PRIVATE_KEY = "-----BEGIN PRIVATE KEY-----";
-    private static final String END_PRIVATE_KEY = "-----END PRIVATE KEY-----";
-    private static final String BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----";
-    private static final String END_CERTIFICATE = "-----END CERTIFICATE-----";
-    private static final int PEM_LINE_LENGTH = 76;
+    private static final int AES_KEY_SIZE = 256;
 
-    public static KeyStore createKeyStore(final String keyStoreType, char[] secret, final KeyStoreEntry... entries)
-            throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException
+    public static KeyStore createKeyStore(final String keyStoreType,
+                                          final char[] secret,
+                                          final KeyStoreEntry... entries)
+            throws GeneralSecurityException, IOException
     {
-        final KeyStore ks = createKeyStoreOfType(keyStoreType);
-        for (KeyStoreEntry e : entries)
+        final KeyStore keyStore = createKeyStoreOfType(keyStoreType);
+        for (KeyStoreEntry keyStoreEntry : entries)
         {
-            e.addEntryToKeyStore(ks, secret);
+            keyStoreEntry.addToKeyStore(keyStore, secret);
         }
-        return ks;
+        return keyStore;
     }
 
-    public static String createKeyStoreAsDataUrl(final String keyStoreType,  char[] secret, KeyStoreEntry... entries) throws Exception
+    public static String createKeyStoreAsDataUrl(final String keyStoreType,
+                                                 final char[] secret,
+                                                 final KeyStoreEntry... entries)
+            throws GeneralSecurityException, IOException
     {
-        final KeyStore ks = createKeyStore(keyStoreType, secret, entries);
-        return toDataUrl(ks, secret);
+        final KeyStore keyStore = createKeyStore(keyStoreType, secret, entries);
+        return toDataUrl(keyStore, secret);
     }
 
     public static KeyStore createKeyStoreOfType(final String keyStoreType)
-            throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException
+            throws GeneralSecurityException, IOException
     {
-        final KeyStore ks = KeyStore.getInstance(keyStoreType);
-        ks.load(null, null);
-        return ks;
+        final KeyStore keyStore = KeyStore.getInstance(keyStoreType);
+        keyStore.load(null, null);
+        return keyStore;
     }
 
-    public static void saveKeyStoreIntoFile(final KeyStore ks, final char[] secret, final File storeFile)
-            throws IOException, KeyStoreException, NoSuchAlgorithmException, CertificateException
+    private static byte[] keyStoreToBytes(final KeyStore keyStore, final char[] secret)
+            throws GeneralSecurityException, IOException
     {
-        try (FileOutputStream fos = new FileOutputStream(storeFile))
+        try (final ByteArrayOutputStream out = new ByteArrayOutputStream())
         {
-            ks.store(fos, secret);
+            keyStore.store(out, secret);
+            return out.toByteArray();
         }
     }
 
-    public static String toDataUrl(final KeyStore ks, char[] secret)
-            throws IOException, KeyStoreException, NoSuchAlgorithmException, CertificateException
+    public static void saveKeyStoreIntoFile(final KeyStore keyStore, final char[] secret, final Path storePath)
+            throws GeneralSecurityException, IOException
     {
-        final String result;
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream())
-        {
-            ks.store(os, secret);
-            result = getDataUrlForBytes(os.toByteArray());
-        }
-        return result;
+        Files.write(storePath, keyStoreToBytes(keyStore, secret));
+    }
+
+    public static String toDataUrl(final KeyStore keyStore, final char[] secret)
+            throws GeneralSecurityException, IOException
+    {
+        return getDataUrlForBytes(keyStoreToBytes(keyStore, secret));
     }
 
     public static String getDataUrlForBytes(final byte[] bytes)
     {
-        return new StringBuilder("data:;base64,").append(Base64.getEncoder().encodeToString(bytes)).toString();
+        return "data:;base64," + Base64.getEncoder().encodeToString(bytes);
     }
 
     public static SecretKey createAESSecretKey() throws NoSuchAlgorithmException
     {
-        KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-        keyGen.init(256);
+        final KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+        keyGen.init(AES_KEY_SIZE);
         return keyGen.generateKey();
-    }
-
-    public static void saveBytesAsPem(final byte[] bytes, final String header, final String footer, final OutputStream out)
-            throws IOException
-    {
-        out.write(header.getBytes(UTF_8));
-        out.write(LINE_SEPARATOR);
-        out.write(Base64.getMimeEncoder(PEM_LINE_LENGTH, LINE_SEPARATOR).encode(bytes));
-        out.write(LINE_SEPARATOR);
-        out.write(footer.getBytes(UTF_8));
-        out.write(LINE_SEPARATOR);
-    }
-
-    public static void saveCertificateAsPem(final OutputStream os, final X509Certificate... certificate) throws IOException,
-                                                                                                         CertificateEncodingException
-    {
-        for (X509Certificate b : certificate)
-        {
-            saveBytesAsPem(b.getEncoded(), BEGIN_CERTIFICATE, END_CERTIFICATE, os);
-        }
-    }
-
-    public static void savePrivateKeyAsPem(final OutputStream os, final PrivateKey key) throws IOException
-    {
-        saveBytesAsPem(key.getEncoded(), BEGIN_PRIVATE_KEY, END_PRIVATE_KEY, os);
-    }
-
-    public static void saveCrlAsPem(final OutputStream os, final X509CRL crl) throws CRLException, IOException
-    {
-        saveBytesAsPem(crl.getEncoded(), BEGIN_X_509_CRL, END_X_509_CRL, os);
-    }
-
-
-    public static String toPEM(final Certificate pub) throws CertificateEncodingException
-    {
-        return toPEM(pub.getEncoded(), BEGIN_CERTIFICATE, END_CERTIFICATE);
-    }
-
-    public static String toPEM(final PrivateKey key)
-    {
-        return toPEM(key.getEncoded(), BEGIN_PRIVATE_KEY, END_PRIVATE_KEY);
-    }
-
-    private static String toPEM(final byte[] bytes, final String header, final String footer)
-    {
-        final StringBuilder pem = new StringBuilder();
-        pem.append(header).append(new String(LINE_SEPARATOR, UTF_8));
-        pem.append(Base64.getMimeEncoder(PEM_LINE_LENGTH, LINE_SEPARATOR).encodeToString(bytes));
-        pem.append(new String(LINE_SEPARATOR, UTF_8)).append(footer).append(new String(LINE_SEPARATOR, UTF_8));
-        return pem.toString();
     }
 }

@@ -241,8 +241,8 @@ public class ReadTest extends HttpTestBase
     {
 
         final KeyCertificatePair keyCertPair = generateCertKeyPair();
-        final byte[] privateKey = keyCertPair.getPrivateKey().getEncoded();
-        final byte[] cert = keyCertPair.getCertificate().getEncoded();
+        final byte[] privateKey = keyCertPair.privateKey().getEncoded();
+        final byte[] cert = keyCertPair.certificate().getEncoded();
         final String privateKeyUrl = DataUrlUtils.getDataUrlForBytes(privateKey);
         final String certUrl = DataUrlUtils.getDataUrlForBytes(cert);
 
@@ -294,7 +294,7 @@ public class ReadTest extends HttpTestBase
     public void oversizeAttribute() throws Exception
     {
 
-        final byte[] encodedCert = generateCertKeyPair().getCertificate().getEncoded();
+        final byte[] encodedCert = generateCertKeyPair().certificate().getEncoded();
         final String dataUrl = DataUrlUtils.getDataUrlForBytes(encodedCert);
 
         final String storeUrl = "truststore/mystore";

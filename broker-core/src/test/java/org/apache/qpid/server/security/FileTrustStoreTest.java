@@ -44,8 +44,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import org.junit.jupiter.api.Test;
-
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
@@ -62,13 +61,12 @@ import org.apache.qpid.server.transport.network.security.ssl.QpidPeersOnlyTrustM
 import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
+import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 import org.apache.qpid.test.utils.tls.TlsResourceHelper;
 
+@ExtendWith({ TlsResourceExtension.class })
 public class FileTrustStoreTest extends UnitTestBase
 {
-    @RegisterExtension
-    public static final TlsResource TLS_RESOURCE = new TlsResource();
-
     private static final Broker<?> BROKER = BrokerTestHelper.createBrokerMock();
     private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
     private static final String DN_FOO = "CN=foo";
@@ -82,13 +80,13 @@ public class FileTrustStoreTest extends UnitTestBase
     private static final String SECRET_KEY_ALIAS = "secret-key-alias";
 
     @Test
-    public void testCreateFileTrustStoreWithoutCRL() throws Exception
+    public void testCreateFileTrustStoreWithoutCRL(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = TLS_RESOURCE.createSelfSignedTrustStore(DN_FOO);
+        final Path keyStoreFile = tls.createSelfSignedTrustStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(
                 FileTrustStore.NAME, NAME,
                 FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.PASSWORD, tls.getSecret(),
                 FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, false);
         final FileTrustStore<?> fileTrustStore = createFileTrustStore(attributes);
         final TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
@@ -99,12 +97,12 @@ public class FileTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateFileTrustStoreFromWithExplicitlySetCRL() throws Exception
+    public void testCreateFileTrustStoreFromWithExplicitlySetCRL(final TlsResource tls) throws Exception
     {
-        final StoreAndCrl<Path> data = generateTrustStoreAndCrl();
+        final StoreAndCrl<Path> data = generateTrustStoreAndCrl(tls);
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
                 FileTrustStore.STORE_URL, data.getStore().toFile().getAbsolutePath(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.PASSWORD, tls.getSecret(),
                 FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true,
                 FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, data.getCrl().toFile().getPath());
         final FileTrustStore<?> fileTrustStore = createFileTrustStore(attributes);
@@ -116,26 +114,26 @@ public class FileTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateTrustStoreFromFile_WrongPassword() throws Exception
+    public void testCreateTrustStoreFromFile_WrongPassword(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = TLS_RESOURCE.createSelfSignedTrustStore(DN_FOO);
+        final Path keyStoreFile = tls.createSelfSignedTrustStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
                 FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret() + "_",
-                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileTrustStore.PASSWORD, tls.getSecret() + "_",
+                FileTrustStore.TRUST_STORE_TYPE, tls.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
                 "Check trust store password");
     }
 
     @Test
-    public void testCreateTrustStoreFromFile_MissingCrlFile() throws Exception
+    public void testCreateTrustStoreFromFile_MissingCrlFile(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = TLS_RESOURCE.createSelfSignedTrustStore(DN_FOO);
+        final Path keyStoreFile = tls.createSelfSignedTrustStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
                 FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
-                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType(),
+                FileTrustStore.PASSWORD, tls.getSecret(),
+                FileTrustStore.TRUST_STORE_TYPE, tls.getKeyStoreType(),
                 FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, NOT_A_CRL);
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
@@ -143,15 +141,15 @@ public class FileTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreatePeersOnlyTrustStoreFromFile_Success() throws Exception
+    public void testCreatePeersOnlyTrustStoreFromFile_Success(final TlsResource tls) throws Exception
     {
         final KeyCertificatePair keyPairAndRootCA = TlsResourceBuilder.createKeyPairAndRootCA(DN_CA);
-        final Path keyStoreFile = TLS_RESOURCE.createTrustStore(DN_FOO, keyPairAndRootCA);
+        final Path keyStoreFile = tls.createTrustStore(DN_FOO, keyPairAndRootCA);
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
                 FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.PASSWORD, tls.getSecret(),
                 FileTrustStore.PEERS_ONLY, true,
-                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileTrustStore.TRUST_STORE_TYPE, tls.getKeyStoreType());
         final FileTrustStore<?> fileTrustStore = createFileTrustStore(attributes);
         final TrustManager[] trustManagers = fileTrustStore.getTrustManagers();
 
@@ -163,16 +161,16 @@ public class FileTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testUseOfExpiredTrustAnchorAllowed() throws Exception
+    public void testUseOfExpiredTrustAnchorAllowed(final TlsResource tls) throws Exception
     {
         // https://www.ibm.com/support/knowledgecenter/en/SSYKE2_8.0.0/com.ibm.java.security.component.80.doc/security-
         assumeFalse(Objects.equals(getJvmVendor(), IBM), "IBMJSSE2 trust factory (IbmX509) validates the entire chain, including trusted certificates");
 
-        final Path keyStoreFile = createTrustStoreWithExpiredCertificate();
+        final Path keyStoreFile = createTrustStoreWithExpiredCertificate(tls);
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
                 FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
-                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileTrustStore.PASSWORD, tls.getSecret(),
+                FileTrustStore.TRUST_STORE_TYPE, tls.getKeyStoreType());
         final FileTrustStore<?> trustStore = createFileTrustStore(attributes);
         final TrustManager[] trustManagers = trustStore.getTrustManagers();
 
@@ -183,8 +181,8 @@ public class FileTrustStoreTest extends UnitTestBase
 
         final X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
         final KeyStore clientStore = getInitializedKeyStore(keyStoreFile.toFile().getAbsolutePath(),
-                                                      TLS_RESOURCE.getSecret(),
-                                                      TLS_RESOURCE.getKeyStoreType());
+                                                      tls.getSecret(),
+                                                      tls.getKeyStoreType());
         final String alias = clientStore.aliases().nextElement();
         final X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
 
@@ -192,14 +190,14 @@ public class FileTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testUseOfExpiredTrustAnchorDenied() throws Exception
+    public void testUseOfExpiredTrustAnchorDenied(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = createTrustStoreWithExpiredCertificate();
+        final Path keyStoreFile = createTrustStoreWithExpiredCertificate(tls);
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
                 FileTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true,
                 FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
-                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileTrustStore.PASSWORD, tls.getSecret(),
+                FileTrustStore.TRUST_STORE_TYPE, tls.getKeyStoreType());
         final TrustStore<?> trustStore = createFileTrustStore(attributes);
         final TrustManager[] trustManagers = trustStore.getTrustManagers();
 
@@ -210,8 +208,8 @@ public class FileTrustStoreTest extends UnitTestBase
 
         final X509TrustManager trustManager = (X509TrustManager) trustManagers[0];
         final KeyStore clientStore = getInitializedKeyStore(keyStoreFile.toFile().getAbsolutePath(),
-                                                      TLS_RESOURCE.getSecret(),
-                                                      TLS_RESOURCE.getKeyStoreType());
+                                                      tls.getSecret(),
+                                                      tls.getKeyStoreType());
         final String alias = clientStore.aliases().nextElement();
         final X509Certificate certificate = (X509Certificate) clientStore.getCertificate(alias);
         final CertificateException thrown = assertThrows(
@@ -223,13 +221,13 @@ public class FileTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateTrustStoreFromDataUrl_Success() throws Exception
+    public void testCreateTrustStoreFromDataUrl_Success(final TlsResource tls) throws Exception
     {
-        final StoreAndCrl<String> data = generateTrustStoreAndCrlAsDataUrl();
+        final StoreAndCrl<String> data = generateTrustStoreAndCrlAsDataUrl(tls);
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
                 FileTrustStore.STORE_URL, data.getStore(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
-                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType(),
+                FileTrustStore.PASSWORD, tls.getSecret(),
+                FileTrustStore.TRUST_STORE_TYPE, tls.getKeyStoreType(),
                 FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true,
                 FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, data.getCrl());
         final FileTrustStore<?> fileTrustStore = createFileTrustStore(attributes);
@@ -241,39 +239,39 @@ public class FileTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testCreateTrustStoreFromDataUrl_WrongPassword() throws Exception
+    public void testCreateTrustStoreFromDataUrl_WrongPassword(final TlsResource tls) throws Exception
     {
-        final String trustStoreAsDataUrl = TLS_RESOURCE.createSelfSignedTrustStoreAsDataUrl(DN_FOO);
+        final String trustStoreAsDataUrl = tls.createSelfSignedTrustStoreAsDataUrl(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret() + "_",
+                FileTrustStore.PASSWORD, tls.getSecret() + "_",
                 FileTrustStore.STORE_URL, trustStoreAsDataUrl,
-                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileTrustStore.TRUST_STORE_TYPE, tls.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
             "Check trust store password");
     }
 
     @Test
-    public void testCreateTrustStoreFromDataUrl_BadTruststoreBytes()
+    public void testCreateTrustStoreFromDataUrl_BadTruststoreBytes(final TlsResource tls)
     {
         final String trustStoreAsDataUrl = DataUrlUtils.getDataUrlForBytes("notatruststore".getBytes());
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.PASSWORD, tls.getSecret(),
                 FileTrustStore.STORE_URL, trustStoreAsDataUrl,
-                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileTrustStore.TRUST_STORE_TYPE, tls.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
                 "Cannot instantiate trust store");
     }
 
     @Test
-    public void testUpdateTrustStore_Success() throws Exception
+    public void testUpdateTrustStore_Success(final TlsResource tls) throws Exception
     {
-        final StoreAndCrl<Path> data = generateTrustStoreAndCrl();
+        final StoreAndCrl<Path> data = generateTrustStoreAndCrl(tls);
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, NAME,
                 FileTrustStore.STORE_URL, data.getStore().toFile().getAbsolutePath(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
-                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType(),
+                FileTrustStore.PASSWORD, tls.getSecret(),
+                FileTrustStore.TRUST_STORE_TYPE, tls.getKeyStoreType(),
                 FileTrustStore.CERTIFICATE_REVOCATION_CHECK_ENABLED, true,
                 FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, data.getCrl().toFile().getAbsolutePath());
         final FileTrustStore<?> fileTrustStore = createFileTrustStore(attributes);
@@ -302,11 +300,11 @@ public class FileTrustStoreTest extends UnitTestBase
         assertEquals(data.getStore().toFile().getAbsolutePath(), fileTrustStore.getStoreUrl(),
                 "Unexpected path value after failed change");
 
-        final Path keyStoreFile2 = TLS_RESOURCE.createTrustStore(DN_FOO, data.getCa());
-        final Path emptyCrl = TLS_RESOURCE.createCrl(data.getCa());
+        final Path keyStoreFile2 = tls.createTrustStore(DN_FOO, data.getCa());
+        final Path emptyCrl = tls.createCrl(data.getCa());
 
         final Map<String, Object> changedAttributes = Map.of(FileTrustStore.STORE_URL, keyStoreFile2.toFile().getAbsolutePath(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.PASSWORD, tls.getSecret(),
                 FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, emptyCrl.toFile().getAbsolutePath());
 
         fileTrustStore.setAttributes(changedAttributes);
@@ -318,72 +316,72 @@ public class FileTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testEmptyTrustStoreRejected() throws Exception
+    public void testEmptyTrustStoreRejected(final TlsResource tls) throws Exception
     {
-        final Path path = TLS_RESOURCE.createKeyStore();
+        final Path path = tls.createKeyStore();
         final Map<String, Object> attributes = Map.of(FileKeyStore.NAME, NAME,
-                FileKeyStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileKeyStore.PASSWORD, tls.getSecret(),
                 FileKeyStore.STORE_URL, path.toFile().getAbsolutePath(),
-                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileTrustStore.TRUST_STORE_TYPE, tls.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
                 "must contain at least one certificate");
     }
 
     @Test
-    public void testTrustStoreWithNoCertificateRejected() throws Exception
+    public void testTrustStoreWithNoCertificateRejected(final TlsResource tls) throws Exception
     {
-        final Path path = TLS_RESOURCE.createSelfSignedKeyStore(DN_FOO);
+        final Path path = tls.createSelfSignedKeyStore(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, getTestName(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.PASSWORD, tls.getSecret(),
                 FileTrustStore.STORE_URL, path.toFile().getAbsolutePath(),
-                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileTrustStore.TRUST_STORE_TYPE, tls.getKeyStoreType());
 
         KeyStoreTestHelper.checkExceptionThrownDuringKeyStoreCreation(FACTORY, BROKER, TrustStore.class, attributes,
                 "must contain at least one certificate");
     }
 
     @Test
-    public void testSymmetricKeyEntryIgnored() throws Exception
+    public void testSymmetricKeyEntryIgnored(final TlsResource tls) throws Exception
     {
         final String keyStoreType = "jceks";
-        final Path keyStoreFile = createSelfSignedKeyStoreWithSecretKeyAndCertificate(keyStoreType, DN_FOO);
+        final Path keyStoreFile = createSelfSignedKeyStoreWithSecretKeyAndCertificate(tls, keyStoreType, DN_FOO);
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, getTestName(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.PASSWORD, tls.getSecret(),
                 FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
                 FileTrustStore.TRUST_STORE_TYPE, keyStoreType);
         final FileTrustStore<?> trustStore = createFileTrustStore(attributes);
         final Certificate[] certificates = trustStore.getCertificates();
 
         final int numberOfCertificates = KeyStoreTestHelper
-                .getNumberOfCertificates(keyStoreFile, keyStoreType, TLS_RESOURCE.getSecret().toCharArray(), false);
+                .getNumberOfCertificates(keyStoreFile, keyStoreType, tls.getSecret().toCharArray(), false);
         assertEquals(numberOfCertificates, (long) certificates.length, "Unexpected number of certificates");
     }
 
     @Test
-    public void testPrivateKeyEntryIgnored() throws Exception
+    public void testPrivateKeyEntryIgnored(final TlsResource tls) throws Exception
     {
-        final Path keyStoreFile = TLS_RESOURCE.createSelfSignedKeyStoreWithCertificate(DN_FOO);
+        final Path keyStoreFile = tls.createSelfSignedKeyStoreWithCertificate(DN_FOO);
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, getTestName(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret(),
+                FileTrustStore.PASSWORD, tls.getSecret(),
                 FileTrustStore.STORE_URL, keyStoreFile.toFile().getAbsolutePath(),
-                FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+                FileTrustStore.TRUST_STORE_TYPE, tls.getKeyStoreType());
         final FileTrustStore<?> trustStore = createFileTrustStore(attributes);
         final Certificate[] certificates = trustStore.getCertificates();
 
         final int numberOfCertificates = KeyStoreTestHelper
-                .getNumberOfCertificates(keyStoreFile, "PKCS12", TLS_RESOURCE.getSecret().toCharArray(), false);
+                .getNumberOfCertificates(keyStoreFile, "PKCS12", tls.getSecret().toCharArray(), false);
         assertEquals(numberOfCertificates, (long) certificates.length, "Unexpected number of certificates");
     }
 
     @Test
-    public void testReloadKeystore() throws Exception
+    public void testReloadKeystore(final TlsResource tls) throws Exception
     {
-        final Path keyStorePath = TLS_RESOURCE.createSelfSignedKeyStoreWithCertificate(DN_FOO);
-        final Path keyStorePath2 = TLS_RESOURCE.createSelfSignedKeyStoreWithCertificate(DN_BAR);
+        final Path keyStorePath = tls.createSelfSignedKeyStoreWithCertificate(DN_FOO);
+        final Path keyStorePath2 = tls.createSelfSignedKeyStoreWithCertificate(DN_BAR);
         final Map<String, Object> attributes = Map.of(FileTrustStore.NAME, getTestName(),
                 FileTrustStore.STORE_URL, keyStorePath.toFile().getAbsolutePath(),
-                FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
+                FileTrustStore.PASSWORD, tls.getSecret());
         final FileTrustStore<?> trustStoreObject = createFileTrustStore(attributes);
         final X509Certificate certificate = getCertificate(trustStoreObject);
         assertEquals(DN_FOO, certificate.getIssuerX500Principal().getName());
@@ -414,49 +412,47 @@ public class FileTrustStoreTest extends UnitTestBase
         return (X509Certificate) certificate;
     }
 
-    private Path createTrustStoreWithExpiredCertificate() throws Exception
+    private Path createTrustStoreWithExpiredCertificate(final TlsResource tls) throws Exception
     {
         final Instant from = Instant.now().minus(10, ChronoUnit.DAYS);
         final Instant to = Instant.now().minus(5, ChronoUnit.DAYS);
-        return TLS_RESOURCE.createSelfSignedTrustStore(DN_FOO, from, to);
+        return tls.createSelfSignedTrustStore(DN_FOO, from, to);
     }
 
-    public Path createSelfSignedKeyStoreWithSecretKeyAndCertificate(final String keyStoreType, final String dn)
+    public Path createSelfSignedKeyStoreWithSecretKeyAndCertificate(final TlsResource tls, final String keyStoreType, final String dn)
             throws Exception
     {
         final KeyCertificatePair keyCertPair = TlsResourceBuilder.createSelfSigned(dn);
-        return TLS_RESOURCE.createKeyStore(keyStoreType, new PrivateKeyEntry(TLS_RESOURCE.getPrivateKeyAlias(),
-                                                                keyCertPair.getPrivateKey(),
-                                                                keyCertPair.getCertificate()),
-                              new CertificateEntry(TLS_RESOURCE.getCertificateAlias(), keyCertPair.getCertificate()),
-                              new SecretKeyEntry(SECRET_KEY_ALIAS, TlsResourceHelper.createAESSecretKey()));
+        final PrivateKeyEntry privateKeyEntry = new PrivateKeyEntry(tls.getPrivateKeyAlias(), keyCertPair);
+        final CertificateEntry certificateEntry = new CertificateEntry(tls.getCertificateAlias(), keyCertPair.certificate());
+        final SecretKeyEntry secretKeyEntry = new SecretKeyEntry(SECRET_KEY_ALIAS, TlsResourceHelper.createAESSecretKey());
+        return tls.createKeyStore(keyStoreType, privateKeyEntry, certificateEntry, secretKeyEntry);
     }
 
-
-    private StoreAndCrl<Path> generateTrustStoreAndCrl() throws Exception
+    private StoreAndCrl<Path> generateTrustStoreAndCrl(final TlsResource tls) throws Exception
     {
         final KeyCertificatePair caPair = TlsResourceBuilder.createKeyPairAndRootCA(DN_CA);
         final KeyCertificatePair keyCertPair1 = TlsResourceBuilder.createKeyPairAndCertificate(DN_FOO, caPair);
         final KeyCertificatePair keyCertPair2 = TlsResourceBuilder.createKeyPairAndCertificate(DN_BAR, caPair);
-        final Path keyStoreFile = TLS_RESOURCE.createKeyStore(new CertificateEntry(CERTIFICATE_ALIAS_A,
-                                                                           keyCertPair1.getCertificate()),
+        final Path keyStoreFile = tls.createKeyStore(new CertificateEntry(CERTIFICATE_ALIAS_A,
+                                                                           keyCertPair1.certificate()),
                                                                    new CertificateEntry(CERTIFICATE_ALIAS_B,
-                                                                           keyCertPair2.getCertificate()));
+                                                                           keyCertPair2.certificate()));
 
-        final Path clrFile = TLS_RESOURCE.createCrl(caPair, keyCertPair2.getCertificate());
+        final Path clrFile = tls.createCrl(caPair, keyCertPair2.certificate());
         return new StoreAndCrl<>(keyStoreFile, clrFile, caPair);
     }
 
-    private StoreAndCrl<String> generateTrustStoreAndCrlAsDataUrl() throws Exception
+    private StoreAndCrl<String> generateTrustStoreAndCrlAsDataUrl(final TlsResource tls) throws Exception
     {
         final KeyCertificatePair caPair = TlsResourceBuilder.createKeyPairAndRootCA(DN_CA);
         final KeyCertificatePair keyCertPair1 = TlsResourceBuilder.createKeyPairAndCertificate(DN_FOO, caPair);
         final KeyCertificatePair keyCertPair2 = TlsResourceBuilder.createKeyPairAndCertificate(DN_BAR, caPair);
         final String trustStoreAsDataUrl =
-                TLS_RESOURCE.createKeyStoreAsDataUrl(new CertificateEntry(CERTIFICATE_ALIAS_A, keyCertPair1.getCertificate()),
-                        new CertificateEntry(CERTIFICATE_ALIAS_B, keyCertPair2.getCertificate()));
+                tls.createKeyStoreAsDataUrl(new CertificateEntry(CERTIFICATE_ALIAS_A, keyCertPair1.certificate()),
+                        new CertificateEntry(CERTIFICATE_ALIAS_B, keyCertPair2.certificate()));
 
-        final String crlAsDataUrl = TLS_RESOURCE.createCrlAsDataUrl(caPair, keyCertPair2.getCertificate());
+        final String crlAsDataUrl = tls.createCrlAsDataUrl(caPair, keyCertPair2.certificate());
         return new StoreAndCrl<>(trustStoreAsDataUrl, crlAsDataUrl, caPair);
     }
 

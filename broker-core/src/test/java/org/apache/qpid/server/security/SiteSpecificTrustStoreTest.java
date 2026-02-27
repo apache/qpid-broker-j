@@ -46,8 +46,7 @@ import javax.net.ssl.SSLServerSocketFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
@@ -61,13 +60,12 @@ import org.apache.qpid.test.utils.tls.KeyCertificatePair;
 import org.apache.qpid.test.utils.tls.PrivateKeyEntry;
 import org.apache.qpid.test.utils.tls.TlsResource;
 import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
+import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 import org.apache.qpid.test.utils.tls.TlsResourceHelper;
 
+@ExtendWith({ TlsResourceExtension.class })
 public class SiteSpecificTrustStoreTest extends UnitTestBase
 {
-    @RegisterExtension
-    public static final TlsResource TLS_RESOURCE = new TlsResource();
-
     private static final Broker<?> BROKER = BrokerTestHelper.createBrokerMock();
     private static final ConfiguredObjectFactory FACTORY = BrokerModel.getInstance().getObjectFactory();
     private static final String EXPECTED_SUBJECT = "CN=localhost";
@@ -85,7 +83,7 @@ public class SiteSpecificTrustStoreTest extends UnitTestBase
     private KeyCertificatePair _keyCertPair;
 
     @BeforeEach
-    public void setUpSiteSpecificTrustStore() throws Exception
+    public void setUpSiteSpecificTrustStore(final TlsResource tls) throws Exception
     {
         final int connectTimeout = Integer.getInteger("SiteSpecificTrustStoreTest.connectTimeout", 1000);
         final int readTimeout = Integer.getInteger("SiteSpecificTrustStoreTest.readTimeout", 1000);
@@ -97,7 +95,7 @@ public class SiteSpecificTrustStoreTest extends UnitTestBase
         _caKeyCertPair = TlsResourceBuilder.createKeyPairAndRootCA(EXPECTED_ISSUER);
         _keyCertPair = TlsResourceBuilder.createKeyPairAndCertificate(EXPECTED_SUBJECT, _caKeyCertPair);
         final KeyCertificatePair keyCertPair2 = TlsResourceBuilder.createKeyPairAndCertificate(DN_BAR, _caKeyCertPair);
-        _clrUrl = TLS_RESOURCE.createCrlAsDataUrl(_caKeyCertPair, keyCertPair2.getCertificate());
+        _clrUrl = tls.createCrlAsDataUrl(_caKeyCertPair, keyCertPair2.certificate());
     }
 
     @AfterEach
@@ -163,7 +161,7 @@ public class SiteSpecificTrustStoreTest extends UnitTestBase
     }
 
     @Test
-    public void testChangeOfCrlInValidSiteUrl() throws Exception
+    public void testChangeOfCrlInValidSiteUrl(final TlsResource tls) throws Exception
     {
         _testPeer = new TestPeer();
         final int listeningPort = _testPeer.start();
@@ -183,7 +181,7 @@ public class SiteSpecificTrustStoreTest extends UnitTestBase
         assertEquals(_clrUrl, trustStore.getCertificateRevocationListUrl(),
                 "Unexpected CRL path value after failed change");
 
-        final Path emptyCrl = TLS_RESOURCE.createCrl(_caKeyCertPair);
+        final Path emptyCrl = tls.createCrl(_caKeyCertPair);
         trustStore.setAttributes(Map.of(FileTrustStore.CERTIFICATE_REVOCATION_LIST_URL, emptyCrl.toFile().getAbsolutePath()));
 
         assertEquals(emptyCrl.toFile().getAbsolutePath(), trustStore.getCertificateRevocationListUrl(),
@@ -289,8 +287,8 @@ public class SiteSpecificTrustStoreTest extends UnitTestBase
                     TlsResourceHelper.createKeyStore(java.security.KeyStore.getDefaultType(),
                                                      secret,
                                                      new PrivateKeyEntry("1",
-                                                                         _keyCertPair.getPrivateKey(),
-                                                                         _keyCertPair.getCertificate()));
+                                                                         _keyCertPair.privateKey(),
+                                                                         _keyCertPair.certificate()));
 
             final KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             kmf.init(inMemoryKeyStore, secret);

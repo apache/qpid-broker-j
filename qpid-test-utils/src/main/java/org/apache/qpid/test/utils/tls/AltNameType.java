@@ -23,13 +23,26 @@ package org.apache.qpid.test.utils.tls;
 
 public enum AltNameType
 {
-    OTHER_NAME,
-    RFC822_NAME,
-    DNS_NAME,
-    X400_ADDRESS,
-    DIRECTORY_NAME,
-    EDI_PARTY_NAME,
-    UNIFORM_RESOURCE_IDENTIFIER,
-    IP_ADDRESS,
-    REGISTERED_ID
+    // GeneralName tag values from X.509 SubjectAlternativeName.
+    OTHER_NAME(0),
+    RFC822_NAME(1),
+    DNS_NAME(2),
+    X400_ADDRESS(3),
+    DIRECTORY_NAME(4),
+    EDI_PARTY_NAME(5),
+    UNIFORM_RESOURCE_IDENTIFIER(6),
+    IP_ADDRESS(7),
+    REGISTERED_ID(8);
+
+    private final int _generalNameTag;
+
+    AltNameType(final int generalNameTag)
+    {
+        _generalNameTag = generalNameTag;
+    }
+
+    public int generalNameTag()
+    {
+        return _generalNameTag;
+    }
 }

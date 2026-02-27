@@ -43,8 +43,7 @@ import javax.net.ssl.X509TrustManager;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
@@ -57,13 +56,12 @@ import org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry.CloudFou
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.oauth2.OAuth2Negotiator;
 import org.apache.qpid.test.utils.tls.TlsResource;
+import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 import org.apache.qpid.test.utils.UnitTestBase;
 
+@ExtendWith({ TlsResourceExtension.class })
 public class OAuth2AuthenticationProviderImplTest extends UnitTestBase
 {
-    @RegisterExtension
-    public static final TlsResource TLS_RESOURCE = new TlsResource();
-
     private static final String TEST_ENDPOINT_HOST = "localhost";
     private static final String TEST_AUTHORIZATION_ENDPOINT_PATH = "/testauth";
     private static final String TEST_TOKEN_ENDPOINT_PATH = "/testtoken";
@@ -91,12 +89,12 @@ public class OAuth2AuthenticationProviderImplTest extends UnitTestBase
     private OAuth2MockEndpointHolder _server;
 
     @BeforeAll
-    public void setUp() throws Exception
+    public void setUp(final TlsResource tls) throws Exception
     {
-        final Path keyStore = TLS_RESOURCE.createSelfSignedKeyStore("CN=localhost");
+        final Path keyStore = tls.createSelfSignedKeyStore("CN=localhost");
         _server = new OAuth2MockEndpointHolder(keyStore.toFile().getAbsolutePath(),
-                                               TLS_RESOURCE.getSecret(),
-                                               TLS_RESOURCE.getKeyStoreType());
+                tls.getSecret(),
+                tls.getKeyStoreType());
         _server.start();
 
         final Broker<?> broker = BrokerTestHelper.createBrokerMock();

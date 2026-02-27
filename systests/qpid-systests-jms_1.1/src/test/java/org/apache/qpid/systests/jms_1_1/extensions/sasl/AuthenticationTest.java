@@ -54,14 +54,14 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-
 import org.eclipse.jetty.util.Callback;
+
 import org.hamcrest.Matchers;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
@@ -81,12 +81,11 @@ import org.apache.qpid.test.utils.tls.KeyCertificatePair;
 import org.apache.qpid.test.utils.tls.PrivateKeyEntry;
 import org.apache.qpid.test.utils.tls.TlsResource;
 import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
+import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 
+@ExtendWith({ TlsResourceExtension.class })
 public class AuthenticationTest extends JmsTestBase
 {
-    @RegisterExtension
-    public static final TlsResource TLS_RESOURCE = new TlsResource();
-
     private static final String DN_CA = "CN=MyRootCA,O=ACME,ST=Ontario,C=CA";
     private static final String DN_BROKER = "CN=localhost,OU=Unknown,O=Unknown,L=Unknown,ST=Unknown,C=Unknown";
     private static final String DN_INTERMEDIATE = "CN=intermediate_ca@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA";
@@ -120,6 +119,7 @@ public class AuthenticationTest extends JmsTestBase
     private static final String CRL_TEMPLATE = "http://localhost:%d/%s";
 
     private static int crlHttpPort = -1;
+    private static TlsResource _classTls;
     private static String _brokerKeyStore;
     private static String _brokerTrustStore;
     private static String _clientKeyStore;
@@ -132,11 +132,12 @@ public class AuthenticationTest extends JmsTestBase
     private static Path _intermediateCrlFile;
 
     @BeforeAll
-    public static void setUp() throws Exception
+    public static void setUp(final TlsResource tls) throws Exception
     {
-        _crlFile = TLS_RESOURCE.createFile(".crl");
-        _emptyCrlFile = TLS_RESOURCE.createFile("-empty.crl");
-        _intermediateCrlFile = TLS_RESOURCE.createFile("-intermediate.crl");
+        _classTls = tls;
+        _crlFile = _classTls.createFile(".crl");
+        _emptyCrlFile = _classTls.createFile("-empty.crl");
+        _intermediateCrlFile = _classTls.createFile("-intermediate.crl");
 
         // workaround for QPID-8069
         if (getProtocol() != Protocol.AMQP_1_0 && getProtocol() != Protocol.AMQP_0_10)
@@ -173,16 +174,16 @@ public class AuthenticationTest extends JmsTestBase
         final X509Certificate brokerCertificate =
                 TlsResourceBuilder.createCertificateForServerAuthorization(brokerKeyPair, caPair, DN_BROKER);
 
-        _brokerKeyStore = TLS_RESOURCE.createKeyStore(new PrivateKeyEntry("java-broker",
+        _brokerKeyStore = _classTls.createKeyStore(new PrivateKeyEntry("java-broker",
                                                                           brokerKeyPair.getPrivate(),
                                                                           brokerCertificate,
-                                                                          caPair.getCertificate()),
+                                                                          caPair.certificate()),
                                                       new CertificateEntry(CERT_ALIAS_ROOT_CA,
-                                                                           caPair.getCertificate()))
+                                                                           caPair.certificate()))
                                       .toFile()
                                       .getAbsolutePath();
-        _brokerTrustStore = TLS_RESOURCE.createKeyStore(new CertificateEntry(CERT_ALIAS_ROOT_CA,
-                                                                             caPair.getCertificate()))
+        _brokerTrustStore = _classTls.createKeyStore(new CertificateEntry(CERT_ALIAS_ROOT_CA,
+                                                                             caPair.certificate()))
                                         .toFile()
                                         .getAbsolutePath();
 
@@ -191,7 +192,7 @@ public class AuthenticationTest extends JmsTestBase
                 TlsResourceBuilder.createCertificateForClientAuthorization(clientApp1KeyPair,
                                                                            caPair, DN_CLIENT_APP1);
 
-        _brokerPeerStore = TLS_RESOURCE.createKeyStore(new CertificateEntry(DN_CLIENT_APP1,
+        _brokerPeerStore = _classTls.createKeyStore(new CertificateEntry(DN_CLIENT_APP1,
                                                                             clientApp1Certificate))
                                        .toFile()
                                        .getAbsolutePath();
@@ -247,63 +248,64 @@ public class AuthenticationTest extends JmsTestBase
                                                                                               from,
                                                                                               to);
         _clientExpiredKeyStore =
-                TLS_RESOURCE.createKeyStore(
+                _classTls.createKeyStore(
                         new PrivateKeyEntry("user1",
                                             clientKeyPairExpired.getPrivate(),
                                             clientCertificateExpired,
-                                            caPair.getCertificate())).toFile().getAbsolutePath();
-
-        _clientKeyStore = TLS_RESOURCE.createKeyStore(
+                                            caPair.certificate())).toFile().getAbsolutePath();
+        _clientKeyStore = _classTls.createKeyStore(
                 new PrivateKeyEntry(CERT_ALIAS_APP1,
                                     clientApp1KeyPair.getPrivate(),
                                     clientApp1Certificate,
-                                    caPair.getCertificate()),
+                                    caPair.certificate()),
                 new PrivateKeyEntry(CERT_ALIAS_APP2,
                                     clientApp2KeyPair.getPrivate(),
                                     clientApp2Certificate,
-                                    caPair.getCertificate()),
+                                    caPair.certificate()),
                 new PrivateKeyEntry(CERT_ALIAS_ALLOWED,
                                     clientAllowedKeyPair.getPrivate(),
                                     clientAllowedCertificate,
-                                    caPair.getCertificate()),
+                                    caPair.certificate()),
                 new PrivateKeyEntry(CERT_ALIAS_REVOKED,
                                     clientRevokedKeyPair.getPrivate(),
                                     clientRevokedCertificate,
-                                    caPair.getCertificate()),
+                                    caPair.certificate()),
                 new PrivateKeyEntry(CERT_ALIAS_REVOKED_EMPTY_CRL,
                                     clientKeyPairRevokedByEmpty.getPrivate(),
                                     clientCertificateRevokedByEmpty,
-                                    caPair.getCertificate()),
+                                    caPair.certificate()),
                 new PrivateKeyEntry(CERT_ALIAS_REVOKED_INVALID_CRL_PATH,
                                     clientKeyPairInvalidClr.getPrivate(),
                                     clientCertificateInvalidClr,
-                                    caPair.getCertificate()),
+                                    caPair.certificate()),
                 new PrivateKeyEntry(CERT_ALIAS_ALLOWED_WITH_INTERMEDIATE,
                                     clientKeyPairIntermediate.getPrivate(),
                                     clientCertificateIntermediate,
-                                    intermediateCA.getCertificate(),
-                                    caPair.getCertificate()),
-                new CertificateEntry(CERT_ALIAS_ROOT_CA, caPair.getCertificate())).toFile().getAbsolutePath();
+                                    intermediateCA.certificate(),
+                                    caPair.certificate()),
+                new CertificateEntry(CERT_ALIAS_ROOT_CA, caPair.certificate()))
+                .toFile()
+                .getAbsolutePath();
 
-        _clientTrustStore = TLS_RESOURCE.createKeyStore(new CertificateEntry(CERT_ALIAS_ROOT_CA,
-                                                                             caPair.getCertificate()))
+        _clientTrustStore = _classTls.createKeyStore(new CertificateEntry(CERT_ALIAS_ROOT_CA,
+                                                                             caPair.certificate()))
                                         .toFile()
                                         .getAbsolutePath();
 
-        final Path crl = TLS_RESOURCE.createCrlAsDer(caPair, clientRevokedCertificate, intermediateCA.getCertificate());
+        final Path crl = _classTls.createCrlAsDer(caPair, clientRevokedCertificate, intermediateCA.certificate());
         Files.copy(crl, _crlFile, StandardCopyOption.REPLACE_EXISTING);
 
-        final Path emptyCrl = TLS_RESOURCE.createCrlAsDer(caPair);
+        final Path emptyCrl = _classTls.createCrlAsDer(caPair);
         Files.copy(emptyCrl, _emptyCrlFile, StandardCopyOption.REPLACE_EXISTING);
 
-        final Path intermediateCrl = TLS_RESOURCE.createCrlAsDer(caPair);
+        final Path intermediateCrl = _classTls.createCrlAsDer(caPair);
         Files.copy(intermediateCrl, _intermediateCrlFile, StandardCopyOption.REPLACE_EXISTING);
 
         final KeyCertificatePair clientKeyPairUntrusted = TlsResourceBuilder.createSelfSigned(DN_CLIENT_UNTRUSTED);
-        _clientUntrustedKeyStore = TLS_RESOURCE.createKeyStore(
+        _clientUntrustedKeyStore = _classTls.createKeyStore(
                 new PrivateKeyEntry(CERT_ALIAS_APP1,
-                                    clientKeyPairUntrusted.getPrivateKey(),
-                                    clientKeyPairUntrusted.getCertificate()))
+                                    clientKeyPairUntrusted.privateKey(),
+                                    clientKeyPairUntrusted.certificate()))
                                                .toFile()
                                                .getAbsolutePath();
     }
@@ -553,7 +555,7 @@ public class AuthenticationTest extends JmsTestBase
 
         final Map<String, Object> trustStoreAttributes = new HashMap<>();
         trustStoreAttributes.put(FileTrustStore.STORE_URL, _brokerPeerStore);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
+        trustStoreAttributes.put(FileTrustStore.PASSWORD, _classTls.getSecret());
         trustStoreAttributes.put(FileTrustStore.TRUST_ANCHOR_VALIDITY_ENFORCED, true);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes, null, false);
 
@@ -563,9 +565,9 @@ public class AuthenticationTest extends JmsTestBase
                                   .setTls(true)
                                   .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                                   .setKeyStoreLocation(_clientExpiredKeyStore)
-                                  .setKeyStorePassword(TLS_RESOURCE.getSecret())
+                                  .setKeyStorePassword(_classTls.getSecret())
                                   .setTrustStoreLocation(_clientTrustStore)
-                                  .setTrustStorePassword(TLS_RESOURCE.getSecret())
+                                  .setTrustStorePassword(_classTls.getSecret())
                                   .build();
             fail("Connection should not succeed");
         }
@@ -580,7 +582,7 @@ public class AuthenticationTest extends JmsTestBase
     {
         final Map<String, Object> trustStoreAttributes = new HashMap<>();
         trustStoreAttributes.put(FileTrustStore.STORE_URL, _brokerPeerStore);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
+        trustStoreAttributes.put(FileTrustStore.PASSWORD, _classTls.getSecret());
         trustStoreAttributes.put(FileTrustStore.PEERS_ONLY, true);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes, null, false);
         assertTlsConnectivity(port, CERT_ALIAS_APP1);
@@ -604,7 +606,7 @@ public class AuthenticationTest extends JmsTestBase
 
         final Map<String, Object> trustStoreAttributes = new HashMap<>();
         trustStoreAttributes.put(FileTrustStore.STORE_URL, _brokerPeerStore);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
+        trustStoreAttributes.put(FileTrustStore.PASSWORD, _classTls.getSecret());
         trustStoreAttributes.put(FileTrustStore.PEERS_ONLY, true);
         final int port = createExternalProviderAndTlsPort(trustStoreAttributes, trustStoreName, false);
         assertTlsConnectivity(port, CERT_ALIAS_APP1);
@@ -674,8 +676,8 @@ public class AuthenticationTest extends JmsTestBase
     {
         final Map<String, Object> trustStoreAttributes = new HashMap<>();
         trustStoreAttributes.put(FileTrustStore.STORE_URL, _brokerTrustStore);
-        trustStoreAttributes.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
-        trustStoreAttributes.put(FileTrustStore.TRUST_STORE_TYPE, TLS_RESOURCE.getKeyStoreType());
+        trustStoreAttributes.put(FileTrustStore.PASSWORD, _classTls.getSecret());
+        trustStoreAttributes.put(FileTrustStore.TRUST_STORE_TYPE, _classTls.getKeyStoreType());
         return trustStoreAttributes;
     }
 
@@ -698,7 +700,7 @@ public class AuthenticationTest extends JmsTestBase
         {
             return helper.openManagementConnection()
                          .createExternalAuthenticationProvider(providerName, useFullDN)
-                         .createKeyStore(keyStoreName, _brokerKeyStore, TLS_RESOURCE.getSecret())
+                         .createKeyStore(keyStoreName, _brokerKeyStore, _classTls.getSecret())
                          .createEntity(trustStoreName, FileTrustStore.class.getName(), trustStoreSettings)
                          .createAmqpTlsPort(portName, providerName, keyStoreName, false, true, false, trustStores)
                          .getAmqpBoundPort(portName);
@@ -741,10 +743,10 @@ public class AuthenticationTest extends JmsTestBase
                                      .setTls(true)
                                      .setSaslMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
                                      .setKeyStoreLocation(_clientKeyStore)
-                                     .setKeyStorePassword(TLS_RESOURCE.getSecret())
+                                     .setKeyStorePassword(_classTls.getSecret())
                                      .setKeyAlias(certificateAlias)
                                      .setTrustStoreLocation(_clientTrustStore)
-                                     .setTrustStorePassword(TLS_RESOURCE.getSecret());
+                                     .setTrustStorePassword(_classTls.getSecret());
     }
 
     private void assertTlsConnectivity(int port, String certificateAlias) throws NamingException, JMSException

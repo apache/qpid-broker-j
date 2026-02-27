@@ -31,7 +31,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -48,15 +48,14 @@ import org.apache.qpid.test.utils.tls.KeyCertificatePair;
 import org.apache.qpid.test.utils.tls.PrivateKeyEntry;
 import org.apache.qpid.test.utils.tls.TlsResource;
 import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
+import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 
 /**
  * Performs test of SimpleLDAPAuthenticationManager using SSL connection to LDAP server
  */
+@ExtendWith({ TlsResourceExtension.class })
 public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
 {
-    @RegisterExtension
-    public static final TlsResource TLS_RESOURCE = new TlsResource("pk", "localhost", "secret", "pkcs12");
-
     private static final String LDAP_FOLDER = TMP_FOLDER + File.separator + "test-ldap";
 
     private static final PortHelper PORT_HELPER = new PortHelper();
@@ -73,18 +72,18 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     private static SimpleLDAPAuthenticationManager<?> _authenticationManager;
 
     @BeforeAll
-    public static void setUp() throws Exception
+    public static void setUp(final TlsResource tls) throws Exception
     {
         _broker = BrokerTestHelper.createBrokerMock();
 
         final KeyCertificatePair keyCertPair = TlsResourceBuilder.createSelfSigned(DN_LOCALHOST);
-        final PrivateKeyEntry privateKeyEntry = new PrivateKeyEntry(TLS_RESOURCE.getPrivateKeyAlias(),
-                                                                     keyCertPair.getPrivateKey(),
-                                                                     keyCertPair.getCertificate());
+        final PrivateKeyEntry privateKeyEntry = new PrivateKeyEntry(tls.getPrivateKeyAlias(),
+                                                                     keyCertPair.privateKey(),
+                                                                     keyCertPair.certificate());
         final CertificateEntry certificateEntry =
-                new CertificateEntry(TLS_RESOURCE.getCertificateAlias(), keyCertPair.getCertificate());
-        final Path keyStoreFile = TLS_RESOURCE.createKeyStore("pkcs12", privateKeyEntry);
-        Path trustStoreFile = TLS_RESOURCE.createKeyStore("pkcs12", certificateEntry);
+                new CertificateEntry(tls.getCertificateAlias(), keyCertPair.certificate());
+        final Path keyStoreFile = tls.createKeyStore("pkcs12", privateKeyEntry);
+        Path trustStoreFile = tls.createKeyStore("pkcs12", certificateEntry);
 
         final File workDir = new File(LDAP_FOLDER);
         if (workDir.exists())
@@ -93,10 +92,10 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         }
         Files.createDirectory(workDir.toPath());
 
-        _ldapServer = new EmbeddedLDAPServer(workDir, keyStoreFile.toString(), TLS_RESOURCE.getSecret(), PORT);
+        _ldapServer = new EmbeddedLDAPServer(workDir, keyStoreFile.toString(), tls.getSecret(), PORT);
         _ldapServer.startServer();
 
-        _authenticationManager = createSimpleLDAPAuthenticationManager(trustStoreFile);
+        _authenticationManager = createSimpleLDAPAuthenticationManager(trustStoreFile, tls);
     }
 
     @AfterAll
@@ -128,20 +127,20 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     }
 
     @SuppressWarnings("unchecked")
-    private static TrustStore<?> createTrustStore(final Path trustStoreFile)
+    private static TrustStore<?> createTrustStore(final Path trustStoreFile, final TlsResource tls)
     {
         final Map<String, Object> attributesMap = new HashMap<>();
         attributesMap.put(FileTrustStore.NAME, trustStoreFile.getFileName());
         attributesMap.put(FileTrustStore.TYPE, "FileTrustStore");
         attributesMap.put(FileTrustStore.STORE_URL, trustStoreFile.toUri());
-        attributesMap.put(FileTrustStore.PASSWORD, TLS_RESOURCE.getSecret());
+        attributesMap.put(FileTrustStore.PASSWORD, tls.getSecret());
         return _broker.getObjectFactory().create(TrustStore.class, attributesMap, _broker);
     }
 
     @SuppressWarnings("unchecked")
-    private static SimpleLDAPAuthenticationManager<?> createSimpleLDAPAuthenticationManager(final Path trustStorePath)
+    private static SimpleLDAPAuthenticationManager<?> createSimpleLDAPAuthenticationManager(final Path trustStorePath, final TlsResource tls)
     {
-        final TrustStore<?> trustStore = createTrustStore(trustStorePath);
+        final TrustStore<?> trustStore = createTrustStore(trustStorePath, tls);
 
         final String LDAP_URL = "ldaps://localhost:" + PORT;
         final String ROOT = "dc=qpid,dc=org";

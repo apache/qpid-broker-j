@@ -33,8 +33,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.jms.Connection;
@@ -44,27 +46,28 @@ import javax.jms.Session;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.test.utils.tls.TlsResource;
+import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 import org.apache.qpid.systests.AmqpManagementFacade;
 import org.apache.qpid.systests.JmsTestBase;
 import org.apache.qpid.systests.jms_1_1.extensions.BrokerManagementHelper;
 import org.apache.qpid.systests.jms_1_1.extensions.TlsHelper;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 
+@ExtendWith({ TlsResourceExtension.class })
 public class TlsTest extends JmsTestBase
 {
-    @RegisterExtension
-    public static final TlsResource TLS_RESOURCE = new TlsResource();
-
     private static TlsHelper _tlsHelper;
+    private static TlsResource _classTls;
 
     @BeforeAll
-    public static void setUp() throws Exception
+    public static void setUp(final TlsResource tls) throws Exception
     {
-        _tlsHelper = new TlsHelper(TLS_RESOURCE);
+        _classTls = tls;
+        _tlsHelper = new TlsHelper(tls);
 
         System.setProperty("javax.net.debug", "ssl");
 
@@ -97,9 +100,9 @@ public class TlsTest extends JmsTestBase
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
                                                       .setKeyStoreLocation(_tlsHelper.getClientKeyStore())
-                                                      .setKeyStorePassword(TLS_RESOURCE.getSecret())
+                                                      .setKeyStorePassword(_classTls.getSecret())
                                                       .setTrustStoreLocation(_tlsHelper.getClientTrustStore())
-                                                      .setTrustStorePassword(TLS_RESOURCE.getSecret())
+                                                      .setTrustStorePassword(_classTls.getSecret())
                                                       .build();
         try
         {
@@ -117,7 +120,7 @@ public class TlsTest extends JmsTestBase
         assumeTrue(is(not(equalTo(Protocol.AMQP_1_0))).matches(getProtocol()), "Qpid JMS Client does not support trusting of a certificate");
 
         int port = configureTlsPort(getTestPortName(), false, false, false);
-        File trustCertFile = TLS_RESOURCE.saveCertificateAsPem(_tlsHelper.getCaCertificate()).toFile();
+        File trustCertFile = _classTls.saveCertificateAsPem(_tlsHelper.getCaCertificate()).toFile();
 
         InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
         Connection connection = getConnectionBuilder().setPort(port)
@@ -176,9 +179,9 @@ public class TlsTest extends JmsTestBase
                                   .setHost("127.0.0.1")
                                   .setTls(true)
                                   .setKeyStoreLocation(_tlsHelper.getClientKeyStore())
-                                  .setKeyStorePassword(TLS_RESOURCE.getSecret())
+                                  .setKeyStorePassword(_classTls.getSecret())
                                   .setTrustStoreLocation(_tlsHelper.getClientTrustStore())
-                                  .setTrustStorePassword(TLS_RESOURCE.getSecret())
+                                  .setTrustStorePassword(_classTls.getSecret())
                                   .build();
             fail("Exception not thrown");
         }
@@ -191,9 +194,9 @@ public class TlsTest extends JmsTestBase
                                                       .setHost("127.0.0.1")
                                                       .setTls(true)
                                                       .setKeyStoreLocation(_tlsHelper.getClientKeyStore())
-                                                      .setKeyStorePassword(TLS_RESOURCE.getSecret())
+                                                      .setKeyStorePassword(_classTls.getSecret())
                                                       .setTrustStoreLocation(_tlsHelper.getClientTrustStore())
-                                                      .setTrustStorePassword(TLS_RESOURCE.getSecret())
+                                                      .setTrustStorePassword(_classTls.getSecret())
                                                       .setVerifyHostName(false)
                                                       .build();
         try
@@ -340,7 +343,7 @@ public class TlsTest extends JmsTestBase
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
                                                       .setTrustStoreLocation(_tlsHelper.getClientTrustStore())
-                                                      .setTrustStorePassword(TLS_RESOURCE.getSecret())
+                                                      .setTrustStorePassword(_classTls.getSecret())
                                                       .build();
         try
         {
@@ -366,7 +369,7 @@ public class TlsTest extends JmsTestBase
                                   .setHost(getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP).getHostName())
                                   .setTls(true)
                                   .setTrustStoreLocation(_tlsHelper.getClientTrustStore())
-                                  .setTrustStorePassword(TLS_RESOURCE.getSecret())
+                                  .setTrustStorePassword(_classTls.getSecret())
                                   .build();
             fail("Connection was established successfully");
         }
@@ -387,7 +390,7 @@ public class TlsTest extends JmsTestBase
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
                                                       .setTrustStoreLocation(_tlsHelper.getClientTrustStore())
-                                                      .setTrustStorePassword(TLS_RESOURCE.getSecret())
+                                                      .setTrustStorePassword(_classTls.getSecret())
                                                       .build();
         try
         {
@@ -412,7 +415,7 @@ public class TlsTest extends JmsTestBase
                                   .setHost(getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP).getHostName())
                                   .setTls(true)
                                   .setTrustStoreLocation(_tlsHelper.getClientTrustStore())
-                                  .setTrustStorePassword(TLS_RESOURCE.getSecret())
+                                  .setTrustStorePassword(_classTls.getSecret())
                                   .build();
             fail("Connection was established successfully");
         }
@@ -434,9 +437,9 @@ public class TlsTest extends JmsTestBase
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
                                                       .setKeyStoreLocation(_tlsHelper.getClientKeyStore())
-                                                      .setKeyStorePassword(TLS_RESOURCE.getSecret())
+                                                      .setKeyStorePassword(_classTls.getSecret())
                                                       .setTrustStoreLocation(_tlsHelper.getClientTrustStore())
-                                                      .setTrustStorePassword(TLS_RESOURCE.getSecret())
+                                                      .setTrustStorePassword(_classTls.getSecret())
                                                       .build();
         try
         {
@@ -473,8 +476,9 @@ public class TlsTest extends JmsTestBase
         clearSslStoreSystemProperties();
 
         final Map<String, String> options = new HashMap<>();
-        File keyFile = TLS_RESOURCE.savePrivateKeyAsPem(_tlsHelper.getClientPrivateKey()).toFile();
-        File certificateFile = TLS_RESOURCE.saveCertificateAsPem(_tlsHelper.getClientCerificate(), _tlsHelper.getCaCertificate()).toFile();
+        File keyFile = _classTls.savePrivateKeyAsPem(_tlsHelper.getClientPrivateKey()).toFile();
+        final List<X509Certificate> certificates = List.of(_tlsHelper.getClientCerificate(), _tlsHelper.getCaCertificate());
+        File certificateFile = _classTls.saveCertificateAsPem(certificates).toFile();
         options.put("client_cert_path", encodePathOption(certificateFile.getCanonicalPath()));
         options.put("client_cert_priv_key_path", encodePathOption(keyFile.getCanonicalPath()));
         InetSocketAddress brokerAddress = getBrokerAdmin().getBrokerAddress(BrokerAdmin.PortType.AMQP);
@@ -482,7 +486,7 @@ public class TlsTest extends JmsTestBase
                                                       .setHost(brokerAddress.getHostName())
                                                       .setTls(true)
                                                       .setTrustStoreLocation(_tlsHelper.getClientTrustStore())
-                                                      .setTrustStorePassword(TLS_RESOURCE.getSecret())
+                                                      .setTrustStorePassword(_classTls.getSecret())
                                                       .setVerifyHostName(false)
                                                       .setOptions(options)
                                                       .build();
@@ -512,8 +516,8 @@ public class TlsTest extends JmsTestBase
 
             final String authenticationManager = helper.getAuthenticationProviderNameForAmqpPort(getBrokerAdmin().getBrokerAddress(
                     BrokerAdmin.PortType.AMQP).getPort());
-            return helper.createKeyStore(keyStoreName, _tlsHelper.getBrokerKeyStore(), TLS_RESOURCE.getSecret())
-                         .createTrustStore(trustStoreName, _tlsHelper.getBrokerTrustStore(), TLS_RESOURCE.getSecret())
+            return helper.createKeyStore(keyStoreName, _tlsHelper.getBrokerKeyStore(), _classTls.getSecret())
+                         .createTrustStore(trustStoreName, _tlsHelper.getBrokerTrustStore(), _classTls.getSecret())
                          .createAmqpTlsPort(portName,
                                             authenticationManager,
                                             keyStoreName,
@@ -527,9 +531,9 @@ public class TlsTest extends JmsTestBase
     private void setSslStoreSystemProperties()
     {
         System.setProperty("javax.net.ssl.keyStore", _tlsHelper.getClientKeyStore());
-        System.setProperty("javax.net.ssl.keyStorePassword", TLS_RESOURCE.getSecret());
+        System.setProperty("javax.net.ssl.keyStorePassword", _classTls.getSecret());
         System.setProperty("javax.net.ssl.trustStore", _tlsHelper.getClientTrustStore());
-        System.setProperty("javax.net.ssl.trustStorePassword", TLS_RESOURCE.getSecret());
+        System.setProperty("javax.net.ssl.trustStorePassword", _classTls.getSecret());
     }
 
     private void clearSslStoreSystemProperties()

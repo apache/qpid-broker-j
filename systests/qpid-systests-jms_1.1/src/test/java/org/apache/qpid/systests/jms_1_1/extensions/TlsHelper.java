@@ -68,7 +68,7 @@ public class TlsHelper
         final PrivateKey privateKey = clientKeyPair1.getPrivate();
         final X509Certificate certificate = clientCertificate1;
         _clientKeyPair1 = new KeyCertificatePair(privateKey, certificate);
-        _caCertificate = _caPair.getCertificate();
+        _caCertificate = _caPair.certificate();
 
         _brokerKeyStore = tlsResource.createKeyStore(new PrivateKeyEntry(BROKER_ALIAS,
                                                                          brokerKeyPair.getPrivate(),
@@ -108,12 +108,12 @@ public class TlsHelper
 
     public PrivateKey getClientPrivateKey()
     {
-        return _clientKeyPair1.getPrivateKey();
+        return _clientKeyPair1.privateKey();
     }
 
     public X509Certificate getClientCerificate()
     {
-        return _clientKeyPair1.getCertificate();
+        return _clientKeyPair1.certificate();
     }
 
     public String getBrokerKeyStore()
@@ -128,7 +128,7 @@ public class TlsHelper
 
     public KeyCertificatePair getCaKeyCertPair()
     {
-        final PrivateKey privateKey = _caPair.getPrivateKey();
+        final PrivateKey privateKey = _caPair.privateKey();
         final X509Certificate certificate = _caCertificate;
         return new KeyCertificatePair(privateKey, certificate);
     }

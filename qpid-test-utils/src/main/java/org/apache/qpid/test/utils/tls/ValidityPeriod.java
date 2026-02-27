@@ -21,72 +21,33 @@
 
 package org.apache.qpid.test.utils.tls;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
-class ValidityPeriod
+public record ValidityPeriod(Instant from, Instant to)
 {
-    private final Instant _from;
-    private final Instant _to;
-
-    ValidityPeriod(final Instant from, final Instant to)
+    public ValidityPeriod
     {
-        if (from == null || to == null)
+        Objects.requireNonNull(from, "from must not be null");
+        Objects.requireNonNull(to, "to must not be null");
+
+        if (to.isBefore(from))
         {
-            throw new IllegalArgumentException("Both 'to' and 'from' parameters cannot be null");
+            throw new IllegalArgumentException("'to' must not be before 'from'");
         }
-        if (to.compareTo(from) < 0)
-        {
-            throw new IllegalArgumentException("Parameter 'to' cannot be less than 'from' value");
-        }
-        _from = from;
-        _to = to;
     }
 
-    public Instant getFrom()
+    public static ValidityPeriod of(final Instant from, final Instant to)
     {
-        return _from;
+        return new ValidityPeriod(from, to);
     }
 
-    public Instant getTo()
+    public static ValidityPeriod fromYesterday(final Duration duration)
     {
-        return _to;
-    }
-
-    @Override
-    public boolean equals(final Object o)
-    {
-        if (this == o)
-        {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass())
-        {
-            return false;
-        }
-
-        final ValidityPeriod that = (ValidityPeriod) o;
-
-        if (!_from.equals(that._from))
-        {
-            return false;
-        }
-        return _to.equals(that._to);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        int result = _from.hashCode();
-        result = 31 * result + _to.hashCode();
-        return result;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "ValidityPeriod{" +
-               "_from=" + _from +
-               ", _to=" + _to +
-               '}';
+        Objects.requireNonNull(duration, "duration must not be null");
+        final Instant from = Instant.now().minus(1, ChronoUnit.DAYS);
+        return new ValidityPeriod(from, from.plus(duration));
     }
 }
