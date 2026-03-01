@@ -20,10 +20,21 @@
  */
 package org.apache.qpid.test.utils;
 
+import java.util.Optional;
+
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.LoggerContextVO;
 import ch.qos.logback.core.sift.AbstractDiscriminator;
 
+/**
+ * Logback discriminator that reads a property from the {@link LoggerContextVO} property map.
+ * <p>
+ * Used with the {@link ch.qos.logback.classic.sift.SiftingAppender SiftingAppender} to route log
+ * output into separate files based on the property value set by {@link QpidUnitTestExtension}.
+ * <p>
+ * This approach is chosen over MDC because MDC values are thread-local and would be
+ * lost in background threads, producing incorrect log routing.
+ */
 public class LogbackPropertyValueDiscriminator extends AbstractDiscriminator<ILoggingEvent>
 {
     public static final String CLASS_QUALIFIED_TEST_NAME = "classQualifiedTestName";
@@ -34,12 +45,10 @@ public class LogbackPropertyValueDiscriminator extends AbstractDiscriminator<ILo
     @Override
     public String getDiscriminatingValue(final ILoggingEvent event)
     {
-        final LoggerContextVO context = event.getLoggerContextVO();
-        if (context != null && context.getPropertyMap() != null && context.getPropertyMap().get(_key) != null)
-        {
-            return context.getPropertyMap().get(_key);
-        }
-        return _defaultValue;
+        return Optional.ofNullable(event.getLoggerContextVO())
+                .map(LoggerContextVO::getPropertyMap)
+                .map(properties -> properties.get(_key))
+                .orElse(_defaultValue);
     }
 
     @Override
