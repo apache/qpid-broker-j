@@ -23,8 +23,18 @@ package org.apache.qpid.server.management.plugin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.security.auth.Subject;
+
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class HttpManagementUtilTest extends UnitTestBase
@@ -34,5 +44,23 @@ public class HttpManagementUtilTest extends UnitTestBase
     {
         assertEquals("aBC8-d.json", HttpManagementUtil.ensureFilenameIsRfc2183("aBC8-d.json\n\r\t:/\\"),
                 "Unexpected conversion");
+    }
+
+    @Test
+    public void testAssertManagementAccessUsesSubject()
+    {
+        final Broker<?> broker = mock(Broker.class);
+        final Subject subject = new Subject();
+        final AtomicReference<Subject> capturedSubject = new AtomicReference<>();
+
+        doAnswer(invocation ->
+        {
+            capturedSubject.set(Subject.current());
+            return null;
+        }).when(broker).authorise(any(Operation.class));
+
+        HttpManagementUtil.assertManagementAccess(broker, subject);
+
+        assertEquals(subject, capturedSubject.get(), "Unexpected subject");
     }
 }

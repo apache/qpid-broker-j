@@ -43,6 +43,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import javax.security.auth.Subject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -220,11 +221,12 @@ public class SiteSpecificTrustStoreImpl
 
     private CompletableFuture<X509Certificate> downloadCertificate(final String url)
     {
+        final Subject subject = Subject.current();
         final ExecutorService workerService = Executors.newSingleThreadExecutor(
                 getThreadFactory("download-certificate-worker-" + getName()));
         try
         {
-            return CompletableFuture.supplyAsync(() ->
+            return CompletableFuture.supplyAsync(() -> SubjectExecutionContext.withSubjectUnchecked(subject, () ->
             {
                 try
                 {
@@ -262,7 +264,7 @@ public class SiteSpecificTrustStoreImpl
                                                                           getName(),
                                                                           url), e);
                 }
-            }, workerService);
+            }), workerService);
         }
         finally
         {

@@ -24,7 +24,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.InetSocketAddress;
-import java.security.PrivilegedAction;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -36,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -69,7 +69,7 @@ public class AuthenticationResultCacherTest extends UnitTestBase
     @Test
     public void testCacheHit()
     {
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             AuthenticationResult result;
             result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
@@ -78,14 +78,13 @@ public class AuthenticationResultCacherTest extends UnitTestBase
             result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
             assertEquals(_successfulAuthenticationResult, result, "Unexpected AuthenticationResult");
             assertEquals(1, (long) _loadCallCount, "Unexpected number of loads after cache hit");
-            return null;
         });
     }
 
     @Test
     public void testCacheMissDifferentCredentials()
     {
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             AuthenticationResult result;
             result = _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
@@ -94,7 +93,6 @@ public class AuthenticationResultCacherTest extends UnitTestBase
             result = _authenticationResultCacher.getOrLoad(new String[]{"other credentials"}, _loader);
             assertEquals(_successfulAuthenticationResult, result, "Unexpected AuthenticationResult");
             assertEquals(2, (long) _loadCallCount, "Unexpected number of loads before cache hit");
-            return null;
         });
     }
 
@@ -136,12 +134,11 @@ public class AuthenticationResultCacherTest extends UnitTestBase
                                  final AuthenticationResult expectedResult,
                                  final int expectedHitCount)
     {
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () -> {
+        SubjectExecutionContext.withSubject(_subject, () -> {
             AuthenticationResult result;
             result = _authenticationResultCacher.getOrLoad(new String[]{credentials}, _loader);
             assertEquals(expectedResult, result, "Unexpected AuthenticationResult");
             assertEquals(expectedHitCount, (long) _loadCallCount, "Unexpected number of loads before cache hit");
-            return null;
         });
     }
 }

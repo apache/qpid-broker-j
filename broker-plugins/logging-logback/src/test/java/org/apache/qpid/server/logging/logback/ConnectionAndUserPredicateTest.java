@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.security.PrivilegedAction;
 import java.util.Set;
 
 import javax.security.auth.Subject;
@@ -37,6 +36,7 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.model.preferences.GenericPrincipal;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -63,17 +63,11 @@ public class ConnectionAndUserPredicateTest extends UnitTestBase
     public void testEvaluateUsername()
     {
         _predicate.setUsernamePattern("testUser.*");
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
-        {
-            assertTrue(_predicate.evaluate(mock(ILoggingEvent.class)),"predicate unexpectedly did not match");
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () ->
+                assertTrue(_predicate.evaluate(mock(ILoggingEvent.class)),"predicate unexpectedly did not match"));
         _predicate.setUsernamePattern("nonmatching.*");
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
-        {
-            assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched");
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () ->
+                assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched"));
     }
 
     @Test
@@ -85,24 +79,15 @@ public class ConnectionAndUserPredicateTest extends UnitTestBase
         _subject.getPrincipals().add(new ConnectionPrincipal(connection));
         _predicate.setRemoteContainerIdPattern(".*Client.*");
         _predicate.setUsernamePattern("testUser.*");
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
-        {
-            assertTrue(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly did not match");
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () ->
+                assertTrue(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly did not match"));
         _predicate.setRemoteContainerIdPattern(".*noMatchingClient.*");
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
-        {
-            assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched");
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () ->
+                assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched"));
         _predicate.setRemoteContainerIdPattern(".*Client.*");
         _predicate.setUsernamePattern("noMatchingUsername.*");
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
-        {
-            assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched");
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () ->
+                assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched"));
     }
 
     @Test
@@ -113,17 +98,11 @@ public class ConnectionAndUserPredicateTest extends UnitTestBase
         when(connection.getRemoteContainerName()).thenReturn(null);
         _subject.getPrincipals().add(new ConnectionPrincipal(connection));
         _predicate.setConnectionNamePattern(".*:1234");
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
-        {
-            assertTrue(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly did not match");
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () ->
+                assertTrue(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly did not match"));
         _predicate.setConnectionNamePattern(".*:4321");
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
-        {
-            assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched");
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () ->
+                assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched"));
     }
 
     @Test
@@ -133,16 +112,10 @@ public class ConnectionAndUserPredicateTest extends UnitTestBase
         when(principal.getName()).thenReturn("foo:1234");
         _subject.getPrincipals().add(principal);
         _predicate.setConnectionNamePattern(".*:1234");
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
-        {
-            assertTrue(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly did not match");
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () ->
+                assertTrue(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly did not match"));
         _predicate.setConnectionNamePattern(".*:4321");
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
-        {
-            assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched");
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () ->
+                assertFalse(_predicate.evaluate(mock(ILoggingEvent.class)), "predicate unexpectedly matched"));
     }
 }

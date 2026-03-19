@@ -19,7 +19,6 @@
 package org.apache.qpid.server.model.testmodels.singleton;
 
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.ArrayDeque;
 import java.util.Date;
 import java.util.Deque;
@@ -27,15 +26,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 
@@ -253,9 +256,9 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     }
 
     @Override
-    public <T> T doAsSystem(PrivilegedAction<T> action)
+    public <T> T doAsSystem(Supplier<T> action)
     {
-        return Subject.doAs(SYSTEM_SUBJECT, action);
+        return SubjectExecutionContext.withSubjectUnchecked(SYSTEM_SUBJECT, action::get);
     }
 
     @Override
@@ -269,5 +272,17 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     public Set<String> takeLastReportedSetAttributes()
     {
         return _lastReportedSetAttributes.removeFirst();
+    }
+
+    @Override
+    public Subject exposedGetSubjectWithAddedSystemRights()
+    {
+        return super.getSubjectWithAddedSystemRights();
+    }
+
+    @Override
+    public <T, E extends Exception> CompletableFuture<T> exposedDoOnConfigThread(final Task<CompletableFuture<T>, E> task)
+    {
+        return super.doOnConfigThread(task);
     }
 }

@@ -26,17 +26,12 @@ import static org.apache.qpid.server.protocol.v0_10.ServerConnectionDelegate.BAS
 import static org.apache.qpid.server.protocol.v0_10.ServerConnectionDelegate.MESSAGE_DIGEST_SHA1;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.security.AccessControlContext;
-import java.security.AccessController;
 import java.security.MessageDigest;
-import java.security.PrivilegedAction;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
@@ -44,15 +39,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.security.auth.Subject;
-import javax.security.auth.SubjectDomainCombiner;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.stubbing.Answer;
-
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
@@ -70,7 +61,6 @@ class ServerConnectionDelegateTest extends UnitTestBase
     private ServerConnectionDelegate _delegate;
     private ServerConnection _serverConnection;
     private TaskExecutor _taskExecutor;
-    private AccessControlContext _accessControlContext;
 
     @BeforeEach
     void setUp()
@@ -94,7 +84,6 @@ class ServerConnectionDelegateTest extends UnitTestBase
 
         final Subject subject = new Subject();
         subject.setReadOnly();
-         _accessControlContext = AccessController.getContext();
         final AMQPConnection_0_10<?> amqpConnection = mock(AMQPConnection_0_10.class);
         when(amqpConnection.getParent()).thenReturn(broker);
         when(amqpConnection.getBroker()).thenReturn(broker);
@@ -103,12 +92,6 @@ class ServerConnectionDelegateTest extends UnitTestBase
         when(amqpConnection.getSubject()).thenReturn(subject);
         when(amqpConnection.getContextValue(Long.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Long.MAX_VALUE);
         when(amqpConnection.getContextValue(Integer.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Integer.MAX_VALUE);
-        doAnswer((Answer<AccessControlContext>) invocationOnMock ->
-        {
-            final Subject subject1 = invocationOnMock.getArgument(0);
-            return AccessController.doPrivileged((PrivilegedAction<AccessControlContext>) () ->
-                    new AccessControlContext(_accessControlContext, new SubjectDomainCombiner(subject1)));
-        }).when(amqpConnection).getAccessControlContextFromSubject(any());
         when(amqpConnection.getEventLogger()).thenReturn(mock(EventLogger.class));
 
         _serverConnection = mock(ServerConnection.class);

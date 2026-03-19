@@ -26,9 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import javax.security.auth.Subject;
 
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
 import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
@@ -106,11 +107,11 @@ public class HttpManagementActorTest extends BaseActorTestCase
     }
 
     @Test
-    public void testSubjectPrincipalNameAppearance()
+    public void testSubjectPrincipalNameAppearance() throws Exception
     {
         final Subject subject = TestPrincipalUtils.createTestSubject(TEST_USER);
         subject.getPrincipals().add(_connectionPrincipal);
-        final String message = Subject.doAs(subject, (PrivilegedAction<String>) this::sendTestLogMessage);
+        final String message = SubjectExecutionContext.withSubject(subject, (Callable<String>) this::sendTestLogMessage);
 
         assertNotNull(message, "Test log message is not created!");
 
@@ -126,7 +127,7 @@ public class HttpManagementActorTest extends BaseActorTestCase
     /** It's necessary to test successive calls because HttpManagementActor caches
      *  its log message based on principal name */
     @Test
-    public void testGetLogMessageCaching()
+    public void testGetLogMessageCaching() throws Exception
     {
         assertLogMessageWithoutPrincipal();
         assertLogMessageWithPrincipal("my_principal");
@@ -138,7 +139,7 @@ public class HttpManagementActorTest extends BaseActorTestCase
     {
         getRawLogger().getLogMessages().clear();
         final Subject subject = new Subject(false, Set.of(_connectionPrincipal), Set.of(), Set.of());
-        Subject.doAs(subject, (PrivilegedAction<Object>) () ->
+        SubjectExecutionContext.withSubject(subject, (Runnable) () ->
         {
             getEventLogger().message(EMPTY_MESSAGE);
             final List<Object> logs = getRawLogger().getLogMessages();
@@ -146,17 +147,16 @@ public class HttpManagementActorTest extends BaseActorTestCase
 
             final String logMessage = logs.get(0).toString();
             assertEquals(String.format(FORMAT, SESSION_ID, NA), logMessage, "Unexpected log message");
-            return null;
         });
     }
 
-    private void assertLogMessageWithPrincipal(final String principalName)
+    private void assertLogMessageWithPrincipal(final String principalName) throws Exception
     {
         getRawLogger().getLogMessages().clear();
 
         final Subject subject = TestPrincipalUtils.createTestSubject(principalName);
         subject.getPrincipals().add(_connectionPrincipal);
-        final String message = Subject.doAs(subject, (PrivilegedAction<String>) () ->
+        final String message = SubjectExecutionContext.withSubject(subject, () ->
         {
             getEventLogger().message(EMPTY_MESSAGE);
             final List<Object> logs = getRawLogger().getLogMessages();

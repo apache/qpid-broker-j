@@ -22,11 +22,7 @@ package org.apache.qpid.server.transport;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.security.AccessControlContext;
-import java.security.AccessControlException;
-import java.security.AccessController;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -39,9 +35,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import javax.security.auth.Subject;
-import javax.security.auth.SubjectDomainCombiner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +64,8 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TaskExecutorProvider;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.security.AccessDeniedException;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.session.AbstractAMQPSession;
@@ -102,7 +100,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     private final Protocol _protocol;
     private final long _connectionId;
     private final AggregateTicker _aggregateTicker;
-    private final Subject _subject = new Subject();
+    private final Subject _subject;
     private final List<Action<? super C>> _connectionCloseTaskList = new CopyOnWriteArrayList<>();
 
     private final LogSubject _logSubject;
@@ -135,7 +133,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     private volatile boolean _messagesWritten;
 
 
-    private volatile AccessControlContext _accessControllerContext;
     private volatile Thread _ioThread;
     private volatile StatisticsGatherer _statisticsGatherer;
 
@@ -168,9 +165,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         _protocol = protocol;
         _connectionId = connectionId;
         _aggregateTicker = aggregateTicker;
+        _subject = new Subject();
         _subject.getPrincipals().add(new ConnectionPrincipal(this));
-
-        updateAccessControllerContext();
 
         _transportClosedFuture.thenRunAsync(() ->
         {
@@ -188,21 +184,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         attributes.put(NAME, "[" + connectionId + "] " + String.valueOf(network.getRemoteAddress()).replaceAll("/", ""));
         attributes.put(DURABLE, false);
         return attributes;
-    }
-
-    @Override
-    public final AccessControlContext getAccessControlContextFromSubject(final Subject subject)
-    {
-        final AccessControlContext acc = AccessController.getContext();
-        return AccessController.doPrivileged(
-                (PrivilegedAction<AccessControlContext>) () -> {
-                    if (subject == null)
-                        return new AccessControlContext(acc, null);
-                    else
-                        return new AccessControlContext
-                                (acc,
-                                 new SubjectDomainCombiner(subject));
-                });
     }
 
     @Override
@@ -554,7 +535,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     @Override
     public final void received(final QpidByteBuffer buf)
     {
-        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             updateLastReadTime();
             try
@@ -572,8 +553,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
                     throw new ConnectionScopedRuntimeException(e);
                 }
             }
-            return null;
-        }, getAccessControllerContext());
+        });
     }
 
     protected abstract void onReceive(final QpidByteBuffer msg);
@@ -582,14 +562,14 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     protected abstract boolean isOpeningInProgress();
 
-    protected <T> T runAsSubject(PrivilegedAction<T> action)
+    protected <T> T runAsSubject(Supplier<T> action)
     {
-        return Subject.doAs(_subject, action);
+        return SubjectExecutionContext.withSubjectUnchecked(_subject, action::get);
     }
 
     private boolean runningAsSubject()
     {
-        return _subject.equals(Subject.getSubject(AccessController.getContext()));
+        return _subject.equals(Subject.current());
     }
 
     @Override
@@ -750,17 +730,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
                 .forEach(AbstractAMQPSession::resetStatistics);
     }
 
-    public AccessControlContext getAccessControllerContext()
-    {
-        return _accessControllerContext;
-    }
-
-    public final void updateAccessControllerContext()
-    {
-        _accessControllerContext = getAccessControlContextFromSubject(
-                getSubject());
-    }
-
     private void logConnectionOpen()
     {
         runAsSubject(() ->
@@ -782,7 +751,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     private void logConnectionClose()
     {
-        runAsSubject((PrivilegedAction<Void>) () ->
+        runAsSubject(() ->
         {
             String closeCause = getCloseCause();
             getEventLogger().message(isOrderlyClose()
@@ -841,10 +810,10 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
              || !_messageAuthorizationRequired
              || getAuthorizedPrincipal().getName().equals(userId)))
         {
-            throw new AccessControlException("The user id of the message '"
-                                             + userId
-                                             + "' is not valid on a connection authenticated as  "
-                                             + getAuthorizedPrincipal().getName());
+            throw new AccessDeniedException("The user id of the message '"
+                                            + userId
+                                            + "' is not valid on a connection authenticated as  "
+                                            + getAuthorizedPrincipal().getName());
         }
     }
 
@@ -885,9 +854,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
             _messageCompressionThreshold = Integer.MAX_VALUE;
         }
 
-        getSubject().getPrincipals().add(addressSpace.getPrincipal());
+        _subject.getPrincipals().add(addressSpace.getPrincipal());
 
-        updateAccessControllerContext();
         logConnectionOpen();
     }
 
@@ -922,12 +890,9 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
             throw new IllegalArgumentException("subject cannot be null");
         }
 
-        getSubject().getPrincipals().addAll(subject.getPrincipals());
-        getSubject().getPrivateCredentials().addAll(subject.getPrivateCredentials());
-        getSubject().getPublicCredentials().addAll(subject.getPublicCredentials());
-
-        updateAccessControllerContext();
-
+        _subject.getPrincipals().addAll(subject.getPrincipals());
+        _subject.getPrivateCredentials().addAll(subject.getPrivateCredentials());
+        _subject.getPublicCredentials().addAll(subject.getPublicCredentials());
     }
 
     @Override
@@ -935,10 +900,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     {
         _localTransactionBegins.incrementAndGet();
         _localTransactionOpens.incrementAndGet();
-        return new LocalTransaction(getAddressSpace().getMessageStore(),
-                                    () -> getLastReadTime(),
-                                    _transactionObserver,
-                                    getProtocol() != Protocol.AMQP_1_0);
+        return new LocalTransaction(getAddressSpace().getMessageStore(), this::getLastReadTime,
+                _transactionObserver, getProtocol() != Protocol.AMQP_1_0);
     }
 
     @Override

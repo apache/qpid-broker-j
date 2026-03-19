@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ 17, 21 ]
+        java: [ 21, 25 ]
 
     steps:
       - uses: actions/checkout@v6
@@ -41,7 +41,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Licence Check
-        run: mvn -Papache-release,dependency-check clean apache-rat:check verify -DskipTests -Dgpg.skip -Denforcer.skip=true -Dmaven.javadoc.skip=true
+        run: mvn -Papache-release,dependency-check clean apache-rat:check verify -DskipTests=true -Dgpg.skip -Denforcer.skip=true -Dmaven.javadoc.skip=true
 
       - name: Archive rat.txt On Failure
         if: failure()

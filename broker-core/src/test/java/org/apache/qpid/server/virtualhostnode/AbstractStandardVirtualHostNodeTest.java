@@ -36,7 +36,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -62,6 +61,7 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
@@ -277,7 +277,7 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
 
         assertNull(node.getDescription());
 
-        assertThrows(AccessControlException.class,
+        assertThrows(AccessDeniedException.class,
                 () -> node.setAttributes(Map.of(VirtualHostNode.DESCRIPTION, "My virtualhost node")),
                 "Exception not thrown");
 
@@ -300,7 +300,7 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
         node.start();
         when(mockAccessControl.authorise(null, Operation.DELETE, node, Map.of())).thenReturn(Result.DENIED);
 
-        assertThrows(AccessControlException.class, node::delete, "Exception not thrown");
+        assertThrows(AccessDeniedException.class, node::delete, "Exception not thrown");
 
         assertEquals(State.ACTIVE, node.getState(), "Virtual host node state changed unexpectedly");
         node.close();
@@ -321,7 +321,7 @@ public class AbstractStandardVirtualHostNodeTest extends UnitTestBase
 
         when(mockAccessControl.authorise(eq(null), eq(Operation.UPDATE), same(node), any())).thenReturn(Result.DENIED);
 
-        assertThrows(AccessControlException.class, node::stop, "Exception not thrown");
+        assertThrows(AccessDeniedException.class, node::stop, "Exception not thrown");
 
         assertEquals(State.ACTIVE, node.getState(), "Virtual host node state changed unexpectedly");
         node.close();

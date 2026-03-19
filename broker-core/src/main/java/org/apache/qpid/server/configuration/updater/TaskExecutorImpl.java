@@ -21,9 +21,7 @@
 
 package org.apache.qpid.server.configuration.updater;
 
-import java.security.AccessController;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.util.FutureHelper;
 
 public class TaskExecutorImpl implements TaskExecutor
@@ -94,6 +93,10 @@ public class TaskExecutorImpl implements TaskExecutor
                 return taskThread;
             });
             _executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, workQueue, factory);
+
+            // pre-start the worker thread to avoid lazy creation during the first submission.
+            ((ThreadPoolExecutor) _executor).prestartAllCoreThreads();
+
             if (LOGGER.isDebugEnabled())
             {
                 LOGGER.debug("Task executor is started");
@@ -223,7 +226,7 @@ public class TaskExecutorImpl implements TaskExecutor
 
     private Subject effectiveSubject()
     {
-        final Subject contextSubject = Subject.getSubject(AccessController.getContext());
+        final Subject contextSubject = Subject.current();
 
         if (contextSubject == null)
         {
@@ -249,7 +252,6 @@ public class TaskExecutorImpl implements TaskExecutor
         private final CompletableFuture<T> _future;
 
         private Runnable _runnable;
-        private Throwable _throwable;
 
         private final Subject _contextSubject;
 
@@ -275,10 +277,10 @@ public class TaskExecutorImpl implements TaskExecutor
         {
             if (_runnable != null)
             {
-                _runnable.run();
+                SubjectExecutionContext.withSubject(_contextSubject, _runnable);
                 return;
             }
-            if (_future.isCancelled() || _future.isCompletedExceptionally())
+            if (_future == null || _future.isCancelled() || _future.isCompletedExceptionally())
             {
                 return;
             }
@@ -286,27 +288,33 @@ public class TaskExecutorImpl implements TaskExecutor
             {
                 LOGGER.debug("Performing {}", this);
             }
-            final T result = Subject.doAs(_contextSubject, (PrivilegedAction<T>) () ->
+            try
             {
-                try
+                if (_userTask == null)
                 {
-                    return _userTask.execute();
+                    _future.complete(null);
+                    if (LOGGER.isDebugEnabled())
+                    {
+                        LOGGER.debug("{} performed successfully with result: null", this);
+                    }
+                    return;
                 }
-                catch (Throwable throwable)
+                final T result = SubjectExecutionContext.withSubject(_contextSubject, _userTask::execute);
+                _future.complete(result);
+                if (LOGGER.isDebugEnabled())
                 {
-                    _throwable = throwable;
-                    _future.obtrudeException(throwable);
+                    LOGGER.debug("{} performed successfully with result: {}", this, result);
                 }
-                return null;
-            });
-
-            final Throwable throwable = _throwable;
-            if (throwable != null)
+            }
+            catch (Throwable throwable)
             {
                 if (LOGGER.isDebugEnabled())
                 {
                     LOGGER.debug("{} failed to perform successfully", this);
                 }
+
+                _future.completeExceptionally(throwable);
+
                 if (throwable instanceof RuntimeException)
                 {
                     throw (RuntimeException) throwable;
@@ -320,11 +328,6 @@ public class TaskExecutorImpl implements TaskExecutor
                     throw new RuntimeException(throwable);
                 }
             }
-            if (LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("{} performed successfully with result: {}", this, result);
-            }
-            _future.complete(result);
         }
 
         void cancel()
@@ -338,6 +341,10 @@ public class TaskExecutorImpl implements TaskExecutor
         @Override
         public String toString()
         {
+            if (_userTask == null)
+            {
+                return "Task['null']";
+            }
             final String arguments = _userTask.getArguments();
             if (arguments == null)
             {
@@ -351,9 +358,9 @@ public class TaskExecutorImpl implements TaskExecutor
     {
         private final TaskExecutorImpl _taskExecutor;
 
-        public TaskThread(final Runnable r, final String name, final TaskExecutorImpl taskExecutor)
+        public TaskThread(final Runnable runnable, final String name, final TaskExecutorImpl taskExecutor)
         {
-            super(r, name);
+            super(runnable, name);
             _taskExecutor = taskExecutor;
         }
 

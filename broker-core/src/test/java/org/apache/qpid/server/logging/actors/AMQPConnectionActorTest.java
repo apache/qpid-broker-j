@@ -24,16 +24,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.apache.qpid.server.connection.ConnectionPrincipal;
-import org.apache.qpid.server.logging.LogMessage;
-
-import javax.security.auth.Subject;
-import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Set;
 
+import javax.security.auth.Subject;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import org.apache.qpid.server.connection.ConnectionPrincipal;
+import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 
 /**
  * Test : AMQPConnectionActorTest
@@ -101,7 +102,7 @@ public class AMQPConnectionActorTest extends BaseConnectionActorTestCase
     {
         final String message = "test logging";
         final Subject subject = new Subject(false, Set.of(new ConnectionPrincipal(getConnection())), Set.of(), Set.of());
-        Subject.doAs(subject, (PrivilegedAction<Object>) () ->
+        SubjectExecutionContext.withSubject(subject, () ->
         {
             getEventLogger().message(() -> "[AMQPActorTest]", new LogMessage()
             {
@@ -117,7 +118,6 @@ public class AMQPConnectionActorTest extends BaseConnectionActorTestCase
                     return "test.hierarchy";
                 }
             });
-            return null;
         });
         return message;
     }

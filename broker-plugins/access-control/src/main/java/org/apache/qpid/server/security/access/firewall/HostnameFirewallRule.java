@@ -18,9 +18,6 @@
  */
 package org.apache.qpid.server.security.access.firewall;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,12 +33,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.server.util.DaemonThreadFactory;
+
 public class HostnameFirewallRule extends AbstractFirewallRuleImpl
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(HostnameFirewallRule.class);
 
     private static final long DNS_TIMEOUT = 30000;
-    private static final ExecutorService DNS_LOOKUP = Executors.newCachedThreadPool();
+    private static final ExecutorService DNS_LOOKUP =
+            Executors.newCachedThreadPool(new DaemonThreadFactory("HostnameFirewallRule-DNS"));
 
     private final List<Pattern> _hostnamePatterns;
     private final Set<String> _hostnames;

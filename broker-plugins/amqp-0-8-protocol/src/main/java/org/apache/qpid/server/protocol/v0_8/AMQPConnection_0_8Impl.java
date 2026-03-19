@@ -25,9 +25,6 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.nio.BufferUnderflowException;
-import java.security.AccessControlException;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -62,8 +59,25 @@ import org.apache.qpid.server.properties.ConnectionStartProperties;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.ProtocolVersion;
-import org.apache.qpid.server.protocol.v0_8.transport.*;
+import org.apache.qpid.server.protocol.v0_8.transport.AMQDataBlock;
+import org.apache.qpid.server.protocol.v0_8.transport.AMQFrame;
+import org.apache.qpid.server.protocol.v0_8.transport.AMQMethodBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseOkBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionRedirectBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionSecureBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionTuneBody;
+import org.apache.qpid.server.protocol.v0_8.transport.HeartbeatBody;
+import org.apache.qpid.server.protocol.v0_8.transport.MethodRegistry;
+import org.apache.qpid.server.protocol.v0_8.transport.ProtocolInitiation;
+import org.apache.qpid.server.protocol.v0_8.transport.ServerChannelMethodProcessor;
+import org.apache.qpid.server.protocol.v0_8.transport.ServerMethodDispatcher;
+import org.apache.qpid.server.protocol.v0_8.transport.ServerMethodProcessor;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SubjectCreator;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.session.AMQPSession;
@@ -704,12 +718,10 @@ public class AMQPConnection_0_8Impl
     @Override
     public final void readerIdle()
     {
-        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
-        {
+        SubjectExecutionContext.withSubject(getSubject(), () -> {
             getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " + _state, true));
             getNetwork().close();
-            return null;
-        }, getAccessControllerContext());
+        });
     }
 
     @Override
@@ -982,7 +994,7 @@ public class AMQPConnection_0_8Impl
                 sendConnectionClose(ErrorCodes.ACCESS_REFUSED, "Connection refused", 0);
             }
         }
-        catch (AccessControlException | VirtualHostUnavailableException e)
+        catch (AccessDeniedException | VirtualHostUnavailableException e)
         {
             sendConnectionClose(ErrorCodes.ACCESS_REFUSED, e.getMessage(), 0);
         }

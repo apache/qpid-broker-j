@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.management.plugin;
 
-import java.security.AccessController;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -269,7 +268,7 @@ public class ManagementException extends RuntimeException
 
     private static String getRequestPrincipals()
     {
-        final Subject subject = Subject.getSubject(AccessController.getContext());
+        final Subject subject = Subject.current();
         if (subject == null)
         {
             return null;

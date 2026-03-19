@@ -22,7 +22,6 @@ package org.apache.qpid.server.model.preferences;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;

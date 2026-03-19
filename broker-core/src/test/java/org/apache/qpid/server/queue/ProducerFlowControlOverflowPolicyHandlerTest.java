@@ -26,10 +26,10 @@ import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import java.security.PrivilegedAction;
 import java.util.Set;
 
 import javax.security.auth.Subject;
@@ -46,6 +46,7 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.QueueMessages;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -121,6 +122,19 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends UnitTestBase
     }
 
     @Test
+    public void testCheckOverflowWithoutSubjectDoesNotBlockOrReport()
+    {
+        when(_queue.getQueueDepthBytes()).thenReturn(11L);
+        when(_queue.getMaximumQueueDepthBytes()).thenReturn(10L);
+
+        _producerFlowControlOverflowPolicyHandler.checkOverflow(null);
+
+        assertFalse(_producerFlowControlOverflowPolicyHandler.isQueueFlowStopped(),
+                "Flow should not be stopped without subject");
+        verifyNoInteractions(_eventLogger);
+    }
+
+    @Test
     public void testCheckOverflowResumesFlowWhenUnderfullBytes()
     {
         final AMQPSession<?, ?> session = mock(AMQPSession.class);
@@ -175,11 +189,7 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends UnitTestBase
     private void checkOverflow(final AMQPSession<?, ?> session)
     {
         final Subject subject = createSubject(session);
-        Subject.doAs(subject, (PrivilegedAction<Void>) () ->
-        {
-            _producerFlowControlOverflowPolicyHandler.checkOverflow(null);
-            return null;
-        });
+        SubjectExecutionContext.withSubject(subject, () -> _producerFlowControlOverflowPolicyHandler.checkOverflow(null));
     }
 
     private Subject createSubject(final AMQPSession<?, ?> session)

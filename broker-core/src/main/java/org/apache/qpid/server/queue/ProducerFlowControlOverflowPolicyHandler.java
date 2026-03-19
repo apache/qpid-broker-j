@@ -19,7 +19,6 @@
 
 package org.apache.qpid.server.queue;
 
-import java.security.AccessController;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -171,26 +170,29 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
             if ((maximumQueueDepthBytes >= 0L && queueDepthBytes > maximumQueueDepthBytes) ||
                 (maximumQueueDepthMessages >= 0L && queueDepthMessages > maximumQueueDepthMessages))
             {
-                Subject subject = Subject.getSubject(AccessController.getContext());
-                Set<SessionPrincipal> sessionPrincipals = subject.getPrincipals(SessionPrincipal.class);
-                if (!sessionPrincipals.isEmpty())
+                Subject subject = Subject.current();
+                if (subject != null)
                 {
-                    SessionPrincipal sessionPrincipal = sessionPrincipals.iterator().next();
-                    if (sessionPrincipal != null)
+                    Set<SessionPrincipal> sessionPrincipals = subject.getPrincipals(SessionPrincipal.class);
+                    if (!sessionPrincipals.isEmpty())
                     {
-
-                        if (_overfullReported.compareAndSet(false, true))
+                        SessionPrincipal sessionPrincipal = sessionPrincipals.iterator().next();
+                        if (sessionPrincipal != null)
                         {
-                            _eventLogger.message(_queue.getLogSubject(),
-                                                 QueueMessages.OVERFULL(queueDepthBytes,
-                                                                        maximumQueueDepthBytes,
-                                                                        queueDepthMessages,
-                                                                        maximumQueueDepthMessages));
-                        }
 
-                        final AMQPSession<?, ?> session = sessionPrincipal.getSession();
-                        session.block(_queue);
-                        _blockedSessions.add(session);
+                            if (_overfullReported.compareAndSet(false, true))
+                            {
+                                _eventLogger.message(_queue.getLogSubject(),
+                                        QueueMessages.OVERFULL(queueDepthBytes,
+                                                maximumQueueDepthBytes,
+                                                queueDepthMessages,
+                                                maximumQueueDepthMessages));
+                            }
+
+                            final AMQPSession<?, ?> session = sessionPrincipal.getSession();
+                            session.block(_queue);
+                            _blockedSessions.add(session);
+                        }
                     }
                 }
             }
@@ -213,4 +215,3 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
     }
 
 }
-

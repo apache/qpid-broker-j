@@ -32,12 +32,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import java.io.ByteArrayOutputStream;
+import java.lang.reflect.Method;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,6 +50,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
@@ -59,15 +64,20 @@ import org.mockito.stubbing.Answer;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.filter.AMQPFilterTypes;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
@@ -85,6 +95,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Filter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Terminus;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
@@ -95,6 +106,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.queue.QueueConsumer;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
@@ -150,6 +162,62 @@ class Session_1_0Test extends UnitTestBase
 
         assertAttachSent(_connection, _session, attach);
         assertQueues(TOPIC_NAME, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
+    }
+
+    @Test
+    void createDynamicDestinationUsesSystemSubject() throws Exception
+    {
+        final AMQPConnection_1_0<?> connection = createAmqpConnection_1_0();
+        final NamedAddressSpace addressSpace = mock(NamedAddressSpace.class, withSettings().extraInterfaces(ConfiguredObject.class));
+        when(((ConfiguredObject) addressSpace).newToken(any())).thenReturn(mock(SecurityToken.class));
+
+        final AtomicReference<Subject> capturedSubject = new AtomicReference<>();
+        when(addressSpace.createMessageDestination(any(), any())).thenAnswer(invocation ->
+        {
+            capturedSubject.set(Subject.current());
+            return mock(MessageDestination.class);
+        });
+        when(connection.getAddressSpace()).thenReturn(addressSpace);
+
+        final Session_1_0 session = createSession_1_0(connection, 0);
+        final Link_1_0 link = mock(Link_1_0.class);
+        when(link.getRole()).thenReturn(Role.SENDER);
+        when(link.getRemoteContainerId()).thenReturn(getTestName());
+        when(link.getName()).thenReturn("link");
+
+        final Target terminus = new Target();
+        final Method createDynamicDestination =
+                Session_1_0.class.getDeclaredMethod("createDynamicDestination", Link_1_0.class, Terminus.class);
+        createDynamicDestination.setAccessible(true);
+        createDynamicDestination.invoke(session, link, terminus);
+
+        final Subject subject = capturedSubject.get();
+        assertNotNull(subject, "Subject not captured");
+        final Principal systemPrincipal =
+                ((BrokerTestHelper.TestableSystemPrincipalSource) connection).getSystemPrincipal();
+        assertTrue(subject.getPrincipals().contains(systemPrincipal), "System principal missing");
+    }
+
+    @Test
+    void constructorLogsCreateWithinSessionSubject()
+    {
+        final AMQPConnection_1_0<?> connection = createAmqpConnection_1_0();
+        final EventLogger eventLogger = connection.getEventLogger();
+        final AtomicReference<Subject> capturedSubject = new AtomicReference<>();
+
+        doAnswer(invocation ->
+        {
+            capturedSubject.set(Subject.current());
+            return null;
+        }).when(eventLogger).message(any(LogMessage.class));
+
+        final Session_1_0 session = createSession_1_0(connection, 0);
+
+        final Subject subject = capturedSubject.get();
+        assertNotNull(subject, "Subject should be set during CREATE logging");
+        final Set<SessionPrincipal> sessionPrincipals = subject.getPrincipals(SessionPrincipal.class);
+        assertEquals(1, sessionPrincipals.size(), "Session principal should be present");
+        assertEquals(session, sessionPrincipals.iterator().next().getSession(), "Unexpected logged session principal");
     }
 
     @Test

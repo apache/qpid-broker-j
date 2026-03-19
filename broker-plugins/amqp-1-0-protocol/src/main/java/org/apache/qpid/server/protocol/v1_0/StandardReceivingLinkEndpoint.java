@@ -19,7 +19,6 @@
 
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -71,6 +70,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.AsyncCommand;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
@@ -368,7 +368,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
 
                     setRollbackOnly = false;
                 }
-                catch (AccessControlException e)
+                catch (AccessDeniedException e)
                 {
                     final Error err = new Error();
                     err.setCondition(AmqpError.NOT_ALLOWED);

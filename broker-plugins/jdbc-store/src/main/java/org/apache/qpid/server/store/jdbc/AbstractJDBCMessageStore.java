@@ -49,12 +49,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import javax.security.auth.Subject;
+
 import org.slf4j.Logger;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.store.Event;
 import org.apache.qpid.server.store.EventListener;
 import org.apache.qpid.server.store.EventManager;
@@ -240,7 +243,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             @Override
             public Thread newThread(final Runnable r)
             {
-                final Thread thread = Executors.defaultThreadFactory().newThread(r);
+                final Runnable runnableWithNullSubject = () -> SubjectExecutionContext.withSubject(null, r);
+                final Thread thread = Executors.defaultThreadFactory().newThread(runnableWithNullSubject);
                 thread.setName(parent.getName() + "-store-"+_count.incrementAndGet());
                 return thread;
             }
@@ -477,7 +481,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         {
             try
             {
-                _executor.submit(this::removeScheduledMessages);
+                _executor.submit(wrapWithSubject(this::removeScheduledMessages));
             }
             catch (RejectedExecutionException e)
             {
@@ -485,6 +489,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 throw new IllegalStateException("Cannot schedule removal of messages", e);
             }
         }
+    }
+
+    private Runnable wrapWithSubject(final Runnable task)
+    {
+        final Subject subject = Subject.current();
+        return () -> SubjectExecutionContext.withSubject(subject, task);
     }
 
     private void removeScheduledMessages()
@@ -930,7 +940,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private <X> CompletableFuture<X> commitTranAsync(final ConnectionWrapper connWrapper, final X val) throws StoreException
     {
         final CompletableFuture<X> future = new CompletableFuture<>();
-        _executor.submit(() ->
+        _executor.submit(wrapWithSubject(() ->
         {
             try
             {
@@ -941,7 +951,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
                 future.completeExceptionally(e);
             }
-        });
+        }));
         return future;
     }
 

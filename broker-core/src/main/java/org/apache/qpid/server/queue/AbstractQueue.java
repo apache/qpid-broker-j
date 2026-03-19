@@ -27,10 +27,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.AccessControlException;
-import java.security.AccessController;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -122,7 +119,9 @@ import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.session.AMQPSession;
@@ -322,19 +321,17 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         if (isDurable() && (getLifetimePolicy()  == LifetimePolicy.DELETE_ON_CONNECTION_CLOSE ||
                 getLifetimePolicy() == LifetimePolicy.DELETE_ON_SESSION_END))
         {
-            Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () ->
+            SubjectExecutionContext.withSubject(getSubjectWithAddedSystemRights(), () ->
             {
                 setAttributes(Map.of(AbstractConfiguredObject.DURABLE,  false));
-                return null;
             });
         }
 
         if (!isDurable() && getMessageDurability() != MessageDurability.NEVER)
         {
-            Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () ->
+            SubjectExecutionContext.withSubject(getSubjectWithAddedSystemRights(), () ->
             {
                 setAttributes(Map.of(Queue.MESSAGE_DURABILITY, MessageDurability.NEVER));
-                return null;
             });
         }
 
@@ -365,7 +362,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private Set<SessionPrincipal> getSessionPrincipals()
     {
-        Subject activeSubject = Subject.getSubject(AccessController.getContext());
+        Subject activeSubject = Subject.current();
         return activeSubject == null ? Set.of() : activeSubject.getPrincipals(SessionPrincipal.class);
     }
 
@@ -631,12 +628,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private void addLifetimeConstraint(final Deletable<? extends Deletable> lifetimeObject)
     {
-        final Action<Deletable> deleteQueueTask = object -> Subject.doAs(getSubjectWithAddedSystemRights(),
-                                                                         (PrivilegedAction<Void>) () ->
-                                                                         {
-                                                                             AbstractQueue.this.delete();
-                                                                             return null;
-                                                                         });
+        final Action<Deletable> deleteQueueTask = object -> SubjectExecutionContext.withSubject(
+                getSubjectWithAddedSystemRights(),
+                AbstractQueue.this::delete);
 
         lifetimeObject.addDeleteTask(deleteQueueTask);
         addDeleteTask(new DeleteDeleteTask(lifetimeObject, deleteQueueTask));
@@ -1113,10 +1107,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                 LOGGER.debug("Auto-deleting queue: {}", this);
 
-                Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () -> {
-                    AbstractQueue.this.delete();
-                    return null;
-                });
+                SubjectExecutionContext.withSubject(getSubjectWithAddedSystemRights(), AbstractQueue.this::delete);
 
 
                 // we need to manually fire the event to the removed consumer (which was the last one left for this
@@ -3446,7 +3437,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     @Override
     public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
-            throws AccessControlException
+            throws AccessDeniedException
     {
         authorise(token, PUBLISH_ACTION, arguments);
     }
@@ -3795,7 +3786,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         AdvanceConsumersTask()
         {
             super("Queue Housekeeping: " + AbstractQueue.this.getName(),
-                  _virtualHost, getSystemTaskControllerContext("Queue Housekeeping", _virtualHost.getPrincipal()));
+                  _virtualHost, getSystemTaskSubject("Queue Housekeeping", _virtualHost.getPrincipal()));
         }
 
         @Override
@@ -3935,7 +3926,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             String taskName = String.format("Queue Housekeeping : %s : TTL Update", getName());
             getVirtualHost().executeTask(taskName,
                                          this::updateQueueEntryExpiration,
-                                         getSystemTaskControllerContext(taskName, _virtualHost.getPrincipal()));
+                                         getSystemTaskSubject(taskName, _virtualHost.getPrincipal()));
         }
     }
 

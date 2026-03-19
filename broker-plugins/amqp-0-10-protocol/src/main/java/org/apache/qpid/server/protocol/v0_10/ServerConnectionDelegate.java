@@ -23,7 +23,6 @@ package org.apache.qpid.server.protocol.v0_10;
 import static org.apache.qpid.server.protocol.v0_10.ServerConnection.State.CLOSE_RCVD;
 
 import java.nio.charset.StandardCharsets;
-import java.security.AccessControlException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
@@ -44,7 +43,28 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ConnectionPropertyEnricher;
 import org.apache.qpid.server.properties.ConnectionStartProperties;
-import org.apache.qpid.server.protocol.v0_10.transport.*;
+import org.apache.qpid.server.protocol.v0_10.transport.Binary;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionClose;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionCloseCode;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionCloseOk;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionException;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionHeartbeat;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionOpen;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionOpenOk;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionRedirect;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionSecureOk;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionStartOk;
+import org.apache.qpid.server.protocol.v0_10.transport.ConnectionTuneOk;
+import org.apache.qpid.server.protocol.v0_10.transport.Method;
+import org.apache.qpid.server.protocol.v0_10.transport.MethodDelegate;
+import org.apache.qpid.server.protocol.v0_10.transport.ProtocolDelegate;
+import org.apache.qpid.server.protocol.v0_10.transport.ProtocolHeader;
+import org.apache.qpid.server.protocol.v0_10.transport.ProtocolError;
+import org.apache.qpid.server.protocol.v0_10.transport.SessionAttach;
+import org.apache.qpid.server.protocol.v0_10.transport.SessionDetach;
+import org.apache.qpid.server.protocol.v0_10.transport.SessionDetachCode;
+import org.apache.qpid.server.protocol.v0_10.transport.SessionDetached;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
@@ -278,7 +298,7 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
                     return;
                 }
             }
-            catch (AccessControlException | VirtualHostUnavailableException e)
+            catch (AccessDeniedException | VirtualHostUnavailableException e)
             {
                 sconn.setState(ServerConnection.State.CLOSING);
                 sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, e.getMessage());

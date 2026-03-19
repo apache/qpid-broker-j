@@ -32,7 +32,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -67,6 +66,7 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.preferences.GenericPreferenceValueFactory;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.PreferenceImpl;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -472,7 +472,7 @@ public class LatestManagementControllerTest extends UnitTestBase
         createPreferences(testSubject, virtualHost, preferencesType, prefernceName, preferenceValue);
 
         List<String> path = List.of(virtualHost.getParent().getName(), hostName, "userpreferences");
-        final Object preferences = Subject.doAs(testSubject, (PrivilegedAction<Object>) () ->
+        final Object preferences = SubjectExecutionContext.withSubject(testSubject, () ->
                 _controller.getPreferences(virtualHost.getBroker(), "virtualhost", path, Map.of()));
 
         assertPreference(preferencesType, prefernceName, preferenceValue, preferences);
@@ -496,7 +496,7 @@ public class LatestManagementControllerTest extends UnitTestBase
         data.put("name", preferenceName);
         data.put("value", newValue);
         final Map<String, List<Object>> modifiedPreferences = Map.of(preferencesType, List.of(data));
-        Subject.doAs(testSubject, (PrivilegedAction<Void>) () -> {
+        SubjectExecutionContext.withSubject(testSubject, () -> {
             _controller.setPreferences(virtualHost.getBroker(),
                                        "virtualhost",
                                        path,
@@ -505,7 +505,7 @@ public class LatestManagementControllerTest extends UnitTestBase
                                        true);
             return null;
         });
-        final Object preferences = Subject.doAs(testSubject, (PrivilegedAction<Object>) () ->
+        final Object preferences = SubjectExecutionContext.withSubject(testSubject, () ->
                 _controller.getPreferences(virtualHost.getBroker(), "virtualhost", path, Map.of()));
 
         assertPreference(preferencesType, preferenceName, newValue, preferences);
@@ -528,7 +528,7 @@ public class LatestManagementControllerTest extends UnitTestBase
                                                 preferencesType,
                                                 preferenceName);
 
-        Subject.doAs(testSubject, (PrivilegedAction<Void>) () -> {
+        SubjectExecutionContext.withSubject(testSubject, () -> {
             _controller.deletePreferences(virtualHost.getBroker(),
                                           "virtualhost",
                                           path,
@@ -538,7 +538,7 @@ public class LatestManagementControllerTest extends UnitTestBase
 
         final List<String> path2 = List.of(virtualHost.getParent().getName(), hostName, "userpreferences");
 
-        final Object preferences = Subject.doAs(testSubject, (PrivilegedAction<Object>) () ->
+        final Object preferences = SubjectExecutionContext.withSubject(testSubject, () ->
                 _controller.getPreferences(virtualHost.getBroker(), "virtualhost", path2, Map.of()));
         assertThat(preferences, is(notNullValue()));
         assertThat(preferences, is(instanceOf(Map.class)));
@@ -742,10 +742,8 @@ public class LatestManagementControllerTest extends UnitTestBase
                                                          new GenericPreferenceValueFactory().createInstance(
                                                                  preferenceValue));
         final List<Preference> preferenceList = List.of(preference);
-        final Future<Void> result = Subject.doAs(testSubject,
-                                                 (PrivilegedAction<Future<Void>>) () -> virtualHost.getUserPreferences()
-                                                                                                   .updateOrAppend(
-                                                                                                           preferenceList));
+        final Future<Void> result = SubjectExecutionContext.withSubject(testSubject, () ->
+                virtualHost.getUserPreferences().updateOrAppend(preferenceList));
 
         result.get(2000L, TimeUnit.MILLISECONDS);
         return uuid;

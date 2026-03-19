@@ -28,7 +28,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -57,6 +56,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.PreferenceFactory;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
@@ -158,7 +158,7 @@ public class BrokerImplTest extends UnitTestBase
     }
 
     @Test
-    public void testPurgeUser()
+    public void testPurgeUser() throws Exception
     {
         final String testUsername = "testUser";
         final String testPassword = "testPassword";
@@ -189,7 +189,7 @@ public class BrokerImplTest extends UnitTestBase
         testUserSubject.setReadOnly();
         final Collection<Preference> preferences =
                 Set.of(PreferenceFactory.fromAttributes(_brokerImpl, preferenceAttributes));
-        Subject.doAs(testUserSubject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(testUserSubject, () ->
         {
             try
             {
@@ -256,9 +256,9 @@ public class BrokerImplTest extends UnitTestBase
         assertEquals(0L, statisticsAfterReset.get("transactedMessagesOut"));
     }
 
-    private Collection<Preference> getPreferencesAs(final Subject testUserSubject)
+    private Collection<Preference> getPreferencesAs(final Subject testUserSubject) throws Exception
     {
-        return Subject.doAs(testUserSubject, (PrivilegedAction<Collection<Preference>>) () ->
+        return SubjectExecutionContext.withSubject(testUserSubject, () ->
         {
             Collection<Preference> preferences = null;
             try

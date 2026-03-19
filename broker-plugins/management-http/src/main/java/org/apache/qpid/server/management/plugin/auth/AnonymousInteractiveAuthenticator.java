@@ -21,7 +21,6 @@
 package org.apache.qpid.server.management.plugin.auth;
 
 import java.io.IOException;
-import java.security.AccessControlException;
 
 import javax.security.auth.Subject;
 
@@ -39,6 +38,7 @@ import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthentica
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
@@ -90,7 +90,7 @@ public class AnonymousInteractiveAuthenticator implements HttpRequestInteractive
             HttpManagementUtil.createServletConnectionSubjectAssertManagementAccessAndSave(broker, request, original);
             request.getRequestDispatcher(HttpManagement.DEFAULT_LOGIN_URL).forward(request, response);
         }
-        catch (AccessControlException e)
+        catch (AccessDeniedException e)
         {
             LOGGER.info("User '{}' is not authorised for management", authenticationResult.getMainPrincipal());
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "User is not authorised for management");

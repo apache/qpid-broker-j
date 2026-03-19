@@ -51,6 +51,7 @@ public class FailFastExceptionHandlerTest
     @BeforeEach
     public void setUp()
     {
+        errorStreamCaptor.reset();
         System.setErr(new PrintStream(errorStreamCaptor));
     }
 

@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import java.security.AccessController;
 import java.security.Principal;
 import java.util.Set;
 
@@ -68,7 +67,7 @@ public class VirtualHostLogEventExcludingFilter extends Filter<ILoggingEvent> im
 
     private boolean subjectContainsVirtualHostPrincipal()
     {
-        Subject subject = Subject.getSubject(AccessController.getContext());
+        Subject subject = Subject.current();
         if (subject != null)
         {
             Set<Principal> principals= subject.getPrincipals();

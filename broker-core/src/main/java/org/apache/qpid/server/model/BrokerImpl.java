@@ -20,10 +20,7 @@
  */
 package org.apache.qpid.server.model;
 
-import java.security.AccessControlException;
-import java.security.AccessController;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -67,8 +64,10 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
 import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.CompoundAccessControl;
 import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.SubjectFixedResultAccessControl;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
@@ -640,18 +639,15 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     }
 
     private CompletableFuture<VirtualHostNode> createVirtualHostNodeAsync(Map<String, Object> attributes)
-            throws AccessControlException, IllegalArgumentException
+            throws AccessDeniedException, IllegalArgumentException
     {
 
         return getObjectFactory().createAsync(VirtualHostNode.class, attributes, this).thenApplyAsync((virtualHostNode) ->
         {
             // permission has already been granted to create the virtual host
             // disable further access check on other operations, e.g. create exchange
-            Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () ->
-            {
-                ((VirtualHostNode) virtualHostNode).start();
-                return null;
-            });
+            SubjectExecutionContext.withSubject(getSubjectWithAddedSystemRights(), () ->
+                    ((VirtualHostNode<?>) virtualHostNode).start());
             return virtualHostNode;
         }, getTaskExecutor());
     }
@@ -972,13 +968,12 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @Override
     public void restart()
     {
-        Subject.doAs(getSystemTaskSubject("Broker"), (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(getSystemTaskSubject("Broker"), () ->
         {
             final SystemConfig<?> systemConfig = (SystemConfig) getParent();
             // This is deliberately asynchronous as the HTTP thread will be interrupted by restarting
             systemConfig.setAttributesAsync(Map.of(ConfiguredObject.DESIRED_STATE, State.STOPPED))
                     .thenRunAsync(() -> systemConfig.setAttributesAsync(Map.of(ConfiguredObject.DESIRED_STATE, State.ACTIVE)), getTaskExecutor());
-            return null;
         });
 
     }
@@ -1060,10 +1055,9 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                 }
             }
 
-            Subject.doAs(userSubject, (PrivilegedAction<Void>) () ->
+            SubjectExecutionContext.withSubject(userSubject, () ->
             {
                 currentObject.getUserPreferences().delete(null, null, null);
-                return null;
             });
         }
     }
@@ -1255,11 +1249,10 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         @Override
         public void run()
         {
-            Subject.doAs(getSystemTaskSubject("Shutdown"), (PrivilegedAction<Object>) () ->
+            SubjectExecutionContext.withSubject(getSystemTaskSubject("Shutdown"), () ->
             {
                 LOGGER.debug("Shutdown hook initiating close");
                 waitForBrokerShutdown();
-                return null;
             });
         }
 
@@ -1286,7 +1279,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private SocketConnectionMetaData getConnectionMetaDataInternal()
     {
-        final Subject subject = Subject.getSubject(AccessController.getContext());
+        final Subject subject = Subject.current();
         final SocketConnectionPrincipal principal;
         if (subject != null)
         {
@@ -1309,7 +1302,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private Set<Principal> getGroupsInternal()
     {
-        final Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        final Subject currentSubject = Subject.current();
         if (currentSubject == null)
         {
             return Set.of();

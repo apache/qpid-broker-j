@@ -21,7 +21,6 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
-import java.security.AccessController;
 import java.security.Principal;
 import java.security.SecureRandom;
 import java.util.Base64;
@@ -90,7 +89,7 @@ public class SaslServlet extends AbstractServlet
         final String[] mechanisms = mechanismsList.toArray(new String[mechanismsList.size()]);
         final Map<String, Object> outputObject = new LinkedHashMap<>();
 
-        final Subject subject = Subject.getSubject(AccessController.getContext());
+        final Subject subject = Subject.current();
         final Principal principal = AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subject);
         if (principal != null)
         {

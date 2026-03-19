@@ -25,7 +25,6 @@ import java.io.OutputStream;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -53,6 +52,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.util.Action;
 
@@ -149,10 +149,7 @@ public class HttpManagementUtil
 
     public static void assertManagementAccess(final Broker<?> broker, Subject subject)
     {
-        Subject.doAs(subject, (PrivilegedAction<Void>) () -> {
-            broker.authorise(MANAGE_ACTION);
-            return null;
-        });
+        SubjectExecutionContext.withSubject(subject, () -> broker.authorise(MANAGE_ACTION));
     }
 
     public static void saveAuthorisedSubject(HttpServletRequest request, Subject subject)

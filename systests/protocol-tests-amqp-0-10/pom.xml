@@ -37,6 +37,10 @@
             <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-plugins-amqp-0-10-protocol</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.qpid</groupId>
+            <artifactId>qpid-broker-plugins-access-control</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.qpid</groupId>

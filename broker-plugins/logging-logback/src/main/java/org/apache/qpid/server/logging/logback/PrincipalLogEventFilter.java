@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import java.security.AccessController;
 import java.security.Principal;
 
 import javax.security.auth.Subject;
@@ -28,7 +27,6 @@ import javax.security.auth.Subject;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
-
 
 public class PrincipalLogEventFilter extends Filter<ILoggingEvent> implements LogBackLogInclusionRule
 {
@@ -42,7 +40,7 @@ public class PrincipalLogEventFilter extends Filter<ILoggingEvent> implements Lo
     @Override
     public final FilterReply decide(ILoggingEvent event)
     {
-        final Subject subject = Subject.getSubject(AccessController.getContext());
+        final Subject subject = Subject.current();
         if (subject != null && subject.getPrincipals().contains(_principal))
         {
             return FilterReply.NEUTRAL;

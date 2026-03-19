@@ -33,7 +33,6 @@ import java.net.InetSocketAddress;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +82,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
@@ -143,6 +143,7 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     private static final String LOGIN_SCOPE = "ldap-gssapi-bind";
     private static final AtomicBoolean KERBEROS_SETUP = new AtomicBoolean();
     private static final KerberosUtilities UTILS = new KerberosUtilities();
+    private static String _kerberosLoginConfig;
 
     @RegisterExtension
     public static CreateLdapServerExtension LDAP = new CreateLdapServerExtension();
@@ -251,7 +252,7 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     }
 
     @Test
-    public void testAuthenticateSuccessWhenCachingEnabled()
+    public void testAuthenticateSuccessWhenCachingEnabled() throws Exception
     {
         final Map<String, String> context = Map.of(AUTHENTICATION_CACHE_MAX_SIZE, "1");
         _authenticationProvider.setAttributes(Map.of(SimpleLDAPAuthenticationManager.CONTEXT, context));
@@ -259,7 +260,7 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
         final SocketConnectionPrincipal principal = mock(SocketConnectionPrincipal.class);
         when(principal.getRemoteAddress()).thenReturn(new InetSocketAddress(HOSTNAME, 5672));
         final Subject subject = new Subject(true, Set.of(principal), Set.of(), Set.of());
-        final AuthenticationResult result = Subject.doAs(subject, (PrivilegedAction<AuthenticationResult>) () ->
+        final AuthenticationResult result = SubjectExecutionContext.withSubject(subject, () ->
                 _authenticationProvider.authenticate(USER_1_NAME, USER_1_PASSWORD));
         assertEquals(AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus());
         assertEquals(USER_1_DN, result.getMainPrincipal().getName());
@@ -380,6 +381,12 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
             setUpKerberos();
             setUpJaas();
         }
+        else if (_kerberosLoginConfig != null)
+        {
+            // reassignment makes tests more stable on Windows environment
+            SYSTEM_PROPERTY_SETTER.setSystemProperty(KerberosUtilities.LOGIN_CONFIG, _kerberosLoginConfig);
+            SYSTEM_PROPERTY_SETTER.setSystemProperty("javax.security.auth.useSubjectCredsOnly", "false");
+        }
     }
 
     private void setUpKerberos() throws Exception
@@ -425,7 +432,7 @@ public class SimpleLDAPAuthenticationManagerTest extends UnitTestBase
     private void setUpJaas() throws Exception
     {
         createKeyTab(BROKER_PRINCIPAL);
-        UTILS.prepareConfiguration(KerberosUtilities.HOST_NAME, SYSTEM_PROPERTY_SETTER);
+        _kerberosLoginConfig = UTILS.prepareConfiguration(KerberosUtilities.HOST_NAME, SYSTEM_PROPERTY_SETTER);
     }
 
     private String createKrb5Conf(final int port) throws IOException

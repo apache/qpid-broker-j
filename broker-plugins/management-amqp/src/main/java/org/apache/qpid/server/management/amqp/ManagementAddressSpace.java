@@ -21,8 +21,6 @@
 package org.apache.qpid.server.management.amqp;
 
 import java.nio.charset.StandardCharsets;
-import java.security.AccessControlException;
-import java.security.AccessController;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
@@ -58,6 +56,7 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
 import org.apache.qpid.server.protocol.LinkModel;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.session.AMQPSession;
@@ -170,7 +169,11 @@ public class ManagementAddressSpace implements NamedAddressSpace
     final ProxyMessageSource getProxyNode(final String name)
     {
         LOGGER.debug("RG: looking for proxy source {}", name);
-        final Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        final Subject currentSubject = Subject.current();
+        if (currentSubject == null)
+        {
+            return null;
+        }
         final Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
         if (!sessionPrincipals.isEmpty())
         {
@@ -287,7 +290,11 @@ public class ManagementAddressSpace implements NamedAddressSpace
 
     private ProxyMessageSource createProxyNode(final Map<String, Object> attributes)
     {
-        Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        Subject currentSubject = Subject.current();
+        if (currentSubject == null)
+        {
+            return null;
+        }
         Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
         if (!sessionPrincipals.isEmpty())
         {
@@ -379,7 +386,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
 
         @Override
         public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
-                throws AccessControlException
+                throws AccessDeniedException
         {
 
         }

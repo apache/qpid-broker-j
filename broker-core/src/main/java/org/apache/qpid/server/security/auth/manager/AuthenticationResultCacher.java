@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.security.AccessController;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
@@ -113,7 +112,7 @@ public class AuthenticationResultCacher
         {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
 
-            Subject subject = Subject.getSubject(AccessController.getContext());
+            Subject subject = Subject.current();
             if (subject != null)
             {
                 Set<SocketConnectionPrincipal> connectionPrincipals =

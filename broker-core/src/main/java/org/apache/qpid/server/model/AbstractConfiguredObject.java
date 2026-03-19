@@ -30,11 +30,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-import java.security.AccessControlContext;
-import java.security.AccessControlException;
-import java.security.AccessController;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,7 +58,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
-import javax.security.auth.SubjectDomainCombiner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,8 +77,10 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
@@ -1575,7 +1572,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     }
 
     private CompletableFuture<Void> setDesiredState(final State desiredState)
-            throws IllegalStateTransitionException, AccessControlException
+            throws IllegalStateTransitionException, AccessDeniedException
     {
         return doOnConfigThread(new Task<CompletableFuture<Void>, RuntimeException>()
         {
@@ -1866,7 +1863,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             @Override
             public Map<String, Object> getAttributes()
             {
-                return Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Map<String, Object>>) () ->
+                return SubjectExecutionContext.withSubjectUnchecked(getSubjectWithAddedSystemRights(), () ->
                 {
                     Map<String,Object> attributes = new LinkedHashMap<>();
                     Map<String,Object> actualAttributes = getActualAttributes();
@@ -2567,7 +2564,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     }
 
     @Override
-    public void setAttributes(Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException
+    public void setAttributes(Map<String, Object> attributes) throws IllegalStateException, AccessDeniedException, IllegalArgumentException
     {
         doSync(setAttributesAsync(attributes));
     }
@@ -2577,7 +2574,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     }
 
     @Override
-    public CompletableFuture<Void> setAttributesAsync(final Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException
+    public CompletableFuture<Void> setAttributesAsync(final Map<String, Object> attributes) throws IllegalStateException, AccessDeniedException, IllegalArgumentException
     {
         final Map<String,Object> updateAttributes = new HashMap<>(attributes);
         Object desiredState = updateAttributes.remove(ConfiguredObject.DESIRED_STATE);
@@ -2845,26 +2842,26 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                                                                     category, parent));
     }
 
-    protected final <C extends ConfiguredObject<?>> void authoriseCreateChild(Class<C> childClass, Map<String, Object> attributes) throws AccessControlException
+    protected final <C extends ConfiguredObject<?>> void authoriseCreateChild(Class<C> childClass, Map<String, Object> attributes) throws AccessDeniedException
     {
         ConfiguredObject<?> configuredObject = createProxyForAuthorisation(childClass, attributes, this);
         authorise(configuredObject, null, Operation.CREATE, Map.of());
     }
 
     @Override
-    public final void authorise(Operation operation) throws AccessControlException
+    public final void authorise(Operation operation) throws AccessDeniedException
     {
         authorise(this, null, operation, Map.of());
     }
 
     @Override
-    public final void authorise(Operation operation, Map<String, Object> arguments) throws AccessControlException
+    public final void authorise(Operation operation, Map<String, Object> arguments) throws AccessDeniedException
     {
         authorise(this, null, operation, arguments);
     }
 
     @Override
-    public final void authorise(SecurityToken token, Operation operation, Map<String, Object> arguments) throws AccessControlException
+    public final void authorise(SecurityToken token, Operation operation, Map<String, Object> arguments) throws AccessDeniedException
     {
         authorise(this, token, operation, arguments);
     }
@@ -2920,7 +2917,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     }
 
                 }
-                throw new AccessControlException(exceptionMessage.toString());
+                throw new AccessDeniedException(exceptionMessage.toString());
             }
         }
     }
@@ -2949,7 +2946,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected final Subject getSubjectWithAddedSystemRights()
     {
-        Subject subject = Subject.getSubject(AccessController.getContext());
+        Subject subject = Subject.current();
         if(subject == null)
         {
             subject = new Subject();
@@ -2961,13 +2958,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         subject.getPrincipals().add(getSystemPrincipal());
         subject.setReadOnly();
         return subject;
-    }
-
-    protected final AccessControlContext getSystemTaskControllerContext(String taskName, Principal principal)
-    {
-        final Subject subject = getSystemTaskSubject(taskName, principal);
-        return AccessController.doPrivileged((PrivilegedAction<AccessControlContext>) () ->
-                new AccessControlContext(AccessController.getContext(), new SubjectDomainCombiner(subject)), null);
     }
 
     protected Subject getSystemTaskSubject(String taskName)
@@ -2982,7 +2972,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected final boolean isSystemProcess()
     {
-        Subject subject = Subject.getSubject(AccessController.getContext());
+        Subject subject = Subject.current();
         return isSystemSubject(subject);
     }
 

@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.pool.SuppressingInheritedAccessControlContextThreadFactory;
+import org.apache.qpid.server.pool.SubjectExecutionContextThreadFactory;
 
 public class HousekeepingExecutor extends ScheduledThreadPoolExecutor
 {
@@ -44,9 +44,9 @@ public class HousekeepingExecutor extends ScheduledThreadPoolExecutor
 
     }
 
-    private static SuppressingInheritedAccessControlContextThreadFactory createThreadFactory(String threadPrefix, int threadCount, Subject subject)
+    private static SubjectExecutionContextThreadFactory createThreadFactory(String threadPrefix, int threadCount, Subject subject)
     {
-        return new SuppressingInheritedAccessControlContextThreadFactory(threadPrefix, subject);
+        return new SubjectExecutionContextThreadFactory(threadPrefix, subject);
     }
 
     @Override
@@ -86,10 +86,16 @@ public class HousekeepingExecutor extends ScheduledThreadPoolExecutor
         {
             LOGGER.error("Housekeeping task threw an exception:", t);
 
-            final Thread.UncaughtExceptionHandler uncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
-            if (uncaughtExceptionHandler != null)
+            final Thread currentThread = Thread.currentThread();
+            final Thread.UncaughtExceptionHandler threadHandler = currentThread.getUncaughtExceptionHandler();
+            final Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+            if (threadHandler != null && threadHandler != currentThread.getThreadGroup())
             {
-                uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
+                threadHandler.uncaughtException(currentThread, t);
+            }
+            else if (defaultHandler != null)
+            {
+                defaultHandler.uncaughtException(currentThread, t);
             }
             else
             {

@@ -18,7 +18,6 @@
  */
 package org.apache.qpid.server.security.auth;
 
-import java.security.AccessController;
 import java.security.Principal;
 import java.util.Set;
 
@@ -50,7 +49,7 @@ public final class AuthenticatedPrincipal implements QpidPrincipal
 
     public static AuthenticatedPrincipal getCurrentUser()
     {
-        Subject subject = Subject.getSubject(AccessController.getContext());
+        Subject subject = Subject.current();
         final AuthenticatedPrincipal user;
         if(subject != null)
         {

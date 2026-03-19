@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.security;
 
-import java.security.AccessController;
 import java.util.Map;
 
 import javax.security.auth.Subject;
@@ -49,7 +48,7 @@ public final class SubjectFixedResultAccessControl implements AccessControl<Subj
     @Override
     public FixedResultSecurityToken newToken()
     {
-        return newToken(Subject.getSubject(AccessController.getContext()));
+        return newToken(Subject.current());
     }
 
     @Override
@@ -64,7 +63,7 @@ public final class SubjectFixedResultAccessControl implements AccessControl<Subj
                             final PermissionedObject configuredObject)
     {
         return token == null
-                ? _calculator.getResult(Subject.getSubject(AccessController.getContext()))
+                ? _calculator.getResult(Subject.current())
                 : token.getResult();
     }
 
@@ -75,7 +74,7 @@ public final class SubjectFixedResultAccessControl implements AccessControl<Subj
                             final Map<String, Object> arguments)
     {
         return token == null
-                ? _calculator.getResult(Subject.getSubject(AccessController.getContext()))
+                ? _calculator.getResult(Subject.current())
                 : token.getResult();
     }
 

@@ -21,7 +21,9 @@ package org.apache.qpid.server.protocol.v0_10;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +32,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
@@ -159,6 +162,56 @@ class ServerSessionTest extends UnitTestBase
         delegate.messageTransfer(session, xfr);
 
         assertTrue(invokedMethods.isEmpty(), "Methods invoked when not expecting any");
+    }
+
+    @Test
+    void receivedCompleteRunsUnderAuthorizedSubject()
+    {
+        final Broker<?> broker = mock(Broker.class);
+        when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0L);
+
+        final AmqpPort<?> port = createMockPort();
+
+        final AMQPConnection_0_10 modelConnection = mock(AMQPConnection_0_10.class);
+        when(modelConnection.getCategoryClass()).thenReturn(Connection.class);
+        when(modelConnection.getTypeClass()).thenReturn(AMQPConnection_0_10.class);
+        when(modelConnection.closeAsync()).thenReturn(CompletableFuture.completedFuture(null));
+        when(modelConnection.getAddressSpace()).thenReturn(_virtualHost);
+        when(modelConnection.getContextProvider()).thenReturn(_virtualHost);
+        when(modelConnection.getBroker()).thenReturn(broker);
+        when(modelConnection.getEventLogger()).thenReturn(mock(EventLogger.class));
+        when(modelConnection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
+        when(modelConnection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
+        when(modelConnection.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE)).thenReturn(Connection.DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+        when(modelConnection.getChildExecutor()).thenReturn(_taskExecutor);
+        when(modelConnection.getModel()).thenReturn(BrokerModel.getInstance());
+        when(modelConnection.getPort()).thenReturn(port);
+
+        final AuthenticatedPrincipal principal =
+                new AuthenticatedPrincipal(new UsernamePrincipal(getTestName(), mock(AuthenticationProvider.class)));
+        final Subject subject = new Subject(false, Set.of(principal), Set.of(), Set.of());
+        when(modelConnection.getSubject()).thenReturn(subject);
+
+        final ServerConnection connection = new ServerConnection(1, broker, port, Transport.TCP, modelConnection);
+        connection.setVirtualHost(_virtualHost);
+
+        final ServerSession session =
+                new ServerSession(connection, new ServerSessionDelegate(), new Binary(getTestName().getBytes()), 0);
+        final Session_0_10 modelSession = new Session_0_10(modelConnection, 1, session, getTestName());
+        session.setModelObject(modelSession);
+
+        final ConsumerTarget_0_10 subscription = mock(ConsumerTarget_0_10.class);
+        final AtomicReference<Subject> capturedSubject = new AtomicReference<>();
+        doAnswer(invocation ->
+        {
+            capturedSubject.set(Subject.current());
+            return null;
+        }).when(subscription).flushCreditState(anyBoolean());
+
+        session.register("dest", subscription);
+        session.receivedComplete();
+
+        assertEquals(session.getSubject(), capturedSubject.get(), "Unexpected subject in receivedComplete");
     }
 
     AmqpPort<?> createMockPort()

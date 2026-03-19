@@ -19,7 +19,6 @@
 
 package org.apache.qpid.server.logging.logback;
 
-import java.security.AccessController;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -46,7 +45,11 @@ class ConnectionAndUserPredicate implements PredicateAndLoggerNameAndLevelFilter
         String connectionString = "";
         String remoteContainerName = "";
 
-        final Subject subject = Subject.getSubject(AccessController.getContext());
+        final Subject subject = Subject.current();
+        if (subject == null)
+        {
+            return false;
+        }
         final Set<SocketConnectionPrincipal> connectionPrincipals = subject.getPrincipals(SocketConnectionPrincipal.class);
         final Set<AuthenticatedPrincipal> userPrincipals = subject.getPrincipals(AuthenticatedPrincipal.class);
         if (!connectionPrincipals.isEmpty())

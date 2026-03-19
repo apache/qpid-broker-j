@@ -25,7 +25,6 @@ import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CONNECTIO
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.SOCKET_FORMAT;
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.USER_FORMAT;
 
-import java.security.AccessController;
 import java.security.Principal;
 import java.text.MessageFormat;
 import java.util.Set;
@@ -102,7 +101,7 @@ public abstract class AbstractMessageLogger implements MessageLogger
 
     static String getLogActor()
     {
-        final Subject subject = Subject.getSubject(AccessController.getContext());
+        final Subject subject = Subject.current();
 
         final SessionPrincipal sessionPrincipal = getPrincipal(subject, SessionPrincipal.class);
         String message;

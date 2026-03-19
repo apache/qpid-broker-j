@@ -23,14 +23,13 @@ import static java.util.Collections.disjoint;
 
 import java.security.GeneralSecurityException;
 import java.security.Principal;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
@@ -61,6 +60,7 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
@@ -72,7 +72,6 @@ import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.server.util.CipherSuiteAndProtocolRestrictingSSLSocketFactory;
 import org.apache.qpid.server.util.ParameterizedTypes;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 /**
  * Simple LDAP authentication manager.
@@ -425,7 +424,11 @@ public class SimpleLDAPAuthenticationManagerImpl
         {
             name = getNameFromId(userId, gssapiIdentity);
         }
-        catch (NamingException e)
+        catch (RuntimeException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
         {
             LOGGER.warn("Retrieving LDAP name for user '{}' resulted in error.", userId, e);
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
@@ -473,7 +476,11 @@ public class SimpleLDAPAuthenticationManagerImpl
             //Authentication failed
             return new AuthenticationResult(AuthenticationStatus.ERROR);
         }
-        catch (NamingException e)
+        catch (RuntimeException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
         {
             //Some other failure
             LOGGER.warn("LDAP authentication attempt for username '{}' resulted in error.", name, e);
@@ -500,7 +507,7 @@ public class SimpleLDAPAuthenticationManagerImpl
     }
 
     private Set<Principal> findGroups(final DirContext context, final String userDN, final Subject gssapiIdentity)
-            throws NamingException
+            throws Exception
     {
         final Set<Principal> groupPrincipals = new HashSet<>();
         if (getGroupAttributeName() != null && !getGroupAttributeName().isEmpty())
@@ -534,9 +541,9 @@ public class SimpleLDAPAuthenticationManagerImpl
             searchControls.setSearchScope(isGroupSubtreeSearchScope()
                                                   ? SearchControls.SUBTREE_SCOPE
                                                   : SearchControls.ONELEVEL_SCOPE);
-            final PrivilegedExceptionAction<NamingEnumeration<?>> search =
+            final Callable<NamingEnumeration<?>> search =
                     () -> context.search(getGroupSearchContext(), getGroupSearchFilter(), new String[]{encode(userDN)}, searchControls);
-            final NamingEnumeration<?> groupEnumeration = invokeContextOperationAs(gssapiIdentity, search);
+            final NamingEnumeration<?> groupEnumeration = SubjectExecutionContext.withSubject(gssapiIdentity, search);
             while (groupEnumeration.hasMore())
             {
                 final SearchResult result = (SearchResult) groupEnumeration.next();
@@ -600,7 +607,7 @@ public class SimpleLDAPAuthenticationManagerImpl
     @SuppressWarnings("java:S1149")
     // Hashtable use if forced by JNDI API
     private InitialDirContext createInitialDirContext(final Hashtable<String, Object> env, final Subject gssapiIdentity)
-            throws NamingException
+            throws Exception
     {
         final boolean isLdaps =
                 String.valueOf(env.get(Context.PROVIDER_URL)).trim().toLowerCase(Locale.US).startsWith("ldaps:");
@@ -609,7 +616,7 @@ public class SimpleLDAPAuthenticationManagerImpl
             ThreadLocalLdapSslSocketFactory.set(createSslSocketFactory(_trustStore));
             env.put(JAVA_NAMING_LDAP_FACTORY_SOCKET, ThreadLocalLdapSslSocketFactory.class.getCanonicalName());
         }
-        return invokeContextOperationAs(gssapiIdentity, () -> new InitialDirContext(env));
+        return SubjectExecutionContext.withSubject(gssapiIdentity, () -> new InitialDirContext(env));
     }
 
     /**
@@ -691,17 +698,21 @@ public class SimpleLDAPAuthenticationManagerImpl
             }
             ctx = createInitialDirContext(env, gssapiIdentity);
         }
-        catch (NamingException e)
-        {
-            LOGGER.debug("Failed to establish connectivity to the ldap server for '{}'",
-                         authenticationProvider.getProviderUrl(),
-                         e);
-            throw new IllegalConfigurationException("Failed to establish connectivity to the ldap server.", e);
-        }
         catch (LoginException e)
         {
             LOGGER.debug("JAAS login failed ", e);
             throw new IllegalConfigurationException("JAAS login failed.", e);
+        }
+        catch (RuntimeException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            LOGGER.debug("Failed to establish connectivity to the ldap server for '{}'",
+                    authenticationProvider.getProviderUrl(),
+                    e);
+            throw new IllegalConfigurationException("Failed to establish connectivity to the ldap server.", e);
         }
         finally
         {
@@ -754,7 +765,7 @@ public class SimpleLDAPAuthenticationManagerImpl
      * @return Full username in LDAP
      * @throws NamingException exception thrown during LDAP search
      */
-    private String getNameFromId(final String id, final Subject gssapiIdentity) throws NamingException
+    private String getNameFromId(final String id, final Subject gssapiIdentity) throws Exception
     {
         if (!isBindWithoutSearch())
         {
@@ -768,9 +779,9 @@ public class SimpleLDAPAuthenticationManagerImpl
                 searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
 
                 LOGGER.debug("Searching for '{}'", id);
-                final PrivilegedExceptionAction<NamingEnumeration<?>> action =
+                final Callable<NamingEnumeration<?>> action =
                         () -> ctx.search(_searchContext, _searchFilter, new String[]{id}, searchControls);
-                final NamingEnumeration<?> namingEnum = invokeContextOperationAs(gssapiIdentity, action);
+                final NamingEnumeration<?> namingEnum = SubjectExecutionContext.withSubject(gssapiIdentity, action);
 
                 if (namingEnum.hasMore())
                 {
@@ -810,31 +821,6 @@ public class SimpleLDAPAuthenticationManagerImpl
                 .orElseThrow(() -> new InvalidNameException("Failed to extract CN from LDAP name '" + dn + "'"));
     }
 
-    private <T> T invokeContextOperationAs(final Subject identity, final PrivilegedExceptionAction<T> action)
-            throws NamingException
-    {
-        try
-        {
-            return Subject.doAs(identity, action);
-        }
-        catch (PrivilegedActionException e)
-        {
-            final Exception exception = e.getException();
-            if (exception instanceof NamingException)
-            {
-                throw (NamingException) exception;
-            }
-            else if (exception instanceof RuntimeException)
-            {
-                throw (RuntimeException) exception;
-            }
-            else
-            {
-                throw new ServerScopedRuntimeException(exception);
-            }
-        }
-    }
-
     private Subject doGssApiLogin(final String configScope) throws LoginException
     {
         final LoginContext loginContext = new LoginContext(configScope);
@@ -851,7 +837,7 @@ public class SimpleLDAPAuthenticationManagerImpl
      */
     @SuppressWarnings("java:S1149")
     // Hashtable use if forced by JNDI API
-    private InitialDirContext createSearchInitialDirContext(final Subject gssapiIdentity) throws NamingException
+    private InitialDirContext createSearchInitialDirContext(final Subject gssapiIdentity) throws Exception
     {
         final Hashtable<String, Object> env = createInitialDirContextEnvironment(_providerUrl);
         setAuthenticationProperties(env, _searchUsername, _searchPassword, _authenticationMethod);

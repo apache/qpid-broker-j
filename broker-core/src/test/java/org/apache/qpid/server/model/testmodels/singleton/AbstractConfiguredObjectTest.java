@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -35,6 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
@@ -42,12 +44,14 @@ import javax.security.auth.Subject;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
@@ -238,6 +242,77 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
 
         assertEquals(objectName, object.getName());
         assertEquals(6, (long) object.getIntValue());
+    }
+
+    @Test
+    public void testGetSubjectWithAddedSystemRightsFromNull() throws Exception
+    {
+        final TestSingletonImpl object =
+                (TestSingletonImpl) _objectFactory.create(TestSingleton.class, Map.of(ConfiguredObject.NAME, getTestName()), null);
+
+        final Subject result = SubjectExecutionContext.withSubject(null, object::exposedGetSubjectWithAddedSystemRights);
+
+        assertTrue(result.getPrincipals().contains(object.getSystemPrincipal()), "System principal missing");
+        assertTrue(result.isReadOnly(), "Subject should be read-only");
+    }
+
+    @Test
+    public void testGetSubjectWithAddedSystemRightsPreservesOriginalSubject() throws Exception
+    {
+        final TestSingletonImpl object =
+                (TestSingletonImpl) _objectFactory.create(TestSingleton.class, Map.of(ConfiguredObject.NAME, getTestName()), null);
+        final UsernamePrincipal userPrincipal = new UsernamePrincipal(getTestName(), null);
+        final Subject subject = new Subject(false, Set.of(userPrincipal), Set.of(), Set.of());
+
+        final Subject result = SubjectExecutionContext.withSubject(subject, object::exposedGetSubjectWithAddedSystemRights);
+
+        assertTrue(result.getPrincipals().contains(userPrincipal), "Original principal missing");
+        assertTrue(result.getPrincipals().contains(object.getSystemPrincipal()), "System principal missing");
+        assertTrue(result.isReadOnly(), "Subject should be read-only");
+        assertFalse(subject.getPrincipals().contains(object.getSystemPrincipal()), "Original subject was mutated");
+    }
+
+    @Test
+    public void testDoOnConfigThreadUsesSubject() throws Exception
+    {
+        final TestSingletonImpl object =
+                (TestSingletonImpl) _objectFactory.create(TestSingleton.class, Map.of(ConfiguredObject.NAME, getTestName()), null);
+        final Subject subject = new Subject(false, Set.of(new UsernamePrincipal(getTestName(),null)), Set.of(), Set.of());
+        final AtomicReference<Subject> taskSubject = new AtomicReference<>();
+        final AtomicReference<Subject> completionSubject = new AtomicReference<>();
+
+        final CompletableFuture<String> future = SubjectExecutionContext.withSubject(subject, () ->
+                object.exposedDoOnConfigThread(new Task<CompletableFuture<String>, RuntimeException>()
+                {
+                    @Override
+                    public CompletableFuture<String> execute()
+                    {
+                        taskSubject.set(Subject.current());
+                        return CompletableFuture.completedFuture("done");
+                    }
+
+                    @Override
+                    public String getObject()
+                    {
+                        return object.getName();
+                    }
+
+                    @Override
+                    public String getAction()
+                    {
+                        return "test";
+                    }
+
+                    @Override
+                    public String getArguments()
+                    {
+                        return null;
+                    }
+                }).whenComplete((result, throwable) -> completionSubject.set(Subject.current())));
+
+        assertEquals("done", future.get(3, TimeUnit.SECONDS), "Unexpected task result");
+        assertEquals(subject, taskSubject.get(), "Unexpected subject in task");
+        assertEquals(subject, completionSubject.get(), "Unexpected subject on completion");
     }
 
     @Test
@@ -561,7 +636,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         assertEquals(secret, object.getSecureValue());
 
         //verify we can retrieve the actual secure value using system rights
-        object.doAsSystem((PrivilegedAction<Object>) () ->
+        object.doAsSystem(() ->
         {
             assertEquals(secret, object.getAttribute(TestSingleton.SECURE_VALUE));
             assertEquals(secret, object.getSecureValue());
@@ -777,7 +852,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
 
         final Map<String, Object> attributes = Map.of(TestSingleton.NAME, "myName");
 
-        final TestSingleton object = Subject.doAs(creatorSubject, (PrivilegedAction<TestSingleton>) () ->
+        final TestSingleton object = SubjectExecutionContext.withSubject(creatorSubject, () ->
                 _objectFactory.create(TestSingleton.class, attributes, null));
 
         assertEquals(creatingUser, object.getCreatedBy(), "Unexpected creating user after object creation");
@@ -790,7 +865,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
 
         Thread.sleep(5);  // Let a small amount of time pass
 
-        Subject.doAs(updaterSubject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(updaterSubject, () ->
         {
             object.setAttributes(Map.of(TestSingleton.INT_VALUE, 5));
             return null;
@@ -818,7 +893,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         final Date now = new Date();
         Thread.sleep(5);  // Let a small amount of time pass
 
-        final TestSingleton object = Subject.doAs(userSubject, (PrivilegedAction<TestSingleton>) () ->
+        final TestSingleton object = SubjectExecutionContext.withSubject(userSubject, () ->
                 _objectFactory.create(TestSingleton.class, attributes, null));
 
         assertEquals(user, object.getCreatedBy(), "Unexpected creating user after object creation");
@@ -832,7 +907,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
         // Let a small amount of time pass before we update
         Thread.sleep(50);
 
-        Subject.doAs(userSubject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(userSubject, () ->
         {
             final Map<String, Object> updateMap = Map.of(TestSingleton.INT_VALUE, 5,
                     TestSingleton.CREATED_BY, "bogusCreator",
@@ -852,13 +927,13 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
     }
 
     @Test
-    public void testAuditInformationPersistenceAndRecovery()
+    public void testAuditInformationPersistenceAndRecovery() throws Exception
     {
         final String creatingUser = "creatingUser";
         final Subject creatorSubject = createTestAuthenticatedSubject(creatingUser);
         final String objectName = "myName";
         final Map<String, Object> attributes = Map.of(TestSingleton.NAME, objectName);
-        final TestSingleton object = Subject.doAs(creatorSubject, (PrivilegedAction<TestSingleton>) () ->
+        final TestSingleton object = SubjectExecutionContext.withSubject(creatorSubject, () ->
                 _objectFactory.create(TestSingleton.class, attributes, null));
         final ConfiguredObjectRecord cor = object.asObjectRecord();
         final Map<String, Object> recordedAttributes = cor.getAttributes();

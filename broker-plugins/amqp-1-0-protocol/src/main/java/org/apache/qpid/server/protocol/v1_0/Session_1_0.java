@@ -20,10 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.security.AccessControlContext;
-import java.security.AccessControlException;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -100,7 +96,9 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.SessionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.queue.CreatingLinkInfo;
 import org.apache.qpid.server.queue.CreatingLinkInfoImpl;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.session.AbstractAMQPSession;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
@@ -162,11 +160,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         _primaryDomain = getPrimaryDomain();
         _incomingWindow = UnsignedInteger.valueOf(incomingWindow);
 
-        AccessController.doPrivileged(((PrivilegedAction<Object>) () ->
-        {
-            _connection.getEventLogger().message(ChannelMessages.CREATE());
-            return null;
-        }), _accessControllerContext);
+        SubjectExecutionContext.withSubject(_subject, () -> _connection.getEventLogger().message(ChannelMessages.CREATE()));
     }
 
     public void sendDetach(final Detach detach)
@@ -688,11 +682,6 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
         return _incomingWindow;
     }
 
-    AccessControlContext getAccessControllerContext()
-    {
-        return _accessControllerContext;
-    }
-
     public ReceivingDestination getReceivingDestination(final Link_1_0<?, ?> link,
                                                         final Target target) throws AmqpErrorException
     {
@@ -871,10 +860,10 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                     attributes.put(Queue.EXCLUSIVE, ExclusivityPolicy.CONNECTION);
                 }
             }
-            return Subject.doAs(getSubjectWithAddedSystemRights(),
-                                (PrivilegedAction<MessageSource>) () -> getAddressSpace().createMessageSource(MessageSource.class, attributes));
+            return SubjectExecutionContext.withSubjectUnchecked(getSubjectWithAddedSystemRights(),
+                    () -> getAddressSpace().createMessageSource(MessageSource.class, attributes));
         }
-        catch (AccessControlException e)
+        catch (AccessDeniedException e)
         {
             throw new AmqpErrorException(AmqpError.UNAUTHORIZED_ACCESS, e.getMessage());
         }
@@ -908,10 +897,10 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                 attributes.put(Queue.EXCLUSIVE, ExclusivityPolicy.CONNECTION);
             }
 
-            return Subject.doAs(getSubjectWithAddedSystemRights(),
-                                (PrivilegedAction<MessageDestination>) () -> getAddressSpace().createMessageDestination(clazz, attributes));
+            return SubjectExecutionContext.withSubjectUnchecked(getSubjectWithAddedSystemRights(),
+                    () -> getAddressSpace().createMessageDestination(clazz, attributes));
         }
-        catch (AccessControlException e)
+        catch (AccessDeniedException e)
         {
             throw new AmqpErrorException(AmqpError.UNAUTHORIZED_ACCESS, e.getMessage());
         }

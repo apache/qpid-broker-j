@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -32,9 +36,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.security.AccessControlException;
 import java.security.Principal;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
@@ -43,7 +47,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.RoutingResult;
@@ -58,6 +64,7 @@ import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.MethodRegistry;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.store.MessageHandle;
@@ -146,6 +153,30 @@ class AMQChannelTest extends UnitTestBase
     }
 
     @Test
+    void constructorLogsUnderSubject()
+    {
+        final AtomicReference<Subject> loggedSubject = new AtomicReference<>();
+        final EventLogger eventLogger = mock(EventLogger.class);
+        doAnswer(invocation ->
+        {
+            loggedSubject.set(Subject.current());
+            return null;
+        }).when(eventLogger).message(any(LogMessage.class));
+        when(_amqConnection.getEventLogger()).thenReturn(eventLogger);
+
+        final AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
+
+        final Subject subject = loggedSubject.get();
+        assertNotNull(subject, "Subject not captured during log");
+        assertTrue(subject.getPrincipals().containsAll(_amqConnection.getSubject().getPrincipals()),
+                   "Missing principals from connection subject");
+        final Set<SessionPrincipal> sessionPrincipals = subject.getPrincipals(SessionPrincipal.class);
+        assertTrue(sessionPrincipals.size() == 1, "Expected single SessionPrincipal");
+        assertSame(channel, sessionPrincipals.iterator().next().getSession(),
+                   "SessionPrincipal should reference the channel");
+    }
+
+    @Test
     void receiveExchangeDeleteWhenIfUsedIsSetAndExchangeHasNoBinding()
     {
         final Exchange<?> exchange = mock(Exchange.class);
@@ -181,7 +212,7 @@ class AMQChannelTest extends UnitTestBase
     void publishContentHeaderWhenMessageAuthorizationFails()
     {
         final String impostorId = "impostor";
-        doThrow(new AccessControlException("fail")).when(_amqConnection).checkAuthorizedMessagePrincipal(impostorId);
+        doThrow(new AccessDeniedException("fail")).when(_amqConnection).checkAuthorizedMessagePrincipal(impostorId);
         when(_virtualHost.getDefaultDestination()).thenReturn(mock(MessageDestination.class));
         when(_virtualHost.getMessageStore()).thenReturn(new NullMessageStore()
         {

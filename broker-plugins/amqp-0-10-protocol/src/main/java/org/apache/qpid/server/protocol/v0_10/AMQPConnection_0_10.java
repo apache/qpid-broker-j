@@ -20,8 +20,6 @@
 
 package org.apache.qpid.server.protocol.v0_10;
 
-import java.security.AccessControlContext;
-
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -54,8 +52,6 @@ public interface AMQPConnection_0_10<C extends AMQPConnection_0_10<C>> extends A
     void setAddressSpace(NamedAddressSpace addressSpace);
 
     ContextProvider getContextProvider();
-
-    AccessControlContext getAccessControllerContext();
 
     void performDeleteTasks();
 

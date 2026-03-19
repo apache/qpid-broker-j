@@ -21,8 +21,6 @@
 package org.apache.qpid.server.management.plugin.filter;
 
 import java.io.IOException;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,6 +44,7 @@ import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator;
 import org.apache.qpid.server.management.plugin.servlet.ServletConnectionPrincipal;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 
 public class InteractiveAuthenticationFilter implements Filter
@@ -113,20 +112,37 @@ public class InteractiveAuthenticationFilter implements Filter
     private void invokeAuthenticationHandler(final HttpServletRequest httpRequest,
                                              final HttpServletResponse httpResponse,
                                              final HttpRequestInteractiveAuthenticator.AuthenticationHandler handler)
-            throws ServletException
+            throws IOException, ServletException
     {
         final Subject tempSubject = new Subject(true, Set.of(new ServletConnectionPrincipal(httpRequest)), Set.of(), Set.of());
         try
         {
-            Subject.doAs(tempSubject, (PrivilegedExceptionAction<Void>) () ->
+            SubjectExecutionContext.withSubject(tempSubject, () ->
             {
                 handler.handleAuthentication(httpResponse);
                 return null;
             });
         }
-        catch (PrivilegedActionException e)
+        catch (Exception e)
         {
-            throw new ServletException(e);
+            final Throwable cause = SubjectExecutionContext.unwrapSubjectActionException(e);
+            if (cause instanceof IOException ioException)
+            {
+                throw ioException;
+            }
+            if (cause instanceof ServletException servletException)
+            {
+                throw servletException;
+            }
+            if (cause instanceof RuntimeException runtimeException)
+            {
+                throw runtimeException;
+            }
+            if (cause instanceof Error error)
+            {
+                throw error;
+            }
+            throw new ServletException(cause);
         }
     }
 }

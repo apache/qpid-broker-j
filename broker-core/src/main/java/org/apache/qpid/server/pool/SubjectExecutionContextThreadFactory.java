@@ -22,24 +22,25 @@ package org.apache.qpid.server.pool;
 
 import javax.security.auth.Subject;
 
-import java.security.PrivilegedAction;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.qpid.server.security.SubjectExecutionContext;
+
 /**
- * <code>ThreadFactory</code> to create threads with empty inherited <code>java.security.AccessControlContext</code>.
+ * {@link ThreadFactory} that creates threads running with the configured {@link Subject}.
  * <br>
- * It delegates thread creation to <code>Executors</code> default thread factory.
+ * It delegates thread creation to {@link Executors} default thread factory.
  */
-public class SuppressingInheritedAccessControlContextThreadFactory implements ThreadFactory
+public class SubjectExecutionContextThreadFactory implements ThreadFactory
 {
     private final ThreadFactory _defaultThreadFactory = Executors.defaultThreadFactory();
     private final String _threadNamePrefix;
     private final AtomicInteger _threadId = new AtomicInteger();
     private final Subject _subject;
 
-    public SuppressingInheritedAccessControlContextThreadFactory(String threadNamePrefix, final Subject subject)
+    public SubjectExecutionContextThreadFactory(final String threadNamePrefix, final Subject subject)
     {
         _threadNamePrefix = threadNamePrefix;
         _subject = subject;
@@ -48,14 +49,12 @@ public class SuppressingInheritedAccessControlContextThreadFactory implements Th
     @Override
     public Thread newThread(final Runnable runnable)
     {
-        return Subject.doAsPrivileged(_subject, (PrivilegedAction<Thread>) () ->
+        final Thread thread = _defaultThreadFactory.newThread(() ->
+                SubjectExecutionContext.withSubject(_subject, runnable));
+        if (_threadNamePrefix != null)
         {
-            Thread thread = _defaultThreadFactory.newThread(runnable);
-            if (_threadNamePrefix != null)
-            {
-                thread.setName(_threadNamePrefix + "-" + _threadId.getAndIncrement());
-            }
-            return thread;
-        }, null);
+            thread.setName(_threadNamePrefix + "-" + _threadId.getAndIncrement());
+        }
+        return thread;
     }
 }
