@@ -149,7 +149,7 @@
     <maven-jxr-plugin-version>3.6.0</maven-jxr-plugin-version>
     <findbugs-maven-plugin-version>3.0.5</findbugs-maven-plugin-version>
     <jacoco-plugin-version>0.8.14</jacoco-plugin-version>
-    <apache-rat-plugin-version>0.17</apache-rat-plugin-version>
+    <apache-rat-plugin-version>0.18</apache-rat-plugin-version>
     <maven-docbx-plugin-version>2.0.17</maven-docbx-plugin-version>
     <maven-docbook-xml-plugin-version>5.0-all</maven-docbook-xml-plugin-version>
     <buildnumber-maven-plugin-version>3.3.0</buildnumber-maven-plugin-version>
