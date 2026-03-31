@@ -569,7 +569,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     private boolean runningAsSubject()
     {
-        return _subject.equals(Subject.current());
+        return _subject.equals(SubjectExecutionContext.currentSubject());
     }
 
     @Override

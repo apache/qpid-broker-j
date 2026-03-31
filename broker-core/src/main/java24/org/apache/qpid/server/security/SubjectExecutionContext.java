@@ -21,11 +21,6 @@
 
 package org.apache.qpid.server.security;
 
-import java.security.AccessControlContext;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
@@ -33,9 +28,10 @@ import java.util.function.Function;
 import javax.security.auth.Subject;
 
 /**
- * Java 17-23 implementation backed by {@link Subject#getSubject(AccessControlContext)} ()} and {@link Subject#doAs(Subject, PrivilegedAction)}}.
+ * Java 24+ implementation backed by {@link Subject#current()} and {@link Subject#callAs(Subject, Callable)}.
  * <br>
- * Provides the same API surface as the Java 24+ implementation, but relies on the deprecated Security manager APIs.
+ * Provides the same API surface as the Java 17 implementation, but relies on the JDK-managed current Subject
+ * rather than removed Subject.getSubject().
  */
 public final class SubjectExecutionContext
 {
@@ -46,43 +42,38 @@ public final class SubjectExecutionContext
 
     public static Subject currentSubject()
     {
-        final AccessControlContext accessControlContext = AccessController.getContext();
-        if (accessControlContext != null)
-        {
-            return Subject.getSubject(accessControlContext);
-        }
-        return null;
+        return Subject.current();
     }
 
     public static <T> T withSubject(final Subject subject, final Callable<T> action) throws Exception
     {
         try
         {
-            return Subject.doAs(subject, (PrivilegedExceptionAction<T>) action::call);
+            return Subject.callAs(subject, action);
         }
-        catch (PrivilegedActionException pae)
+        catch (CompletionException ce)
         {
-            final Throwable cause = pae.getCause();
+            final Throwable cause = ce.getCause();
             if (cause == null)
             {
-                throw pae;
+                throw ce;
             }
             if (cause instanceof Error err)
             {
-                err.addSuppressed(pae);
+                err.addSuppressed(ce);
                 throw err;
             }
             if (cause instanceof RuntimeException re)
             {
-                re.addSuppressed(pae);
+                re.addSuppressed(ce);
                 throw re;
             }
             if (cause instanceof Exception ex)
             {
-                ex.addSuppressed(pae);
+                ex.addSuppressed(ce);
                 throw ex;
             }
-            throw pae;
+            throw ce;
         }
     }
 
@@ -90,41 +81,68 @@ public final class SubjectExecutionContext
     {
         try
         {
-            return Subject.doAs(subject, (PrivilegedExceptionAction<T>) action::call);
+            return Subject.callAs(subject, action);
         }
-        catch (PrivilegedActionException pae)
+        catch (CompletionException ce)
         {
-            final Throwable cause = pae.getCause();
+            final Throwable cause = ce.getCause();
             if (cause == null)
             {
-                throw new CompletionException(pae);
+                throw ce;
             }
             if (cause instanceof Error err)
             {
-                err.addSuppressed(pae);
+                err.addSuppressed(ce);
                 throw err;
             }
             if (cause instanceof RuntimeException re)
             {
-                re.addSuppressed(pae);
+                re.addSuppressed(ce);
                 throw re;
             }
             if (cause instanceof Exception ex)
             {
-                ex.addSuppressed(pae);
+                ex.addSuppressed(ce);
                 throw new SubjectActionException(ex);
             }
-            throw new CompletionException(pae);
+            throw ce;
         }
     }
 
     public static void withSubject(final Subject subject, final Runnable runnable)
     {
-        Subject.doAs(subject, (PrivilegedAction<Object>) () ->
+        try
         {
-            runnable.run();
-            return null;
-        });
+            Subject.callAs(subject, () ->
+            {
+                runnable.run();
+                return null;
+            });
+        }
+        catch (CompletionException ce)
+        {
+            final Throwable cause = ce.getCause();
+            if (cause == null)
+            {
+                throw ce;
+            }
+            if (cause instanceof Error err)
+            {
+                err.addSuppressed(ce);
+                throw err;
+            }
+            if (cause instanceof RuntimeException re)
+            {
+                re.addSuppressed(ce);
+                throw re;
+            }
+            if (cause instanceof Exception ex)
+            {
+                ex.addSuppressed(ce);
+                throw new SubjectActionException(ex);
+            }
+            throw ce;
+        }
     }
 
     public static Throwable unwrapSubjectActionException(final Throwable throwable)

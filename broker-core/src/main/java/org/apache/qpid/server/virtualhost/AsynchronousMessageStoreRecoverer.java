@@ -115,7 +115,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             _store = virtualHost.getMessageStore();
             _storeReader = _store.newMessageStoreReader();
             _logSubject = new MessageStoreLogSubject(virtualHost.getName(), _store.getClass().getSimpleName());
-            _subject = Subject.current();
+            _subject = SubjectExecutionContext.currentSubject();
 
             _maxMessageId = _store.getNextMessageId();
             Collection children = _virtualHost.getChildren(Queue.class);

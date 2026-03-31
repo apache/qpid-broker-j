@@ -33,6 +33,7 @@ import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.OverflowPolicy;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.session.AMQPSession;
 
 public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyHandler
@@ -170,29 +171,26 @@ public class ProducerFlowControlOverflowPolicyHandler implements OverflowPolicyH
             if ((maximumQueueDepthBytes >= 0L && queueDepthBytes > maximumQueueDepthBytes) ||
                 (maximumQueueDepthMessages >= 0L && queueDepthMessages > maximumQueueDepthMessages))
             {
-                Subject subject = Subject.current();
-                if (subject != null)
+                Subject subject = SubjectExecutionContext.currentSubject();
+                Set<SessionPrincipal> sessionPrincipals = subject.getPrincipals(SessionPrincipal.class);
+                if (!sessionPrincipals.isEmpty())
                 {
-                    Set<SessionPrincipal> sessionPrincipals = subject.getPrincipals(SessionPrincipal.class);
-                    if (!sessionPrincipals.isEmpty())
+                    SessionPrincipal sessionPrincipal = sessionPrincipals.iterator().next();
+                    if (sessionPrincipal != null)
                     {
-                        SessionPrincipal sessionPrincipal = sessionPrincipals.iterator().next();
-                        if (sessionPrincipal != null)
+
+                        if (_overfullReported.compareAndSet(false, true))
                         {
-
-                            if (_overfullReported.compareAndSet(false, true))
-                            {
-                                _eventLogger.message(_queue.getLogSubject(),
-                                        QueueMessages.OVERFULL(queueDepthBytes,
-                                                maximumQueueDepthBytes,
-                                                queueDepthMessages,
-                                                maximumQueueDepthMessages));
-                            }
-
-                            final AMQPSession<?, ?> session = sessionPrincipal.getSession();
-                            session.block(_queue);
-                            _blockedSessions.add(session);
+                            _eventLogger.message(_queue.getLogSubject(),
+                                                 QueueMessages.OVERFULL(queueDepthBytes,
+                                                                        maximumQueueDepthBytes,
+                                                                        queueDepthMessages,
+                                                                        maximumQueueDepthMessages));
                         }
+
+                        final AMQPSession<?, ?> session = sessionPrincipal.getSession();
+                        session.block(_queue);
+                        _blockedSessions.add(session);
                     }
                 }
             }

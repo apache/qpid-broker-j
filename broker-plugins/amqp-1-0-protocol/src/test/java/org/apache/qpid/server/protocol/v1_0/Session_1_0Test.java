@@ -106,6 +106,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.queue.QueueConsumer;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -174,7 +175,7 @@ class Session_1_0Test extends UnitTestBase
         final AtomicReference<Subject> capturedSubject = new AtomicReference<>();
         when(addressSpace.createMessageDestination(any(), any())).thenAnswer(invocation ->
         {
-            capturedSubject.set(Subject.current());
+            capturedSubject.set(SubjectExecutionContext.currentSubject());
             return mock(MessageDestination.class);
         });
         when(connection.getAddressSpace()).thenReturn(addressSpace);
@@ -207,7 +208,7 @@ class Session_1_0Test extends UnitTestBase
 
         doAnswer(invocation ->
         {
-            capturedSubject.set(Subject.current());
+            capturedSubject.set(SubjectExecutionContext.currentSubject());
             return null;
         }).when(eventLogger).message(any(LogMessage.class));
 

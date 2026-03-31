@@ -24,6 +24,7 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 import static org.apache.qpid.server.management.plugin.HttpManagementUtil.ATTR_MANAGEMENT_CONFIGURATION;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -125,8 +126,19 @@ public class SaslServletTest
         final Map<String, Object> payload = _servlet.getPayload();
         assertNotNull(payload, "Expected payload");
         assertEquals("remote-user", payload.get("user"), "Unexpected fallback user");
-        assertArrayEquals(new String[]{"PLAIN", "SCRAM-SHA-256"},
-                (String[]) payload.get("mechanisms"),
+        assertArrayEquals(new String[]{"PLAIN", "SCRAM-SHA-256"}, (String[]) payload.get("mechanisms"),
+                "Unexpected mechanisms");
+    }
+
+    @Test
+    public void doGetHandlesAbsentSubject() throws Exception
+    {
+        _servlet.doGet(_request, _response, mock(ConfiguredObject.class));
+
+        final Map<String, Object> payload = _servlet.getPayload();
+        assertNotNull(payload, "Expected payload");
+        assertFalse(payload.containsKey("user"), "Unexpected user");
+        assertArrayEquals(new String[]{"PLAIN", "SCRAM-SHA-256"}, (String[]) payload.get("mechanisms"),
                 "Unexpected mechanisms");
     }
 

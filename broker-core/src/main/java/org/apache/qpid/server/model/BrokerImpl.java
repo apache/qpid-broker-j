@@ -1279,7 +1279,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private SocketConnectionMetaData getConnectionMetaDataInternal()
     {
-        final Subject subject = Subject.current();
+        final Subject subject = SubjectExecutionContext.currentSubject();
         final SocketConnectionPrincipal principal;
         if (subject != null)
         {
@@ -1302,7 +1302,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private Set<Principal> getGroupsInternal()
     {
-        final Subject currentSubject = Subject.current();
+        final Subject currentSubject = SubjectExecutionContext.currentSubject();
         if (currentSubject == null)
         {
             return Set.of();

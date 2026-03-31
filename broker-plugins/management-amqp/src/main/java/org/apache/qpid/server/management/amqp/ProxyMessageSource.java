@@ -53,6 +53,7 @@ import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -156,7 +157,7 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
             final Integer priority
     ) throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive, ConsumerAccessRefused, QueueDeleted
     {
-        final Subject currentSubject = Subject.current();
+        final Subject currentSubject = SubjectExecutionContext.currentSubject();
         if (currentSubject == null)
         {
             return null;

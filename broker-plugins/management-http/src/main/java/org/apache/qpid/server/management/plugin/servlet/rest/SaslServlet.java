@@ -89,8 +89,7 @@ public class SaslServlet extends AbstractServlet
         final String[] mechanisms = mechanismsList.toArray(new String[mechanismsList.size()]);
         final Map<String, Object> outputObject = new LinkedHashMap<>();
 
-        final Subject subject = Subject.current();
-        final Principal principal = AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subject);
+        final Principal principal = AuthenticatedPrincipal.getCurrentUser();
         if (principal != null)
         {
             outputObject.put("user", principal.getName());

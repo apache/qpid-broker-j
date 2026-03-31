@@ -32,10 +32,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Set;
 
-import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
@@ -70,7 +70,7 @@ import org.apache.qpid.tests.utils.ConfigItem;
  * - guest is explicitly denied to perform ANY operations on QUEUE
  * - everything else is allowed to keep broker usable for tests
  * <br>
- * If guest ever succeeds at an operation on QUEUE, it is a strong indicator that authorize() observed SYSTEM,
+ * If guest ever succeeds at an operation on QUEUE, it is a strong indicator that authorise() observed SYSTEM,
  * i.e. Subject propagation is broken.
  */
 @ConfigItem(
@@ -85,13 +85,16 @@ public class SystemPrivilegeEscalationGuardTest extends BrokerAdminUsingTestBase
     private static final String GUEST_USERNAME = "guest";
     private static final String GUEST_PASSWORD = "guest";
 
-    private static final String QUEUE1 = "queue1";
+    private static final String QUEUE1 = "q1";
 
     private static final byte[] SASL_AMQP_HEADER_BYTES = "AMQP\3\1\0\0".getBytes(StandardCharsets.UTF_8);
     private static final byte[] AMQP_HEADER_BYTES = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
 
     private static final Symbol PLAIN = Symbol.getSymbol("PLAIN");
     private static final Set<Symbol> ACCESS_DENIED_CONDITIONS = Set.of(AmqpError.UNAUTHORIZED_ACCESS.getValue(), AmqpError.NOT_ALLOWED.getValue());
+
+    // JMS mapping capability used to request creation of a temporary queue
+    private static final Symbol TEMPORARY_QUEUE = Symbol.valueOf("temporary-queue");
 
     @BeforeEach
     public void setUp()
@@ -283,10 +286,23 @@ public class SystemPrivilegeEscalationGuardTest extends BrokerAdminUsingTestBase
     }
 
     private void adminCanSeeQueue(final String queueName, final int expectedMessagesCount)
+            throws InterruptedException
     {
-        assertEquals(expectedMessagesCount,
-                getBrokerAdmin().getQueueDepthMessages(queueName),
-                "Expected queue '%s' to contain %d message(s)".formatted(queueName, expectedMessagesCount));
+        final long deadline = System.currentTimeMillis() + 5_000L;
+        int queueDepthMessages;
+        do
+        {
+            queueDepthMessages = getBrokerAdmin().getQueueDepthMessages(queueName);
+            if (queueDepthMessages == expectedMessagesCount)
+            {
+                return;
+            }
+            Thread.sleep(50L);
+        }
+        while (System.currentTimeMillis() < deadline);
+
+        assertEquals(expectedMessagesCount, queueDepthMessages, "Expected queue '%s' to contain %d message(s)"
+                .formatted(queueName, expectedMessagesCount));
     }
 
     private Interaction negotiateOpenAs(final Interaction interaction,

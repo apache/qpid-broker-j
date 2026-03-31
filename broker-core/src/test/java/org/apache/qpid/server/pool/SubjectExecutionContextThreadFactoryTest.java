@@ -66,12 +66,12 @@ public class SubjectExecutionContextThreadFactoryTest extends UnitTestBase
 
         SubjectExecutionContext.withSubject(subject, () ->
         {
-            callerSubjectCapture.set(Subject.current());
+            callerSubjectCapture.set(SubjectExecutionContext.currentSubject());
             final SubjectExecutionContextThreadFactory factory =
                     new SubjectExecutionContextThreadFactory(null, null);
             factory.newThread(() ->
             {
-                threadSubjectCapture.set(Subject.current());
+                threadSubjectCapture.set(SubjectExecutionContext.currentSubject());
                 latch.countDown();
             }).start();
         });
@@ -104,7 +104,7 @@ public class SubjectExecutionContextThreadFactoryTest extends UnitTestBase
                     new SubjectExecutionContextThreadFactory(null, factorySubject);
             factory.newThread(() ->
             {
-                threadSubjectCapture.set(Subject.current());
+                threadSubjectCapture.set(SubjectExecutionContext.currentSubject());
                 latch.countDown();
             }).start();
         });

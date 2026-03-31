@@ -65,6 +65,7 @@ import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.MethodRegistry;
 import org.apache.qpid.server.security.AccessDeniedException;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.store.MessageHandle;
@@ -159,7 +160,7 @@ class AMQChannelTest extends UnitTestBase
         final EventLogger eventLogger = mock(EventLogger.class);
         doAnswer(invocation ->
         {
-            loggedSubject.set(Subject.current());
+            loggedSubject.set(SubjectExecutionContext.currentSubject());
             return null;
         }).when(eventLogger).message(any(LogMessage.class));
         when(_amqConnection.getEventLogger()).thenReturn(eventLogger);

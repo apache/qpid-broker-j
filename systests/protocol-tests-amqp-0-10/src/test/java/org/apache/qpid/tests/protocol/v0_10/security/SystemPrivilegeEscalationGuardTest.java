@@ -79,8 +79,8 @@ public class SystemPrivilegeEscalationGuardTest extends BrokerAdminUsingTestBase
     private static final String GUEST_USERNAME = "guest";
     private static final String GUEST_PASSWORD = "guest";
 
-    private static final String QUEUE1 = "queue1";
-    private static final String QUEUE2 = "queue2";
+    private static final String QUEUE1 = "q1";
+    private static final String QUEUE2 = "q2";
 
     private static final byte[] SESSION_NAME = "guard-session".getBytes(UTF_8);
     private static final String SUBSCRIBER = "guard-subscriber";

@@ -923,7 +923,7 @@ public class ServerSession extends SessionInvoker
 
     private boolean runningAsSubject()
     {
-        return getAuthorizedSubject().equals(Subject.current());
+        return getAuthorizedSubject().equals(SubjectExecutionContext.currentSubject());
     }
 
     private <T> T runAsSubject(final Supplier<T> action)

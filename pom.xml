@@ -76,7 +76,7 @@
   </distributionManagement>
 
   <properties>
-    <javaVersion>21</javaVersion>
+    <javaVersion>17</javaVersion>
     <minimum-maven-version>3.0.0</minimum-maven-version>
     <minimum-java-version>${javaVersion}</minimum-java-version>
     <maven.compiler.source>${minimum-java-version}</maven.compiler.source>

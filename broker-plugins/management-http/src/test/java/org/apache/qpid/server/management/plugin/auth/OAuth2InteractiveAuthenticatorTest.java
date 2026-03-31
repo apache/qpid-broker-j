@@ -65,6 +65,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SubjectCreator;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -328,7 +329,7 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
 
         doAnswer(invocationOnMock ->
         {
-            final Subject subject = Subject.current();
+            final Subject subject = SubjectExecutionContext.currentSubject();
             if (subject == null || !subject.getPrincipals().iterator().next().getName().equals(TEST_AUTHORIZED_USER))
             {
                 throw new AccessDeniedException("access denied");

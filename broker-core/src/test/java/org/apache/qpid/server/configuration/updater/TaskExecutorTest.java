@@ -273,7 +273,7 @@ public class TaskExecutorTest extends UnitTestBase
                         @Override
                         public Void execute()
                         {
-                            taskSubject.set(Subject.current());
+                            taskSubject.set(SubjectExecutionContext.currentSubject());
                             return null;
                         }
 
@@ -365,7 +365,7 @@ public class TaskExecutorTest extends UnitTestBase
                     @Override
                     public Void execute()
                     {
-                        capturedSubject.set(Subject.current());
+                        capturedSubject.set(SubjectExecutionContext.currentSubject());
                         subjectCaptured.countDown();
                         return null;
                     }
@@ -416,7 +416,7 @@ public class TaskExecutorTest extends UnitTestBase
         // 3) after task is done subject in worker-thread must be removed
         final ExecutorService raw = getUnderlyingExecutor(_executor);
         final Subject subjectAfterTask =
-                raw.submit(() -> Subject.current()).get(3, TimeUnit.SECONDS);
+                raw.submit(() -> SubjectExecutionContext.currentSubject()).get(3, TimeUnit.SECONDS);
 
         assertNull(subjectAfterTask, "Subject leaked on worker-thread between tasks");
     }
@@ -458,7 +458,7 @@ public class TaskExecutorTest extends UnitTestBase
         }
 
         final ExecutorService raw = getUnderlyingExecutor(_executor);
-        final Subject subjectAfterFailure = raw.submit(() -> Subject.current()).get(3, TimeUnit.SECONDS);
+        final Subject subjectAfterFailure = raw.submit(() -> SubjectExecutionContext.currentSubject()).get(3, TimeUnit.SECONDS);
 
         assertNull(subjectAfterFailure, "Subject leaked on worker-thread after exception");
     }
@@ -475,7 +475,7 @@ public class TaskExecutorTest extends UnitTestBase
         assertSame(admin, seenInside);
 
         final ExecutorService raw = getUnderlyingExecutor(_executor);
-        final Subject subjectAfter = raw.submit(() -> Subject.current()).get(3, TimeUnit.SECONDS);
+        final Subject subjectAfter = raw.submit(() -> SubjectExecutionContext.currentSubject()).get(3, TimeUnit.SECONDS);
 
         assertNull(subjectAfter, "Subject leaked into worker-thread after task execution");
     }
@@ -492,7 +492,7 @@ public class TaskExecutorTest extends UnitTestBase
 
         SubjectExecutionContext.withSubject(admin, () -> _executor.execute(() ->
         {
-            seenInsideRunnable.set(Subject.current());
+            seenInsideRunnable.set(SubjectExecutionContext.currentSubject());
             executed.countDown();
         }));
 
@@ -500,7 +500,7 @@ public class TaskExecutorTest extends UnitTestBase
         assertSame(admin, seenInsideRunnable.get(), "Runnable must see subject captured at execute() call");
 
         final ExecutorService raw = getUnderlyingExecutor(_executor);
-        final Subject subjectAfter = raw.submit(() -> Subject.current()).get(3, TimeUnit.SECONDS);
+        final Subject subjectAfter = raw.submit(() -> SubjectExecutionContext.currentSubject()).get(3, TimeUnit.SECONDS);
 
         assertNull(subjectAfter, "Subject leaked on worker-thread after execute(Runnable)");
     }
@@ -529,7 +529,7 @@ public class TaskExecutorTest extends UnitTestBase
             {
                 throw _exception;
             }
-            _taskSubject.set(Subject.current());
+            _taskSubject.set(SubjectExecutionContext.currentSubject());
             return null;
         }
 
@@ -557,7 +557,7 @@ public class TaskExecutorTest extends UnitTestBase
         @Override
         public Subject execute()
         {
-            return Subject.current();
+            return SubjectExecutionContext.currentSubject();
         }
 
         @Override

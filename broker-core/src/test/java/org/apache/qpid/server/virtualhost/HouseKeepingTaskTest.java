@@ -29,6 +29,7 @@ import javax.security.auth.Subject;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -61,7 +62,7 @@ public class HouseKeepingTaskTest extends UnitTestBase
             @Override
             public void execute()
             {
-                capturedSubject.set(Subject.current());
+                capturedSubject.set(SubjectExecutionContext.currentSubject());
             }
         };
 

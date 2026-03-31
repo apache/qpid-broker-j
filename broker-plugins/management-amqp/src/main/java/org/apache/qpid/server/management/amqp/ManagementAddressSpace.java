@@ -58,6 +58,7 @@ import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MemoryMessageStore;
@@ -169,7 +170,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
     final ProxyMessageSource getProxyNode(final String name)
     {
         LOGGER.debug("RG: looking for proxy source {}", name);
-        final Subject currentSubject = Subject.current();
+        final Subject currentSubject = SubjectExecutionContext.currentSubject();
         if (currentSubject == null)
         {
             return null;
@@ -290,7 +291,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
 
     private ProxyMessageSource createProxyNode(final Map<String, Object> attributes)
     {
-        Subject currentSubject = Subject.current();
+        Subject currentSubject = SubjectExecutionContext.currentSubject();
         if (currentSubject == null)
         {
             return null;

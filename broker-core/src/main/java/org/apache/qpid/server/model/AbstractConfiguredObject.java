@@ -2946,7 +2946,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected final Subject getSubjectWithAddedSystemRights()
     {
-        Subject subject = Subject.current();
+        Subject subject = SubjectExecutionContext.currentSubject();
         if(subject == null)
         {
             subject = new Subject();
@@ -2972,7 +2972,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected final boolean isSystemProcess()
     {
-        Subject subject = Subject.current();
+        Subject subject = SubjectExecutionContext.currentSubject();
         return isSystemSubject(subject);
     }
 

@@ -362,7 +362,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private Set<SessionPrincipal> getSessionPrincipals()
     {
-        Subject activeSubject = Subject.current();
+        Subject activeSubject = SubjectExecutionContext.currentSubject();
         return activeSubject == null ? Set.of() : activeSubject.getPrincipals(SessionPrincipal.class);
     }
 

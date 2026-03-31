@@ -102,7 +102,7 @@ public class VirtualHostLogEventExcludingFilterTest extends UnitTestBase
         final FilterReply reply = _filter.decide(_loggingEvent);
         assertEquals(FilterReply.NEUTRAL, reply,
                 " BrokerLogger#virtualHostLogEventExcluded=false and subject=null");
-        assertNull(Subject.current(), "Subject should not be set in test environment");
+        assertNull(SubjectExecutionContext.currentSubject(), "Subject should not be set in test environment");
     }
 
     @Test
@@ -112,7 +112,7 @@ public class VirtualHostLogEventExcludingFilterTest extends UnitTestBase
         final FilterReply reply = _filter.decide(_loggingEvent);
         assertEquals(FilterReply.NEUTRAL, reply,
                 " BrokerLogger#virtualHostLogEventExcluded=true and subject=null");
-        assertNull(Subject.current(), "Subject should not be set in test environment");
+        assertNull(SubjectExecutionContext.currentSubject(), "Subject should not be set in test environment");
     }
 
     private FilterReply doTestDecide(final Subject subject) throws Exception

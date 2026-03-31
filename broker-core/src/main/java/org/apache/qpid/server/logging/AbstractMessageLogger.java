@@ -34,6 +34,7 @@ import javax.security.auth.Subject;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.logging.subjects.LogSubjectFormat;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
@@ -101,7 +102,7 @@ public abstract class AbstractMessageLogger implements MessageLogger
 
     static String getLogActor()
     {
-        final Subject subject = Subject.current();
+        final Subject subject = SubjectExecutionContext.currentSubject();
 
         final SessionPrincipal sessionPrincipal = getPrincipal(subject, SessionPrincipal.class);
         String message;

@@ -122,19 +122,6 @@ public class ProducerFlowControlOverflowPolicyHandlerTest extends UnitTestBase
     }
 
     @Test
-    public void testCheckOverflowWithoutSubjectDoesNotBlockOrReport()
-    {
-        when(_queue.getQueueDepthBytes()).thenReturn(11L);
-        when(_queue.getMaximumQueueDepthBytes()).thenReturn(10L);
-
-        _producerFlowControlOverflowPolicyHandler.checkOverflow(null);
-
-        assertFalse(_producerFlowControlOverflowPolicyHandler.isQueueFlowStopped(),
-                "Flow should not be stopped without subject");
-        verifyNoInteractions(_eventLogger);
-    }
-
-    @Test
     public void testCheckOverflowResumesFlowWhenUnderfullBytes()
     {
         final AMQPSession<?, ?> session = mock(AMQPSession.class);

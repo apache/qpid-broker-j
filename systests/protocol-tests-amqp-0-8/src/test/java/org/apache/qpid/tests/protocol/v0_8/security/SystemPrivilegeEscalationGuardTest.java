@@ -74,7 +74,7 @@ public class SystemPrivilegeEscalationGuardTest extends BrokerAdminUsingTestBase
     private static final String GUEST_USERNAME = "guest";
     private static final String GUEST_PASSWORD = "guest";
 
-    private static final String QUEUE1 = "queue1";
+    private static final String QUEUE1 = "q1";
 
     private static final List<Integer> ACCESS_DENIED_CODES = List.of(ErrorCodes.ACCESS_REFUSED, ErrorCodes.NOT_ALLOWED);
 

@@ -28,6 +28,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.model.preferences.GenericPrincipal;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
 
@@ -45,7 +46,7 @@ class ConnectionAndUserPredicate implements PredicateAndLoggerNameAndLevelFilter
         String connectionString = "";
         String remoteContainerName = "";
 
-        final Subject subject = Subject.current();
+        final Subject subject = SubjectExecutionContext.currentSubject();
         if (subject == null)
         {
             return false;

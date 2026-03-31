@@ -34,6 +34,7 @@ import javax.security.auth.Subject;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -55,7 +56,7 @@ public class HttpManagementUtilTest extends UnitTestBase
 
         doAnswer(invocation ->
         {
-            capturedSubject.set(Subject.current());
+            capturedSubject.set(SubjectExecutionContext.currentSubject());
             return null;
         }).when(broker).authorise(any(Operation.class));
 

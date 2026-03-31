@@ -493,7 +493,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private Runnable wrapWithSubject(final Runnable task)
     {
-        final Subject subject = Subject.current();
+        final Subject subject = SubjectExecutionContext.currentSubject();
         return () -> SubjectExecutionContext.withSubject(subject, task);
     }
 

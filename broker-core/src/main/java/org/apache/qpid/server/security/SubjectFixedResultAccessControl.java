@@ -48,7 +48,7 @@ public final class SubjectFixedResultAccessControl implements AccessControl<Subj
     @Override
     public FixedResultSecurityToken newToken()
     {
-        return newToken(Subject.current());
+        return newToken(SubjectExecutionContext.currentSubject());
     }
 
     @Override
@@ -63,7 +63,7 @@ public final class SubjectFixedResultAccessControl implements AccessControl<Subj
                             final PermissionedObject configuredObject)
     {
         return token == null
-                ? _calculator.getResult(Subject.current())
+                ? _calculator.getResult(SubjectExecutionContext.currentSubject())
                 : token.getResult();
     }
 
@@ -74,7 +74,7 @@ public final class SubjectFixedResultAccessControl implements AccessControl<Subj
                             final Map<String, Object> arguments)
     {
         return token == null
-                ? _calculator.getResult(Subject.current())
+                ? _calculator.getResult(SubjectExecutionContext.currentSubject())
                 : token.getResult();
     }
 

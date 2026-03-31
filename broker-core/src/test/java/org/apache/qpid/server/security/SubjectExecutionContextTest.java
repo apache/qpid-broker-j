@@ -52,19 +52,19 @@ class SubjectExecutionContextTest extends UnitTestBase
         final Subject subjectA = new Subject();
         final Subject subjectB = new Subject();
 
-        assertNull(Subject.current(), SUBJECT_MUST_BE_NULL_OUTSIDE_CONTEXT);
+        assertNull(SubjectExecutionContext.currentSubject(), SUBJECT_MUST_BE_NULL_OUTSIDE_CONTEXT);
 
         SubjectExecutionContext.withSubject(subjectA, () ->
         {
-            assertEquals(subjectA, Subject.current(), "Unexpected subject in outer context");
+            assertEquals(subjectA, SubjectExecutionContext.currentSubject(), "Unexpected subject in outer context");
 
             SubjectExecutionContext.withSubject(subjectB, () ->
-                    assertEquals(subjectB, Subject.current(), "Unexpected subject in inner context"));
+                    assertEquals(subjectB, SubjectExecutionContext.currentSubject(), "Unexpected subject in inner context"));
 
-            assertEquals(subjectA, Subject.current(), "Unexpected subject after inner context");
+            assertEquals(subjectA, SubjectExecutionContext.currentSubject(), "Unexpected subject after inner context");
         });
 
-        assertNull(Subject.current(), SUBJECT_MUST_BE_RESTORED_AFTER_CONTEXT);
+        assertNull(SubjectExecutionContext.currentSubject(), SUBJECT_MUST_BE_RESTORED_AFTER_CONTEXT);
     }
 
     @Test
@@ -73,19 +73,19 @@ class SubjectExecutionContextTest extends UnitTestBase
         final Subject subjectA = new Subject();
         final Subject subjectB = new Subject();
 
-        assertNull(Subject.current(), SUBJECT_MUST_BE_NULL_OUTSIDE_CONTEXT);
+        assertNull(SubjectExecutionContext.currentSubject(), SUBJECT_MUST_BE_NULL_OUTSIDE_CONTEXT);
 
         SubjectExecutionContext.withSubject(subjectA, () ->
         {
-            assertEquals(subjectA, Subject.current(), "Unexpected subject in outer context");
+            assertEquals(subjectA, SubjectExecutionContext.currentSubject(), "Unexpected subject in outer context");
 
             SubjectExecutionContext.withSubject(subjectB, () ->
-                    assertEquals(subjectB, Subject.current(), "Unexpected subject in inner context"));
+                    assertEquals(subjectB, SubjectExecutionContext.currentSubject(), "Unexpected subject in inner context"));
 
-            assertEquals(subjectA, Subject.current(), "Unexpected subject after inner context");
+            assertEquals(subjectA, SubjectExecutionContext.currentSubject(), "Unexpected subject after inner context");
         });
 
-        assertNull(Subject.current(), SUBJECT_MUST_BE_RESTORED_AFTER_CONTEXT);
+        assertNull(SubjectExecutionContext.currentSubject(), SUBJECT_MUST_BE_RESTORED_AFTER_CONTEXT);
     }
 
     @Test
@@ -101,7 +101,7 @@ class SubjectExecutionContextTest extends UnitTestBase
                 }));
 
         assertSame(expected, thrown, "Unexpected exception");
-        assertNull(Subject.current(), "Subject must be restored after exception");
+        assertNull(SubjectExecutionContext.currentSubject(), "Subject must be restored after exception");
     }
 
     @Test
@@ -117,7 +117,7 @@ class SubjectExecutionContextTest extends UnitTestBase
                 }));
 
         assertSame(expected, thrown, "Unexpected exception");
-        assertNull(Subject.current(), "Subject must be restored after exception");
+        assertNull(SubjectExecutionContext.currentSubject(), "Subject must be restored after exception");
     }
 
     @Test
@@ -127,17 +127,17 @@ class SubjectExecutionContextTest extends UnitTestBase
         final Subject subjectB = new Subject();
         final RuntimeException expected = new RuntimeException("boom");
 
-        assertNull(Subject.current(), SUBJECT_MUST_BE_NULL_OUTSIDE_CONTEXT);
+        assertNull(SubjectExecutionContext.currentSubject(), SUBJECT_MUST_BE_NULL_OUTSIDE_CONTEXT);
 
         SubjectExecutionContext.withSubject(subjectA, () ->
         {
-            assertEquals(subjectA, Subject.current(), "Unexpected subject in outer context");
+            assertEquals(subjectA, SubjectExecutionContext.currentSubject(), "Unexpected subject in outer context");
 
             try
             {
                 SubjectExecutionContext.withSubject(subjectB, (Runnable) () ->
                 {
-                    assertEquals(subjectB, Subject.current(), "Unexpected subject in inner context");
+                    assertEquals(subjectB, SubjectExecutionContext.currentSubject(), "Unexpected subject in inner context");
                     throw expected;
                 });
             }
@@ -147,11 +147,11 @@ class SubjectExecutionContextTest extends UnitTestBase
             }
 
             assertEquals(subjectA,
-                    Subject.current(),
+                    SubjectExecutionContext.currentSubject(),
                     "Unexpected subject after inner exception");
         });
 
-        assertNull(Subject.current(), SUBJECT_MUST_BE_RESTORED_AFTER_CONTEXT);
+        assertNull(SubjectExecutionContext.currentSubject(), SUBJECT_MUST_BE_RESTORED_AFTER_CONTEXT);
     }
 
     @Test
@@ -166,7 +166,7 @@ class SubjectExecutionContextTest extends UnitTestBase
         {
             Thread thread = new Thread(() ->
             {
-                threadSubjectCapture.set(Subject.current());
+                threadSubjectCapture.set(SubjectExecutionContext.currentSubject());
                 latch.countDown();
             });
             thread.start();
@@ -189,7 +189,7 @@ class SubjectExecutionContextTest extends UnitTestBase
         {
             Thread thread = new Thread(() ->
             {
-                threadSubjectCapture.set(Subject.current());
+                threadSubjectCapture.set(SubjectExecutionContext.currentSubject());
                 latch.countDown();
             });
             thread.start();
@@ -197,6 +197,26 @@ class SubjectExecutionContextTest extends UnitTestBase
 
         assertTrue(latch.await(3, TimeUnit.SECONDS), "Thread did not start in time");
         assertNull(threadSubjectCapture.get(), "Unexpected subject in new thread");
+    }
+
+    @Test
+    void withSubjectRunnablePreservesRuntimeExceptionWithCheckedCause()
+    {
+        final Subject subject = new Subject();
+        final Exception checkedCause = new Exception("checked cause");
+        final RuntimeException expected = new RuntimeException("wrapper", checkedCause);
+
+        final RuntimeException thrown = assertThrows(RuntimeException.class, () ->
+                SubjectExecutionContext.withSubject(subject, (Runnable) () ->
+                {
+                    throw expected;
+                }));
+
+        assertSame(expected, thrown, "Original RuntimeException must propagate unchanged");
+        assertSame(checkedCause, thrown.getCause(), "Original cause must be preserved");
+        assertEquals(expected.getClass(), thrown.getClass(),
+                "Exception type must not be transformed to SubjectActionException");
+        assertNull(SubjectExecutionContext.currentSubject(), "Subject must be restored after exception");
     }
 
     @Test
@@ -212,7 +232,7 @@ class SubjectExecutionContextTest extends UnitTestBase
                 }));
 
         assertSame(expected, thrown.getCause(), "Unexpected wrapped exception");
-        assertNull(Subject.current(), "Subject must be restored after exception");
+        assertNull(SubjectExecutionContext.currentSubject(), "Subject must be restored after exception");
     }
 
     @Test
@@ -228,7 +248,7 @@ class SubjectExecutionContextTest extends UnitTestBase
                 }));
 
         assertSame(expected, thrown, "Unexpected exception");
-        assertNull(Subject.current(), "Subject must be restored after exception");
+        assertNull(SubjectExecutionContext.currentSubject(), "Subject must be restored after exception");
     }
 
     @Test

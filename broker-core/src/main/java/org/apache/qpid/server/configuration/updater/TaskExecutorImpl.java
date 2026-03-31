@@ -226,7 +226,7 @@ public class TaskExecutorImpl implements TaskExecutor
 
     private Subject effectiveSubject()
     {
-        final Subject contextSubject = Subject.current();
+        final Subject contextSubject = SubjectExecutionContext.currentSubject();
 
         if (contextSubject == null)
         {

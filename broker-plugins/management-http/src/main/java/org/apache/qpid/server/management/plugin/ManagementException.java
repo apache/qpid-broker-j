@@ -41,6 +41,7 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.OperationTimeoutException;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.util.ExternalServiceException;
 import org.apache.qpid.server.util.ExternalServiceTimeoutException;
 
@@ -268,7 +269,7 @@ public class ManagementException extends RuntimeException
 
     private static String getRequestPrincipals()
     {
-        final Subject subject = Subject.current();
+        final Subject subject = SubjectExecutionContext.currentSubject();
         if (subject == null)
         {
             return null;

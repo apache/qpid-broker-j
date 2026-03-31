@@ -60,6 +60,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.ExecutionErrorCode;
 import org.apache.qpid.server.protocol.v0_10.transport.ExecutionException;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
 import org.apache.qpid.server.protocol.v0_10.transport.Method;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -204,7 +205,7 @@ class ServerSessionTest extends UnitTestBase
         final AtomicReference<Subject> capturedSubject = new AtomicReference<>();
         doAnswer(invocation ->
         {
-            capturedSubject.set(Subject.current());
+            capturedSubject.set(SubjectExecutionContext.currentSubject());
             return null;
         }).when(subscription).flushCreditState(anyBoolean());
 

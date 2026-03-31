@@ -221,7 +221,7 @@ public class SiteSpecificTrustStoreImpl
 
     private CompletableFuture<X509Certificate> downloadCertificate(final String url)
     {
-        final Subject subject = Subject.current();
+        final Subject subject = SubjectExecutionContext.currentSubject();
         final ExecutorService workerService = Executors.newSingleThreadExecutor(
                 getThreadFactory("download-certificate-worker-" + getName()));
         try

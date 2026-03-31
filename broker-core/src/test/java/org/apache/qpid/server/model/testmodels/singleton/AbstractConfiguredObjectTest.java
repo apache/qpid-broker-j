@@ -287,7 +287,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
                     @Override
                     public CompletableFuture<String> execute()
                     {
-                        taskSubject.set(Subject.current());
+                        taskSubject.set(SubjectExecutionContext.currentSubject());
                         return CompletableFuture.completedFuture("done");
                     }
 
@@ -308,7 +308,7 @@ public class AbstractConfiguredObjectTest extends UnitTestBase
                     {
                         return null;
                     }
-                }).whenComplete((result, throwable) -> completionSubject.set(Subject.current())));
+                }).whenComplete((result, throwable) -> completionSubject.set(SubjectExecutionContext.currentSubject())));
 
         assertEquals("done", future.get(3, TimeUnit.SECONDS), "Unexpected task result");
         assertEquals(subject, taskSubject.get(), "Unexpected subject in task");

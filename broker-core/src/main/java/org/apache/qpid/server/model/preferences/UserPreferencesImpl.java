@@ -480,7 +480,7 @@ public class UserPreferencesImpl implements UserPreferences
 
     private void checkForValidVisibilityLists(final Collection<Preference> preferences)
     {
-        Subject currentSubject = Subject.current();
+        Subject currentSubject = SubjectExecutionContext.currentSubject();
         if (currentSubject == null)
         {
             throw new IllegalStateException("Current thread does not have a user");
@@ -595,7 +595,7 @@ public class UserPreferencesImpl implements UserPreferences
 
     private Set<Principal> getPrincipalsOrThrow() throws SecurityException
     {
-        Subject currentSubject = Subject.current();
+        Subject currentSubject = SubjectExecutionContext.currentSubject();
         if (currentSubject == null)
         {
             throw new SecurityException("Current thread does not have a user");
@@ -630,7 +630,7 @@ public class UserPreferencesImpl implements UserPreferences
         {
             _action = action;
             _arguments = arguments;
-            _subject = Subject.current();
+            _subject = SubjectExecutionContext.currentSubject();
         }
 
         @Override

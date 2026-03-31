@@ -85,6 +85,7 @@ import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -1040,7 +1041,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     private MessageDestination getResponseDestination(String replyTo)
     {
         ManagementNodeConsumer consumer = null;
-        Subject currentSubject = Subject.current();
+        Subject currentSubject = SubjectExecutionContext.currentSubject();
         if (currentSubject == null)
         {
             return _addressSpace.getDefaultDestination();
@@ -1580,7 +1581,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
 
     private AmqpConnectionMetaData getCallerConnectionMetaData()
     {
-        Subject currentSubject = Subject.current();
+        Subject currentSubject = SubjectExecutionContext.currentSubject();
         if (currentSubject == null)
         {
             throw new IllegalStateException("Cannot find connection principal on calling thread");
