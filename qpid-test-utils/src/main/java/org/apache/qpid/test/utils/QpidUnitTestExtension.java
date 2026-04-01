@@ -33,78 +33,93 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * JUnit's extension. Logs test method execution start and end
+ * JUnit extension that logs test method execution start and end.
+ * <p>
+ * Sets the {@code classQualifiedTestName} property on the Logback {@link LoggerContext} so that
+ * the {@link ch.qos.logback.classic.sift.SiftingAppender SiftingAppender} configured with
+ * {@link LogbackPropertyValueDiscriminator} can route log output into per-test files.
+ * <p>
+ * During {@code @BeforeAll}/{@code @AfterAll} the property is set to the fully-qualified class
+ * name. During individual test execution it is narrowed to {@code className.methodName}, producing
+ * a separate log file per test method.
  */
-public class QpidUnitTestExtension implements AfterAllCallback, AfterEachCallback, BeforeAllCallback, BeforeEachCallback
+public class QpidUnitTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback
 {
-    /** Logger */
     private static final Logger LOGGER = LoggerFactory.getLogger(QpidUnitTestExtension.class);
 
-    /** Logger context */
     private static final LoggerContext LOGGER_CONTEXT = ((ch.qos.logback.classic.Logger) LOGGER).getLoggerContext();
 
-    /** Test class */
-    private Class<?> _testClass;
-
-    /** Test method */
-    private Method _testMethod;
+    private static final String BANNER = "=========================";
 
     /**
-     * Callback executed before all testing methods
+     * Sets the class-qualified test name before any test method runs.
      *
      * @param extensionContext ExtensionContext
      */
     @Override
     public void beforeAll(final ExtensionContext extensionContext)
     {
-        _testClass = TestUtils.getTestClass(extensionContext);
-        setClassQualifiedTestName(_testClass.getName());
+        final Class<?> testClass = extensionContext.getRequiredTestClass();
+        setClassQualifiedTestName(testClass.getName());
     }
 
     /**
-     * Callback executed before after all testing methods
-     *
-     * @param extensionContext ExtensionContext
-     */
-    @Override
-    public void afterAll(final ExtensionContext extensionContext)
-    {
-        _testClass = null;
-        setClassQualifiedTestName(null);
-    }
-
-    /**
-     * Callback executed before single testing method
+     * Logs the test start and narrows the log routing to the method-level file.
+     * <p>
+     * The first log message is written to the class-level log file (before
+     * {@code setClassQualifiedTestName} switches routing). The second message goes to the
+     * method-level file.
      *
      * @param extensionContext ExtensionContext
      */
     @Override
     public void beforeEach(final ExtensionContext extensionContext)
     {
-        _testMethod = TestUtils.getTestMethod(extensionContext);
-        LOGGER.info("========================= executing test : {}", _testClass.getSimpleName() + "#" + _testMethod.getName());
-        setClassQualifiedTestName(_testClass.getName() + "." + _testMethod.getName());
-        LOGGER.info("========================= start executing test : {}", _testClass.getSimpleName() + "#" + _testMethod.getName());
+        final Class<?> testClass = extensionContext.getRequiredTestClass();
+        final Method testMethod = extensionContext.getRequiredTestMethod();
+        final String testDisplayName = testClass.getSimpleName() + "#" + testMethod.getName();
+
+        LOGGER.info("{} executing test : {}", BANNER, testDisplayName);
+        setClassQualifiedTestName(testClass.getName() + "." + testMethod.getName());
+        LOGGER.info("{} start executing test : {}", BANNER, testDisplayName);
     }
 
     /**
-     * Callback executed after single testing method
+     * Logs the test end and restores the log routing to the class-level file.
+     * <p>
+     * The first log message is written to the method-level log file. The second message goes to
+     * the class-level file (after {@code setClassQualifiedTestName} restores class-level routing).
      *
      * @param extensionContext ExtensionContext
      */
     @Override
     public void afterEach(final ExtensionContext extensionContext)
     {
-        LOGGER.info("========================= stop executing test : {} ", _testClass.getSimpleName() + "#" + _testMethod.getName());
-        setClassQualifiedTestName(_testClass.getName());
-        LOGGER.info("========================= cleaning up test environment for test : {}", _testClass.getSimpleName() + "#" + _testMethod.getName());
-        _testMethod = null;
+        final Class<?> testClass = extensionContext.getRequiredTestClass();
+        final Method testMethod = extensionContext.getRequiredTestMethod();
+        final String testDisplayName = testClass.getSimpleName() + "#" + testMethod.getName();
+
+        LOGGER.info("{} stop executing test : {} ", BANNER, testDisplayName);
+        setClassQualifiedTestName(testClass.getName());
+        LOGGER.info("{} cleaning up test environment for test : {}", BANNER, testDisplayName);
     }
 
     /**
-     * Sets test name into the logger context
+     * Clears the class-qualified test name after all test methods complete.
      *
-     * @param name Test name
+     * @param extensionContext ExtensionContext
+     */
+    @Override
+    public void afterAll(final ExtensionContext extensionContext)
+    {
+        setClassQualifiedTestName(null);
+    }
+
+    /**
+     * Sets the test name property on the Logback logger context.
+     * {@link LogbackPropertyValueDiscriminator} reads this property to route log output.
+     *
+     * @param name fully-qualified test name, or {@code null} to clear
      */
     private void setClassQualifiedTestName(final String name)
     {
