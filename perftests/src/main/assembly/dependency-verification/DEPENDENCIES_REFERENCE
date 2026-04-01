@@ -68,11 +68,11 @@ From: 'FasterXML' (http://fasterxml.com/)
 
 From: 'QOS.ch' (http://www.qos.ch)
 
-  - Logback Classic Module (http://logback.qos.ch/logback-classic) ch.qos.logback:logback-classic:jar:1.5.31
+  - Logback Classic Module (http://logback.qos.ch/logback-classic) ch.qos.logback:logback-classic:jar:1.5.32
     License: Eclipse Public License - v 2.0  (https://www.eclipse.org/legal/epl-v20.html)
     License: GNU Lesser General Public License  (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 
-  - Logback Core Module (http://logback.qos.ch/logback-core) ch.qos.logback:logback-core:jar:1.5.31
+  - Logback Core Module (http://logback.qos.ch/logback-core) ch.qos.logback:logback-core:jar:1.5.32
     License: Eclipse Public License - v 2.0  (https://www.eclipse.org/legal/epl-v20.html)
     License: GNU Lesser General Public License  (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 
