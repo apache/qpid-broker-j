@@ -85,7 +85,7 @@ public class SystemPrivilegeEscalationGuardTest extends BrokerAdminUsingTestBase
     private static final String GUEST_USERNAME = "guest";
     private static final String GUEST_PASSWORD = "guest";
 
-    private static final String QUEUE1 = "q1";
+    private static final String QUEUE1 = "queue1";
 
     private static final byte[] SASL_AMQP_HEADER_BYTES = "AMQP\3\1\0\0".getBytes(StandardCharsets.UTF_8);
     private static final byte[] AMQP_HEADER_BYTES = "AMQP\0\1\0\0".getBytes(StandardCharsets.UTF_8);
