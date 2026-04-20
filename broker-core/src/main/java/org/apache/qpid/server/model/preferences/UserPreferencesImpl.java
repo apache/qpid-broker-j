@@ -23,9 +23,7 @@ package org.apache.qpid.server.model.preferences;
 import static org.apache.qpid.server.model.preferences.GenericPrincipal.principalsContain;
 import static org.apache.qpid.server.model.preferences.GenericPrincipal.principalsEqual;
 
-import java.security.AccessController;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,6 +46,7 @@ import javax.security.auth.Subject;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceRecordImpl;
@@ -481,7 +480,7 @@ public class UserPreferencesImpl implements UserPreferences
 
     private void checkForValidVisibilityLists(final Collection<Preference> preferences)
     {
-        Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        Subject currentSubject = SubjectExecutionContext.currentSubject();
         if (currentSubject == null)
         {
             throw new IllegalStateException("Current thread does not have a user");
@@ -596,7 +595,7 @@ public class UserPreferencesImpl implements UserPreferences
 
     private Set<Principal> getPrincipalsOrThrow() throws SecurityException
     {
-        Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        Subject currentSubject = SubjectExecutionContext.currentSubject();
         if (currentSubject == null)
         {
             throw new SecurityException("Current thread does not have a user");
@@ -631,13 +630,13 @@ public class UserPreferencesImpl implements UserPreferences
         {
             _action = action;
             _arguments = arguments;
-            _subject = Subject.getSubject(AccessController.getContext());
+            _subject = SubjectExecutionContext.currentSubject();
         }
 
         @Override
         public T execute() throws RuntimeException
         {
-            return Subject.doAs(_subject, (PrivilegedAction<T>) this::doOperation);
+            return SubjectExecutionContext.withSubjectUnchecked(_subject, this::doOperation);
         }
 
         protected abstract T doOperation();

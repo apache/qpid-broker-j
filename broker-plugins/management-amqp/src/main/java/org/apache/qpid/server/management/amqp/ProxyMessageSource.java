@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.management.amqp;
 
-import java.security.AccessControlException;
-import java.security.AccessController;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
@@ -53,7 +51,9 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -88,9 +88,9 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
 
     @Override
     public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
-            throws AccessControlException
+            throws AccessDeniedException
     {
-        throw new AccessControlException("Sending messages to temporary addresses in a management address space is not supported");
+        throw new AccessDeniedException("Sending messages to temporary addresses in a management address space is not supported");
     }
 
     @Override
@@ -157,23 +157,42 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
             final Integer priority
     ) throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive, ConsumerAccessRefused, QueueDeleted
     {
-        if (_consumerSet.compareAndSet(false,true))
+        final Subject currentSubject = SubjectExecutionContext.currentSubject();
+        if (currentSubject == null)
         {
-            final Subject currentSubject = Subject.getSubject(AccessController.getContext());
-            final Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
-            if (!sessionPrincipals.isEmpty())
+            return null;
+        }
+        final Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
+        if (sessionPrincipals.isEmpty())
+        {
+            return null;
+        }
+
+        if (_consumerSet.compareAndSet(false, true))
+        {
+            try
             {
                 _connectionReference = sessionPrincipals.iterator().next().getSession().getConnectionReference();
 
                 final WrappingTarget<T> wrapper = new WrappingTarget<>(target, _name);
                 _managementAddressSpace.getManagementNode().addConsumer(wrapper, filters, messageClass, _name, options, priority);
                 final MessageInstanceConsumer<T> consumer = wrapper.getConsumer();
+                if (consumer == null)
+                {
+                    _consumer = null;
+                    _consumerSet.set(false);
+                    _connectionReference = null;
+                    return null;
+                }
                 _consumer = consumer;
                 return consumer;
             }
-            else
+            catch (RuntimeException | Error e)
             {
-                return null;
+                _consumer = null;
+                _consumerSet.set(false);
+                _connectionReference = null;
+                throw e;
             }
         }
         else
@@ -361,6 +380,8 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
         {
             _managementAddressSpace.removeProxyMessageSource(_connectionReference, _name);
             ProxyMessageSource.this._consumer = null;
+            ProxyMessageSource.this._connectionReference = null;
+            ProxyMessageSource.this._consumerSet.set(false);
             return _underlying.close();
         }
 

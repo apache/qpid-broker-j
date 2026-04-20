@@ -20,13 +20,12 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-import java.security.AccessController;
-
 import javax.security.auth.Subject;
 
 import com.github.benmanes.caffeine.cache.Cache;
 
 import org.apache.qpid.server.security.QpidPrincipal;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 
 public class CacheFactory
 {
@@ -34,7 +33,7 @@ public class CacheFactory
     public static <K, V> Cache<K, V> getCache(final String cacheName, final Cache<K, V> defaultCache)
     {
         Cache<K, V> cache = defaultCache;
-        Subject subject = Subject.getSubject(AccessController.getContext());
+        Subject subject = SubjectExecutionContext.currentSubject();
         if (subject != null)
         {
             VirtualHostPrincipal

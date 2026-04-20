@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -65,6 +64,7 @@ import org.apache.qpid.server.model.VirtualHostLogInclusionRule;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.util.FileUtils;
@@ -261,20 +261,12 @@ public class VirtualHostLoggerTest extends UnitTestBase
                 createInclusionRuleAttributes(loggerName, LogLevel.WARN));
 
         final Subject subject = new Subject(false, Set.of(_virtualHost.getPrincipal()), Set.of(), Set.of());
-        Subject.doAs(subject, (PrivilegedAction<Void>) () ->
-        {
-            messageLogger.warn("warn");
-            return null;
-        });
+        SubjectExecutionContext.withSubject(subject, () -> messageLogger.warn("warn"));
 
         assertEquals(1L, logger.getWarnCount());
         assertEquals(0L, logger.getErrorCount());
 
-        Subject.doAs(subject, (PrivilegedAction<Void>) () ->
-        {
-            messageLogger.error("error");
-            return null;
-        });
+        SubjectExecutionContext.withSubject(subject, () -> messageLogger.error("error"));
         assertEquals(1L, logger.getWarnCount());
         assertEquals(1L, logger.getErrorCount());
 
@@ -283,19 +275,11 @@ public class VirtualHostLoggerTest extends UnitTestBase
         final VirtualHostLogInclusionRule<?> errorFilter = logger.createChild(VirtualHostLogInclusionRule.class,
                 createInclusionRuleAttributes(loggerName, LogLevel.ERROR));
 
-        Subject.doAs(subject, (PrivilegedAction<Void>) () ->
-        {
-            messageLogger.warn("warn");
-            return null;
-        });
+        SubjectExecutionContext.withSubject(subject, () -> messageLogger.warn("warn"));
         assertEquals(1L, logger.getWarnCount());
         assertEquals(1L, logger.getErrorCount());
 
-        Subject.doAs(subject, (PrivilegedAction<Void>) () ->
-        {
-            messageLogger.error("error");
-            return null;
-        });
+        SubjectExecutionContext.withSubject(subject, () -> messageLogger.error("error"));
         assertEquals(1L, logger.getWarnCount());
         assertEquals(2L, logger.getErrorCount());
 

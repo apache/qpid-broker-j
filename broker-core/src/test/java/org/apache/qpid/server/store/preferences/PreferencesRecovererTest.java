@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 
-import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +45,7 @@ import org.apache.qpid.server.model.preferences.PreferenceTestHelper;
 import org.apache.qpid.server.model.testmodels.hierarchy.TestCar;
 import org.apache.qpid.server.model.testmodels.hierarchy.TestEngine;
 import org.apache.qpid.server.model.testmodels.hierarchy.TestModel;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -115,7 +115,7 @@ public class PreferencesRecovererTest extends UnitTestBase
         final PreferenceRecord record2 = new PreferenceRecordImpl(p2Id, pref2Attributes);
         _recoverer.recoverPreferences(_testObject, Arrays.asList(record1, record2), _store);
 
-        Subject.doAs(_testSubject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_testSubject, () ->
         {
             final Set<Preference> preferences = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
             assertEquals(1, (long) preferences.size(), "Unexpected number of preferences");
@@ -123,7 +123,6 @@ public class PreferencesRecovererTest extends UnitTestBase
             final Set<Preference> childPreferences = awaitPreferenceFuture(_testChildObject.getUserPreferences().getPreferences());
 
             assertEquals(1, (long) childPreferences.size(), "Unexpected number of preferences");
-            return null;
         });
     }
 }

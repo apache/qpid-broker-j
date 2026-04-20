@@ -22,9 +22,6 @@ package org.apache.qpid.server.protocol.v0_10;
 
 
 import java.nio.ByteBuffer;
-import java.security.AccessControlContext;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +40,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.ProtocolError;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolEvent;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolHeader;
 import org.apache.qpid.server.protocol.v0_10.transport.Struct;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.util.PeekingIterator;
 import org.apache.qpid.server.util.PeekingIteratorImpl;
 
@@ -86,8 +84,7 @@ public class ServerAssembler
                     final ServerSession channel = _connection.getSession(frameChannel);
                     if (channel != null)
                     {
-                        final AccessControlContext context = channel.getAccessControllerContext();
-                        AccessController.doPrivileged((PrivilegedAction<Void>) () ->
+                        SubjectExecutionContext.withSubject(channel.getSubject(), () ->
                         {
                             ServerFrame channelFrame = frame;
                             boolean nextIsSameChannel;
@@ -101,8 +98,7 @@ public class ServerAssembler
                                 }
                             }
                             while (nextIsSameChannel);
-                            return null;
-                        }, context);
+                        });
                     }
                     else
                     {

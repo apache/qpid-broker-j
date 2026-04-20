@@ -20,8 +20,6 @@
 package org.apache.qpid.server.management.plugin.session;
 
 import java.security.Principal;
-import java.security.PrivilegedAction;
-
 import javax.security.auth.Subject;
 
 import jakarta.servlet.http.HttpSession;
@@ -34,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.messages.ManagementConsoleMessages;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 
 /**
@@ -72,22 +71,14 @@ public class LoginLogoutReporter implements HttpSessionBindingListener
     {
         LOGGER.debug("User logging in : {}", _principal);
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
-        {
-            getEventLogger().message(ManagementConsoleMessages.OPEN(_principal.getName()));
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () -> getEventLogger().message(ManagementConsoleMessages.OPEN(_principal.getName())));
     }
 
     private void reportLogout()
     {
         LOGGER.debug("User logging out : {}", _principal);
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
-        {
-            getEventLogger().message(ManagementConsoleMessages.CLOSE(_principal.getName()));
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () -> getEventLogger().message(ManagementConsoleMessages.CLOSE(_principal.getName())));
     }
 
     public EventLogger getEventLogger()

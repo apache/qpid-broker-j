@@ -21,14 +21,11 @@
 package org.apache.qpid.server.virtualhostnode;
 
 import java.io.IOException;
-import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-
-import javax.security.auth.Subject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +37,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.RemoteReplicationNode;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -102,10 +100,8 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
         if (host != null)
         {
             final QueueManagingVirtualHost<?> recoveredHost = host;
-            final CompletableFuture<Void> openFuture;
             recoveredHost.setFirstOpening(isNew && initialRecords.length == 0);
-            openFuture = Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<CompletableFuture<Void>>) recoveredHost::openAsync);
-            return openFuture;
+            return SubjectExecutionContext.withSubjectUnchecked(getSubjectWithAddedSystemRights(), recoveredHost::openAsync);
         }
         else
         {

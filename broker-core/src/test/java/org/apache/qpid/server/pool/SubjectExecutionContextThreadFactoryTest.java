@@ -18,15 +18,14 @@
  * under the License.
  *
  */
+
 package org.apache.qpid.server.pool;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.security.AccessControlContext;
-import java.security.AccessController;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,17 +35,18 @@ import javax.security.auth.Subject;
 
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.test.utils.UnitTestBase;
 
-public class SuppressingInheritedAccessControlContextThreadFactoryTest extends UnitTestBase
+public class SubjectExecutionContextThreadFactoryTest extends UnitTestBase
 {
     @Test
-    public void testAccessControlContextIsNotInheritedByThread() throws Exception
+    public void testThreadFactoryUsesNullSubjectByDefault() throws Exception
     {
         final String principalName = getTestName();
         final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicReference<AccessControlContext> threadAccessControlContextCapturer = new AtomicReference<>();
-        final AtomicReference<AccessControlContext> callerAccessControlContextCapturer = new AtomicReference<>();
+        final AtomicReference<Subject> threadSubjectCapture = new AtomicReference<>();
+        final AtomicReference<Subject> callerSubjectCapture = new AtomicReference<>();
         final Set<Principal> principals = Set.of(new Principal()
         {
             @Override
@@ -64,25 +64,52 @@ public class SuppressingInheritedAccessControlContextThreadFactoryTest extends U
 
         final Subject subject = new Subject(false, principals, Set.of(), Set.of());
 
-        Subject.doAs(subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(subject, () ->
         {
-            callerAccessControlContextCapturer.set(AccessController.getContext());
-            final SuppressingInheritedAccessControlContextThreadFactory factory =
-                    new SuppressingInheritedAccessControlContextThreadFactory(null, null);
+            callerSubjectCapture.set(SubjectExecutionContext.currentSubject());
+            final SubjectExecutionContextThreadFactory factory =
+                    new SubjectExecutionContextThreadFactory(null, null);
             factory.newThread(() ->
             {
-                threadAccessControlContextCapturer.set(AccessController.getContext());
+                threadSubjectCapture.set(SubjectExecutionContext.currentSubject());
                 latch.countDown();
             }).start();
-            return null;
         });
 
         latch.await(3, TimeUnit.SECONDS);
 
-        final Subject callerSubject = Subject.getSubject(callerAccessControlContextCapturer.get());
-        final Subject threadSubject = Subject.getSubject(threadAccessControlContextCapturer.get());
+        final Subject callerSubject = callerSubjectCapture.get();
+        final Subject threadSubject = threadSubjectCapture.get();
 
         assertEquals(callerSubject, subject, "Unexpected subject in main thread");
         assertNull(threadSubject, "Unexpected subject in executor thread");
+    }
+
+    @Test
+    public void testFactorySubjectOverridesCallerSubject() throws Exception
+    {
+        final String callerPrincipalName = getTestName() + "-caller";
+        final String factoryPrincipalName = getTestName() + "-factory";
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        final AtomicReference<Subject> threadSubjectCapture = new AtomicReference<>();
+
+        final Subject callerSubject = new Subject(false, Set.of(() -> callerPrincipalName), Set.of(), Set.of());
+
+        final Subject factorySubject = new Subject(false, Set.of(() -> factoryPrincipalName), Set.of(), Set.of());
+
+        SubjectExecutionContext.withSubject(callerSubject, () ->
+        {
+            final SubjectExecutionContextThreadFactory factory =
+                    new SubjectExecutionContextThreadFactory(null, factorySubject);
+            factory.newThread(() ->
+            {
+                threadSubjectCapture.set(SubjectExecutionContext.currentSubject());
+                latch.countDown();
+            }).start();
+        });
+
+        assertTrue(latch.await(3, TimeUnit.SECONDS), "Thread did not start in time");
+        assertEquals(factorySubject, threadSubjectCapture.get(), "Unexpected subject in executor thread");
     }
 }

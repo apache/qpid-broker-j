@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.management.amqp;
 
-import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +40,7 @@ import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
@@ -141,7 +141,7 @@ class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanc
 
     @Override
     public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
-            throws AccessControlException
+            throws AccessDeniedException
     {
         _managementNode.authorisePublish(token, arguments);
     }

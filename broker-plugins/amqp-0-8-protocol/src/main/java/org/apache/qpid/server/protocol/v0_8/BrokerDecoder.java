@@ -20,14 +20,11 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class BrokerDecoder extends ServerDecoder
@@ -92,7 +89,7 @@ public class BrokerDecoder extends ServerDecoder
             {
                 try
                 {
-                    return AccessController.doPrivileged((PrivilegedExceptionAction<Integer>) () ->
+                    return SubjectExecutionContext.withSubjectUnchecked(channel.getSubject(), () ->
                     {
                         int required1;
                         while (true)
@@ -107,11 +104,11 @@ public class BrokerDecoder extends ServerDecoder
                         }
 
                         return required1;
-                    }, channel.getAccessControllerContext());
+                    });
                 }
-                catch (PrivilegedActionException e)
+                catch (RuntimeException e)
                 {
-                    final Throwable cause = e.getCause();
+                    final Throwable cause = SubjectExecutionContext.unwrapSubjectActionException(e);
                     if (cause instanceof AMQFrameDecodingException)
                     {
                         throw (AMQFrameDecodingException) cause;

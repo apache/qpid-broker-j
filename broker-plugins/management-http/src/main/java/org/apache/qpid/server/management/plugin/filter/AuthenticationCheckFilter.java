@@ -20,10 +20,7 @@
 package org.apache.qpid.server.management.plugin.filter;
 
 import java.io.IOException;
-import java.security.AccessControlException;
 import java.security.Principal;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -45,6 +42,8 @@ import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.security.TokenCarryingPrincipal;
 import org.apache.qpid.server.management.plugin.servlet.ServletConnectionPrincipal;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.security.AccessDeniedException;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
@@ -122,7 +121,7 @@ public class AuthenticationCheckFilter implements Filter
 
             doFilterChainAs(request, response, chain, subject);
         }
-        catch (AccessControlException e)
+        catch (AccessDeniedException e)
         {
             httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN);
             invalidateSession(httpRequest);
@@ -150,15 +149,15 @@ public class AuthenticationCheckFilter implements Filter
     {
         try
         {
-            Subject.doAs(subject, (PrivilegedExceptionAction<Void>) () ->
+            SubjectExecutionContext.withSubject(subject, () ->
             {
                 chain.doFilter(request, response);
                 return null;
             });
         }
-        catch (PrivilegedActionException e)
+        catch (Exception e)
         {
-            Throwable cause = e.getCause();
+            final Throwable cause = SubjectExecutionContext.unwrapSubjectActionException(e);
 
             if (cause instanceof IOException)
             {
@@ -177,7 +176,7 @@ public class AuthenticationCheckFilter implements Filter
                 throw (RuntimeException) cause;
             }
 
-            throw new ConnectionScopedRuntimeException(e.getCause());
+            throw new ConnectionScopedRuntimeException(cause);
         }
     }
 

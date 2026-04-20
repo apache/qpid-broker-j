@@ -36,10 +36,7 @@ import static org.apache.qpid.server.util.Serial.max;
 import static org.apache.qpid.server.util.Strings.toUTF8;
 
 import java.nio.ByteBuffer;
-import java.security.AccessControlContext;
-import java.security.AccessController;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,6 +57,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import javax.security.auth.Subject;
 
@@ -79,7 +77,30 @@ import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.protocol.v0_10.transport.*;
+import org.apache.qpid.server.protocol.v0_10.transport.Binary;
+import org.apache.qpid.server.protocol.v0_10.transport.DeliveryProperties;
+import org.apache.qpid.server.protocol.v0_10.transport.ExecutionSync;
+import org.apache.qpid.server.protocol.v0_10.transport.Frame;
+import org.apache.qpid.server.protocol.v0_10.transport.Header;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageAcceptMode;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageAcquireMode;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageCreditUnit;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageFlow;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageFlowMode;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageSetFlowMode;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageStop;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
+import org.apache.qpid.server.protocol.v0_10.transport.Method;
+import org.apache.qpid.server.protocol.v0_10.transport.Option;
+import org.apache.qpid.server.protocol.v0_10.transport.Range;
+import org.apache.qpid.server.protocol.v0_10.transport.RangeSet;
+import org.apache.qpid.server.protocol.v0_10.transport.RangeSetFactory;
+import org.apache.qpid.server.protocol.v0_10.transport.SessionClosedException;
+import org.apache.qpid.server.protocol.v0_10.transport.SessionDetachCode;
+import org.apache.qpid.server.protocol.v0_10.transport.SessionException;
+import org.apache.qpid.server.protocol.v0_10.transport.Struct;
+import org.apache.qpid.server.protocol.v0_10.transport.Xid;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -873,11 +894,6 @@ public class ServerSession extends SessionInvoker
         return _modelObject.getSubject();
     }
 
-    public AccessControlContext getAccessControllerContext()
-    {
-        return _modelObject.getAccessControllerContext();
-    }
-
     protected void setState(final State state)
     {
         if(runningAsSubject())
@@ -905,14 +921,14 @@ public class ServerSession extends SessionInvoker
     }
 
 
-    private <T> T runAsSubject(final PrivilegedAction<T> privilegedAction)
-    {
-        return AccessController.doPrivileged(privilegedAction, getAccessControllerContext());
-    }
-
     private boolean runningAsSubject()
     {
-        return getAuthorizedSubject().equals(Subject.getSubject(AccessController.getContext()));
+        return getAuthorizedSubject().equals(SubjectExecutionContext.currentSubject());
+    }
+
+    private <T> T runAsSubject(final Supplier<T> action)
+    {
+        return SubjectExecutionContext.withSubjectUnchecked(getAuthorizedSubject(), action::get);
     }
 
     private void invokeBlock()

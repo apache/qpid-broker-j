@@ -51,6 +51,7 @@ public class GracefulShutdownExceptionHandlerTest
     @BeforeEach
     public void setUp()
     {
+        errorStreamCaptor.reset();
         System.setErr(new PrintStream(errorStreamCaptor));
     }
 

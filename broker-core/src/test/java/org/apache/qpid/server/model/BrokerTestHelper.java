@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -47,6 +46,7 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -163,8 +163,9 @@ public class BrokerTestHelper
         final VirtualHostNode virtualHostNode =
                 createVirtualHostNodeMock(virtualHostNodeName, defaultVHN, accessControl, broker);
 
-        final AbstractVirtualHost host = (AbstractVirtualHost) objectFactory
-                .create(VirtualHost.class, attributes, virtualHostNode );
+        final AbstractVirtualHost host = SubjectExecutionContext.withSubjectUnchecked(
+                SYSTEM_SUBJECT,
+                () -> (AbstractVirtualHost) objectFactory.create(VirtualHost.class, attributes, virtualHostNode));
         host.start();
         when(virtualHostNode.getVirtualHost()).thenReturn(host);
         CREATED_VIRTUAL_HOSTS.add(host);
@@ -280,8 +281,8 @@ public class BrokerTestHelper
                 Exchange.TYPE, "direct",
                 Exchange.DURABLE, durable);
 
-        return Subject.doAs(SYSTEM_SUBJECT, (PrivilegedAction<Exchange<?>>) () ->
-                (Exchange<?>) objectFactory.create(Exchange.class, attributes, virtualHost));
+        return SubjectExecutionContext.withSubjectUnchecked(SYSTEM_SUBJECT,
+                () -> (Exchange<?>) objectFactory.create(Exchange.class, attributes, virtualHost));
 
     }
 

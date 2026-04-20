@@ -34,9 +34,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.AccessControlContext;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -128,13 +126,14 @@ import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.plugin.ConnectionValidator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
-import org.apache.qpid.server.pool.SuppressingInheritedAccessControlContextThreadFactory;
+import org.apache.qpid.server.pool.SubjectExecutionContextThreadFactory;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.queue.QueueEntryIterator;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.CompoundAccessControl;
 import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.SubjectFixedResultAccessControl;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
@@ -177,8 +176,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private final Collection<ConnectionValidator> _connectionValidators = new ArrayList<>();
     private final Set<AMQPConnection<?>> _connections = newSetFromMap(new ConcurrentHashMap<>());
-    private final AccessControlContext _housekeepingJobContext;
-    private final AccessControlContext _fileSystemSpaceCheckerJobContext;
+    private final Subject _housekeepingJobSubject;
+    private final Subject _fileSystemSpaceCheckerJobSubject;
     private final AtomicBoolean _acceptsConnections = new AtomicBoolean(false);
     private final ConcurrentMap<String, Cache> _caches = new ConcurrentHashMap<>();
     private final Broker<?> _broker;
@@ -298,8 +297,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _defaultDestination = new DefaultDestination(this, _accessControl);
 
 
-        _housekeepingJobContext = getSystemTaskControllerContext("Housekeeping["+getName()+"]", _principal);
-        _fileSystemSpaceCheckerJobContext = getSystemTaskControllerContext("FileSystemSpaceChecker["+getName()+"]", _principal);
+        _housekeepingJobSubject = getSystemTaskSubject("Housekeeping["+getName()+"]", _principal);
+        _fileSystemSpaceCheckerJobSubject = getSystemTaskSubject("FileSystemSpaceChecker["+getName()+"]", _principal);
 
         _fileSystemSpaceChecker = new FileSystemSpaceChecker();
         _connectionLimiter = new VirtualHostConnectionLimiter(this, _broker);
@@ -690,52 +689,47 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private CompletableFuture<Void> createDefaultExchanges()
     {
-        return Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<CompletableFuture<Void>>()
+        return SubjectExecutionContext.withSubjectUnchecked(getSubjectWithAddedSystemRights(), () ->
         {
-
-            @Override
-            public CompletableFuture<Void> run()
-            {
-                List<CompletableFuture<Void>> standardExchangeFutures = new ArrayList<>();
-                standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.DIRECT_EXCHANGE_NAME, ExchangeDefaults.DIRECT_EXCHANGE_CLASS));
-                standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.TOPIC_EXCHANGE_NAME, ExchangeDefaults.TOPIC_EXCHANGE_CLASS));
-                standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.HEADERS_EXCHANGE_NAME, ExchangeDefaults.HEADERS_EXCHANGE_CLASS));
-                standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.FANOUT_EXCHANGE_NAME, ExchangeDefaults.FANOUT_EXCHANGE_CLASS));
-                return CompletableFuture.allOf(standardExchangeFutures.toArray(CompletableFuture[]::new));
-            }
-
-            CompletableFuture<Void> addStandardExchange(String name, String type)
-            {
-
-                Map<String, Object> attributes = new HashMap<>();
-                attributes.put(Exchange.NAME, name);
-                attributes.put(Exchange.TYPE, type);
-                attributes.put(Exchange.ID, UUIDGenerator.generateExchangeUUID(name, getName()));
-                final CompletableFuture<Exchange<?>> future = addExchangeAsync(attributes);
-                final CompletableFuture<Void> returnVal = new CompletableFuture<>();
-                future.whenCompleteAsync((result, throwable) ->
-                {
-                    if (throwable != null)
-                    {
-                        returnVal.completeExceptionally(throwable);
-                    }
-                    else
-                    {
-                        try
-                        {
-                            childAdded(result);
-                            returnVal.complete(null);
-                        }
-                        catch (Throwable t)
-                        {
-                            returnVal.completeExceptionally(t);
-                        }
-                    }
-                }, getTaskExecutor());
-
-                return returnVal;
-            }
+            List<CompletableFuture<Void>> standardExchangeFutures = new ArrayList<>();
+            standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.DIRECT_EXCHANGE_NAME, ExchangeDefaults.DIRECT_EXCHANGE_CLASS));
+            standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.TOPIC_EXCHANGE_NAME, ExchangeDefaults.TOPIC_EXCHANGE_CLASS));
+            standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.HEADERS_EXCHANGE_NAME, ExchangeDefaults.HEADERS_EXCHANGE_CLASS));
+            standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.FANOUT_EXCHANGE_NAME, ExchangeDefaults.FANOUT_EXCHANGE_CLASS));
+            return CompletableFuture.allOf(standardExchangeFutures.toArray(CompletableFuture[]::new));
         });
+    }
+
+    private CompletableFuture<Void> addStandardExchange(String name, String type)
+    {
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(Exchange.NAME, name);
+        attributes.put(Exchange.TYPE, type);
+        attributes.put(Exchange.ID, UUIDGenerator.generateExchangeUUID(name, getName()));
+        final CompletableFuture<Exchange<?>> future = addExchangeAsync(attributes);
+        final CompletableFuture<Void> returnVal = new CompletableFuture<>();
+        future.whenCompleteAsync((result, throwable) ->
+        {
+            if (throwable != null)
+            {
+                returnVal.completeExceptionally(throwable);
+            }
+            else
+            {
+                try
+                {
+                    childAdded(result);
+                    returnVal.complete(null);
+                }
+                catch (Throwable t)
+                {
+                    returnVal.completeExceptionally(t);
+                }
+            }
+        }, getTaskExecutor());
+
+        return returnVal;
     }
 
     protected MessageStoreLogSubject getMessageStoreLogSubject()
@@ -1237,9 +1231,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public void executeTask(final String name, final Runnable task, AccessControlContext context)
+    public void executeTask(final String name, final Runnable task, Subject subject)
     {
-        _houseKeepingTaskExecutor.execute(new HouseKeepingTask(name, this, context)
+        _houseKeepingTaskExecutor.execute(new HouseKeepingTask(name, this, subject)
         {
             @Override
             public void execute()
@@ -1319,8 +1313,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     try
                     {
 
-                        final T node =  Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<T>) () ->
-                                (T) doSync(createChildAsync(childClass, attributes)));
+                        final T node = SubjectExecutionContext.withSubjectUnchecked(getSubjectWithAddedSystemRights(),
+                                () -> (T) doSync(createChildAsync(childClass, attributes)));
 
                         if (node != null)
                         {
@@ -2080,7 +2074,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         public VirtualHostHouseKeepingTask()
         {
-            super("Housekeeping["+AbstractVirtualHost.this.getName()+"]",AbstractVirtualHost.this,_housekeepingJobContext);
+            super("Housekeeping["+AbstractVirtualHost.this.getName()+"]",AbstractVirtualHost.this,_housekeepingJobSubject);
         }
 
         @Override
@@ -2101,7 +2095,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         public FlowToDiskCheckingTask()
         {
-            super("FlowToDiskChecking["+AbstractVirtualHost.this.getName()+"]", AbstractVirtualHost.this, _housekeepingJobContext);
+            super("FlowToDiskChecking["+AbstractVirtualHost.this.getName()+"]", AbstractVirtualHost.this, _housekeepingJobSubject);
         }
 
         @Override
@@ -2612,9 +2606,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         long threadPoolKeepAliveTimeout = getContextValue(Long.class, CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT);
 
-        final SuppressingInheritedAccessControlContextThreadFactory connectionThreadFactory =
-                new SuppressingInheritedAccessControlContextThreadFactory("virtualhost-" + getName() + "-iopool",
-                                                                          getSystemTaskSubject("IO Pool", getPrincipal()));
+        final SubjectExecutionContextThreadFactory connectionThreadFactory =
+                new SubjectExecutionContextThreadFactory("virtualhost-" + getName() + "-iopool",
+                        getSystemTaskSubject("IO Pool", getPrincipal()));
 
         _networkConnectionScheduler = new NetworkConnectionScheduler("virtualhost-" + getName() + "-iopool",
                                                                      getNumberOfSelectors(),
@@ -2777,24 +2771,21 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         final List<CompletableFuture<Void>> childOpenFutures = new ArrayList<>();
 
-        Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () ->
-        {
-            applyToChildren(child ->
-                            {
-                                final CompletableFuture<Void> childOpenFuture = child.openAsync();
-                                childOpenFutures.add(childOpenFuture);
-                                childOpenFuture.whenCompleteAsync((result, throwable) ->
+        SubjectExecutionContext.withSubject(getSubjectWithAddedSystemRights(), () ->
+                applyToChildren(child ->
                                 {
-                                    if (throwable != null)
+                                    final CompletableFuture<Void> childOpenFuture = child.openAsync();
+                                    childOpenFutures.add(childOpenFuture);
+                                    childOpenFuture.whenCompleteAsync((result, throwable) ->
                                     {
-                                        LOGGER.error("Exception occurred while opening {} : {}",
-                                                     child.getClass().getSimpleName(), child.getName(), throwable);
-                                        onRestartFailure();
-                                    }
-                                }, getTaskExecutor());
-                            });
-            return null;
-        });
+                                        if (throwable != null)
+                                        {
+                                            LOGGER.error("Exception occurred while opening {} : {}",
+                                                         child.getClass().getSimpleName(), child.getName(), throwable);
+                                            onRestartFailure();
+                                        }
+                                    }, getTaskExecutor());
+                                }));
 
         CompletableFuture<Void> combinedFuture = CompletableFuture.allOf(childOpenFutures.toArray(CompletableFuture[]::new));
         return combinedFuture.thenAccept(result -> onActivate());
@@ -2827,7 +2818,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         public FileSystemSpaceChecker()
         {
-            super("FileSystemSpaceChecker["+AbstractVirtualHost.this.getName()+"]",AbstractVirtualHost.this,_fileSystemSpaceCheckerJobContext);
+            super("FileSystemSpaceChecker["+AbstractVirtualHost.this.getName()+"]",AbstractVirtualHost.this,_fileSystemSpaceCheckerJobSubject);
         }
 
         @Override

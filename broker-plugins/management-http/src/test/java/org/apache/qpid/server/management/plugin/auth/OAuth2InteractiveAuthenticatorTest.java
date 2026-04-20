@@ -35,8 +35,6 @@ import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.AccessControlException;
-import java.security.AccessController;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,7 +52,6 @@ import jakarta.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +63,9 @@ import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.port.HttpPort;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SubjectCreator;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -330,10 +329,10 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
 
         doAnswer(invocationOnMock ->
         {
-            final Subject subject = Subject.getSubject(AccessController.getContext());
-            if (!subject.getPrincipals().iterator().next().getName().equals(TEST_AUTHORIZED_USER))
+            final Subject subject = SubjectExecutionContext.currentSubject();
+            if (subject == null || !subject.getPrincipals().iterator().next().getName().equals(TEST_AUTHORIZED_USER))
             {
-                throw new AccessControlException("access denied");
+                throw new AccessDeniedException("access denied");
             }
             return null;
         }).when(mockBroker).authorise(eq(Operation.PERFORM_ACTION("manage")));

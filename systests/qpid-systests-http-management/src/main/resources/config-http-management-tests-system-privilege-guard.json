@@ -1,0 +1,104 @@
+/*
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ */
+
+{
+  "name": "${broker.name}",
+  "modelVersion": "9.0",
+
+  // acceptors = 0, selectors = 1 gives => 2 selector threads + 1 request thread
+  // needs pool size = 3
+  "context":
+  {
+    "qpid.port.http.threadPool.numberOfSelectors": 1,
+    "qpid.port.http.threadPool.numberOfAcceptors": 0
+  },
+
+  "accesscontrolproviders":
+  [
+    {
+      "name": "systemBypassGuard",
+      "type": "RuleBased",
+      "defaultResult": "DENIED",
+      "rules": [
+        // 1) If authorise() sees SYSTEM => allow (this is the bypass detector)
+        { "identity": "SYSTEM", "objectType": "QUEUE", "operation": "DELETE", "attributes": {}, "outcome": "ALLOW" },
+
+        // 2) Explicitly deny guest deleting queues (must win when Subject is guest-only)
+        { "identity": "guest", "objectType": "QUEUE", "operation": "DELETE", "attributes": {}, "outcome": "DENY" },
+
+        // 3) Keep broker usable for tests
+        { "identity": "ALL", "objectType": "ALL", "operation": "ALL", "attributes": {}, "outcome": "ALLOW" }
+      ]
+    }
+  ],
+
+  "authenticationproviders":
+  [
+    {
+      "name": "plain",
+      "type": "Plain",
+      "secureOnlyMechanisms": [],
+      "users": [
+        { "name": "admin", "type": "managed", "password": "admin" },
+        { "name": "guest", "type": "managed", "password": "guest" }
+      ]
+    }
+  ],
+
+  "ports":
+  [
+    { "name": "AMQP", "type": "AMQP", "authenticationProvider": "plain", "port": "0",
+      "virtualhostaliases": [
+        { "name": "defaultAlias", "type": "defaultAlias" },
+        { "name": "hostnameAlias", "type": "hostnameAlias" },
+        { "name": "nameAlias", "type": "nameAlias" }
+      ]
+    },
+    {
+      "name": "HTTP",
+      "authenticationProvider": "plain",
+      "port": "0",
+      "protocols": ["HTTP"],
+      "transports": ["TCP"],
+      "threadPoolMinimum": 3,
+      "threadPoolMaximum": 3,
+      "virtualhostaliases":
+      [
+        {
+          "name": "nameAlias",
+          "type": "nameAlias"
+        }
+      ]
+    }
+  ],
+
+  "plugins":
+  [
+    {
+      "type": "MANAGEMENT-HTTP",
+      "name": "httpManagement",
+      "httpBasicAuthenticationEnabled": true,
+      "useLegacyUriCompliance": true
+    }
+  ],
+
+  "virtualhostnodes": []
+}

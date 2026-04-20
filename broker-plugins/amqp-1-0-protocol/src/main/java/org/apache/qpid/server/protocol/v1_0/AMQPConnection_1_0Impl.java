@@ -21,11 +21,7 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.net.SocketAddress;
-import java.security.AccessControlContext;
-import java.security.AccessControlException;
-import java.security.AccessController;
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -108,7 +104,9 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SubjectCreator;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
@@ -436,8 +434,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                             : _receivingSessions[frameChannel];
                     if (session != null)
                     {
-                        final AccessControlContext context = session.getAccessControllerContext();
-                        AccessController.doPrivileged((PrivilegedAction<Void>) () ->
+                        SubjectExecutionContext.withSubject(session.getSubject(), () ->
                         {
                             ChannelFrameBody channelFrame = channelFrameBody;
                             boolean nextIsSameChannel;
@@ -451,8 +448,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                                 }
                             }
                             while (nextIsSameChannel);
-                            return null;
-                        }, context);
+                        });
                     }
                     else
                     {
@@ -550,11 +546,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
         for (final Session_1_0 session : sessions)
         {
-            AccessController.doPrivileged((PrivilegedAction<Object>) () ->
-            {
-                session.remoteEnd(new End());
-                return null;
-            }, session.getAccessControllerContext());
+            SubjectExecutionContext.withSubject(session.getSubject(), () -> session.remoteEnd(new End()));
         }
     }
 
@@ -928,7 +920,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 }
             }
         }
-        catch (VirtualHostUnavailableException | AccessControlException e)
+        catch (VirtualHostUnavailableException | AccessDeniedException e)
         {
             closeConnection(AmqpError.NOT_ALLOWED, e.getMessage());
         }
@@ -1247,12 +1239,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public final void readerIdle()
     {
-        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
+        runAsSubject(() ->
         {
             getEventLogger().message(ConnectionMessages.IDLE_CLOSE("", false));
             getNetwork().close();
             return null;
-        }, getAccessControllerContext());
+        });
     }
 
     @Override
@@ -1324,12 +1316,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             {
                 if (session != null)
                 {
-                    final AccessControlContext context = session.getAccessControllerContext();
-                    AccessController.doPrivileged((PrivilegedAction<Void>) () ->
-                    {
-                        session.receivedComplete();
-                        return null;
-                    }, context);
+                    SubjectExecutionContext.withSubject(session.getSubject(), () -> session.receivedComplete());
                 }
             }
         }
@@ -1575,14 +1562,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             default:
                 cause = AmqpError.INTERNAL_ERROR;
         }
-        addAsyncTask(object -> AccessController.doPrivileged(new PrivilegedAction<Void>() {
-            @Override
-            public Void run()
-            {
-                ((Session_1_0)session).close(cause, message);
-                return null;
-            }
-        }, ((Session_1_0)session).getAccessControllerContext()));
+        final Session_1_0 actualSession = (Session_1_0) session;
+        addAsyncTask(object ->
+                SubjectExecutionContext.withSubject(actualSession.getSubject(),
+                                                    () -> actualSession.close(cause, message)));
 
     }
 

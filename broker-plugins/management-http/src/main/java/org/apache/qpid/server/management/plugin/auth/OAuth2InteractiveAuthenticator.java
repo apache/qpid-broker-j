@@ -22,7 +22,6 @@ package org.apache.qpid.server.management.plugin.auth;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.AccessControlException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Collections;
@@ -46,6 +45,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
@@ -189,7 +189,7 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                     }
                     catch (SecurityException e)
                     {
-                        if (e instanceof AccessControlException)
+                        if (e instanceof AccessDeniedException)
                         {
                             LOGGER.info("User '{}' is not authorised for management", authenticationResult.getMainPrincipal());
                             response.sendError(403, "User is not authorised for management");

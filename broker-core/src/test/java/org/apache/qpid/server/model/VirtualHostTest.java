@@ -37,7 +37,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.security.AccessControlException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,6 +65,7 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
@@ -381,7 +381,7 @@ public class VirtualHostTest extends UnitTestBase
 
         assertNull(virtualHost.getDescription());
 
-        assertThrows(AccessControlException.class,
+        assertThrows(AccessDeniedException.class,
                 () -> virtualHost.setAttributes(Map.of(VirtualHost.DESCRIPTION, "My description")),
                 "Exception not thrown");
         verify(_configStore, never()).update(eq(false), matchesRecord(virtualHost.getId(), virtualHost.getType()));
@@ -395,7 +395,7 @@ public class VirtualHostTest extends UnitTestBase
 
         when(_mockAccessControl.authorise(eq(null), eq(Operation.UPDATE), same(virtualHost), any(Map.class)))
                 .thenReturn(Result.DENIED);
-        assertThrows(AccessControlException.class,
+        assertThrows(AccessDeniedException.class,
                 () -> ((AbstractConfiguredObject<?>)virtualHost).stop(),
                 "Exception not thrown");
         verify(_configStore, never()).update(eq(false), matchesRecord(virtualHost.getId(), virtualHost.getType()));
@@ -409,7 +409,7 @@ public class VirtualHostTest extends UnitTestBase
 
         when(_mockAccessControl.authorise(eq(null), eq(Operation.DELETE), same(virtualHost), any(Map.class)))
                 .thenReturn(Result.DENIED);
-        assertThrows(AccessControlException.class, virtualHost::delete, "Exception not thrown");
+        assertThrows(AccessDeniedException.class, virtualHost::delete, "Exception not thrown");
         verify(_configStore, never()).remove(matchesRecord(virtualHost.getId(), virtualHost.getType()));
     }
 

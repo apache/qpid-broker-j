@@ -25,7 +25,7 @@ import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.PrivilegedAction;
+import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -67,6 +68,7 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
 import org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry.CloudFoundryOAuth2IdentityResolverService;
 import org.apache.qpid.server.store.MemoryConfigurationStore;
@@ -174,28 +176,31 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             createOAuth2AuthenticationManager();
         }
 
-        _currentVirtualHostNode = _broker.createChild(VirtualHostNode.class, attributes);
+        final Principal systemPrincipal = _systemLauncher.getSystemPrincipal();
+        final Principal taskPrincipal = new TaskPrincipal("beforeTestMethod");
+        final Set<Principal> principals = Set.of(systemPrincipal, taskPrincipal);
+        final Subject createSubject = new Subject(true, principals, Set.of(), Set.of());
+
+        SubjectExecutionContext.withSubjectUnchecked(createSubject, () ->
+                _currentVirtualHostNode = _broker.createChild(VirtualHostNode.class, attributes));
     }
 
     @Override
     public void afterTestMethod(final Class testClass, final Method method)
     {
-        Subject deleteSubject = new Subject(true,
-                                            new HashSet<>(Arrays.asList(_systemLauncher.getSystemPrincipal(),
-                                                                        new TaskPrincipal("afterTestMethod"))),
-                                            Collections.emptySet(),
-                                            Collections.emptySet());
-        Subject.doAs(deleteSubject, (PrivilegedAction<Object>) () -> {
+        final Principal systemPrincipal = _systemLauncher.getSystemPrincipal();
+        final Principal taskPrincipal = new TaskPrincipal("afterTestMethod");
+        Set<Principal> principals = Set.of(systemPrincipal, taskPrincipal);
+        Subject deleteSubject = new Subject(true, principals, Set.of(), Set.of());
+        SubjectExecutionContext.withSubject(deleteSubject, () -> {
             if (Boolean.getBoolean("broker.clean.between.tests"))
             {
                 _currentVirtualHostNode.delete();
             }
             else
             {
-                _currentVirtualHostNode.setAttributes(Collections.singletonMap(VirtualHostNode.DEFAULT_VIRTUAL_HOST_NODE,
-                                                                               false));
+                _currentVirtualHostNode.setAttributes(Map.of(VirtualHostNode.DEFAULT_VIRTUAL_HOST_NODE, false));
             }
-            return null;
         });
 
         if (method.getAnnotation(AddOAuth2MockProvider.class) != null)
@@ -245,113 +250,133 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     @Override
     public void createQueue(final String queueName)
     {
-        final Map<String, Object> attributes = new HashMap<>();
-        attributes.put(ConfiguredObject.NAME, queueName);
-        attributes.put(ConfiguredObject.TYPE, "standard");
-        final Queue<?> queue = _currentVirtualHostNode.getVirtualHost().createChild(Queue.class, attributes);
-        final Exchange<?> exchange = _currentVirtualHostNode.getVirtualHost().getChildByName(Exchange.class, "amq.direct");
-        exchange.bind(queueName, queueName, Collections.emptyMap(), false);
+        final Principal systemPrincipal = _systemLauncher.getSystemPrincipal();
+        final Principal taskPrincipal = new TaskPrincipal("BrokerAdmin_createQueue");
+        final Set<Principal> principals = Set.of(systemPrincipal, taskPrincipal);
+        final Subject createSubject = new Subject(true, principals, Set.of(), Set.of());
+
+        SubjectExecutionContext.withSubject(createSubject, () ->
+        {
+            final Map<String, Object> attributes = new HashMap<>();
+            attributes.put(ConfiguredObject.NAME, queueName);
+            attributes.put(ConfiguredObject.TYPE, "standard");
+            final Queue<?> queue = _currentVirtualHostNode.getVirtualHost().createChild(Queue.class, attributes);
+            final Exchange<?> exchange = _currentVirtualHostNode.getVirtualHost().getChildByName(Exchange.class, "amq.direct");
+            exchange.bind(queueName, queueName, Map.of(), false);
+        });
     }
 
     @Override
     public void deleteQueue(final String queueName)
     {
-        getQueue(queueName).delete();
+        final Principal systemPrincipal = _systemLauncher.getSystemPrincipal();
+        final Principal taskPrincipal = new TaskPrincipal("BrokerAdmin_deleteQueue");
+        final Set<Principal> principals = Set.of(systemPrincipal, taskPrincipal);
+        final Subject createSubject = new Subject(true, principals, Set.of(), Set.of());
+
+        SubjectExecutionContext.withSubject(createSubject, () -> getQueue(queueName).delete());
     }
 
     @Override
     public void putMessageOnQueue(final String queueName, final String... messages)
     {
-        for (String message : messages)
+        final Principal systemPrincipal = _systemLauncher.getSystemPrincipal();
+        final Principal taskPrincipal = new TaskPrincipal("BrokerAdmin_putMessageOnQueue");
+        final Set<Principal> principals = Set.of(systemPrincipal, taskPrincipal);
+        final Subject subject = new Subject(true, principals, Set.of(), Set.of());
+
+        SubjectExecutionContext.withSubject(subject, () ->
         {
-            ((QueueManagingVirtualHost<?>) _currentVirtualHostNode.getVirtualHost()).publishMessage(new ManageableMessage()
+            for (String message : messages)
             {
-                @Override
-                public String getAddress()
+                ((QueueManagingVirtualHost<?>) _currentVirtualHostNode.getVirtualHost()).publishMessage(new ManageableMessage()
                 {
-                    return queueName;
-                }
+                    @Override
+                    public String getAddress()
+                    {
+                        return queueName;
+                    }
 
-                @Override
-                public boolean isPersistent()
-                {
-                    return false;
-                }
+                    @Override
+                    public boolean isPersistent()
+                    {
+                        return false;
+                    }
 
-                @Override
-                public Date getExpiration()
-                {
-                    return null;
-                }
+                    @Override
+                    public Date getExpiration()
+                    {
+                        return null;
+                    }
 
-                @Override
-                public String getCorrelationId()
-                {
-                    return null;
-                }
+                    @Override
+                    public String getCorrelationId()
+                    {
+                        return null;
+                    }
 
-                @Override
-                public String getAppId()
-                {
-                    return null;
-                }
+                    @Override
+                    public String getAppId()
+                    {
+                        return null;
+                    }
 
-                @Override
-                public String getMessageId()
-                {
-                    return null;
-                }
+                    @Override
+                    public String getMessageId()
+                    {
+                        return null;
+                    }
 
-                @Override
-                public String getMimeType()
-                {
-                    return "text/plain";
-                }
+                    @Override
+                    public String getMimeType()
+                    {
+                        return "text/plain";
+                    }
 
-                @Override
-                public String getEncoding()
-                {
-                    return null;
-                }
+                    @Override
+                    public String getEncoding()
+                    {
+                        return null;
+                    }
 
-                @Override
-                public int getPriority()
-                {
-                    return 0;
-                }
+                    @Override
+                    public int getPriority()
+                    {
+                        return 0;
+                    }
 
-                @Override
-                public Date getNotValidBefore()
-                {
-                    return null;
-                }
+                    @Override
+                    public Date getNotValidBefore()
+                    {
+                        return null;
+                    }
 
-                @Override
-                public String getReplyTo()
-                {
-                    return null;
-                }
+                    @Override
+                    public String getReplyTo()
+                    {
+                        return null;
+                    }
 
-                @Override
-                public Map<String, Object> getHeaders()
-                {
-                    return Map.of();
-                }
+                    @Override
+                    public Map<String, Object> getHeaders()
+                    {
+                        return Map.of();
+                    }
 
-                @Override
-                public Object getContent()
-                {
-                    return message;
-                }
+                    @Override
+                    public Object getContent()
+                    {
+                        return message;
+                    }
 
-                @Override
-                public String getContentTransferEncoding()
-                {
-                    return null;
-                }
-            });
-        }
-
+                    @Override
+                    public String getContentTransferEncoding()
+                    {
+                        return null;
+                    }
+                });
+            }
+        });
     }
 
     @Override

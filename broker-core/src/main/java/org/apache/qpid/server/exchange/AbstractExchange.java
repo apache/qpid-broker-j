@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.exchange;
 
-import java.security.AccessControlException;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,8 +36,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
-import javax.security.auth.Subject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +73,8 @@ import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.queue.CreatingLinkInfo;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.AccessDeniedException;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.util.Action;
@@ -307,12 +305,9 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     private void addLifetimeConstraint(final Deletable<? extends Deletable> lifetimeObject)
     {
-        final Action<Deletable> deleteExchangeTask = object -> Subject.doAs(getSubjectWithAddedSystemRights(),
-                                                                            (PrivilegedAction<Void>) () ->
-                                                                            {
-                                                                                AbstractExchange.this.delete();
-                                                                                return null;
-                                                                            });
+        final Action<Deletable> deleteExchangeTask = object -> SubjectExecutionContext.withSubject(
+                getSubjectWithAddedSystemRights(),
+                AbstractExchange.this::delete);
 
         lifetimeObject.addDeleteTask(deleteExchangeTask);
         _deleteTaskList.add(new DeleteDeleteTask(lifetimeObject, deleteExchangeTask));
@@ -1032,7 +1027,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     @Override
     public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
-            throws AccessControlException
+            throws AccessDeniedException
     {
         authorise(token, PUBLISH_ACTION, arguments);
     }

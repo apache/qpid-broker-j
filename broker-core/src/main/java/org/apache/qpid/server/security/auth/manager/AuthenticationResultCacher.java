@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.security.AccessController;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
@@ -39,6 +38,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
 import org.apache.qpid.server.util.StringUtil;
@@ -113,7 +113,7 @@ public class AuthenticationResultCacher
         {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
 
-            Subject subject = Subject.getSubject(AccessController.getContext());
+            Subject subject = SubjectExecutionContext.currentSubject();
             if (subject != null)
             {
                 Set<SocketConnectionPrincipal> connectionPrincipals =

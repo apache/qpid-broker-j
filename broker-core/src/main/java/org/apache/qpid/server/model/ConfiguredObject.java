@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.model;
 
-import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -32,6 +31,7 @@ import javax.security.auth.Subject;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.preferences.UserPreferences;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
@@ -253,8 +253,8 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
     <C extends ConfiguredObject> CompletableFuture<C> createChildAsync(Class<C> childClass,
                                                                        Map<String, Object> attributes);
 
-    void setAttributes(Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException;
-    CompletableFuture<Void> setAttributesAsync(Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException;
+    void setAttributes(Map<String, Object> attributes) throws IllegalStateException, AccessDeniedException, IllegalArgumentException;
+    CompletableFuture<Void> setAttributesAsync(Map<String, Object> attributes) throws IllegalStateException, AccessDeniedException, IllegalArgumentException;
 
 
     @Override
@@ -290,8 +290,8 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
     UserPreferences getUserPreferences();
     void setUserPreferences(UserPreferences userPreferences);
 
-    void authorise(Operation operation) throws AccessControlException;
-    void authorise(Operation operation, Map<String, Object> arguments) throws AccessControlException;
-    void authorise(SecurityToken token, Operation operation, Map<String, Object> arguments) throws AccessControlException;
+    void authorise(Operation operation) throws AccessDeniedException;
+    void authorise(Operation operation, Map<String, Object> arguments) throws AccessDeniedException;
+    void authorise(SecurityToken token, Operation operation, Map<String, Object> arguments) throws AccessDeniedException;
     SecurityToken newToken(Subject subject);
 }

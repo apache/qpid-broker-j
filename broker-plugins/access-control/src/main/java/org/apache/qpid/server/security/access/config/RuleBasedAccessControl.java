@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import java.security.AccessController;
 import java.util.Map;
 
 import javax.security.auth.Subject;
@@ -32,6 +31,7 @@ import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.PermissionedObject;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.access.Operation;
 
 public class RuleBasedAccessControl implements AccessControl<CachingSecurityToken>, LegacyAccessControl
@@ -56,7 +56,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
     @Override
     public final CachingSecurityToken newToken()
     {
-        return newToken(Subject.getSubject(AccessController.getContext()));
+        return newToken(SubjectExecutionContext.currentSubject());
     }
 
     @Override
@@ -73,7 +73,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
     @Override
     public final Result authorise(LegacyOperation operation, ObjectType objectType, ObjectProperties properties)
     {
-        final Subject subject = Subject.getSubject(AccessController.getContext());
+        final Subject subject = SubjectExecutionContext.currentSubject();
 
         // Abstain if there is no subject/principal associated with this thread
         if (subject == null  || subject.getPrincipals().size() == 0)

@@ -29,8 +29,11 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
@@ -40,7 +43,6 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -113,13 +115,36 @@ public class BrokerRecovererTest extends UnitTestBase
         final Path path = Path.of(_systemConfig.getContextValue(String.class, SystemConfig.QPID_WORK_DIR));
         if (path.toFile().exists())
         {
-            try (Stream<Path> stream = Files.walk(path))
+            try
             {
-                stream.sorted(Comparator.reverseOrder()).map(Path::toFile).filter(File::exists).forEach(file ->
+                Files.walkFileTree(path, new SimpleFileVisitor<>()
                 {
-                    makeFileDeletable(file);
-                    file.delete();
+                    @Override
+                    public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException
+                    {
+                        makeFileDeletable(file.toFile());
+                        Files.deleteIfExists(file);
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException
+                    {
+                        makeFileDeletable(dir.toFile());
+                        Files.deleteIfExists(dir);
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult visitFileFailed(final Path file, final IOException exc)
+                    {
+                        return FileVisitResult.CONTINUE;
+                    }
                 });
+            }
+            catch (IOException e)
+            {
+                // ignore cleanup issues in tests
             }
         }
     }

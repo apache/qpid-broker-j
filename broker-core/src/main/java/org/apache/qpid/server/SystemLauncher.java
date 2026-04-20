@@ -30,7 +30,6 @@ import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.Principal;
-import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
@@ -57,6 +56,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.SystemConfigFactory;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
 import org.apache.qpid.server.util.urlstreamhandler.classpath.Handler;
 
@@ -195,7 +195,7 @@ public class SystemLauncher
         final SystemOutMessageLogger systemOutMessageLogger = new SystemOutMessageLogger();
 
         _eventLogger = new EventLogger(systemOutMessageLogger);
-        Subject.doAs(_brokerTaskSubject, (PrivilegedExceptionAction<Object>) () ->
+        SubjectExecutionContext.withSubject(_brokerTaskSubject, () ->
         {
             _listener.beforeStartup();
 

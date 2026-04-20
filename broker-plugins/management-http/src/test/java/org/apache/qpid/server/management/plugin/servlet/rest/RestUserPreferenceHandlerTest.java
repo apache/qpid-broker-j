@@ -29,7 +29,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
-import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,6 +50,7 @@ import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.PreferenceFactory;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.server.security.group.GroupPrincipal;
@@ -104,7 +104,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
         pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, List.of(MYGROUP_SERIALIZATION));
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             _handler.handlePUT(_configuredObject, requestInfo, pref);
 
@@ -115,7 +115,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             assertEquals(1, (long) visibilityList.size(), "Unexpected number of principals in visibility list");
             Principal principal = visibilityList.iterator().next();
             assertEquals(MYGROUP, principal.getName(), "Unexpected member of visibility list");
-            return null;
         });
     }
 
@@ -130,7 +129,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
         pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, List.of("Invalid Group"));
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             try
             {
@@ -141,7 +140,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             {
                 // pass
             }
-            return null;
         });
     }
 
@@ -155,7 +153,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             _handler.handlePUT(_configuredObject, requestInfo, pref);
 
@@ -163,12 +161,11 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             assertEquals(1, (long) preferences.size(), "Unexpected number of preferences");
             Preference prefModel = preferences.iterator().next();
             assertEquals(prefName, prefModel.getName(), "Unexpected preference name");
-            return null;
         });
     }
 
     @Test
-    public void testReplaceViaPutByTypeAndName()
+    public void testReplaceViaPutByTypeAndName() throws Exception
     {
         final String prefName = "myprefname";
         final RequestInfo requestInfo =
@@ -177,7 +174,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
 
-        final Preference createdPreference = Subject.doAs(_subject, (PrivilegedAction<Preference>) () ->
+        final Preference createdPreference = SubjectExecutionContext.withSubject(_subject, () ->
         {
             _handler.handlePUT(_configuredObject, requestInfo, pref);
 
@@ -195,7 +192,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         final String changedDescription = "Replace that maintains id";
         replacementPref.put(Preference.DESCRIPTION_ATTRIBUTE, changedDescription);
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             _handler.handlePUT(_configuredObject, requestInfo, replacementPref);
 
@@ -205,14 +202,13 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             assertEquals(createdPreference.getId(), updatedPref.getId(), "Unexpected preference id");
             assertEquals(prefName, updatedPref.getName(), "Unexpected preference name");
             assertEquals(changedDescription, updatedPref.getDescription(), "Unexpected preference description");
-            return null;
         });
 
         replacementPref.remove(Preference.ID_ATTRIBUTE);
         final String changedDescription2 = "Replace that omits id";
         replacementPref.put(Preference.DESCRIPTION_ATTRIBUTE, changedDescription2);
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             _handler.handlePUT(_configuredObject, requestInfo, replacementPref);
 
@@ -223,7 +219,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
 
             assertEquals(prefName, updatedPref.getName(), "Unexpected preference name");
             assertEquals(changedDescription2, updatedPref.getDescription(), "Unexpected preference description");
-            return null;
         });
     }
 
@@ -238,7 +233,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         pref.put(Preference.NAME_ATTRIBUTE, prefName);
         pref.put(Preference.VALUE_ATTRIBUTE, new HashMap<>());
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             _handler.handlePUT(_configuredObject, requestInfo, List.of(pref));
 
@@ -246,7 +241,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             assertEquals(1, (long) preferences.size(), "Unexpected number of preferences");
             Preference prefModel = preferences.iterator().next();
             assertEquals(prefName, prefModel.getName(), "Unexpected preference name");
-            return null;
         });
 
         final String replacementPref1Name = "myprefreplacement1";
@@ -260,7 +254,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         replacementPref2.put(Preference.NAME_ATTRIBUTE, replacementPref2Name);
         replacementPref2.put(Preference.VALUE_ATTRIBUTE, Map.of());
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             _handler.handlePUT(_configuredObject, requestInfo, List.of(replacementPref1, replacementPref2));
 
@@ -276,7 +270,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
 
             assertTrue(prefNames.contains(replacementPref2Name),
                     "Replacement preference " + replacementPref2Name + " not found.");
-            return null;
         });
     }
 
@@ -304,13 +297,12 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         payload.put(pref1Type, List.of(pref1));
         payload.put(pref2Type, List.of(pref2));
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             _handler.handlePUT(_configuredObject, requestInfo, payload);
 
             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
             assertEquals(2, (long) preferences.size(), "Unexpected number of preferences");
-            return null;
         });
 
         final String replacementPref1Name = "myprefreplacement1";
@@ -323,7 +315,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         payload.clear();
         payload.put(pref1Type, List.of(replacementPref1));
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             _handler.handlePUT(_configuredObject, requestInfo, payload);
 
@@ -332,7 +324,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             Preference prefModel = preferences.iterator().next();
 
             assertEquals(replacementPref1Name, prefModel.getName(), "Unexpected preference name");
-            return null;
         });
     }
 
@@ -346,7 +337,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
         pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, List.of(MYGROUP_SERIALIZATION));
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             _handler.handlePOST(_configuredObject, typeRequestInfo, List.of(pref));
 
@@ -357,7 +348,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             assertEquals(1, (long) visibilityList.size(), "Unexpected number of principals in visibility list");
             Principal principal = visibilityList.iterator().next();
             assertEquals(MYGROUP, principal.getName(), "Unexpected member of visibility list");
-            return null;
         });
     }
 
@@ -371,7 +361,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
         pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, List.of(MYGROUP_SERIALIZATION));
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             final Map<String, List<Map<String, Object>>> payload =
                     Map.of("X-testtype2", List.of(pref));
@@ -384,8 +374,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             assertEquals(1, (long) visibilityList.size(), "Unexpected number of principals in visibility list");
             Principal principal = visibilityList.iterator().next();
             assertEquals(MYGROUP, principal.getName(), "Unexpected member of visibility list");
-
-            return null;
         });
     }
 
@@ -399,7 +387,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
         pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, List.of("Invalid Group"));
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             try
             {
@@ -410,7 +398,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             {
                 // pass
             }
-            return null;
         });
     }
 
@@ -424,7 +411,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         pref.put(Preference.VALUE_ATTRIBUTE, Map.of());
         pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, List.of("Invalid Group"));
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             try
             {
@@ -437,7 +424,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             {
                 // pass
             }
-            return null;
         });
     }
 
@@ -447,7 +433,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(List.of(), List.of());
         final String type = "X-testtype";
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             Map<String, Object> prefAttributes = createPreferenceAttributes(
                     null,
@@ -472,14 +458,13 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             assertEquals(1, (long) visibilityList.size(), "Unexpected number of principals in visibility list");
             assertTrue(GenericPrincipal.principalsEqual(_groupPrincipal, visibilityList.iterator().next()),
                     "Unexpected principal in visibility list");
-            return null;
         });
     }
 
     @Test
     public void testGetById()
     {
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             final String type = "X-testtype";
             Map<String, Object> pref1Attributes = createPreferenceAttributes(
@@ -515,14 +500,13 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             List<Map<String, Object>> preferences = typeToPreferenceListMap.get(type);
             assertEquals(1, (long) preferences.size(), "Unexpected number of preferences");
             assertEquals(id, preferences.get(0).get(Preference.ID_ATTRIBUTE), "Unexpected id");
-            return null;
         });
     }
 
     @Test
     public void testDeleteById()
     {
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             final String type = "X-testtype";
             Map<String, Object> pref1Attributes = createPreferenceAttributes(
@@ -556,7 +540,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             final Set<Preference> retrievedPreferences = awaitPreferenceFuture(_userPreferences.getPreferences());
             assertEquals(1, (long) retrievedPreferences.size(), "Unexpected number of preferences");
             assertTrue(retrievedPreferences.contains(p2), "Unexpected type in p1 map");
-            return null;
         });
     }
 
@@ -605,7 +588,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         final RequestInfo rootRequestInfo =
                 RequestInfo.createVisiblePreferencesRequestInfo(List.of(), List.of(), Map.of());
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             final Set<Preference> preferences = new HashSet<>();
             Map<String, Object> pref1Attributes = createPreferenceAttributes(
@@ -631,11 +614,10 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             Preference p2 = PreferenceFactory.fromAttributes(_configuredObject, pref2Attributes);
             preferences.add(p2);
             awaitPreferenceFuture(_userPreferences.updateOrAppend(preferences));
-            return null;
         });
 
         Subject testSubject2 = TestPrincipalUtils.createTestSubject("testUser2", MYGROUP);
-        Subject.doAs(testSubject2, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(testSubject2, () ->
         {
             Map<String, List<Map<String, Object>>> typeToPreferenceListMap =
                     (Map<String, List<Map<String, Object>>>) _handler.handleGET(_userPreferences, rootRequestInfo);
@@ -654,7 +636,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             assertTrue(GenericPrincipal.principalsEqual(_userPrincipal, (Principal) preferences.get(0)
                     .get(Preference.OWNER_ATTRIBUTE)),
                     "Unexpected owner");
-            return null;
         });
     }
 
@@ -666,7 +647,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         final RequestInfo rootRequestInfo =
                 RequestInfo.createVisiblePreferencesRequestInfo(List.of(), List.of(prefType), Map.of());
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             final Set<Preference> preferences = new HashSet<>();
             Map<String, Object> pref1Attributes = createPreferenceAttributes(
@@ -692,11 +673,10 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             Preference p2 = PreferenceFactory.fromAttributes(_configuredObject, pref2Attributes);
             preferences.add(p2);
             awaitPreferenceFuture(_userPreferences.updateOrAppend(preferences));
-            return null;
         });
 
         Subject testSubject2 = TestPrincipalUtils.createTestSubject("testUser2", MYGROUP);
-        Subject.doAs(testSubject2, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(testSubject2, () ->
         {
             List<Map<String, Object>> preferences =
                     (List<Map<String, Object>>) _handler.handleGET(_userPreferences, rootRequestInfo);
@@ -711,7 +691,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             assertTrue(GenericPrincipal.principalsEqual(_userPrincipal, (Principal) preferences.get(0)
                     .get(Preference.OWNER_ATTRIBUTE)),
                     "Unexpected owner");
-            return null;
         });
     }
 
@@ -723,7 +702,7 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
         final RequestInfo rootRequestInfo =
                 RequestInfo.createVisiblePreferencesRequestInfo(List.of(), List.of(prefType, prefName), Map.of());
 
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             final Set<Preference> preferences = new HashSet<>();
             Map<String, Object> pref1Attributes = createPreferenceAttributes(
@@ -749,11 +728,10 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
             Preference p2 = PreferenceFactory.fromAttributes(_configuredObject, pref2Attributes);
             preferences.add(p2);
             awaitPreferenceFuture(_userPreferences.updateOrAppend(preferences));
-            return null;
         });
 
         Subject testSubject2 = TestPrincipalUtils.createTestSubject("testUser2", MYGROUP);
-        Subject.doAs(testSubject2, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(testSubject2, () ->
         {
             Map<String, Object> preference =
                     (Map<String, Object>) _handler.handleGET(_userPreferences, rootRequestInfo);
@@ -764,13 +742,12 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
                     "Unexpected principal in visibility list");
             assertTrue(GenericPrincipal.principalsEqual(_userPrincipal, (Principal) preference.get(Preference.OWNER_ATTRIBUTE)),
                     "Unexpected owner");
-            return null;
         });
     }
 
     private void doTestDelete(final String preferenceType, final String preferenceName, final RequestInfo requestInfo)
     {
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             Map<String, Object> preferenceAttributes = createPreferenceAttributes(
                     null,
@@ -793,7 +770,6 @@ public class RestUserPreferenceHandlerTest extends UnitTestBase
 
             // this should be a noop
             _handler.handleDELETE(_userPreferences, requestInfo);
-            return null;
         });
     }
 }

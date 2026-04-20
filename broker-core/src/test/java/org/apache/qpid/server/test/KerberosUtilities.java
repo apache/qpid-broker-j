@@ -33,7 +33,6 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.security.PrivilegedExceptionAction;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -59,6 +58,7 @@ import org.ietf.jgss.Oid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.test.utils.EmbeddedKdcExtension;
 import org.apache.qpid.test.utils.JvmVendor;
 import org.apache.qpid.test.utils.SystemPropertySetter;
@@ -121,7 +121,7 @@ public class KerberosUtilities
             clientSubject = lc.getSubject();
             debug("LoginContext subject {}", clientSubject);
             System.setProperty(USE_SUBJECT_CREDS_ONLY, "true");
-            return Subject.doAs(clientSubject, (PrivilegedExceptionAction<byte[]>) () ->
+            return SubjectExecutionContext.withSubject(clientSubject, () ->
                     buildTokenWithinSubjectWithKerberosTicket(clientPrincipalName, targetServerPrincipalName));
         }
         finally

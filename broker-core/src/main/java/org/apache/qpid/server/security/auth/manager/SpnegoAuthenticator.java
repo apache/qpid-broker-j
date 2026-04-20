@@ -19,12 +19,10 @@
 
 package org.apache.qpid.server.security.auth.manager;
 
-import java.security.PrivilegedAction;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
@@ -40,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.TokenCarryingPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.util.SystemProperties;
@@ -172,17 +171,17 @@ public class SpnegoAuthenticator
             }
 
             final GSSManager manager = GSSManager.getInstance();
-            final PrivilegedExceptionAction<GSSCredential> credentialsAction =
+            final Callable<GSSCredential> credentialsAction =
                     () -> manager.createCredential(null,
                                                    credentialLifetime,
                                                    new Oid("1.3.6.1.5.5.2"),
                                                    GSSCredential.ACCEPT_ONLY);
-            final GSSContext gssContext = manager.createContext(Subject.doAs(subject, credentialsAction));
+            final GSSContext gssContext = manager.createContext(SubjectExecutionContext.withSubject(subject, credentialsAction));
             context = gssContext;
 
-            final PrivilegedExceptionAction<byte[]> acceptAction =
+            final Callable<byte[]> acceptAction =
                     () -> gssContext.acceptSecContext(negotiateToken, 0, negotiateToken.length);
-            final byte[] outToken = Subject.doAs(subject, acceptAction);
+            final byte[] outToken = SubjectExecutionContext.withSubject(subject, acceptAction);
 
             if (outToken == null)
             {
@@ -190,7 +189,7 @@ public class SpnegoAuthenticator
                 return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR);
             }
 
-            final PrivilegedAction<String> authenticationAction = () -> {
+            final Callable<String> authenticationAction = () -> {
                 if (gssContext.isEstablished())
                 {
                     GSSName gssName = null;
@@ -210,7 +209,7 @@ public class SpnegoAuthenticator
                 }
                 return null;
             };
-            final String principalName = Subject.doAs(subject, authenticationAction);
+            final String principalName = SubjectExecutionContext.withSubject(subject, authenticationAction);
             if (principalName != null)
             {
                 TokenCarryingPrincipal principal = new TokenCarryingPrincipal()
@@ -286,20 +285,13 @@ public class SpnegoAuthenticator
             }
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
         }
-        catch (PrivilegedActionException e)
+        catch (RuntimeException e)
         {
-            final Exception cause = e.getException();
-            if (cause instanceof GSSException)
-            {
-                if (LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug("Service login failed", e);
-                }
-            }
-            else
-            {
-                LOGGER.error("Service login failed", e);
-            }
+            throw e;
+        }
+        catch (Exception e)
+        {
+            LOGGER.error("Service login failed", e);
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
         }
         finally

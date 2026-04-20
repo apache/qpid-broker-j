@@ -20,22 +20,7 @@
 
 package org.apache.qpid.server.logging.logback.validator;
 
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.server.model.LifetimePolicy;
-import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.preferences.UserPreferences;
-import org.apache.qpid.server.security.SecurityToken;
-import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.store.ConfiguredObjectRecord;
-
-import javax.security.auth.Subject;
 import java.lang.reflect.Type;
-import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -46,6 +31,22 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+
+import javax.security.auth.Subject;
+
+import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.model.ConfigurationChangeListener;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectFactory;
+import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.preferences.UserPreferences;
+import org.apache.qpid.server.security.AccessDeniedException;
+import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.store.ConfiguredObjectRecord;
 
 public class TestConfiguredObject implements ConfiguredObject<TestConfiguredObject>
 {
@@ -278,14 +279,14 @@ public class TestConfiguredObject implements ConfiguredObject<TestConfiguredObje
     }
 
     @Override
-    public void setAttributes(Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException
+    public void setAttributes(Map<String, Object> attributes) throws IllegalStateException, AccessDeniedException, IllegalArgumentException
     {
         _attributes.clear();
         _attributes.putAll(attributes);
     }
 
     @Override
-    public CompletableFuture<Void> setAttributesAsync(Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException
+    public CompletableFuture<Void> setAttributesAsync(Map<String, Object> attributes) throws IllegalStateException, AccessDeniedException, IllegalArgumentException
     {
         setAttributes(attributes);
 
@@ -427,17 +428,17 @@ public class TestConfiguredObject implements ConfiguredObject<TestConfiguredObje
     }
 
     @Override
-    public void authorise(Operation operation) throws AccessControlException
+    public void authorise(Operation operation) throws AccessDeniedException
     {
     }
 
     @Override
-    public void authorise(Operation operation, Map<String, Object> arguments) throws AccessControlException
+    public void authorise(Operation operation, Map<String, Object> arguments) throws AccessDeniedException
     {
     }
 
     @Override
-    public void authorise(SecurityToken token, Operation operation, Map<String, Object> arguments) throws AccessControlException
+    public void authorise(SecurityToken token, Operation operation, Map<String, Object> arguments) throws AccessDeniedException
     {
     }
 

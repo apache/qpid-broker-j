@@ -140,18 +140,6 @@
     </testResources>
 
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <!--version specified in parent pluginManagement -->
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -244,6 +232,128 @@
                   </includes>
                   <jdkVersion>17</jdkVersion>
                 </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>jdk17on</id>
+      <activation>
+        <jdk>(,23]</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>test-jar</id>
+                <goals>
+                  <goal>test-jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>jdk24on</id>
+      <activation>
+        <jdk>[24,)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>java24-compile</id>
+                <phase>compile</phase>
+                <goals>
+                  <goal>compile</goal>
+                </goals>
+                <configuration>
+                  <release>24</release>
+                  <compileSourceRoots>${project.basedir}/src/main/java24</compileSourceRoots>
+                  <multiReleaseOutput>true</multiReleaseOutput>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <executions>
+              <!-- Do jar creation earlier, before the "test" phase, so that the
+                   multi-release-jar content is visible to any dependent modules,
+                   enabling them to use the relevant classes during their tests. -->
+              <execution>
+                <id>default-jar</id>
+                <phase>process-test-classes</phase>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>test-jar</id>
+                <phase>process-test-classes</phase>
+                <goals>
+                  <goal>test-jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <skipTests>true</skipTests>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>${maven-surefire-plugin-version}</version>
+            <configuration>
+              <includes>
+                <include>**/*Test.java</include>
+              </includes>
+              <redirectTestOutputToFile>true</redirectTestOutputToFile>
+              <reportsDirectory>${test.output.dir}</reportsDirectory>
+              <workingDirectory>${basedir}/..</workingDirectory>
+              <systemPropertyVariables>
+                <!-- Defaults -->
+                <qpid.dest_syntax>BURL</qpid.dest_syntax>
+                <derby.stream.error.file>target/derby.log</derby.stream.error.file>
+
+                <!-- Profile Based Values -->
+                <profile>${profile}</profile>
+                <broker.version>${profile.broker.version}</broker.version>
+                <virtualhostnode.type>${profile.virtualhostnode.type}</virtualhostnode.type>
+                <virtualhostnode.context.blueprint>${profile.virtualhostnode.context.blueprint}</virtualhostnode.context.blueprint>
+                <broker.clean.between.tests>${profile.broker.clean.between.tests}</broker.clean.between.tests>
+                <qpid.globalAddressDomains>[]</qpid.globalAddressDomains>
+                <test.output.dir>${test.output.dir}</test.output.dir>
+                <broker.clean.between.tests>true</broker.clean.between.tests>
+                <qpid.test_receive_timeout>${profile.test_receive_timeout}</qpid.test_receive_timeout>
+                <qpid.tests.mms.messagestore.persistence>${profile.qpid.tests.mms.messagestore.persistence}</qpid.tests.mms.messagestore.persistence>
+                <java.io.tmpdir>${java.io.tmpdir}</java.io.tmpdir>
+              </systemPropertyVariables>
+            </configuration>
+            <executions>
+              <execution>
+                <id>mrjar-tests</id>
+                <!-- Run and verify the packaged MRJAR during the standard "test" phase. -->
+                <phase>test</phase>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
               </execution>
             </executions>
           </plugin>

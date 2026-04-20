@@ -21,12 +21,14 @@ package org.apache.qpid.server.model.testmodels.singleton;
 import static org.apache.qpid.server.model.Initialization.copy;
 import static org.apache.qpid.server.model.Initialization.materialize;
 
-import java.security.PrivilegedAction;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
@@ -35,6 +37,8 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedStatistic;
 import org.apache.qpid.server.model.StatisticType;
 import org.apache.qpid.server.model.StatisticUnit;
+
+import javax.security.auth.Subject;
 
 @ManagedObject( defaultType = TestSingletonImpl.TEST_SINGLETON_TYPE)
 public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObject<X>
@@ -124,7 +128,11 @@ public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObj
     @ManagedAttribute( defaultValue = "${TEST_CONTEXT_DEFAULT}", initialization = materialize)
     String getAttrWithDefaultFromContextMaterializeInit();
 
-    <T> T doAsSystem(PrivilegedAction<T> action);
+    <T> T doAsSystem(Supplier<T> action);
 
     Set<String> takeLastReportedSetAttributes();
+
+    Subject exposedGetSubjectWithAddedSystemRights();
+
+    <T, E extends Exception> CompletableFuture<T> exposedDoOnConfigThread(final Task<CompletableFuture<T>, E> task);
 }

@@ -30,6 +30,9 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
@@ -75,9 +78,8 @@ public class ExistingQueueAdmin implements QueueAdmin
         }
         catch (Exception e)
         {
-            throw new BrokerAdminException(String.format("Cannot put %d messages on a queue '%s'",
-                                                         message.length,
-                                                         queueName), e);
+            throw new BrokerAdminException(String.format("Cannot put %d messages on a queue '%s'", message.length,
+                    queueName), e);
         }
     }
 
@@ -101,24 +103,24 @@ public class ExistingQueueAdmin implements QueueAdmin
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
-                       .begin().consumeResponse(Begin.class)
-                       .attachName(ADMIN_LINK_NAME)
-                       .attachRole(Role.SENDER)
-                       .attachTargetAddress(queueName)
-                       .attachSndSettleMode(SenderSettleMode.SETTLED)
-                       .attach().consumeResponse(Attach.class)
-                       .consumeResponse(Flow.class)
-                       .getLatestResponse(Flow.class);
+                    .begin().consumeResponse(Begin.class)
+                    .attachName(ADMIN_LINK_NAME)
+                    .attachRole(Role.SENDER)
+                    .attachTargetAddress(queueName)
+                    .attachSndSettleMode(SenderSettleMode.SETTLED)
+                    .attach().consumeResponse(Attach.class)
+                    .consumeResponse(Flow.class)
+                    .getLatestResponse(Flow.class);
 
             int tag = 0;
             for (final String payload : message)
             {
                 interaction.transferPayloadData(payload)
-                           .transferSettled(true)
-                           .transferDeliveryId()
-                           .transferDeliveryTag(new Binary(String.valueOf(tag).getBytes(UTF_8)))
-                           .transfer()
-                           .sync();
+                        .transferSettled(true)
+                        .transferDeliveryId()
+                        .transferDeliveryTag(new Binary(String.valueOf(tag).getBytes(UTF_8)))
+                        .transfer()
+                        .sync();
                 tag++;
             }
             closeInteraction(interaction);
@@ -128,10 +130,12 @@ public class ExistingQueueAdmin implements QueueAdmin
     private void closeInteraction(final Interaction interaction) throws Exception
     {
         interaction.detachClose(true)
-                   .detach()
-                   .end()
-                   .close()
-                   .sync();
+                .detach();
+        interaction.consume(Detach.class, Flow.class);
+        interaction.end()
+                .consumeResponse(End.class)
+                .close()
+                .consumeResponse(Close.class);
     }
 
 
@@ -143,19 +147,19 @@ public class ExistingQueueAdmin implements QueueAdmin
         {
             final Interaction interaction = transport.newInteraction();
             interaction.negotiateOpen()
-                       .begin().consumeResponse()
-                       .attachName(ADMIN_LINK_NAME)
-                       .attachRole(Role.RECEIVER)
-                       .attachSndSettleMode(DRAIN_UNSETTLED ? SenderSettleMode.UNSETTLED : SenderSettleMode.SETTLED)
-                       .attachSourceAddress(queueName)
-                       .attach().consumeResponse(Attach.class)
-                       .flowIncomingWindow(UnsignedInteger.valueOf(DRAIN_CREDITS))
-                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
-                       .flowLinkCredit(UnsignedInteger.valueOf(DRAIN_CREDITS))
-                       .flowHandleFromLinkHandle()
-                       .flowOutgoingWindow(UnsignedInteger.ZERO)
-                       .flowNextOutgoingId(UnsignedInteger.ZERO)
-                       .flow();
+                    .begin().consumeResponse()
+                    .attachName(ADMIN_LINK_NAME)
+                    .attachRole(Role.RECEIVER)
+                    .attachSndSettleMode(DRAIN_UNSETTLED ? SenderSettleMode.UNSETTLED : SenderSettleMode.SETTLED)
+                    .attachSourceAddress(queueName)
+                    .attach().consumeResponse(Attach.class)
+                    .flowIncomingWindow(UnsignedInteger.valueOf(DRAIN_CREDITS))
+                    .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                    .flowLinkCredit(UnsignedInteger.valueOf(DRAIN_CREDITS))
+                    .flowHandleFromLinkHandle()
+                    .flowOutgoingWindow(UnsignedInteger.ZERO)
+                    .flowNextOutgoingId(UnsignedInteger.ZERO)
+                    .flow();
 
             boolean controlMessageReceived;
             do
@@ -174,10 +178,10 @@ public class ExistingQueueAdmin implements QueueAdmin
                 if (DRAIN_UNSETTLED)
                 {
                     interaction.dispositionSettled(true)
-                               .dispositionRole(Role.RECEIVER)
-                               .dispositionFirstFromLatestDelivery()
-                               .dispositionState(new Accepted())
-                               .disposition();
+                            .dispositionRole(Role.RECEIVER)
+                            .dispositionFirstFromLatestDelivery()
+                            .dispositionState(new Accepted())
+                            .disposition();
                 }
 
                 controlMessageReceived = controlMessage.equals(message);

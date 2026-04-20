@@ -19,14 +19,17 @@
 
 package org.apache.qpid.server.virtualhost;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
-import java.security.AccessControlContext;
-import java.security.AccessController;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.security.auth.Subject;
 
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -36,8 +39,7 @@ public class HouseKeepingTaskTest extends UnitTestBase
     public void runExecuteThrowsConnectionScopeRuntimeException()
     {
         final VirtualHost<?> virtualHost = mock(VirtualHost.class);
-        final AccessControlContext context = AccessController.getContext();
-        final HouseKeepingTask task = new HouseKeepingTask(getTestName(), virtualHost, context)
+        final HouseKeepingTask task = new HouseKeepingTask(getTestName(), virtualHost, null)
         {
             @Override
             public void execute()
@@ -46,5 +48,25 @@ public class HouseKeepingTaskTest extends UnitTestBase
             }
         };
         task.run();
+    }
+
+    @Test
+    public void runExecuteUsesSubject()
+    {
+        final VirtualHost<?> virtualHost = mock(VirtualHost.class);
+        final Subject subject = new Subject();
+        final AtomicReference<Subject> capturedSubject = new AtomicReference<>();
+
+        final HouseKeepingTask task = new HouseKeepingTask(getTestName(), virtualHost, subject)
+        {
+            @Override
+            public void execute()
+            {
+                capturedSubject.set(SubjectExecutionContext.currentSubject());
+            }
+        };
+
+        task.run();
+        assertEquals(subject, capturedSubject.get(), "Unexpected subject");
     }
 }

@@ -21,7 +21,6 @@
 
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,6 +73,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.AsyncCommand;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
@@ -256,7 +256,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             String msg = "Cannot add a consumer to the destination as the destination has been deleted";
             throw new AmqpErrorException(new Error(AmqpError.RESOURCE_DELETED, msg), e);
         }
-        catch (AccessControlException e)
+        catch (AccessDeniedException e)
         {
             throw new AmqpErrorException(new Error(AmqpError.UNAUTHORIZED_ACCESS, e.getMessage()));
         }
@@ -870,7 +870,7 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
                         });
                     }
                 }
-                catch (AccessControlException e)
+                catch (AccessDeniedException e)
                 {
                     LOGGER.error("Error unregistering subscription", e);
                     closingError = new Error(AmqpError.NOT_ALLOWED, "Error unregistering subscription");

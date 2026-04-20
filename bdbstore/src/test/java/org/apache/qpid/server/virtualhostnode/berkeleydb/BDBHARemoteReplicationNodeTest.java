@@ -33,7 +33,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.security.AccessControlException;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,6 +53,7 @@ import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
@@ -182,7 +182,7 @@ public class BDBHARemoteReplicationNodeTest extends UnitTestBase
             remoteReplicationNode.setAttributes(Collections.singletonMap(VirtualHost.DESCRIPTION, "My description"));
             fail("Exception not thrown");
         }
-        catch (AccessControlException ace)
+        catch (AccessDeniedException ace)
         {
             // PASS
         }
@@ -209,7 +209,7 @@ public class BDBHARemoteReplicationNodeTest extends UnitTestBase
             remoteReplicationNode.delete();
             fail("Exception not thrown");
         }
-        catch (AccessControlException ace)
+        catch (AccessDeniedException ace)
         {
             // PASS
         }

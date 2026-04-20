@@ -24,19 +24,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.lang.reflect.Field;
+import java.security.Principal;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.Set;
 
 import javax.security.auth.Subject;
 
@@ -44,6 +40,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -188,21 +185,21 @@ public class TaskExecutorTest extends UnitTestBase
     }
 
     @Test
-    public void testSubmitAndWaitInAuthorizedContext()
+    public void testSubmitAndWaitInAuthorizedContext() throws Exception
     {
         _executor.start();
         final Subject subject = new Subject();
-        final Object result = Subject.doAs(subject, (PrivilegedAction<Object>) () ->
-                _executor.run(new SubjectRetriever()));
+        final Object result = SubjectExecutionContext.withSubject(subject,
+                () -> _executor.run(new SubjectRetriever()));
         assertEquals(subject, result, "Unexpected subject");
     }
 
     @Test
-    public void testSubmitAndWaitInAuthorizedContextWithNullSubject()
+    public void testSubmitAndWaitInAuthorizedContextWithNullSubject() throws Exception
     {
         _executor.start();
-        final Object result = Subject.doAs(null, (PrivilegedAction<Object>) () ->
-                _executor.run(new SubjectRetriever()));
+        final Object result = SubjectExecutionContext.withSubject(null,
+                () -> _executor.run(new SubjectRetriever()));
         assertNull(result, "Unexpected subject");
     }
 
@@ -212,13 +209,165 @@ public class TaskExecutorTest extends UnitTestBase
         final RuntimeException exception = new RuntimeException();
         _executor.start();
         final Exception thrown = assertThrows(Exception.class,
-                () -> _executor.run(new Task<Void, RuntimeException>()
-                {
+                () -> _executor.run(new TestTask(exception)),
+                "Exception is expected");
+        assertEquals(exception, thrown, "Unexpected exception");
+    }
 
+    @Test
+    public void testSubmitAndWaitCurrentSubjectIsRespected()
+    {
+        _executor.start();
+        final Subject subject = new Subject();
+        final AtomicReference<Subject> taskSubject = new AtomicReference<>();
+        SubjectExecutionContext.withSubject(subject, () ->
+        {
+            _executor.run(new TestTask(taskSubject));
+        });
+
+        assertEquals(subject, taskSubject.get(), "Unexpected subject");
+    }
+
+    @Test
+    public void testPrincipalAccessorAddsMissingPrincipal() throws Exception
+    {
+        final Principal userPrincipal = () -> getTestName() + "-user";
+        final Principal accessorPrincipal = () -> getTestName() + "-accessor";
+        final Subject subject = new Subject(true, Set.of(userPrincipal), Set.of(), Set.of());
+
+        final TaskExecutorImpl executorWithAccessor = new TaskExecutorImpl(getTestName(), () -> accessorPrincipal);
+        executorWithAccessor.start();
+        try
+        {
+            final AtomicReference<Subject> taskSubject = new AtomicReference<>();
+            SubjectExecutionContext.withSubject(subject, () ->
+                    executorWithAccessor.run(new TestTask(taskSubject)));
+
+            final Subject captured = taskSubject.get();
+            assertNotNull(captured, "Subject was not captured");
+            assertTrue(captured.getPrincipals().contains(userPrincipal), "Original principal missing");
+            assertTrue(captured.getPrincipals().contains(accessorPrincipal), "Accessor principal missing");
+            assertTrue(captured.isReadOnly(), "Subject should be read-only");
+            assertFalse(subject.getPrincipals().contains(accessorPrincipal), "Original subject was mutated");
+        }
+        finally
+        {
+            executorWithAccessor.stopImmediately();
+        }
+    }
+
+    @Test
+    public void testPrincipalAccessorDoesNotReplaceWhenPresent() throws Exception
+    {
+        final Principal principal = () -> getTestName() + "-user";
+        final Subject subject = new Subject(false, Set.of(principal), Set.of(), Set.of());
+
+        final TaskExecutorImpl executorWithAccessor = new TaskExecutorImpl(getTestName(), () -> principal);
+        executorWithAccessor.start();
+        try
+        {
+            final AtomicReference<Subject> taskSubject = new AtomicReference<>();
+            SubjectExecutionContext.withSubject(subject, () ->
+                    executorWithAccessor.run(new Task<Void, RuntimeException>()
+                    {
+                        @Override
+                        public Void execute()
+                        {
+                            taskSubject.set(SubjectExecutionContext.currentSubject());
+                            return null;
+                        }
+
+                        @Override
+                        public String getObject()
+                        {
+                            return getTestName();
+                        }
+
+                        @Override
+                        public String getAction()
+                        {
+                            return "test";
+                        }
+
+                        @Override
+                        public String getArguments()
+                        {
+                            return null;
+                        }
+                    }));
+
+            assertSame(subject, taskSubject.get(), "Unexpected subject instance");
+        }
+        finally
+        {
+            executorWithAccessor.stopImmediately();
+        }
+    }
+
+    @Test
+    public void testTaskSubjectCapturedAtSubmission() throws Exception
+    {
+        _executor.start();
+
+        final Subject initialSubject = _executor.run(new SubjectRetriever());
+        assertNull(initialSubject, "Subject must be null before test");
+
+        final CountDownLatch taskStarted = new CountDownLatch(1);
+        final CountDownLatch taskRelease = new CountDownLatch(1);
+        final CountDownLatch subjectCaptured = new CountDownLatch(1);
+        final AtomicReference<Subject> capturedSubject = new AtomicReference<>();
+
+        final Future<Void> blockingFuture = _executor.submit(new Task<Void, RuntimeException>()
+        {
+            @Override
+            public Void execute()
+            {
+                taskStarted.countDown();
+                try
+                {
+                    taskRelease.await(3, TimeUnit.SECONDS);
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(e);
+                }
+                return null;
+            }
+
+            @Override
+            public String getObject()
+            {
+                return getTestName();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "block";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return null;
+            }
+        });
+
+        assertTrue(taskStarted.await(3, TimeUnit.SECONDS), "Blocking task did not start");
+
+        final Subject subject = new Subject();
+        final AtomicReference<Future<Void>> captureFuture = new AtomicReference<>();
+
+        SubjectExecutionContext.withSubject(subject, () ->
+                captureFuture.set(_executor.submit(new Task<Void, RuntimeException>()
+                {
                     @Override
                     public Void execute()
                     {
-                        throw exception;
+                        capturedSubject.set(SubjectExecutionContext.currentSubject());
+                        subjectCaptured.countDown();
+                        return null;
                     }
 
                     @Override
@@ -230,7 +379,7 @@ public class TaskExecutorTest extends UnitTestBase
                     @Override
                     public String getAction()
                     {
-                        return "test";
+                        return "capture";
                     }
 
                     @Override
@@ -238,50 +387,169 @@ public class TaskExecutorTest extends UnitTestBase
                     {
                         return null;
                     }
-                }),
-                "Exception is expected");
-        assertEquals(exception, thrown, "Unexpected exception");
+                })));
+
+        taskRelease.countDown();
+
+        assertTrue(subjectCaptured.await(3, TimeUnit.SECONDS), "Subject was not captured");
+        assertEquals(subject, capturedSubject.get(), "Unexpected subject");
+
+        final Future<Void> submittedCapture = captureFuture.get();
+        assertNotNull(submittedCapture, "Capture future was not set");
+        submittedCapture.get(3, TimeUnit.SECONDS);
+        blockingFuture.get(3, TimeUnit.SECONDS);
     }
 
     @Test
-    public void testSubmitAndWaitCurrentActorAndSecurityManagerSubjectAreRespected()
+    public void testSubjectNotLeakedBetweenTasksOnSameWorkerThread() throws Exception
     {
         _executor.start();
-        final Subject subject = new Subject();
-        final AtomicReference<Subject> taskSubject = new AtomicReference<>();
-        Subject.doAs(subject, (PrivilegedAction<Object>) () ->
+
+        // 1) warmup: create a worker-thread with currentSubject = null
+        assertNull(_executor.run(new SubjectRetriever()), "Warm-up must see null subject");
+
+        // 2) execute task with admin subject
+        final Subject admin = new Subject();
+        final Subject seenInsideTask = SubjectExecutionContext.withSubject(admin, () -> _executor.run(new SubjectRetriever()));
+        assertSame(admin, seenInsideTask, "Task must see the subject that was set at submission time");
+
+        // 3) after task is done subject in worker-thread must be removed
+        final ExecutorService raw = getUnderlyingExecutor(_executor);
+        final Subject subjectAfterTask =
+                raw.submit(() -> SubjectExecutionContext.currentSubject()).get(3, TimeUnit.SECONDS);
+
+        assertNull(subjectAfterTask, "Subject leaked on worker-thread between tasks");
+    }
+
+    private static ExecutorService getUnderlyingExecutor(final TaskExecutorImpl executor) throws Exception
+    {
+        final Field field = TaskExecutorImpl.class.getDeclaredField("_executor");
+        field.setAccessible(true);
+        return (ExecutorService) field.get(executor);
+    }
+
+    @Test
+    public void testSubjectNotLeakedWhenTaskThrows() throws Exception
+    {
+        _executor.start();
+
+        // warmup
+        assertNull(_executor.run(new SubjectRetriever()), "Warm-up must see null subject");
+
+        final Subject admin = new Subject();
+
+        try
         {
-            _executor.run(new Task<Void, RuntimeException>()
+            SubjectExecutionContext.withSubject(admin, () ->
             {
-                @Override
-                public Void execute()
+                _executor.run(new Task<Void, RuntimeException>()
                 {
-                    taskSubject.set(Subject.getSubject(AccessController.getContext()));
-                    return null;
-                }
-
-                @Override
-                public String getObject()
-                {
-                    return getTestName();
-                }
-
-                @Override
-                public String getAction()
-                {
-                    return "test";
-                }
-
-                @Override
-                public String getArguments()
-                {
-                    return null;
-                }
+                    @Override public Void execute() { throw new RuntimeException("boom"); }
+                    @Override public String getObject() { return getTestName(); }
+                    @Override public String getAction() { return "boom"; }
+                    @Override public String getArguments() { return null; }
+                });
+                return null;
             });
-            return null;
-        });
+        }
+        catch (RuntimeException expected)
+        {
+            // ok
+        }
 
-        assertEquals(subject, taskSubject.get(), "Unexpected security manager subject");
+        final ExecutorService raw = getUnderlyingExecutor(_executor);
+        final Subject subjectAfterFailure = raw.submit(() -> SubjectExecutionContext.currentSubject()).get(3, TimeUnit.SECONDS);
+
+        assertNull(subjectAfterFailure, "Subject leaked on worker-thread after exception");
+    }
+
+    @Test
+    public void testWorkerThreadHasNoSubjectAfterFirstSubmission() throws Exception
+    {
+        _executor.start();
+
+        final Subject admin = new Subject();
+
+        // first submit with subject=admin
+        final Subject seenInside = SubjectExecutionContext.withSubject(admin, () -> _executor.run(new SubjectRetriever()));
+        assertSame(admin, seenInside);
+
+        final ExecutorService raw = getUnderlyingExecutor(_executor);
+        final Subject subjectAfter = raw.submit(() -> SubjectExecutionContext.currentSubject()).get(3, TimeUnit.SECONDS);
+
+        assertNull(subjectAfter, "Subject leaked into worker-thread after task execution");
+    }
+
+    @Test
+    public void testExecuteRunnableSubjectCapturedAtSubmissionAndNotLeaked() throws Exception
+    {
+        _executor.start();
+        assertNull(_executor.run(new SubjectRetriever()), "Warm-up must see null subject");
+
+        final Subject admin = new Subject();
+        final CountDownLatch executed = new CountDownLatch(1);
+        final AtomicReference<Subject> seenInsideRunnable = new AtomicReference<>();
+
+        SubjectExecutionContext.withSubject(admin, () -> _executor.execute(() ->
+        {
+            seenInsideRunnable.set(SubjectExecutionContext.currentSubject());
+            executed.countDown();
+        }));
+
+        assertTrue(executed.await(3, TimeUnit.SECONDS), "Runnable was not executed");
+        assertSame(admin, seenInsideRunnable.get(), "Runnable must see subject captured at execute() call");
+
+        final ExecutorService raw = getUnderlyingExecutor(_executor);
+        final Subject subjectAfter = raw.submit(() -> SubjectExecutionContext.currentSubject()).get(3, TimeUnit.SECONDS);
+
+        assertNull(subjectAfter, "Subject leaked on worker-thread after execute(Runnable)");
+    }
+
+    private class TestTask implements Task<Void, RuntimeException>
+    {
+        private final AtomicReference<Subject> _taskSubject;
+        private final RuntimeException _exception;
+
+        TestTask(final AtomicReference<Subject> taskSubject)
+        {
+            _taskSubject = taskSubject;
+            _exception = null;
+        }
+
+        TestTask(final RuntimeException exception)
+        {
+            _taskSubject = null;
+            _exception = exception;
+        }
+
+        @Override
+        public Void execute()
+        {
+            if (_exception != null)
+            {
+                throw _exception;
+            }
+            _taskSubject.set(SubjectExecutionContext.currentSubject());
+            return null;
+        }
+
+        @Override
+        public String getObject()
+        {
+            return getTestName();
+        }
+
+        @Override
+        public String getAction()
+        {
+            return "test";
+        }
+
+        @Override
+        public String getArguments()
+        {
+            return null;
+        }
     }
 
     private class SubjectRetriever implements Task<Subject, RuntimeException>
@@ -289,7 +557,7 @@ public class TaskExecutorTest extends UnitTestBase
         @Override
         public Subject execute()
         {
-            return Subject.getSubject(AccessController.getContext());
+            return SubjectExecutionContext.currentSubject();
         }
 
         @Override

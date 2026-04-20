@@ -20,13 +20,14 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-import java.security.AccessControlContext;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
+
+import javax.security.auth.Subject;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.message.MessageDestination;
@@ -380,7 +381,7 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
     void executeTransaction(TransactionalOperation op);
 
-    void executeTask(String name, Runnable task, AccessControlContext context);
+    void executeTask(String name, Runnable task, Subject subject);
 
     void scheduleHouseKeepingTask(long period, HouseKeepingTask task);
 

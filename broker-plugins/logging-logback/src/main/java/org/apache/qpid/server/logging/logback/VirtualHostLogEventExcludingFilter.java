@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import java.security.AccessController;
 import java.security.Principal;
 import java.util.Set;
 
@@ -31,6 +30,7 @@ import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
 
 import org.apache.qpid.server.model.BrokerLogger;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 
 public class VirtualHostLogEventExcludingFilter extends Filter<ILoggingEvent> implements LogBackLogInclusionRule
@@ -68,7 +68,7 @@ public class VirtualHostLogEventExcludingFilter extends Filter<ILoggingEvent> im
 
     private boolean subjectContainsVirtualHostPrincipal()
     {
-        Subject subject = Subject.getSubject(AccessController.getContext());
+        Subject subject = SubjectExecutionContext.currentSubject();
         if (subject != null)
         {
             Set<Principal> principals= subject.getPrincipals();

@@ -21,7 +21,6 @@
 package org.apache.qpid.server.transport;
 
 import java.net.SocketAddress;
-import java.security.AccessControlContext;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Iterator;
@@ -45,8 +44,6 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
     Broker<?> getBroker();
 
     long getConnectionId();
-
-    AccessControlContext getAccessControlContextFromSubject(Subject subject);
 
     Subject getSubject();
 

@@ -26,18 +26,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
-import java.security.PrivilegedAction;
-
 import javax.security.auth.Subject;
 
-import org.junit.jupiter.api.Test;
 import com.github.benmanes.caffeine.cache.Cache;
+
+import org.junit.jupiter.api.Test;
+
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 
 public class CacheFactoryTest
 {
     @Test
-    public void getCache()
+    public void getCache() throws Exception
     {
         final String cacheName = "test";
         final Cache<Object, Object> cache = new NullCache<>();
@@ -47,8 +48,8 @@ public class CacheFactoryTest
         subject.getPrincipals().add(new VirtualHostPrincipal((VirtualHost<?>) virtualHost));
         subject.setReadOnly();
 
-        final Cache<String, String> actualCache = Subject.doAs(subject, (PrivilegedAction<Cache<String, String>>) () ->
-                CacheFactory.getCache(cacheName, null));
+        final Cache<String, String> actualCache = SubjectExecutionContext.withSubject(subject,
+                () -> CacheFactory.getCache(cacheName, null));
         assertSame(actualCache, cache);
         verify(virtualHost).getNamedCache(cacheName);
     }

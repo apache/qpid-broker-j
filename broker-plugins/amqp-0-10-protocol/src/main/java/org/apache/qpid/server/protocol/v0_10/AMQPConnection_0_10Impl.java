@@ -21,8 +21,6 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 import java.nio.BufferUnderflowException;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -90,14 +88,14 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
         _inputHandler = new ServerInputHandler(new ServerAssembler(_connection));
         _connection.addFrameSizeObserver(_inputHandler);
 
-        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
+        runAsSubject(() ->
         {
             _connection.setNetworkConnection(getNetwork());
             _disassembler = new ServerDisassembler(wrapSender(getNetwork().getSender()), Constant.MIN_MAX_FRAME_SIZE);
             _connection.setSender(_disassembler);
             _connection.addFrameSizeObserver(_disassembler);
             return null;
-        }, getAccessControllerContext());
+        });
     }
 
     private ByteBufferSender wrapSender(final ByteBufferSender sender)
@@ -161,12 +159,12 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     @Override
     public final void readerIdle()
     {
-        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
+        runAsSubject(() ->
         {
             _connection.getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " + _connection.getConnectionDelegate().getState(), true));
             getNetwork().close();
             return null;
-        }, getAccessControllerContext());
+        });
 
     }
 
@@ -180,7 +178,7 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     {
         try
         {
-            AccessController.doPrivileged((PrivilegedAction<Void>) () ->
+            runAsSubject(() ->
             {
                 _inputHandler.closed();
                 if (_disassembler != null)
@@ -188,7 +186,7 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
                     _disassembler.closed();
                 }
                 return null;
-            }, getAccessControllerContext());
+            });
         }
         finally
         {

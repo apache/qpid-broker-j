@@ -24,7 +24,6 @@ import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.PrivilegedAction;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,8 +40,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-
-import javax.security.auth.Subject;
 
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.LogWriteException;
@@ -77,6 +74,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -637,7 +635,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 {
                     ((QueueManagingVirtualHost<?>) recoveredHost).setFirstOpening(firstOpening);
                 }
-                Subject.doAs(getSubjectWithAddedSystemRights(), (PrivilegedAction<Object>) () ->
+                SubjectExecutionContext.withSubject(getSubjectWithAddedSystemRights(), () ->
                 {
                     recoveredHost.open();
                     return null;
@@ -1090,10 +1088,9 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         @Override
         public void onNodeState(final ReplicationNode node, final NodeState nodeState)
         {
-            Subject.doAs(getSystemTaskSubject(_virtualHostNodePrincipalName), (PrivilegedAction<Void>) () ->
+            SubjectExecutionContext.withSubject(getSystemTaskSubject(_virtualHostNodePrincipalName), () ->
             {
                 processNodeState(node, nodeState);
-                return null;
             });
         }
 
@@ -1174,7 +1171,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         @Override
         public boolean onIntruderNode(final ReplicationNode node)
         {
-            return Subject.doAs(getSystemTaskSubject(_virtualHostNodePrincipalName), (PrivilegedAction<Boolean>) () ->
+            return SubjectExecutionContext.withSubjectUnchecked(getSystemTaskSubject(_virtualHostNodePrincipalName), () ->
                     processIntruderNode(node));
         }
 
@@ -1312,7 +1309,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         @Override
         public Void execute()
         {
-            return Subject.doAs(getSystemTaskSubject(_virtualHostNodePrincipalName), (PrivilegedAction<Void>) () ->
+            return SubjectExecutionContext.withSubjectUnchecked(getSystemTaskSubject(_virtualHostNodePrincipalName), () ->
             {
                 perform();
                 return null;

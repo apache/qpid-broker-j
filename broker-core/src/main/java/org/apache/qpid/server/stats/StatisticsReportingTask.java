@@ -23,7 +23,6 @@ package org.apache.qpid.server.stats;
 
 import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.returnsCollectionOfConfiguredObjects;
 
-import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,6 +39,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.util.Strings;
 
 public class StatisticsReportingTask extends TimerTask
@@ -59,10 +59,7 @@ public class StatisticsReportingTask extends TimerTask
     @Override
     public void run()
     {
-        Subject.doAs(_subject, (PrivilegedAction<Object>) () -> {
-            processChild(_root);
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () -> processChild(_root));
     }
 
     private void processChild(final ConfiguredObject<?> child)

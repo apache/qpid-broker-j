@@ -24,7 +24,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,6 +45,7 @@ import org.mockito.ArgumentMatcher;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.group.GroupPrincipal;
@@ -87,40 +87,34 @@ public class UserPreferencesTest extends UnitTestBase
     }
 
     @Test
-    public void testUpdateOrAppend()
+    public void testUpdateOrAppend() throws Exception
     {
         final Preference preference = createPreference(_testId, "test", "X-query", Map.of("select", "id,name"));
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
-        {
-            awaitPreferenceFuture(_userPreferences.updateOrAppend(Set.of(preference)));
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () ->
+                awaitPreferenceFuture(_userPreferences.updateOrAppend(Set.of(preference))));
         verify(_preferenceStore).updateOrCreate(argThat(new PreferenceRecordMatcher(preference)));
     }
 
     @Test
-    public void testReplace()
+    public void testReplace() throws Exception
     {
         final Preference preference = createPreference(_testId, "test", "X-query", Map.of("select", "id,name"));
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
-        {
-            awaitPreferenceFuture(_userPreferences.replace(Set.of(preference)));
-            return null;
-        });
+        SubjectExecutionContext.withSubject(_subject, () ->
+                awaitPreferenceFuture(_userPreferences.replace(Set.of(preference))));
 
         verify(_preferenceStore).replace(argThat(new UUIDCollectionMatcher(List.of())),
                                          argThat(new PreferenceRecordMatcher(preference)));
     }
 
     @Test
-    public void testReplaceByType()
+    public void testReplaceByType() throws Exception
     {
         final UUID queryUUID = randomUUID();
         final Preference queryPreference = createPreference(queryUUID, "test", "X-query", Map.of());
         final UUID dashboardUUID = randomUUID();
         final Preference dashboardPreference = createPreference(dashboardUUID, "test", "X-dashboard", Map.of());
         final Preference newQueryPreference = createPreference(_testId, "newTest", "X-query", Map.of());
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(queryPreference, dashboardPreference)));
             awaitPreferenceFuture(_userPreferences.replaceByType("X-query", Collections.singletonList(newQueryPreference)));
@@ -131,7 +125,7 @@ public class UserPreferencesTest extends UnitTestBase
     }
 
     @Test
-    public void testReplaceByTypeAndName()
+    public void testReplaceByTypeAndName() throws Exception
     {
         final UUID query1UUID = randomUUID();
         final Preference queryPreference1 = createPreference(query1UUID, "test", "X-query", Map.of());
@@ -140,7 +134,7 @@ public class UserPreferencesTest extends UnitTestBase
         final UUID dashboardUUID = randomUUID();
         final Preference dashboardPreference = createPreference(dashboardUUID, "test", "X-dashboard", Map.of());
         final Preference newQueryPreference = createPreference(_testId, "test", "X-query", Map.of());
-        Subject.doAs(_subject, (PrivilegedAction<Void>) () ->
+        SubjectExecutionContext.withSubject(_subject, () ->
         {
             awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(queryPreference1, queryPreference2, dashboardPreference)));
             awaitPreferenceFuture(_userPreferences.replaceByTypeAndName("X-query", "test", newQueryPreference));

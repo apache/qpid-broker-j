@@ -22,6 +22,8 @@ package org.apache.qpid.server.util;
 
 import java.util.concurrent.ThreadFactory;
 
+import org.apache.qpid.server.security.SubjectExecutionContext;
+
 public final class DaemonThreadFactory implements ThreadFactory
 {
     private final String _threadName;
@@ -52,7 +54,10 @@ public final class DaemonThreadFactory implements ThreadFactory
     @Override
     public Thread newThread(final Runnable runnable)
     {
-        final Thread thread = _threadGroup == null ? new Thread(runnable, _threadName) : new Thread(_threadGroup, runnable, _threadName);
+        final Runnable runnableWithNullSubject = () -> SubjectExecutionContext.withSubject(null, runnable);
+        final Thread thread = _threadGroup == null
+                ? new Thread(runnableWithNullSubject, _threadName)
+                : new Thread(_threadGroup, runnableWithNullSubject, _threadName);
         thread.setDaemon(true);
         if (_uncaughtExceptionHandler != null)
         {

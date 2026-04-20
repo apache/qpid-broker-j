@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import java.security.Principal;
-import java.security.PrivilegedAction;
 
 import javax.security.auth.Subject;
 
@@ -34,6 +33,7 @@ import ch.qos.logback.core.spi.FilterReply;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class PrincipalLogEventFilterTest extends UnitTestBase
@@ -52,7 +52,7 @@ public class PrincipalLogEventFilterTest extends UnitTestBase
     }
 
     @Test
-    public void testPrincipalMatches()
+    public void testPrincipalMatches() throws Exception
     {
         _subject.getPrincipals().add(_principal);
 
@@ -62,7 +62,7 @@ public class PrincipalLogEventFilterTest extends UnitTestBase
     }
 
     @Test
-    public void testNoPrincipal()
+    public void testNoPrincipal() throws Exception
     {
         final FilterReply reply = doFilter();
 
@@ -70,7 +70,7 @@ public class PrincipalLogEventFilterTest extends UnitTestBase
     }
 
     @Test
-    public void testWrongPrincipal()
+    public void testWrongPrincipal() throws Exception
     {
         _subject.getPrincipals().add(mock(Principal.class));
 
@@ -87,8 +87,8 @@ public class PrincipalLogEventFilterTest extends UnitTestBase
         assertEquals(FilterReply.DENY, _principalLogEventFilter.decide(_event));
     }
 
-    private FilterReply doFilter()
+    private FilterReply doFilter() throws Exception
     {
-        return Subject.doAs(_subject, (PrivilegedAction<FilterReply>) () -> _principalLogEventFilter.decide(_event));
+        return SubjectExecutionContext.withSubject(_subject, () -> _principalLogEventFilter.decide(_event));
     }
 }

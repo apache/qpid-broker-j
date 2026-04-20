@@ -26,8 +26,6 @@ import static org.apache.qpid.server.model.ConfiguredObjectTypeRegistry.returnsC
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.nio.charset.Charset;
-import java.security.AccessControlException;
-import java.security.AccessController;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -85,7 +83,9 @@ import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -789,7 +789,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         {
             return createFailureResponse(message, STATUS_CODE_BAD_REQUEST, e.getMessage());
         }
-        catch (AccessControlException e)
+        catch (AccessDeniedException e)
         {
             return createFailureResponse(message, STATUS_CODE_FORBIDDEN, "Forbidden");
         }
@@ -834,7 +834,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
         {
             return createFailureResponse(message, STATUS_CODE_BAD_REQUEST, e.getMessage());
         }
-        catch (AccessControlException e)
+        catch (AccessDeniedException e)
         {
             return createFailureResponse(message, STATUS_CODE_FORBIDDEN, "Forbidden");
         }
@@ -1041,7 +1041,11 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     private MessageDestination getResponseDestination(String replyTo)
     {
         ManagementNodeConsumer consumer = null;
-        Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        Subject currentSubject = SubjectExecutionContext.currentSubject();
+        if (currentSubject == null)
+        {
+            return _addressSpace.getDefaultDestination();
+        }
         Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
         if (!sessionPrincipals.isEmpty())
         {
@@ -1541,7 +1545,7 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
 
     @Override
     public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
-            throws AccessControlException
+            throws AccessDeniedException
     {
         // ? special permissions to publish to the management node
     }
@@ -1577,7 +1581,11 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
 
     private AmqpConnectionMetaData getCallerConnectionMetaData()
     {
-        Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        Subject currentSubject = SubjectExecutionContext.currentSubject();
+        if (currentSubject == null)
+        {
+            throw new IllegalStateException("Cannot find connection principal on calling thread");
+        }
         Set<ConnectionPrincipal> connectionPrincipals = currentSubject.getPrincipals(ConnectionPrincipal.class);
         if (connectionPrincipals.isEmpty())
         {

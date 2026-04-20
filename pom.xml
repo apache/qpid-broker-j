@@ -975,9 +975,16 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven-compiler-plugin-version}</version>
           <configuration>
+            <proc>full</proc>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>
             <useIncrementalCompilation>false</useIncrementalCompilation>
+            <annotationProcessorPaths>
+              <path>
+                <groupId>org.apache.qpid</groupId>
+                <artifactId>qpid-broker-codegen</artifactId>
+              </path>
+            </annotationProcessorPaths>
           </configuration>
         </plugin>
         <plugin>

@@ -18,7 +18,6 @@
  */
 package org.apache.qpid.server.exchange;
 
-import java.security.AccessControlException;
 import java.util.Map;
 
 import org.apache.qpid.server.message.InstanceProperties;
@@ -33,6 +32,7 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PermissionedObject;
 import org.apache.qpid.server.model.PublishingLink;
 import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
@@ -67,7 +67,7 @@ public class DefaultDestination implements MessageDestination, PermissionedObjec
 
     @Override
     public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
-            throws AccessControlException
+            throws AccessDeniedException
     {
 
         if(_accessControl != null)
@@ -80,7 +80,7 @@ public class DefaultDestination implements MessageDestination, PermissionedObjec
 
             if (result == Result.DENIED)
             {
-                throw new AccessControlException("Access denied to publish to default exchange with arguments: " + arguments);
+                throw new AccessDeniedException("Access denied to publish to default exchange with arguments: " + arguments);
             }
         }
     }

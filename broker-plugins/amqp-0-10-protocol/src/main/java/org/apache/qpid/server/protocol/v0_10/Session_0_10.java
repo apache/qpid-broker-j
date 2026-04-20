@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import java.security.AccessControlContext;
 import java.util.List;
 
 import javax.security.auth.Subject;
@@ -138,11 +137,6 @@ public class Session_0_10 extends AbstractAMQPSession<Session_0_10, ConsumerTarg
     public Subject getSubject()
     {
         return _subject;
-    }
-
-    AccessControlContext getAccessControllerContext()
-    {
-        return _accessControllerContext;
     }
 
     PublishAuthorisationCache getPublishAuthCache()

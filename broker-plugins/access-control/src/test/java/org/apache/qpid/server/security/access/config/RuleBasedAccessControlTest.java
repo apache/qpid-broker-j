@@ -22,8 +22,6 @@ package org.apache.qpid.server.security.access.config;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedExceptionAction;
 
 import javax.security.auth.Subject;
 
@@ -33,6 +31,7 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.UnitTestMessageLogger;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -136,11 +135,10 @@ class RuleBasedAccessControlTest extends UnitTestBase
     void usernameAllowsOperation()
     {
         setUpGroupAccessControl();
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user1"), (PrivilegedAction<Object>) () ->
+        SubjectExecutionContext.withSubject(TestPrincipalUtils.createTestSubject("user1"), () ->
         {
             final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY);
             assertEquals(Result.ALLOWED, result);
-            return null;
         });
     }
 
@@ -176,8 +174,8 @@ class RuleBasedAccessControlTest extends UnitTestBase
     void catchAllRuleDeniesUnrecognisedUsername()
     {
         setUpGroupAccessControl();
-        Subject.doAs(TestPrincipalUtils.createTestSubject("unknown", "unkgroup1", "unkgroup2"),
-                (PrivilegedAction<Object>) () ->
+        SubjectExecutionContext.withSubject(TestPrincipalUtils.createTestSubject("unknown", "unkgroup1", "unkgroup2"),
+                () ->
                 {
                     assertEquals(0, (long) _messageLogger.getLogMessages().size(), "Expecting zero messages before test");
 
@@ -187,7 +185,6 @@ class RuleBasedAccessControlTest extends UnitTestBase
                     assertEquals(1, (long) _messageLogger.getLogMessages().size(), "Expecting one message before test");
                     assertTrue(_messageLogger.messageContains(0, "ACL-1002"),
                             "Logged message does not contain expected string");
-                    return null;
                 });
     }
 
@@ -207,14 +204,13 @@ class RuleBasedAccessControlTest extends UnitTestBase
                 .withObject(ObjectType.METHOD)
                 .build());
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user4"), (PrivilegedAction<Object>) () ->
+        SubjectExecutionContext.withSubject(TestPrincipalUtils.createTestSubject("user4"), () ->
         {
             final ObjectProperties actionProperties = new ObjectProperties("getName");
             actionProperties.put(Property.COMPONENT, "Test");
 
             final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, actionProperties);
             assertEquals(Result.ALLOWED, result);
-            return null;
         });
     }
 
@@ -236,7 +232,7 @@ class RuleBasedAccessControlTest extends UnitTestBase
                 .withObject(ObjectType.METHOD)
                 .build());
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user5"), (PrivilegedAction<Object>) () ->
+        SubjectExecutionContext.withSubject(TestPrincipalUtils.createTestSubject("user5"), () ->
         {
             final ObjectProperties actionProperties = new ObjectProperties("getName");
             actionProperties.put(Property.COMPONENT, "Test");
@@ -246,7 +242,6 @@ class RuleBasedAccessControlTest extends UnitTestBase
             actionProperties.put(Property.COMPONENT, "Test2");
             result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, actionProperties);
             assertEquals(Result.DEFER, result);
-            return null;
         });
     }
 
@@ -263,7 +258,7 @@ class RuleBasedAccessControlTest extends UnitTestBase
 
         subject.getPrincipals().add(new ConnectionPrincipal(connectionModel));
 
-        Subject.doAs(subject, (PrivilegedExceptionAction<Object>) () ->
+        SubjectExecutionContext.withSubject(subject, () ->
         {
             final RuleSet mockRuleSet = mock(RuleSet.class);
             final RuleBasedAccessControl accessControl =
@@ -289,7 +284,7 @@ class RuleBasedAccessControlTest extends UnitTestBase
 
         subject.getPrincipals().add(new ConnectionPrincipal(connectionModel));
 
-        Subject.doAs(subject, (PrivilegedExceptionAction<Object>) () ->
+        SubjectExecutionContext.withSubject(subject, () ->
         {
             final RuleSet mockRuleSet = mock(RuleSet.class);
             when(mockRuleSet.check(subject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY))
@@ -322,7 +317,7 @@ class RuleBasedAccessControlTest extends UnitTestBase
                 .withObject(ObjectType.METHOD)
                 .build());
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user6"), (PrivilegedAction<Object>) () ->
+        SubjectExecutionContext.withSubject(TestPrincipalUtils.createTestSubject("user6"), () ->
         {
             ObjectProperties properties = new ObjectProperties("getAttribute");
             properties.put(Property.COMPONENT, "Test");
@@ -337,8 +332,6 @@ class RuleBasedAccessControlTest extends UnitTestBase
             properties.put(Property.COMPONENT, "Test");
             result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
             assertEquals(Result.DEFER, result);
-
-            return null;
         });
     }
 
@@ -358,7 +351,7 @@ class RuleBasedAccessControlTest extends UnitTestBase
                 .withObject(ObjectType.METHOD)
                 .build());
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user8"), (PrivilegedAction<Object>) () ->
+        SubjectExecutionContext.withSubject(TestPrincipalUtils.createTestSubject("user8"), () ->
         {
             ObjectProperties properties = new ObjectProperties();
             properties.put(Property.COMPONENT, "Test");
@@ -377,7 +370,6 @@ class RuleBasedAccessControlTest extends UnitTestBase
 
             result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
             assertEquals(Result.DEFER, result);
-            return null;
         });
     }
 
@@ -397,7 +389,7 @@ class RuleBasedAccessControlTest extends UnitTestBase
                 .withObject(ObjectType.METHOD)
                 .build());
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user9"), (PrivilegedAction<Object>) () ->
+        SubjectExecutionContext.withSubject(TestPrincipalUtils.createTestSubject("user9"), () ->
         {
             ObjectProperties properties = new ObjectProperties("queryNames");
             properties.put(Property.COMPONENT, "Test");
@@ -415,7 +407,6 @@ class RuleBasedAccessControlTest extends UnitTestBase
 
             result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
             assertEquals(Result.ALLOWED, result);
-            return null;
         });
     }
 
@@ -439,7 +430,7 @@ class RuleBasedAccessControlTest extends UnitTestBase
 
         rs.addRule(1, rule);
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
-        Subject.doAs(TestPrincipalUtils.createTestSubject("user9"), (PrivilegedAction<Object>) () ->
+        SubjectExecutionContext.withSubject(TestPrincipalUtils.createTestSubject("user9"), () ->
         {
             ObjectProperties properties = new ObjectProperties("getAttributes");
             properties.put(Property.COMPONENT, "Test");
@@ -455,17 +446,15 @@ class RuleBasedAccessControlTest extends UnitTestBase
             properties.put(Property.COMPONENT, "Test");
             result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
             assertEquals(Result.DEFER, result);
-            return null;
         });
     }
 
     private void authoriseAndAssertResult(final Result expectedResult, final String userName, final String... groups)
     {
-        Subject.doAs(TestPrincipalUtils.createTestSubject(userName, groups), (PrivilegedAction<Object>) () ->
+        SubjectExecutionContext.withSubject(TestPrincipalUtils.createTestSubject(userName, groups), () ->
         {
             final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, EMPTY);
             assertEquals(expectedResult, result);
-            return null;
         });
     }
 }
