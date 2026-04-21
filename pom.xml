@@ -106,7 +106,7 @@
     <bdb-version>7.4.5</bdb-version>
     <derby-version>10.16.1.1</derby-version>
     <logback-version>1.5.32</logback-version>
-    <logback-db-version>1.2.11.1</logback-db-version>
+    <logback-db-version>1.5.32</logback-db-version>
     <caffeine-version>3.2.3</caffeine-version>
     <fasterxml-jackson-version>3.1.1</fasterxml-jackson-version>
     <fasterxml-jackson-databind-version>3.1.1</fasterxml-jackson-databind-version>
