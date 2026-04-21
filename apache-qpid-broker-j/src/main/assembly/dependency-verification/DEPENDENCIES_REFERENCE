@@ -84,10 +84,10 @@ From: 'FasterXML' (http://fasterxml.com/)
   - Jackson-annotations (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:jar:2.21
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Jackson-core (https://github.com/FasterXML/jackson-core) tools.jackson.core:jackson-core:jar:3.1.1
+  - Jackson-core (https://github.com/FasterXML/jackson-core) tools.jackson.core:jackson-core:jar:3.1.2
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - jackson-databind (https://github.com/FasterXML/jackson) tools.jackson.core:jackson-databind:jar:3.1.1
+  - jackson-databind (https://github.com/FasterXML/jackson) tools.jackson.core:jackson-databind:jar:3.1.2
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 
