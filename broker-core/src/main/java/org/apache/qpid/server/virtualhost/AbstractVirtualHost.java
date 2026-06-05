@@ -44,11 +44,15 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -56,6 +60,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
@@ -164,6 +169,7 @@ import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.HousekeepingExecutor;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.Strings;
 
 public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> extends AbstractConfiguredObject<X>
@@ -173,6 +179,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractVirtualHost.class);
     private static final Logger DIRECT_MEMORY_USAGE_LOGGER = LoggerFactory.getLogger("org.apache.qpid.server.directMemory.virtualhost");
     private static final int HOUSEKEEPING_SHUTDOWN_TIMEOUT = 5;
+    private static final String CONNECTION_CLOSE_STATUS_CLOSE_REQUESTED = "CLOSE_REQUESTED";
+    private static final String CONNECTION_CLOSE_STATUS_CLOSED = "CLOSED";
+    private static final String CONNECTION_CLOSE_STATUS_FAILED = "FAILED";
+    private static final String CONNECTION_CLOSE_STATUS_TIMED_OUT = "TIMED_OUT";
 
     private final Collection<ConnectionValidator> _connectionValidators = new ArrayList<>();
     private final Set<AMQPConnection<?>> _connections = newSetFromMap(new ConcurrentHashMap<>());
@@ -754,6 +764,212 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
         }
         return null;
+    }
+
+    @Override
+    public Map<String, Object> closeIdleConnections(final long idleTimeMillis,
+                                                    final boolean waitForClose,
+                                                    final long timeoutMillis)
+    {
+        if (idleTimeMillis < 0L)
+        {
+            throw new IllegalArgumentException("idleTimeMillis must be greater than or equal to zero");
+        }
+        if (timeoutMillis <= 0L)
+        {
+            throw new IllegalArgumentException("timeoutMillis must be greater than zero");
+        }
+
+        final long now = System.currentTimeMillis();
+        final List<IdleConnectionCloseResult> closeResults = new ArrayList<>();
+
+        for (final AMQPConnection<?> connection : new ArrayList<>(_connections))
+        {
+            final Date lastMessageTime = connection.getLastMessageTime() != null
+                    ? connection.getLastMessageTime()
+                    : connection.getCreatedTime();
+            if (lastMessageTime != null)
+            {
+                final long connectionIdleTimeMillis = now - lastMessageTime.getTime();
+                if (connectionIdleTimeMillis > idleTimeMillis)
+                {
+                    closeResults.add(closeIdleConnection(connection, lastMessageTime, connectionIdleTimeMillis));
+                }
+            }
+        }
+
+        if (waitForClose)
+        {
+            waitForIdleConnectionCloseResults(closeResults, timeoutMillis);
+        }
+
+        return createCloseIdleConnectionsSummary(closeResults);
+    }
+
+    private IdleConnectionCloseResult closeIdleConnection(final AMQPConnection<?> connection,
+                                                          final Date lastMessageTime,
+                                                          final long idleTimeMillis)
+    {
+        final IdleConnectionCloseResult closeResult = new IdleConnectionCloseResult(connection, lastMessageTime,
+                idleTimeMillis);
+        try
+        {
+            closeResult.setCloseFuture(connection.deleteAsync());
+        }
+        catch (final RuntimeException e)
+        {
+            closeResult.setFailed(e);
+        }
+        return closeResult;
+    }
+
+    private void waitForIdleConnectionCloseResults(final List<IdleConnectionCloseResult> closeResults,
+                                                   final long timeoutMillis)
+    {
+        final CompletableFuture<?>[] closeFutures = closeResults.stream()
+                .map(IdleConnectionCloseResult::getCloseFuture)
+                .filter(Objects::nonNull)
+                .toArray(CompletableFuture[]::new);
+
+        if (closeFutures.length > 0)
+        {
+            try
+            {
+                CompletableFuture.allOf(closeFutures).get(timeoutMillis, TimeUnit.MILLISECONDS);
+            }
+            catch (final TimeoutException | ExecutionException e)
+            {
+                // Individual result status is derived below from each close future.
+            }
+            catch (final InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                throw new ServerScopedRuntimeException("Interrupted while waiting for idle connections to close", e);
+            }
+        }
+
+        closeResults.forEach(IdleConnectionCloseResult::updateStatusAfterWait);
+    }
+
+    private Map<String, Object> createCloseIdleConnectionsSummary(final List<IdleConnectionCloseResult> closeResults)
+    {
+        int closeRequestedCount = 0;
+        int closedCount = 0;
+        int failedCount = 0;
+        int timedOutCount = 0;
+
+        final List<Map<String, Object>> connections = new ArrayList<>(closeResults.size());
+        for (final IdleConnectionCloseResult closeResult : closeResults)
+        {
+            final Map<String, Object> connection = closeResult.getConnectionSummary();
+            connections.add(connection);
+
+            final String status = (String) connection.get("status");
+            if (closeResult.getCloseFuture() != null)
+            {
+                closeRequestedCount++;
+            }
+            if (CONNECTION_CLOSE_STATUS_CLOSED.equals(status))
+            {
+                closedCount++;
+            }
+            else if (CONNECTION_CLOSE_STATUS_FAILED.equals(status))
+            {
+                failedCount++;
+            }
+            else if (CONNECTION_CLOSE_STATUS_TIMED_OUT.equals(status))
+            {
+                timedOutCount++;
+            }
+        }
+
+        final Map<String, Object> result = new LinkedHashMap<>();
+        result.put("matchedCount", closeResults.size());
+        result.put("closeRequestedCount", closeRequestedCount);
+        result.put("closedCount", closedCount);
+        result.put("failedCount", failedCount);
+        result.put("timedOutCount", timedOutCount);
+        result.put("connections", connections);
+        return result;
+    }
+
+    private static class IdleConnectionCloseResult
+    {
+        private final Map<String, Object> _connectionSummary;
+        private CompletableFuture<Void> _closeFuture;
+
+        private IdleConnectionCloseResult(final Connection<?> connection,
+                                          final Date lastMessageTime,
+                                          final long idleTimeMillis)
+        {
+            _connectionSummary = new LinkedHashMap<>();
+            _connectionSummary.put("id", connection.getId() == null ? null : connection.getId().toString());
+            _connectionSummary.put("name", connection.getName());
+            _connectionSummary.put("remoteAddress", connection.getRemoteAddress());
+            _connectionSummary.put("principal", connection.getPrincipal());
+            _connectionSummary.put("lastMessageTime", lastMessageTime == null ? null : lastMessageTime.toInstant().toString());
+            _connectionSummary.put("idleTimeMillis", idleTimeMillis);
+            _connectionSummary.put("status", CONNECTION_CLOSE_STATUS_CLOSE_REQUESTED);
+        }
+
+        private Map<String, Object> getConnectionSummary()
+        {
+            return _connectionSummary;
+        }
+
+        private CompletableFuture<Void> getCloseFuture()
+        {
+            return _closeFuture;
+        }
+
+        private void setCloseFuture(final CompletableFuture<Void> closeFuture)
+        {
+            if (closeFuture == null)
+            {
+                setFailed(new IllegalStateException("Close request did not return a future"));
+            }
+            else
+            {
+                _closeFuture = closeFuture;
+            }
+        }
+
+        private void updateStatusAfterWait()
+        {
+            if (_closeFuture != null)
+            {
+                if (_closeFuture.isDone())
+                {
+                    try
+                    {
+                        _closeFuture.getNow(null);
+                        _connectionSummary.put("status", CONNECTION_CLOSE_STATUS_CLOSED);
+                    }
+                    catch (CompletionException | CancellationException e)
+                    {
+                        setFailed(e);
+                    }
+                }
+                else
+                {
+                    _connectionSummary.put("status", CONNECTION_CLOSE_STATUS_TIMED_OUT);
+                }
+            }
+        }
+
+        private void setFailed(final Throwable e)
+        {
+            _connectionSummary.put("status", CONNECTION_CLOSE_STATUS_FAILED);
+            _connectionSummary.put("failure", getFailureMessage(e));
+        }
+
+        private static String getFailureMessage(final Throwable e)
+        {
+            final Throwable cause = e instanceof CompletionException && e.getCause() != null ? e.getCause() : e;
+            final String causeClassName = cause.getClass().getName();
+            final String message = cause.getMessage() == null ? "null" : cause.getMessage();
+            return causeClassName + ": " + message;
+        }
     }
 
     @Override

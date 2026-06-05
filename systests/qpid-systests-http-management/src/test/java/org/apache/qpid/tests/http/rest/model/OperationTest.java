@@ -36,6 +36,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.jms.Connection;
+import javax.jms.JMSException;
+import javax.jms.Session;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -91,6 +95,62 @@ public class OperationTest extends HttpTestBase
     }
 
     @Test
+    public void closeIdleConnectionsWithNoMatchesKeepsConnectionUsable() throws Exception
+    {
+        final Connection connection = getConnection();
+        try
+        {
+            final Map<String, Object> result = getHelper().postJson("virtualhost/closeIdleConnections",
+                    Map.of("idleTimeMillis", 600000L), MAP_TYPE_REF, SC_OK);
+
+            assertThat(result.get("matchedCount"), is(equalTo(0)));
+            assertThat(result.get("closeRequestedCount"), is(equalTo(0)));
+
+            final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            session.close();
+        }
+        finally
+        {
+            closeQuietly(connection);
+        }
+    }
+
+    @Test
+    public void closeIdleConnectionsWaitsForConnectionClose() throws Exception
+    {
+        final Connection connection = getConnection();
+        try
+        {
+            Thread.sleep(10L);
+
+            final Map<String, Object> result = getHelper().postJson("virtualhost/closeIdleConnections",
+                    Map.of("idleTimeMillis", 0L, "waitForClose", true, "timeoutMillis", 5000L), MAP_TYPE_REF, SC_OK);
+
+            assertThat(result.get("matchedCount"), is(equalTo(1)));
+            assertThat(result.get("closedCount"), is(equalTo(1)));
+
+            final List<?> connections = (List<?>) result.get("connections");
+            assertThat(connections.size(), is(equalTo(1)));
+            assertThat(((Map<?, ?>) connections.get(0)).get("status"), is(equalTo("CLOSED")));
+
+            final Map<String, Object> statistics = getHelper().postJson("virtualhost/getStatistics",
+                    Map.of("statistics", List.of("connectionCount")), MAP_TYPE_REF, SC_OK);
+            assertThat(((Number) statistics.get("connectionCount")).intValue(), is(equalTo(0)));
+        }
+        finally
+        {
+            closeQuietly(connection);
+        }
+    }
+
+    @Test
+    public void closeIdleConnectionsRejectsNegativeIdleTime() throws Exception
+    {
+        getHelper().submitRequest("virtualhost/closeIdleConnections", "POST", Map.of("idleTimeMillis", -1L),
+                SC_UNPROCESSABLE_ENTITY);
+    }
+
+    @Test
     public void operationNotFound() throws Exception
     {
         getHelper().submitRequest("virtualhost/notfound", "POST", Map.of(), SC_NOT_FOUND);
@@ -139,5 +199,17 @@ public class OperationTest extends HttpTestBase
                 "broker/getThreadStackTraces?contentDispositionAttachmentFilename=stack-traces.txt&appendToLog=false");
         assertThat(response, is(notNullValue()));
         assertThat(new String(response, UTF_8).contains("Full thread dump captured"), is(equalTo(true)));
+    }
+
+    private void closeQuietly(final Connection connection)
+    {
+        try
+        {
+            connection.close();
+        }
+        catch (JMSException e)
+        {
+            // The broker may already have closed the connection under test.
+        }
     }
 }
