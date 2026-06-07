@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.store.berkeleydb.tuple;
 
-import java.io.StringWriter;
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,6 +28,7 @@ import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
 
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
@@ -39,6 +39,8 @@ import org.apache.qpid.server.store.berkeleydb.BDBConfiguredObjectRecord;
 public class ConfiguredObjectBinding extends TupleBinding<ConfiguredObjectRecord>
 {
     private static final ConfiguredObjectBinding INSTANCE = new ConfiguredObjectBinding(null);
+    private static final TypeReference<Map<String,Object>> MAP_TYPE_REFERENCE = new TypeReference<>() { };
+    private static final ObjectMapper OBJECT_MAPPER = ConfiguredObjectJacksonModule.newObjectMapper(true);
 
     private final UUID _uuid;
 
@@ -53,40 +55,33 @@ public class ConfiguredObjectBinding extends TupleBinding<ConfiguredObjectRecord
     }
 
     @Override
-    public BDBConfiguredObjectRecord entryToObject(TupleInput tupleInput)
+    public BDBConfiguredObjectRecord entryToObject(final TupleInput tupleInput)
     {
-        String type = tupleInput.readString();
-        String json = tupleInput.readString();
-        ObjectMapper mapper = new ObjectMapper();
+        final String type = tupleInput.readString();
+        final String json = tupleInput.readString();
         try
         {
-            Map<String,Object> value = mapper.readValue(json, Map.class);
-            BDBConfiguredObjectRecord configuredObject = new BDBConfiguredObjectRecord(_uuid, type, value);
-            return configuredObject;
+            final Map<String,Object> value = OBJECT_MAPPER.readValue(json, MAP_TYPE_REFERENCE);
+            return new BDBConfiguredObjectRecord(_uuid, type, value);
         }
-        catch (JacksonException e)
+        catch (final JacksonException e)
         {
-            //should never happen
+            // should never happen
             throw new StoreException(e);
         }
-
     }
 
     @Override
-    public void objectToEntry(ConfiguredObjectRecord object, TupleOutput tupleOutput)
+    public void objectToEntry(final ConfiguredObjectRecord object, final TupleOutput tupleOutput)
     {
         try
         {
-            StringWriter writer = new StringWriter();
-            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
-            objectMapper.writeValue(writer, object.getAttributes());
             tupleOutput.writeString(object.getType());
-            tupleOutput.writeString(writer.toString());
+            tupleOutput.writeString(OBJECT_MAPPER.writeValueAsString(object.getAttributes()));
         }
-        catch (JacksonException e)
+        catch (final JacksonException e)
         {
             throw new StoreException(e);
         }
     }
-
 }

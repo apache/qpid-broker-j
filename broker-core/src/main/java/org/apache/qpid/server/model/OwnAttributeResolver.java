@@ -35,14 +35,13 @@ public class OwnAttributeResolver implements Strings.Resolver
 {
 
     public static final String PREFIX = "this:";
+    private static final ObjectMapper OBJECT_MAPPER = ConfiguredObjectJacksonModule.newObjectMapper(false);
     private final ThreadLocal<Set<String>> _stack = new ThreadLocal<>();
     private final ConfiguredObject<?> _object;
-    private final ObjectMapper _objectMapper;
 
     public OwnAttributeResolver(final ConfiguredObject<?> object)
     {
         _object = object;
-        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(false);
     }
 
     @Override
@@ -83,7 +82,7 @@ public class OwnAttributeResolver implements Strings.Resolver
                         {
                             StringWriter writer = new StringWriter();
 
-                            _objectMapper.writeValue(writer, returnVal);
+                            OBJECT_MAPPER.writeValue(writer, returnVal);
 
                             returnString = writer.toString();
                         }

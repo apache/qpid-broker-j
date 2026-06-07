@@ -70,6 +70,8 @@ import org.apache.qpid.server.util.Strings;
 
 abstract class AttributeValueConverter<T>
 {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     static final AttributeValueConverter<String> STRING_CONVERTER = new AttributeValueConverter<>()
     {
         @Override
@@ -615,10 +617,9 @@ abstract class AttributeValueConverter<T>
     private static <T> T convertFromJson(final String value, final ConfiguredObject object, final Class<T> valueType)
     {
         String interpolated = AbstractConfiguredObject.interpolate(object, value);
-        ObjectMapper objectMapper = new ObjectMapper();
         try
         {
-            return objectMapper.readValue(interpolated, valueType);
+            return OBJECT_MAPPER.readValue(interpolated, valueType);
         }
         catch (JacksonException e)
         {
@@ -869,10 +870,9 @@ abstract class AttributeValueConverter<T>
                 if(value instanceof String)
                 {
                     String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
-                    ObjectMapper objectMapper = new ObjectMapper();
                     try
                     {
-                        return convert(objectMapper.readValue(interpolated, List.class), object);
+                        return convert(OBJECT_MAPPER.readValue(interpolated, List.class), object);
                     }
                     catch (JacksonException e)
                     {
@@ -920,10 +920,9 @@ abstract class AttributeValueConverter<T>
                 if(value instanceof String)
                 {
                     String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
-                    ObjectMapper objectMapper = new ObjectMapper();
                     try
                     {
-                        return convert(objectMapper.readValue(interpolated, Set.class), object);
+                        return convert(OBJECT_MAPPER.readValue(interpolated, Set.class), object);
                     }
                     catch (JacksonException e)
                     {
@@ -972,10 +971,9 @@ abstract class AttributeValueConverter<T>
                 if(value instanceof String)
                 {
                     String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
-                    ObjectMapper objectMapper = new ObjectMapper();
                     try
                     {
-                        return convert(objectMapper.readValue(interpolated, List.class), object);
+                        return convert(OBJECT_MAPPER.readValue(interpolated, List.class), object);
                     }
                     catch (JacksonException e)
                     {
@@ -1025,10 +1023,9 @@ abstract class AttributeValueConverter<T>
                 if(value instanceof String)
                 {
                     String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
-                    ObjectMapper objectMapper = new ObjectMapper();
                     try
                     {
-                        return convert(objectMapper.readValue(interpolated, Map.class), object);
+                        return convert(OBJECT_MAPPER.readValue(interpolated, Map.class), object);
                     }
                     catch (JacksonException e)
                     {
@@ -1413,10 +1410,9 @@ abstract class AttributeValueConverter<T>
                 {
                     return null;
                 }
-                ObjectMapper objectMapper = new ObjectMapper();
                 try
                 {
-                    return convert(objectMapper.readValue(interpolated, Map.class), object);
+                    return convert(OBJECT_MAPPER.readValue(interpolated, Map.class), object);
                 }
                 catch (JacksonException e)
                 {

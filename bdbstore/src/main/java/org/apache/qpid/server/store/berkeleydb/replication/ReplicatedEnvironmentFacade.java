@@ -136,6 +136,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     public static final String NO_SYNC_TX_DURABILITY_PROPERTY_NAME = "qpid.bdb.ha.noSyncTxDurablity";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicatedEnvironmentFacade.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private static final int DEFAULT_MASTER_TRANSFER_TIMEOUT = 1000 * 60;
     private static final int DEFAULT_DB_PING_SOCKET_TIMEOUT = 1000;
@@ -1764,10 +1765,9 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             return Collections.emptySet();
         }
 
-        ObjectMapper objectMapper = new ObjectMapper();
         try
         {
-            Map<String, Object> settings = objectMapper.readValue(applicationState, Map.class);
+            Map<String, Object> settings = OBJECT_MAPPER.readValue(applicationState, Map.class);
             return new HashSet<>((Collection<String>) settings.get(PERMITTED_NODE_LIST));
         }
         catch (Exception e)
@@ -1943,10 +1943,9 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         HashMap<String, Object> data = new HashMap<>();
         data.put(PERMITTED_NODE_LIST, permittedNodeList);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectMapper objectMapper = new ObjectMapper();
         try
         {
-            objectMapper.writeValue(baos, data);
+            OBJECT_MAPPER.writeValue(baos, data);
         }
         catch (Exception e)
         {

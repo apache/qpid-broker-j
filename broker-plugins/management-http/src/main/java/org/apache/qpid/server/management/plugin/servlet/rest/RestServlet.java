@@ -64,6 +64,7 @@ public class RestServlet extends AbstractServlet
     private static final long serialVersionUID = 1L;
     private static final String APPLICATION_JSON = "application/json";
     private static final Logger LOGGER = LoggerFactory.getLogger(RestServlet.class);
+    private static final ObjectMapper REQUEST_OBJECT_MAPPER = new ObjectMapper();
 
     private transient ManagementController _managementController;
 
@@ -293,9 +294,7 @@ public class RestServlet extends AbstractServlet
                                                                       response,
                                                                       getManagementConfiguration()))
         {
-            ObjectMapper mapper = ConfiguredObjectJacksonModule
-                    .newObjectMapper(false, SerializationFeature.INDENT_OUTPUT);
-            mapper.writeValue(stream, formattedResponse);
+            RESPONSE_OBJECT_MAPPER.writeValue(stream, formattedResponse);
         }
     }
 
@@ -425,7 +424,6 @@ public class RestServlet extends AbstractServlet
         private <T> T parse(Class<T> type) throws IOException, ServletException
         {
             T providedObject;
-            final ObjectMapper mapper = new ObjectMapper();
 
             if (_headers.containsKey("Content-Type") && _request.getHeader("Content-Type")
                                                                 .startsWith("multipart/form-data"))
@@ -437,7 +435,7 @@ public class RestServlet extends AbstractServlet
                 {
                     if ("data".equals(part.getName()) && "application/json".equals(part.getContentType()))
                     {
-                        items = mapper.readValue(part.getInputStream(), LinkedHashMap.class);
+                        items = REQUEST_OBJECT_MAPPER.readValue(part.getInputStream(), LinkedHashMap.class);
                     }
                     else
                     {
@@ -455,7 +453,7 @@ public class RestServlet extends AbstractServlet
             }
             else
             {
-                providedObject = mapper.readValue(_request.getInputStream(), type);
+                providedObject = REQUEST_OBJECT_MAPPER.readValue(_request.getInputStream(), type);
             }
             return providedObject;
         }

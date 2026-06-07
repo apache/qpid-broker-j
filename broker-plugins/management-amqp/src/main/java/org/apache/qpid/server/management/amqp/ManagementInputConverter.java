@@ -28,6 +28,8 @@ import tools.jackson.databind.ObjectMapper;
 
 class ManagementInputConverter
 {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private final ManagementNode _managementNode;
 
     ManagementInputConverter(final ManagementNode managementNode)
@@ -70,10 +72,9 @@ class ManagementInputConverter
                 }
                 else if(Collection.class.isAssignableFrom(clazz) || Map.class.isAssignableFrom(clazz))
                 {
-                    ObjectMapper objectMapper = new ObjectMapper();
                     try
                     {
-                        return objectMapper.readValue(input.toString(), clazz);
+                        return OBJECT_MAPPER.readValue(input.toString(), clazz);
                     }
                     catch (JacksonException e)
                     {
