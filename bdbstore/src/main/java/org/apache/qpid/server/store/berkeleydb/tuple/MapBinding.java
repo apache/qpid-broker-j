@@ -19,7 +19,6 @@
 
 package org.apache.qpid.server.store.berkeleydb.tuple;
 
-import java.io.StringWriter;
 import java.util.Map;
 
 import com.sleepycat.bind.tuple.TupleBinding;
@@ -27,7 +26,10 @@ import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
 
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
 
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.store.StoreException;
@@ -35,6 +37,10 @@ import org.apache.qpid.server.store.StoreException;
 public class MapBinding extends TupleBinding<Map<String, Object>>
 {
     private static final MapBinding INSTANCE = new MapBinding();
+    private static final ObjectMapper MAPPER = ConfiguredObjectJacksonModule.newObjectMapper(true);
+    private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>() { };
+    private static final ObjectReader MAP_READER = MAPPER.readerFor(MAP_TYPE_REFERENCE);
+    private static final ObjectWriter MAP_WRITER = MAPPER.writerFor(MAP_TYPE_REFERENCE);
 
     public static MapBinding getInstance()
     {
@@ -44,14 +50,11 @@ public class MapBinding extends TupleBinding<Map<String, Object>>
     @Override
     public Map<String, Object> entryToObject(final TupleInput input)
     {
-        String json = input.readString();
-        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
         try
         {
-            Map<String, Object> value = mapper.readValue(json, Map.class);
-            return value;
+            return MAP_READER.readValue(input.readString());
         }
-        catch (JacksonException e)
+        catch (final JacksonException e)
         {
             //should never happen
             throw new StoreException(e);
@@ -63,12 +66,9 @@ public class MapBinding extends TupleBinding<Map<String, Object>>
     {
         try
         {
-            StringWriter writer = new StringWriter();
-            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
-            objectMapper.writeValue(writer, map);
-            output.writeString(writer.toString());
+            output.writeString(MAP_WRITER.writeValueAsString(map));
         }
-        catch (JacksonException e)
+        catch (final JacksonException e)
         {
             throw new StoreException(e);
         }

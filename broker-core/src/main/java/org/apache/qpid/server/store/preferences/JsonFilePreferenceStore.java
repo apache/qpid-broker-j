@@ -39,9 +39,9 @@ import org.apache.qpid.server.store.StoreException;
 public class JsonFilePreferenceStore extends AbstractJsonFileStore implements PreferenceStore
 {
     private static final String DEFAULT_FILE_NAME = "userPreferences";
+    private static final ObjectMapper OBJECT_MAPPER = ConfiguredObjectJacksonModule.newObjectMapper(true, SerializationFeature.INDENT_OUTPUT);
     private final String _storePath;
     private final String _posixFilePermissions;
-    private final ObjectMapper _objectMapper;
     private final Map<UUID, StoredPreferenceRecord> _recordMap;
     private StoreState _storeState = StoreState.CLOSED;
 
@@ -50,7 +50,6 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
         super();
         _storePath = path;
         _posixFilePermissions = posixFilePermissions;
-        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true, SerializationFeature.INDENT_OUTPUT);
         _recordMap = new LinkedHashMap<>();
     }
 
@@ -72,7 +71,7 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
             StoreContent storeContent;
             try
             {
-                storeContent = _objectMapper.readValue(getConfigFile(), StoreContent.class);
+                storeContent = OBJECT_MAPPER.readValue(getConfigFile(), StoreContent.class);
             }
             catch (JacksonException e)
             {
@@ -172,7 +171,7 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
     @Override
     protected ObjectMapper getSerialisationObjectMapper()
     {
-        return _objectMapper;
+        return OBJECT_MAPPER;
     }
 
     private void updateOrCreateInternal(final Collection<PreferenceRecord> preferenceRecords)

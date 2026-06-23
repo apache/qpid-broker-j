@@ -79,6 +79,8 @@ public abstract class AbstractServlet extends HttpServlet
     protected static final String GENERIC_ERROR_MESSAGE = "There was an error when performing request, " +
             "see log file for details";
 
+    protected static final ObjectMapper RESPONSE_OBJECT_MAPPER = ConfiguredObjectJacksonModule
+            .newObjectMapper(false, SerializationFeature.INDENT_OUTPUT);
     /**
      * Allowed response headers
      */
@@ -280,8 +282,7 @@ public abstract class AbstractServlet extends HttpServlet
     private void writeObjectToResponse(Object object, HttpServletRequest request,  HttpServletResponse response) throws IOException
     {
         OutputStream stream = getOutputStream(request, response);
-        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper(false, SerializationFeature.INDENT_OUTPUT);
-        mapper.writeValue(stream, object);
+        RESPONSE_OBJECT_MAPPER.writeValue(stream, object);
     }
 
     protected void sendCachingHeadersOnResponse(HttpServletResponse response)

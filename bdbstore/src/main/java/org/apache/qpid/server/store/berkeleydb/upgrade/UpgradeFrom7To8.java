@@ -58,6 +58,7 @@ import tools.jackson.databind.ObjectMapper;
 
 public class UpgradeFrom7To8 extends AbstractStoreUpgrade
 {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final TypeReference<HashMap<String, Object>> MAP_TYPE_REFERENCE = new TypeReference<>()
     {
     };
@@ -117,8 +118,6 @@ public class UpgradeFrom7To8 extends AbstractStoreUpgrade
             objectsCursor = configuredObjectsDb.openCursor(txn, null);
             DatabaseEntry key = new DatabaseEntry();
             DatabaseEntry value = new DatabaseEntry();
-            ObjectMapper mapper = new ObjectMapper();
-
             while (objectsCursor.getNext(key, value, LockMode.RMW) == OperationStatus.SUCCESS)
             {
                 UUID id = UUIDTupleBinding.getInstance().entryToObject(key);
@@ -128,7 +127,7 @@ public class UpgradeFrom7To8 extends AbstractStoreUpgrade
                 Map<String,Object> attributes = null;
                 try
                 {
-                    attributes = mapper.readValue(json, MAP_TYPE_REFERENCE);
+                    attributes = OBJECT_MAPPER.readValue(json, MAP_TYPE_REFERENCE);
                 }
                 catch (Exception e)
                 {
@@ -179,7 +178,7 @@ public class UpgradeFrom7To8 extends AbstractStoreUpgrade
                         TupleOutput tupleOutput = new TupleOutput();
                         tupleOutput.writeString(type);
                         StringWriter writer = new StringWriter();
-                        mapper.writeValue(writer,attributes);
+                        OBJECT_MAPPER.writeValue(writer,attributes);
                         tupleOutput.writeString(writer.getBuffer().toString());
                         TupleBinding.outputToEntry(tupleOutput, value);
                         objectsCursor.putCurrent(value);

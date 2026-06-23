@@ -56,6 +56,7 @@ import org.apache.qpid.server.query.engine.model.QueryRequest;
 public abstract class QueryServlet<X extends ConfiguredObject<?>> extends AbstractServlet
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryServlet.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private static final CSVFormat CSV_FORMAT = new CSVFormat();
 
@@ -110,7 +111,7 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
             }
             else
             {
-                final QueryRequest queryRequest = new ObjectMapper().readValue(content, QueryRequest.class);
+                final QueryRequest queryRequest = OBJECT_MAPPER.readValue(content, QueryRequest.class);
                 final QuerySettings querySettings = queryRequest.toQuerySettings();
                 final QueryEvaluator queryEvaluator = _queryEngine.createEvaluator();
                 final EvaluationResult<List<Map<String, Object>>> result = queryEvaluator.execute(queryRequest.getSql(), querySettings);

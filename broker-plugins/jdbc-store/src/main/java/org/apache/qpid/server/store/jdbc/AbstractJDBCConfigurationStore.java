@@ -60,6 +60,8 @@ import org.apache.qpid.server.util.Action;
 
 public abstract class AbstractJDBCConfigurationStore implements MessageStoreProvider, DurableConfigurationStore
 {
+    private static final ObjectMapper READ_OBJECT_MAPPER = ConfiguredObjectJacksonModule.newObjectMapper(true);
+    private static final ObjectMapper WRITE_OBJECT_MAPPER = ConfiguredObjectJacksonModule.newObjectMapper(true);
     private final static String CONFIGURATION_VERSION_TABLE_NAME_SUFFIX = "QPID_CONFIG_VERSION";
     private final static String VERSION_1_CONFIGURED_OBJECTS_TABLE_NAME_SUFFIX = "QPID_CONFIGURED_OBJECTS";
     private final static String VERSION_1_CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME_SUFFIX = "QPID_CONFIGURED_OBJECT_HIERARCHY";
@@ -178,7 +180,6 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
     private Collection<ConfiguredObjectRecordImpl> doVisitAllConfiguredObjectRecords(ConfiguredObjectRecordHandler handler) throws SQLException
     {
         Map<UUID, ConfiguredObjectRecordImpl> configuredObjects = new HashMap<>();
-        final ObjectMapper objectMapper = new ObjectMapper();
         try (Connection conn = newAutoCommitConnection())
         {
             PreparedStatement stmt = conn.prepareStatement("SELECT id, object_type, attributes FROM " + getConfiguredObjectsTableName());
@@ -194,7 +195,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                         String attributes = getBlobAsString(rs, 3);
                         final ConfiguredObjectRecordImpl configuredObjectRecord =
                                 new ConfiguredObjectRecordImpl(UUID.fromString(id), objectType,
-                                                               objectMapper.readValue(attributes, Map.class));
+                                                               READ_OBJECT_MAPPER.readValue(attributes, Map.class));
                         configuredObjects.put(configuredObjectRecord.getId(), configuredObjectRecord);
 
                     }
@@ -451,7 +452,6 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
             Map<UUID,Map<String,Object>> bindingsToUpdate = new HashMap<>();
             List<UUID> others = new ArrayList<>();
-            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
 
             PreparedStatement stmt = connection.prepareStatement("SELECT id, object_type, attributes FROM " + getConfiguredObjectsTableName());
             try
@@ -466,7 +466,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                         {
                             continue;
                         }
-                        Map<String, Object> attributes = objectMapper.readValue(getBlobAsString(rs, 3), Map.class);
+                        Map<String, Object> attributes = READ_OBJECT_MAPPER.readValue(getBlobAsString(rs, 3), Map.class);
 
                         if (objectType.endsWith("Binding"))
                         {
@@ -540,7 +540,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                 for(Map.Entry<UUID, Map<String,Object>> bindingEntry : bindingsToUpdate.entrySet())
                 {
                     stmt.setString(1, "Binding");
-                    byte[] attributesAsBytes = objectMapper.writeValueAsBytes(bindingEntry.getValue());
+                    byte[] attributesAsBytes = WRITE_OBJECT_MAPPER.writeValueAsBytes(bindingEntry.getValue());
 
                     ByteArrayInputStream bis = new ByteArrayInputStream(attributesAsBytes);
                     stmt.setBinaryStream(2, bis, attributesAsBytes.length);
@@ -816,8 +816,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                         else
                         {
                             final Map<String, Object> attributes = configuredObject.getAttributes();
-                            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
-                            byte[] attributesAsBytes = objectMapper.writeValueAsBytes(attributes);
+                            byte[] attributesAsBytes = WRITE_OBJECT_MAPPER.writeValueAsBytes(attributes);
 
                             ByteArrayInputStream bis = new ByteArrayInputStream(attributesAsBytes);
                             insertStmt.setBinaryStream(3, bis, attributesAsBytes.length);
@@ -936,7 +935,6 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             try (ResultSet rs = stmt.executeQuery())
             {
 
-                final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
                 if (rs.next())
                 {
                     try (PreparedStatement stmt2 = conn.prepareStatement("UPDATE " + getConfiguredObjectsTableName()
@@ -945,7 +943,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                         stmt2.setString(1, configuredObject.getType());
                         if (configuredObject.getAttributes() != null)
                         {
-                            byte[] attributesAsBytes = objectMapper.writeValueAsBytes(
+                            byte[] attributesAsBytes = WRITE_OBJECT_MAPPER.writeValueAsBytes(
                                     configuredObject.getAttributes());
                             ByteArrayInputStream bis = new ByteArrayInputStream(attributesAsBytes);
                             stmt2.setBinaryStream(2, bis, attributesAsBytes.length);
@@ -972,7 +970,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                         else
                         {
                             final Map<String, Object> attributes = configuredObject.getAttributes();
-                            byte[] attributesAsBytes = objectMapper.writeValueAsBytes(attributes);
+                            byte[] attributesAsBytes = WRITE_OBJECT_MAPPER.writeValueAsBytes(attributes);
                             ByteArrayInputStream bis = new ByteArrayInputStream(attributesAsBytes);
                             insertStmt.setBinaryStream(3, bis, attributesAsBytes.length);
                         }

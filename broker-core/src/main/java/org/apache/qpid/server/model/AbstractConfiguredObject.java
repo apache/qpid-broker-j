@@ -95,6 +95,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractConfiguredObject.class);
 
+    private static final ObjectMapper OBJECT_MAPPER = ConfiguredObjectJacksonModule.newObjectMapper(false);
+
     public static final String SECURED_STRING_VALUE = "********";
 
     private static final Map<Class, Object> SECURE_VALUES = Map.of(String.class, SECURED_STRING_VALUE,
@@ -1897,10 +1899,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 {
                     if(value instanceof Collection || value instanceof Map)
                     {
-                        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper(false);
                         try(StringWriter stringWriter = new StringWriter())
                         {
-                            mapper.writeValue(stringWriter, value);
+                            OBJECT_MAPPER.writeValue(stringWriter, value);
                             value = _encrypter.encrypt(stringWriter.toString());
                         }
                         catch (IOException e)

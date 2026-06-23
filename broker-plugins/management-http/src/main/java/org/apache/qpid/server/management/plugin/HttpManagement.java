@@ -139,6 +139,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implements HttpManagementConfiguration<HttpManagement>, PortManager
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpManagement.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     // 1 minute by default
     public static final int DEFAULT_TIMEOUT_IN_SECONDS = 60;
@@ -930,12 +931,11 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
 
         final Set<String> combinationsAsString = new HashSet<>(combinations.size());
-        ObjectMapper mapper = new ObjectMapper();
         for (Set<String> combination : combinations)
         {
             try
             {
-                combinationsAsString.add(mapper.writeValueAsString(combination));
+                combinationsAsString.add(OBJECT_MAPPER.writeValueAsString(combination));
             }
             catch (JacksonException e)
             {

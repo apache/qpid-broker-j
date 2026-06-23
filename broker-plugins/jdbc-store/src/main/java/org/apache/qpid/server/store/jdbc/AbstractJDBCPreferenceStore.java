@@ -53,6 +53,8 @@ import org.apache.qpid.server.util.BaseAction;
 
 public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
 {
+    private static final ObjectMapper READ_OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper WRITE_OBJECT_MAPPER = ConfiguredObjectJacksonModule.newObjectMapper(true);
     private static final String PREFERENCES_VERSION_TABLE_NAME = "PREFERENCES_VERSION";
     private static final String PREFERENCES_TABLE_NAME = "PREFERENCES";
 
@@ -368,10 +370,9 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
                                      final Map<String, Object> attributes)
             throws JacksonException, SQLException
     {
-        final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true);
         if (attributes != null)
         {
-            byte[] attributesAsBytes = objectMapper.writeValueAsBytes(attributes);
+            byte[] attributesAsBytes = WRITE_OBJECT_MAPPER.writeValueAsBytes(attributes);
             ByteArrayInputStream bis = new ByteArrayInputStream(attributesAsBytes);
             preparedSqlStatement.setBinaryStream(parameterIndex, bis, attributesAsBytes.length);
         }
@@ -455,7 +456,6 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
     private Collection<PreferenceRecord> getPreferenceRecords(final Connection connection) throws SQLException
     {
         Collection<PreferenceRecord> records = new LinkedHashSet<>();
-        final ObjectMapper objectMapper = new ObjectMapper();
         try (PreparedStatement stmt = connection.prepareStatement(String.format(SELECT_FROM_PREFERENCES,
                                                                                 getPreferencesTableName())))
         {
@@ -465,7 +465,7 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
                 {
                     String id = rs.getString(1);
                     String attributes = getBlobAsString(rs, 2);
-                    final PreferenceRecord preferenceRecord = new PreferenceRecordImpl(UUID.fromString(id), objectMapper.readValue(attributes, Map.class));
+                    final PreferenceRecord preferenceRecord = new PreferenceRecordImpl(UUID.fromString(id), READ_OBJECT_MAPPER.readValue(attributes, Map.class));
                     records.add(preferenceRecord);
                 }
             }

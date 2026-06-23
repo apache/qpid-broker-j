@@ -56,6 +56,8 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(JsonFileConfigStore.class);
 
+    private static final ObjectMapper OBJECT_MAPPER = ConfiguredObjectJacksonModule.newObjectMapper(true, SerializationFeature.INDENT_OUTPUT);
+
     private static final Comparator<Class<? extends ConfiguredObject>> CATEGORY_CLASS_COMPARATOR =
             Comparator.comparing(Class::getSimpleName);
     private static final Comparator<ConfiguredObjectRecord> CONFIGURED_OBJECT_RECORD_COMPARATOR = (left, right) ->
@@ -68,7 +70,6 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     private final Map<UUID, ConfiguredObjectRecord> _objectsById = new HashMap<>();
     private final Map<String, List<UUID>> _idsByType = new HashMap<>();
     private volatile Class<? extends ConfiguredObject> _rootClass;
-    private final ObjectMapper _objectMapper;
     private volatile Map<String,Class<? extends ConfiguredObject>> _classNameMapping;
 
     private ConfiguredObject<?> _parent;
@@ -80,7 +81,6 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     public JsonFileConfigStore(Class<? extends ConfiguredObject> rootClass)
     {
         super();
-        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper(true, SerializationFeature.INDENT_OUTPUT);
         _rootClass = rootClass;
     }
 
@@ -518,7 +518,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     @Override
     protected ObjectMapper getSerialisationObjectMapper()
     {
-        return _objectMapper;
+        return OBJECT_MAPPER;
     }
 
     private void assertState(State state)
