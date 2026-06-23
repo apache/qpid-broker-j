@@ -27,11 +27,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.security.Principal;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -40,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -55,6 +58,7 @@ import org.apache.qpid.server.management.plugin.ManagementException;
 import org.apache.qpid.server.management.plugin.ManagementRequest;
 import org.apache.qpid.server.management.plugin.ManagementResponse;
 import org.apache.qpid.server.management.plugin.RequestType;
+import org.apache.qpid.server.management.plugin.ResponseType;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
@@ -69,6 +73,7 @@ import org.apache.qpid.server.model.preferences.PreferenceImpl;
 import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -461,6 +466,52 @@ public class LatestManagementControllerTest extends UnitTestBase
     }
 
     @Test
+    public void invokeCloseIdleConnections() throws Exception
+    {
+        final String hostName = "test";
+        final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName);
+        final AMQPConnection<?> connection = mockAmqpConnection("connection1",
+                new Date(System.currentTimeMillis() - 60000L), CompletableFuture.completedFuture(null));
+        virtualHost.registerConnection(connection);
+
+        final List<String> path = List.of(virtualHost.getParent().getName(), hostName);
+        final ManagementResponse response = _controller.invoke(virtualHost.getBroker(), "virtualhost", path,
+                "closeIdleConnections", Map.of("idleTimeMillis", "0", "waitForClose", "true", "timeoutMillis", "2000"),
+                true, true);
+
+        assertThat(response, is(notNullValue()));
+        assertThat(response.getResponseCode(), is(equalTo(200)));
+        assertThat(response.getType(), is(equalTo(ResponseType.DATA)));
+        assertThat(response.getBody(), is(instanceOf(Map.class)));
+
+        final Map<?, ?> result = (Map<?, ?>) response.getBody();
+        assertThat(result.get("matchedCount"), is(equalTo(1)));
+        assertThat(result.get("closeRequestedCount"), is(equalTo(1)));
+        assertThat(result.get("closedCount"), is(equalTo(1)));
+
+        final List<?> connections = (List<?>) result.get("connections");
+        assertThat(connections.size(), is(equalTo(1)));
+        assertThat(connections.get(0), is(instanceOf(Map.class)));
+        assertThat(((Map<?, ?>) connections.get(0)).get("status"), is(equalTo("CLOSED")));
+    }
+
+    @Test
+    public void invokeCloseIdleConnectionsUsingGetIsRejected() throws Exception
+    {
+        final String hostName = "test";
+        final QueueManagingVirtualHost<?> virtualHost = createVirtualHostWithQueue(hostName);
+        final List<String> path = List.of(virtualHost.getParent().getName(), hostName);
+
+        final ManagementException exception = assertThrows(ManagementException.class, () ->
+                _controller.invoke(virtualHost.getBroker(), "virtualhost", path, "closeIdleConnections",
+                Map.of("idleTimeMillis", "0"), false, true),
+                "Exception not thrown");
+
+        assertThat(exception.getStatusCode(), is(equalTo(405)));
+        assertThat(exception.getHeaders().get("Allow"), is(equalTo("POST")));
+    }
+
+    @Test
     public void getPreferences() throws Exception
     {
         final String hostName = "default";
@@ -721,6 +772,26 @@ public class LatestManagementControllerTest extends UnitTestBase
         return virtualHost;
     }
 
+    private AMQPConnection<?> mockAmqpConnection(final String name,
+                                                 final Date lastMessageTime,
+                                                 final CompletableFuture<Void> deleteFuture)
+    {
+        final AMQPConnection<?> connection = mock(AMQPConnection.class);
+        final AuthenticationProvider<?> authenticationProvider = mock(AuthenticationProvider.class);
+        when(authenticationProvider.getType()).thenReturn("type");
+        when(authenticationProvider.getName()).thenReturn("name");
+
+        final Principal principal = new AuthenticatedPrincipal(new UsernamePrincipal("user", authenticationProvider));
+        when(connection.getId()).thenReturn(UUID.randomUUID());
+        when(connection.getName()).thenReturn(name);
+        when(connection.getRemoteAddress()).thenReturn("/127.0.0.1:5672");
+        when(connection.getPrincipal()).thenReturn(principal.getName());
+        when(connection.getAuthorizedPrincipal()).thenReturn(principal);
+        when(connection.getSubject()).thenReturn(new Subject(true, Set.of(principal), Set.of(), Set.of()));
+        when(connection.getLastMessageTime()).thenReturn(lastMessageTime);
+        when(connection.deleteAsync()).thenReturn(deleteFuture);
+        return connection;
+    }
 
     private UUID createPreferences(final Subject testSubject,
                                    final QueueManagingVirtualHost<?> virtualHost,

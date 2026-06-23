@@ -321,6 +321,12 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Connection<?> getConnection(@Param(name="name", mandatory = true) String name);
 
+    @ManagedOperation(description = "Close messaging connections idle for longer than the supplied interval.",
+            changesConfiguredObjectState = false)
+    Map<String, Object> closeIdleConnections(@Param(name = "idleTimeMillis", mandatory = true) long idleTimeMillis,
+                                             @Param(name = "waitForClose", defaultValue = "false") boolean waitForClose,
+                                             @Param(name = "timeoutMillis", defaultValue = "10000") long timeoutMillis);
+
     @ManagedOperation(secure = true,
             description = "Publishes a message to a specified address. "
                           + "Returns the number of queues onto which it has been placed, "

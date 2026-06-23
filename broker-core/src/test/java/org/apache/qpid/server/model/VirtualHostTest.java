@@ -465,6 +465,139 @@ public class VirtualHostTest extends UnitTestBase
     }
 
     @Test
+    public void testCloseIdleConnectionsClosesOnlyConnectionsBeyondThreshold()
+    {
+        final QueueManagingVirtualHost<?> vhost = createVirtualHost(getTestName());
+        final AMQPConnection<?> idleConnection = mockAmqpConnection(mockAuthenticatedPrincipal("user1"),
+                "idleConnection", new Date(System.currentTimeMillis() - 60000L), CompletableFuture.completedFuture(null));
+        final AMQPConnection<?> activeConnection = mockAmqpConnection(mockAuthenticatedPrincipal("user2"),
+                "activeConnection", new Date(), CompletableFuture.completedFuture(null));
+
+        vhost.registerConnection(idleConnection);
+        vhost.registerConnection(activeConnection);
+
+        final Map<String, Object> result = vhost.closeIdleConnections(30000L, false, 2000L);
+
+        assertEquals(1, result.get("matchedCount"), "Unexpected matched count");
+        verify(idleConnection).deleteAsync();
+        verify(activeConnection, never()).deleteAsync();
+    }
+
+    @Test
+    public void testCloseIdleConnectionsReturnsTableSummaryForCloseRequested()
+    {
+        final QueueManagingVirtualHost<?> vhost = createVirtualHost(getTestName());
+        final Date lastMessageTime = new Date(System.currentTimeMillis() - 60000L);
+        final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
+        final AMQPConnection<?> connection = mockAmqpConnection(mockAuthenticatedPrincipal("user1"),
+                "connection1", lastMessageTime, closeFuture);
+        vhost.registerConnection(connection);
+
+        final Map<String, Object> result = vhost.closeIdleConnections(0L, false, 2000L);
+
+        assertEquals(1, result.get("matchedCount"), "Unexpected matched count");
+        assertEquals(1, result.get("closeRequestedCount"), "Unexpected close requested count");
+        assertEquals(0, result.get("closedCount"), "Unexpected closed count");
+        assertEquals(0, result.get("failedCount"), "Unexpected failed count");
+        assertEquals(0, result.get("timedOutCount"), "Unexpected timed out count");
+
+        final Map<String, Object> connectionResult = getSingleConnectionResult(result);
+        assertEquals(connection.getId().toString(), connectionResult.get("id"), "Unexpected connection id");
+        assertEquals("connection1", connectionResult.get("name"), "Unexpected connection name");
+        assertEquals("/127.0.0.1:5672", connectionResult.get("remoteAddress"), "Unexpected remote address");
+        assertEquals("user1", connectionResult.get("principal"), "Unexpected principal");
+        assertEquals(lastMessageTime.toInstant().toString(), connectionResult.get("lastMessageTime"),
+                "Unexpected last message time");
+        assertTrue(((Number) connectionResult.get("idleTimeMillis")).longValue() >= 60000L,
+                "Unexpected idle time");
+        assertEquals("CLOSE_REQUESTED", connectionResult.get("status"), "Unexpected status");
+    }
+
+    @Test
+    public void testCloseIdleConnectionsWaitsForCompletedClose()
+    {
+        final QueueManagingVirtualHost<?> vhost = createVirtualHost(getTestName());
+        final AMQPConnection<?> connection = mockAmqpConnection(mockAuthenticatedPrincipal("user1"),
+                "connection1", new Date(System.currentTimeMillis() - 60000L), CompletableFuture.completedFuture(null));
+        vhost.registerConnection(connection);
+
+        final Map<String, Object> result = vhost.closeIdleConnections(0L, true, 2000L);
+
+        assertEquals(1, result.get("matchedCount"), "Unexpected matched count");
+        assertEquals(1, result.get("closeRequestedCount"), "Unexpected close requested count");
+        assertEquals(1, result.get("closedCount"), "Unexpected closed count");
+        assertEquals(0, result.get("failedCount"), "Unexpected failed count");
+        assertEquals(0, result.get("timedOutCount"), "Unexpected timed out count");
+        assertEquals("CLOSED", getSingleConnectionResult(result).get("status"), "Unexpected status");
+    }
+
+    @Test
+    public void testCloseIdleConnectionsWaitsForTotalTimeoutBudget()
+    {
+        final QueueManagingVirtualHost<?> vhost = createVirtualHost(getTestName());
+        final CompletableFuture<Void> closeFuture = new CompletableFuture<>();
+        final AMQPConnection<?> connection = mockAmqpConnection(mockAuthenticatedPrincipal("user1"),
+                "connection1", new Date(System.currentTimeMillis() - 60000L), closeFuture);
+        vhost.registerConnection(connection);
+
+        final Map<String, Object> result = vhost.closeIdleConnections(0L, true, 1L);
+
+        assertEquals(1, result.get("matchedCount"), "Unexpected matched count");
+        assertEquals(1, result.get("closeRequestedCount"), "Unexpected close requested count");
+        assertEquals(0, result.get("closedCount"), "Unexpected closed count");
+        assertEquals(0, result.get("failedCount"), "Unexpected failed count");
+        assertEquals(1, result.get("timedOutCount"), "Unexpected timed out count");
+        assertEquals("TIMED_OUT", getSingleConnectionResult(result).get("status"), "Unexpected status");
+        assertFalse(closeFuture.isCancelled(), "Close future should not be cancelled");
+    }
+
+    @Test
+    public void testCloseIdleConnectionsReportsFailures()
+    {
+        final QueueManagingVirtualHost<?> vhost = createVirtualHost(getTestName());
+        final AMQPConnection<?> thrownFailure = mockAmqpConnection(mockAuthenticatedPrincipal("user1"),
+                "thrownFailure", new Date(System.currentTimeMillis() - 60000L), CompletableFuture.completedFuture(null));
+        when(thrownFailure.deleteAsync()).thenThrow(new IllegalStateException("request failed"));
+
+        final CompletableFuture<Void> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new IllegalStateException("future failed"));
+        final AMQPConnection<?> futureFailure = mockAmqpConnection(mockAuthenticatedPrincipal("user2"),
+                "futureFailure", new Date(System.currentTimeMillis() - 60000L), failedFuture);
+
+        vhost.registerConnection(thrownFailure);
+        vhost.registerConnection(futureFailure);
+
+        final Map<String, Object> result = vhost.closeIdleConnections(0L, true, 2000L);
+
+        assertEquals(2, result.get("matchedCount"), "Unexpected matched count");
+        assertEquals(1, result.get("closeRequestedCount"), "Unexpected close requested count");
+        assertEquals(0, result.get("closedCount"), "Unexpected closed count");
+        assertEquals(2, result.get("failedCount"), "Unexpected failed count");
+        assertEquals(0, result.get("timedOutCount"), "Unexpected timed out count");
+
+        final Map<String, Object> thrownResult = getConnectionResult(result, "thrownFailure");
+        assertEquals("FAILED", thrownResult.get("status"), "Unexpected thrown failure status");
+        assertEquals("java.lang.IllegalStateException: request failed", thrownResult.get("failure"),
+                "Unexpected thrown failure message");
+
+        final Map<String, Object> futureResult = getConnectionResult(result, "futureFailure");
+        assertEquals("FAILED", futureResult.get("status"), "Unexpected future failure status");
+        assertEquals("java.lang.IllegalStateException: future failed", futureResult.get("failure"),
+                "Unexpected future failure message");
+    }
+
+    @Test
+    public void testCloseIdleConnectionsValidatesParameters()
+    {
+        final QueueManagingVirtualHost<?> vhost = createVirtualHost(getTestName());
+
+        assertThrows(IllegalArgumentException.class, () ->  vhost.closeIdleConnections(-1L, false, 2000L),
+                "Exception not thrown for negative idleTimeMillis");
+        assertThrows(IllegalArgumentException.class, () -> vhost.closeIdleConnections(0L, false, 0L),
+                "Exception not thrown for non-positive timeoutMillis");
+    }
+
+    @Test
     public void testStopVirtualhostClosesConnections()
     {
         final QueueManagingVirtualHost<?> vhost = createVirtualHost("sdf");
@@ -637,7 +770,20 @@ public class VirtualHostTest extends UnitTestBase
 
     private AMQPConnection<?> mockAmqpConnection(final Principal principal)
     {
+        return mockAmqpConnection(principal, getTestName(), new Date(), CompletableFuture.completedFuture(null));
+    }
+
+    private AMQPConnection<?> mockAmqpConnection(final Principal principal,
+                                                 final String name,
+                                                 final Date lastMessageTime,
+                                                 final CompletableFuture<Void> deleteFuture)
+    {
         final AMQPConnection<?> connection = mock(AMQPConnection.class);
+        final String principalName = principal.getName();
+        when(connection.getId()).thenReturn(UUID.randomUUID());
+        when(connection.getName()).thenReturn(name);
+        when(connection.getRemoteAddress()).thenReturn("/127.0.0.1:5672");
+        when(connection.getPrincipal()).thenReturn(principalName);
         when(connection.getAuthorizedPrincipal()).thenReturn(principal);
         final Subject subject =
                 new Subject(true, Set.of(principal), Set.of(), Set.of());
@@ -645,7 +791,25 @@ public class VirtualHostTest extends UnitTestBase
         final CompletableFuture<Void> completableFuture = CompletableFuture.completedFuture(null);
         when(connection.closeAsync()).thenReturn(completableFuture);
         when(connection.getCreatedTime()).thenReturn(new Date());
+        when(connection.getLastMessageTime()).thenReturn(lastMessageTime);
+        when(connection.deleteAsync()).thenReturn(deleteFuture);
         return connection;
+    }
+
+    private Map<String, Object> getSingleConnectionResult(final Map<String, Object> result)
+    {
+        final List<Map<String, Object>> connections = (List<Map<String, Object>>) result.get("connections");
+        assertEquals(1, connections.size(), "Unexpected number of connection results");
+        return connections.get(0);
+    }
+
+    private Map<String, Object> getConnectionResult(final Map<String, Object> result, final String name)
+    {
+        final List<Map<String, Object>> connections = (List<Map<String, Object>>) result.get("connections");
+        return connections.stream()
+                .filter(connection -> name.equals(connection.get("name")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Connection result not found: " + name));
     }
 
     private Principal mockAuthenticatedPrincipal(final String principalName)
