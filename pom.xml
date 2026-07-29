@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
-    <version>37</version>
+    <version>39</version>
   </parent>
 
   <groupId>org.apache.qpid</groupId>
@@ -108,8 +108,8 @@
     <logback-version>1.6.0</logback-version>
     <logback-db-version>1.5.32</logback-db-version>
     <caffeine-version>3.2.3</caffeine-version>
-    <fasterxml-jackson-version>3.1.2</fasterxml-jackson-version>
-    <fasterxml-jackson-databind-version>3.1.2</fasterxml-jackson-databind-version>
+    <fasterxml-jackson-version>3.2.1</fasterxml-jackson-version>
+    <fasterxml-jackson-databind-version>3.2.1</fasterxml-jackson-databind-version>
     <slf4j-version>2.0.18</slf4j-version>
     <jetty-version>12.1.8</jetty-version>
 
