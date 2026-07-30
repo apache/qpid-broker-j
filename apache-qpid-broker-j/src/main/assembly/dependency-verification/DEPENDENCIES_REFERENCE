@@ -26,7 +26,7 @@ Apache Qpid Broker-J Bundles
 
 From: 'an unknown organization'
 
-  - Caffeine cache (https://github.com/ben-manes/caffeine) com.github.ben-manes.caffeine:caffeine:jar:3.2.3
+  - Caffeine cache (https://github.com/ben-manes/caffeine) com.github.ben-manes.caffeine:caffeine:jar:3.2.4
     License: Apache License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
   - Prometheus Java Simpleclient (http://github.com/prometheus/client_java/simpleclient) io.prometheus:simpleclient:bundle:0.16.0
@@ -81,13 +81,13 @@ From: 'Eclipse Foundation' (https://www.eclipse.org)
 
 From: 'FasterXML' (http://fasterxml.com/)
 
-  - Jackson-annotations (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:jar:2.21
+  - Jackson-annotations (https://github.com/FasterXML/jackson) com.fasterxml.jackson.core:jackson-annotations:jar:2.22
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - Jackson-core (https://github.com/FasterXML/jackson-core) tools.jackson.core:jackson-core:jar:3.1.2
+  - Jackson-core (https://github.com/FasterXML/jackson-core) tools.jackson.core:jackson-core:jar:3.2.1
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
-  - jackson-databind (https://github.com/FasterXML/jackson) tools.jackson.core:jackson-databind:jar:3.1.2
+  - jackson-databind (https://github.com/FasterXML/jackson) tools.jackson.core:jackson-databind:jar:3.2.1
     License: The Apache Software License, Version 2.0  (https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 
@@ -108,11 +108,11 @@ From: 'OW2' (http://www.ow2.org/)
 
 From: 'QOS.ch' (http://www.qos.ch)
 
-  - Logback Classic Module (http://logback.qos.ch/logback-classic) ch.qos.logback:logback-classic:jar:1.5.34
+  - Logback Classic Module (http://logback.qos.ch/logback-classic) ch.qos.logback:logback-classic:jar:1.6.0
     License: EPL-2.0  (https://www.eclipse.org/legal/epl-v20.html)
     License: LGPL-2.1-only  (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 
-  - Logback Core Module (http://logback.qos.ch/logback-core) ch.qos.logback:logback-core:jar:1.5.34
+  - Logback Core Module (http://logback.qos.ch/logback-core) ch.qos.logback:logback-core:jar:1.6.0
     License: EPL-2.0  (https://www.eclipse.org/legal/epl-v20.html)
     License: LGPL-2.1-only  (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 
@@ -124,7 +124,7 @@ From: 'QOS.ch' (http://www.qos.ch)
     License: EPL-2.0  (https://www.eclipse.org/legal/epl-v20.html)
     License: LGPL-2.1-only  (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 
-  - SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:2.0.17
+  - SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:2.0.18
     License: MIT  (https://opensource.org/license/mit)
 
 
