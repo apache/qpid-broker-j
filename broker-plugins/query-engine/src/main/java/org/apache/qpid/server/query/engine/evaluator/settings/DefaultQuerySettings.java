@@ -59,7 +59,7 @@ public class DefaultQuerySettings
     /**
      * Maximal amount of queries allowed caching
      */
-    public static int MAX_QUERY_CACHE_SIZE = 1000;
+    public static int MAX_QUERY_CACHE_SIZE = 0;
 
     /**
      * Maximal amount of query tree nodes allowed

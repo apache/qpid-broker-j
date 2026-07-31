@@ -103,10 +103,10 @@ properties, affecting the way query engine works.
 ### Query cache size
 
 After query is parsed from the SQL string, it is stored into a cache. When the same query will be fired against 
-the query engine, parsing will be omitted and the query structure will be retrieved from cache. By default, query cache
-size is 1000. This means, that when 1000 different queries will be fired against the query engine, the next one will 
-override the oldest cache entry. When set to 0 or to negative value, query cache will not be used and each query
-will be parsed.
+the query engine, parsing will be omitted and the query structure will be retrieved from cache. When cache size is 1000,
+it means that 1000 different queries will be fired against the query engine, the next one will override the oldest 
+cache entry. When set to 0 or to negative value, query cache will not be used and each query will be parsed. 
+By default, query cache size is 0 (disabled).
 
 ### Maximal query depth
 
