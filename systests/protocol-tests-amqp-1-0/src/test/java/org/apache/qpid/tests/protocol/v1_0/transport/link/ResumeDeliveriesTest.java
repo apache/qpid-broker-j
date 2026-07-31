@@ -31,6 +31,7 @@ import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.typeCompatibleWith;
+import static org.apache.qpid.server.protocol.v1_0.constants.Constants.MIN_MAX_FRAME_SIZE;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -78,8 +79,6 @@ import org.apache.qpid.tests.utils.ConfigItem;
 @ConfigItem(name = "qpid.tests.mms.messagestore.persistence", value = "false", jvm = true)
 public class ResumeDeliveriesTest extends BrokerAdminUsingTestBase
 {
-    private static final int MIN_MAX_FRAME_SIZE = 512;
-
     @BeforeEach
     public void setUp()
     {

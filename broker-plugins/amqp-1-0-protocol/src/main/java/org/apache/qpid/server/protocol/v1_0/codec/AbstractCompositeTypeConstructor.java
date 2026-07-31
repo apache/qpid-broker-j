@@ -61,76 +61,81 @@ public abstract class AbstractCompositeTypeConstructor<T> implements DescribedTy
         private T constructType() throws AmqpErrorException
         {
             int size;
-            final TypeConstructor typeConstructor = _valueHandler.readConstructor(_in);
-            long remaining = _in.remaining();
-            if (typeConstructor instanceof ListConstructor)
+            final TypeConstructor typeConstructor = _valueHandler.readNonDescribedConstructor(_in);
+            if (!(typeConstructor instanceof ListConstructor) && !(typeConstructor instanceof ZeroListConstructor))
             {
-                ListConstructor listConstructor = (ListConstructor) typeConstructor;
-                if (remaining < listConstructor.getSize() * 2)
-                {
-                    throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                                 String.format("Not sufficient data for deserialization of '%s'."
-                                                               + " Expected at least %d bytes. Got %d bytes.",
-                                                               getTypeName(),
-                                                               listConstructor.getSize(),
-                                                               remaining));
-                }
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR,
+                        String.format("Unexpected format when deserializing of '%s'", getTypeName()));
+            }
 
-                if (listConstructor.getSize() == 1)
+            final ValueHandler.NestedObjectScope nestedObjectScope = _valueHandler.enterNestedObject();
+            try
+            {
+                long remaining = _in.remaining();
+                if (typeConstructor instanceof ListConstructor)
                 {
-                    size = _in.getUnsignedByte();
-                    _count = _in.getUnsignedByte();
+                    final ListConstructor listConstructor = (ListConstructor) typeConstructor;
+                    if (remaining < listConstructor.getSize() * 2)
+                    {
+                        throw new AmqpErrorException(AmqpError.DECODE_ERROR,
+                                String.format("Not sufficient data for deserialization of '%s'. Expected at least %d bytes. Got %d bytes.",
+                                        getTypeName(), listConstructor.getSize(), remaining));
+                    }
+
+                    if (listConstructor.getSize() == 1)
+                    {
+                        size = _in.getUnsignedByte();
+                        _count = _in.getUnsignedByte();
+                    }
+                    else
+                    {
+                        size = _in.getInt();
+                        _count = _in.getInt();
+                    }
+
+                    remaining -= listConstructor.getSize();
+                    if (remaining < size)
+                    {
+                        throw new AmqpErrorException(AmqpError.DECODE_ERROR,
+                                                     String.format("Not sufficient data for deserialization of '%s'."
+                                                                   + " Expected at least %d bytes. Got %d bytes.",
+                                                                   getTypeName(),
+                                                                   size,
+                                                                   remaining));
+                    }
                 }
                 else
                 {
-                    size = _in.getInt();
-                    _count = _in.getInt();
+                    size = 0;
+                    _count = 0;
                 }
 
-                remaining -= listConstructor.getSize();
-                if (remaining < size)
+                final T constructedObject = AbstractCompositeTypeConstructor.this.construct(this);
+
+                final long expectedRemaining = remaining - size;
+                final long unconsumedBytes = _in.remaining() - expectedRemaining;
+                if(unconsumedBytes > 0)
                 {
-                    throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                                 String.format("Not sufficient data for deserialization of '%s'."
-                                                               + " Expected at least %d bytes. Got %d bytes.",
-                                                               getTypeName(),
-                                                               size,
-                                                               remaining));
+                    final String msg =
+                            String.format("%s incorrectly encoded, %d bytes remaining after decoding %d elements",
+                                          getTypeName(), unconsumedBytes, _count);
+                    throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
                 }
+                else if (unconsumedBytes < 0)
+                {
+                    final String msg = String.format(
+                            "%s incorrectly encoded, %d bytes beyond provided size consumed after decoding %d elements",
+                            getTypeName(),
+                            -unconsumedBytes,
+                            _count);
+                    throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
+                }
+                return constructedObject;
             }
-            else if (typeConstructor instanceof ZeroListConstructor)
+            finally
             {
-                size = 0;
-                _count = 0;
+                nestedObjectScope.close();
             }
-            else
-            {
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                             String.format("Unexpected format when deserializing of '%s'",
-                                                           getTypeName()));
-            }
-
-            final T constructedObject = AbstractCompositeTypeConstructor.this.construct(this);
-
-            long expectedRemaining = remaining - size;
-            long unconsumedBytes = _in.remaining() - expectedRemaining;
-            if(unconsumedBytes > 0)
-            {
-                final String msg =
-                        String.format("%s incorrectly encoded, %d bytes remaining after decoding %d elements",
-                                      getTypeName(), unconsumedBytes, _count);
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
-            }
-            else if (unconsumedBytes < 0)
-            {
-                final String msg = String.format(
-                        "%s incorrectly encoded, %d bytes beyond provided size consumed after decoding %d elements",
-                        getTypeName(),
-                        -unconsumedBytes,
-                        _count);
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR, msg);
-            }
-            return constructedObject;
         }
 
 
@@ -200,10 +205,7 @@ public abstract class AbstractCompositeTypeConstructor<T> implements DescribedTy
             {
                 MapConstructor mapConstructor = ((MapConstructor) typeConstructor);
 
-                return mapConstructor.construct(_in,
-                                                _valueHandler,
-                                                expectedKeyType,
-                                                expectedValueType);
+                return _valueHandler.parseMapWithConstructor(_in, mapConstructor, expectedKeyType, expectedValueType);
             }
             else if (typeConstructor instanceof NullTypeConstructor)
             {

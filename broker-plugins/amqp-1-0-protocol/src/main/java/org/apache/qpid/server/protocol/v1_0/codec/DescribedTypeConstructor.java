@@ -29,4 +29,9 @@ public interface DescribedTypeConstructor<T>
                                  QpidByteBuffer in,
                                  final int originalPosition,
                                  ValueHandler valueHandler) throws AmqpErrorException;
+
+    default boolean allowsDescribedTypeValue()
+    {
+        return false;
+    }
 }

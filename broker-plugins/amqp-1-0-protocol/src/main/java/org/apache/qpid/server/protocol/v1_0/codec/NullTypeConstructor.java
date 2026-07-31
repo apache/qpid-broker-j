@@ -35,6 +35,12 @@ class NullTypeConstructor implements TypeConstructor<Void>
         return null;
     }
 
+    @Override
+    public boolean isZeroWidthArrayElement()
+    {
+        return true;
+    }
+
     public static NullTypeConstructor getInstance()
     {
         return INSTANCE;

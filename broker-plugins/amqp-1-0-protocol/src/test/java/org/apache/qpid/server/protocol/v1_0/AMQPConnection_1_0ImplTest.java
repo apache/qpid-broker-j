@@ -20,11 +20,13 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import static org.apache.qpid.server.protocol.v1_0.constants.Constants.MIN_MAX_FRAME_SIZE;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -38,10 +40,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -216,9 +221,7 @@ class AMQPConnection_1_0ImplTest extends UnitTestBase
                 new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
         connection.setAddressSpace(_virtualHost);
 
-        final Field field = AMQPConnection_1_0Impl.class.getDeclaredField("_connectionState");
-        field.setAccessible(true);
-        field.set(connection, ConnectionState.AWAIT_OPEN);
+        setConnectionState(connection, ConnectionState.AWAIT_OPEN);
 
         final Open open = mock(Open.class);
         when(open.getContainerId()).thenReturn("container");
@@ -229,5 +232,96 @@ class AMQPConnection_1_0ImplTest extends UnitTestBase
 
         assertEquals(readDelay * 2 * 1000, maxReadIdleMillis.get());
         assertEquals(writeDelay / 2, maxWriteIdleMillis.get());
+    }
+
+    @Test
+    void defaultTransferLimitAccommodatesDefaultMaxMessageSizeAtMinimumFrameSize()
+    {
+        final int conservativeMinimumFramePayload = 400;
+
+        assertThat((long) AMQPConnection_1_0.DEFAULT_MAX_TRANSFERS_PER_DELIVERY * conservativeMinimumFramePayload >=
+                Connection.DEFAULT_MAX_MESSAGE_SIZE, is(true));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 256, 511})
+    void receiveOpenRejectsMaxFrameSizeBelowMinimum(final int maxFrameSize) throws Exception
+    {
+        stubNetworkAndPort();
+
+        final AMQPConnection_1_0Impl connection = createConnectionAwaitingOpen();
+        connection.receiveOpen(1, createOpen(UnsignedInteger.valueOf(maxFrameSize)));
+
+        assertTrue(connection.isClosed(),
+                "Connection should be closed when max-frame-size " + maxFrameSize + " < " + MIN_MAX_FRAME_SIZE);
+    }
+
+    @Test
+    void receiveOpenAcceptsMaxFrameSizeAtMinimum() throws Exception
+    {
+        stubNetworkAndPort();
+        stubAddressSpaceResolution();
+
+        final AMQPConnection_1_0Impl connection = createConnectionAwaitingOpen();
+        connection.receiveOpen(1, createOpen(UnsignedInteger.valueOf(MIN_MAX_FRAME_SIZE)));
+
+        assertEquals(MIN_MAX_FRAME_SIZE, connection.getMaxFrameSize(),
+                "max-frame-size should be accepted when equal to the AMQP minimum of " + MIN_MAX_FRAME_SIZE);
+    }
+
+    @Test
+    void receiveOpenAcceptsNullMaxFrameSize() throws Exception
+    {
+        stubNetworkAndPort();
+        stubAddressSpaceResolution();
+
+        final AMQPConnection_1_0Impl connection = createConnectionAwaitingOpen();
+        connection.receiveOpen(1, createOpen(null));
+
+        assertEquals(1024, connection.getMaxFrameSize(),
+                "max-frame-size should default to broker buffer size when null");
+    }
+
+    private void stubNetworkAndPort()
+    {
+        when(_broker.getNetworkBufferSize()).thenReturn(1024);
+
+        final ByteBufferSender sender = mock(ByteBufferSender.class);
+        when(sender.isDirectBufferPreferred()).thenReturn(true);
+        when(_network.getSender()).thenReturn(sender);
+
+        when(_port.getNetworkBufferSize()).thenReturn(1024);
+    }
+
+    private void stubAddressSpaceResolution()
+    {
+        when(_port.getHeartbeatDelay()).thenReturn(0);
+        when(_port.getAddressSpace("localhost")).thenReturn(_virtualHost);
+    }
+
+    private AMQPConnection_1_0Impl createConnectionAwaitingOpen() throws Exception
+    {
+        final AMQPConnection_1_0Impl connection =
+                new AMQPConnection_1_0Impl(_broker, _network, _port, Transport.TCP, 0, _aggregateTicket);
+        connection.setAddressSpace(_virtualHost);
+        setConnectionState(connection, ConnectionState.AWAIT_OPEN);
+        return connection;
+    }
+
+    private Open createOpen(final UnsignedInteger maxFrameSize)
+    {
+        final Open open = mock(Open.class);
+        when(open.getContainerId()).thenReturn("container");
+        when(open.getHostname()).thenReturn("localhost");
+        when(open.getMaxFrameSize()).thenReturn(maxFrameSize);
+        return open;
+    }
+
+    private void setConnectionState(final AMQPConnection_1_0Impl connection,
+                                    final ConnectionState state) throws Exception
+    {
+        final Field field = AMQPConnection_1_0Impl.class.getDeclaredField("_connectionState");
+        field.setAccessible(true);
+        field.set(connection, state);
     }
 }

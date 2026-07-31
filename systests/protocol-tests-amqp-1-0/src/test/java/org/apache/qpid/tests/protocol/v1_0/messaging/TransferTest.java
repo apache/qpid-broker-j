@@ -67,6 +67,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
+import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
@@ -74,6 +75,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
+import org.apache.qpid.server.protocol.v1_0.type.transport.SessionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
@@ -1236,6 +1238,36 @@ public class TransferTest extends BrokerAdminUsingTestBase
                       });
         }
         while (!expectedDeliveryIds.isEmpty());
+    }
+
+    /*
+     * 2.5.4 Session Errors: When a session is unable to process input, it MUST indicate this by issuing an END
+     * with an appropriate error indicating the cause of the problem
+     * 2.8.17 Session Error: A frame (other than attach) was received referencing a handle which is not currently
+     * in use of an attached link.
+     */
+    @Test
+    @SpecificationTest(section = "2.8.17", description = "A frame (other than attach) was received referencing a " +
+            "handle which is not currently in use of an attached link.")
+    @BrokerSpecific(kind = BrokerAdmin.KIND_BROKER_J)
+    public void transferOnUnattachedHandle() throws Exception
+    {
+        try (final FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.negotiateOpen().begin().consumeResponse(Begin.class);
+
+            // Send a Transfer on a handle that has never been attached
+            final End responseEnd = interaction.transferHandle(UnsignedInteger.valueOf(999))
+                    .transferDeliveryId(UnsignedInteger.ZERO)
+                    .transferDeliveryTag(new Binary(new byte[]{0x01}))
+                    .transferPayloadData("test")
+                    .transfer()
+                    .consumeResponse().getLatestResponse(End.class);
+
+            assertThat(responseEnd.getError(), is(notNullValue()));
+            assertThat(responseEnd.getError().getCondition(), is(equalTo(SessionError.UNATTACHED_HANDLE)));
+        }
     }
 
     private byte[] createTestPayload(final long payloadSize)

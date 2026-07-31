@@ -85,6 +85,8 @@ class TxnCoordinatorReceivingLinkEndpointTest
 
         when(_connection.getDescribedTypeRegistry()).thenReturn(_amqpDescribedTypeRegistry);
         when(_connection.createIdentifiedTransaction()).thenReturn(identifiedTransaction);
+        when(_connection.getContextValue(Integer.class, AMQPConnection_1_0.CONNECTION_MAX_TRANSFERS_PER_DELIVERY))
+                .thenReturn(AMQPConnection_1_0.DEFAULT_MAX_TRANSFERS_PER_DELIVERY);
 
         doReturn(_connection).when(_session).getConnection();
         when(_session.getContextValue(Long.class, Session.TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD))

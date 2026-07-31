@@ -37,7 +37,7 @@ public abstract class AbstractLazyConstructor<T> implements TypeConstructor<T>
     @Override
     public final T construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
     {
-        skipValue(in);
+        skipValue(in, handler);
 
         try (QpidByteBuffer encoding = in.duplicate())
         {
@@ -50,5 +50,5 @@ public abstract class AbstractLazyConstructor<T> implements TypeConstructor<T>
 
     protected abstract T createObject(final QpidByteBuffer encoding, final ValueHandler handler);
 
-    protected abstract void skipValue(final QpidByteBuffer in) throws AmqpErrorException;
+    protected abstract void skipValue(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException;
 }

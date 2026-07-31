@@ -176,6 +176,8 @@ class LinkImplTest
         when(connection.getDescribedTypeRegistry()).thenReturn(amqpDescribedTypeRegistry);
         when(connection.getPrincipal()).thenReturn(principal);
         when(connection.getAddressSpace()).thenReturn(addressSpace);
+        when(connection.getContextValue(Integer.class, AMQPConnection_1_0.CONNECTION_MAX_TRANSFERS_PER_DELIVERY))
+                .thenReturn(AMQPConnection_1_0.DEFAULT_MAX_TRANSFERS_PER_DELIVERY);
 
         final DeliveryRegistry deliveryRegistry = mock(DeliveryRegistry.class);
 

@@ -31,28 +31,42 @@ public abstract class AbstractDescribedTypeConstructor<T> implements DescribedTy
                                         final int originalPosition, final ValueHandler valueHandler)
             throws AmqpErrorException
     {
-        return new TypeConstructorFromUnderlying<>(this, valueHandler.readConstructor(in));
+        final TypeConstructor constructor = allowsDescribedTypeValue()
+                ? valueHandler.readConstructorAllowingDescribedTypeValue(in)
+                : valueHandler.readNonDescribedConstructor(in);
+        return new TypeConstructorFromUnderlying<>(this, constructor, allowsDescribedTypeValue());
     }
 
     protected abstract T construct(Object underlying) throws AmqpErrorException;
 
     private static class TypeConstructorFromUnderlying<S> implements TypeConstructor<S>
     {
-
         private final TypeConstructor _describedConstructor;
         private final AbstractDescribedTypeConstructor<S> _describedTypeConstructor;
+        private final boolean _allowsDescribedTypeValue;
 
         public TypeConstructorFromUnderlying(final AbstractDescribedTypeConstructor<S> describedTypeConstructor,
-                                             final TypeConstructor describedConstructor)
+                                             final TypeConstructor describedConstructor,
+                                             final boolean allowsDescribedTypeValue)
         {
             _describedConstructor = describedConstructor;
             _describedTypeConstructor = describedTypeConstructor;
+            _allowsDescribedTypeValue = allowsDescribedTypeValue;
         }
 
         @Override
         public S construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
-            return _describedTypeConstructor.construct(_describedConstructor.construct(in, handler));
+            final Object underlying = _allowsDescribedTypeValue
+                    ? handler.parseWithConstructorAllowingDescribedTypeValue(in, _describedConstructor)
+                    : handler.parseWithConstructor(in, _describedConstructor);
+            return _describedTypeConstructor.construct(underlying);
+        }
+
+        @Override
+        public boolean isZeroWidthArrayElement()
+        {
+            return _describedConstructor.isZeroWidthArrayElement();
         }
     }
 }

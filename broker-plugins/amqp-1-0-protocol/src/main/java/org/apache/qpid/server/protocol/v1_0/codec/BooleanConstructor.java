@@ -19,18 +19,47 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public class BooleanConstructor
 {
-    private static final TypeConstructor<Boolean> TRUE_INSTANCE = (in, handler) -> Boolean.TRUE;
-    private static final TypeConstructor<Boolean> FALSE_INSTANCE = (in, handler) -> Boolean.FALSE;
+    private static final TypeConstructor<Boolean> TRUE_INSTANCE = new TypeConstructor<Boolean>()
+    {
+        @Override
+        public Boolean construct(final QpidByteBuffer in, final ValueHandler handler)
+        {
+            return Boolean.TRUE;
+        }
+
+        @Override
+        public boolean isZeroWidthArrayElement()
+        {
+            return true;
+        }
+    };
+
+    private static final TypeConstructor<Boolean> FALSE_INSTANCE = new TypeConstructor<Boolean>()
+    {
+        @Override
+        public Boolean construct(final QpidByteBuffer in, final ValueHandler handler)
+        {
+            return Boolean.FALSE;
+        }
+
+        @Override
+        public boolean isZeroWidthArrayElement()
+        {
+            return true;
+        }
+    };
+
     private static final TypeConstructor<Boolean> BYTE_INSTANCE = (in, handler) ->
     {
         if (in.hasRemaining())
         {
-            byte b = in.get();
+            final byte b = in.get();
             return b != (byte) 0;
         }
         else

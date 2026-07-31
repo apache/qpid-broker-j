@@ -45,73 +45,46 @@ public abstract class DescribedListSectionConstructor<S extends AbstractSection>
         {
             throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode section.");
         }
-        int constructorByte = in.getUnsignedByte();
-        int sizeBytes;
+        final byte constructorByte = (byte) in.getUnsignedByte();
         switch(constructorByte)
         {
             case 0x45:
-                sizeBytes = 0;
                 break;
-            case 0xc0:
-                sizeBytes = 1;
+            case (byte) 0xc0:
                 break;
-            case 0xd0:
-                sizeBytes = 4;
+            case (byte) 0xd0:
                 break;
             default:
                 throw new AmqpErrorException(AmqpError.DECODE_ERROR,
                                              "The described section must always be a list");
         }
 
-        return new LazyConstructor(sizeBytes, originalPosition);
+        return new LazyConstructor(constructorByte, originalPosition);
     }
 
 
     private class LazyConstructor extends AbstractLazyConstructor<S>
     {
-        private final int _sizeBytes;
+        private final byte _constructorByte;
 
-        LazyConstructor(final int sizeBytes, final int originalPosition)
+        LazyConstructor(final byte constructorByte, final int originalPosition)
         {
             super(originalPosition);
-            _sizeBytes = sizeBytes;
+            _constructorByte = constructorByte;
         }
 
         @Override
         protected S createObject(final QpidByteBuffer encoding, final ValueHandler handler)
         {
-            return DescribedListSectionConstructor.this.createObject(encoding);
+            return DescribedListSectionConstructor.this.createObject(encoding, handler);
         }
 
         @Override
-        protected void skipValue(final QpidByteBuffer in) throws AmqpErrorException
+        protected void skipValue(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
-            if (!in.hasRemaining(_sizeBytes))
-            {
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode section.");
-            }
-            int size;
-            switch(_sizeBytes)
-            {
-                case 0:
-                    size = 0;
-                    break;
-                case 1:
-                    size = in.getUnsignedByte();
-                    break;
-                case 4:
-                    size = in.getInt();
-                    break;
-                default:
-                    throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Unexpected constructor type, can only be 0,1 or 4");
-            }
-            if (!in.hasRemaining(size))
-            {
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode section.");
-            }
-            in.position(in.position() + size);
+            handler.skipValue(in, _constructorByte);
         }
     }
 
-    protected abstract S createObject(final QpidByteBuffer encodedForm);
+    protected abstract S createObject(final QpidByteBuffer encodedForm, final ValueHandler valueHandler);
 }

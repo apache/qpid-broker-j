@@ -38,6 +38,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
 import org.apache.qpid.server.protocol.v1_0.type.transport.End;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
@@ -228,6 +229,38 @@ public class FlowTest extends BrokerAdminUsingTestBase
 
             assertThat(responseEnd.getError(), is(notNullValue()));
             assertThat(responseEnd.getError().getCondition(), is(equalTo(SessionError.UNATTACHED_HANDLE)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "2.5.6",
+            description = "The recipient MUST verify that incoming transfers do not exceed the advertised"
+                          + " incoming-window.")
+    public void flowWithRewoundNextOutgoingIdEndsSession() throws Exception
+    {
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
+        try (FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.negotiateOpen()
+                       .begin().consumeResponse(Begin.class)
+                       .attachRole(Role.SENDER)
+                       .attachTargetAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                       .attach().consumeResponse(Attach.class)
+                       .consumeResponse(Flow.class)
+                       .transferDeliveryId(UnsignedInteger.ZERO)
+                       .transferPayloadData(getTestName())
+                       .transfer()
+                       .flowIncomingWindow(UnsignedInteger.ONE)
+                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                       .flowOutgoingWindow(UnsignedInteger.ZERO)
+                       .flowNextOutgoingId(UnsignedInteger.ZERO)
+                       .flow();
+
+            final End responseEnd = interaction.consume(End.class, Detach.class, Disposition.class, Flow.class);
+
+            assertThat(responseEnd.getError(), is(notNullValue()));
+            assertThat(responseEnd.getError().getCondition(), is(equalTo(SessionError.WINDOW_VIOLATION)));
         }
     }
 

@@ -34,12 +34,15 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import java.io.ByteArrayOutputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -83,14 +86,18 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
+import org.apache.qpid.server.protocol.v1_0.delivery.DeliveryRegistry;
+import org.apache.qpid.server.protocol.v1_0.delivery.UnsettledDelivery;
+import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnClose;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnClose;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Filter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
@@ -98,12 +105,18 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Terminus;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Disposition;
+import org.apache.qpid.server.protocol.v1_0.type.transport.End;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.protocol.v1_0.type.transport.SessionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.security.SubjectExecutionContext;
@@ -855,13 +868,179 @@ class Session_1_0Test extends UnitTestBase
     }
 
     @Test
+    void receiveDispositionWithFirstGreaterThanLastClosesConnection()
+    {
+        final Disposition disposition = new Disposition();
+        disposition.setRole(Role.RECEIVER);
+        disposition.setFirst(UnsignedInteger.valueOf(6));
+        disposition.setLast(UnsignedInteger.valueOf(5));
+        disposition.setSettled(Boolean.TRUE);
+
+        _session.receiveDisposition(disposition);
+
+        final ArgumentCaptor<Error> errorCaptor = ArgumentCaptor.forClass(Error.class);
+        verify(_connection).close(errorCaptor.capture());
+        assertEquals(AmqpError.NOT_ALLOWED, errorCaptor.getValue().getCondition(),
+                "Connection closed with unexpected error condition");
+        assertEquals("Illegal disposition delivery range: first '6', last '5'", errorCaptor.getValue().getDescription(),
+                "Connection closed with unexpected error description");
+        verify(_connection, never()).sendEnd(eq(_session.getChannelId()), any(End.class), eq(true));
+    }
+
+    @Test
+    void receiveDispositionWithFirstEqualToLastSettlesSingleDelivery()
+    {
+        final DeliveryRegistry outgoing = _session.getOutgoingDeliveryRegistry();
+        final LinkEndpoint<?, ?> linkEndpoint = mock(LinkEndpoint.class);
+
+        final UnsignedInteger deliveryId = UnsignedInteger.valueOf(5);
+        outgoing.addDelivery(deliveryId, new UnsettledDelivery(new Binary(new byte[0]), linkEndpoint));
+
+        final Disposition disposition = new Disposition();
+        disposition.setRole(Role.RECEIVER);
+        disposition.setFirst(deliveryId);
+        disposition.setLast(deliveryId);
+        disposition.setSettled(Boolean.TRUE);
+        disposition.setState(Accepted.INSTANCE);
+
+        _session.receiveDisposition(disposition);
+
+        verify(linkEndpoint).receiveDeliveryState(any(Binary.class), any(), eq(Boolean.TRUE));
+        assertEquals(0, outgoing.size(), "Delivery should be removed after settled disposition");
+        verify(_connection, never()).sendEnd(eq(_session.getChannelId()), any(End.class), eq(true));
+    }
+
+    @Test
+    void receiveDispositionWithAntipodalRangeClosesConnection()
+    {
+        final DeliveryRegistry outgoing = _session.getOutgoingDeliveryRegistry();
+        final LinkEndpoint<?, ?> linkEndpoint = mock(LinkEndpoint.class);
+
+        final UnsignedInteger deliveryId = UnsignedInteger.valueOf(5);
+        outgoing.addDelivery(deliveryId, new UnsettledDelivery(new Binary(new byte[]{0}), linkEndpoint));
+
+        final Disposition disposition = new Disposition();
+        disposition.setRole(Role.RECEIVER);
+        disposition.setFirst(deliveryId);
+        disposition.setLast(UnsignedInteger.valueOf((deliveryId.longValue() + 0x80000000L) & 0xFFFFFFFFL));
+        disposition.setSettled(Boolean.TRUE);
+        disposition.setState(new Accepted());
+
+        _session.receiveDisposition(disposition);
+
+        verify(linkEndpoint, never()).receiveDeliveryState(any(Binary.class), any(), any(Boolean.class));
+        assertEquals(1, outgoing.size(), "Delivery should not be removed for antipodal range");
+        final ArgumentCaptor<Error> errorCaptor = ArgumentCaptor.forClass(Error.class);
+        verify(_connection).close(errorCaptor.capture());
+        assertEquals(AmqpError.NOT_ALLOWED, errorCaptor.getValue().getCondition(),
+                "Connection closed with unexpected error condition");
+        assertEquals("Illegal disposition delivery range: first '5', last '2147483653'",
+                errorCaptor.getValue().getDescription(), "Connection closed with unexpected error description");
+        verify(_connection, never()).sendEnd(eq(_session.getChannelId()), any(End.class), eq(true));
+    }
+
+    @Test
+    void receiveDispositionWithMaximumValidRangeSettlesDeliveries()
+    {
+        final DeliveryRegistry outgoing = _session.getOutgoingDeliveryRegistry();
+        final LinkEndpoint<?, ?> firstEndpoint = mock(LinkEndpoint.class);
+        final LinkEndpoint<?, ?> lastEndpoint = mock(LinkEndpoint.class);
+        final LinkEndpoint<?, ?> outsideEndpoint = mock(LinkEndpoint.class);
+        final UnsignedInteger first = UnsignedInteger.valueOf(5);
+        final UnsignedInteger last = UnsignedInteger.valueOf(first.longValue() + 0x7FFFFFFFL);
+        final UnsignedInteger outside = UnsignedInteger.valueOf(first.longValue() + 0x80000000L);
+
+        outgoing.addDelivery(first, new UnsettledDelivery(new Binary(new byte[]{1}), firstEndpoint));
+        outgoing.addDelivery(last, new UnsettledDelivery(new Binary(new byte[]{2}), lastEndpoint));
+        outgoing.addDelivery(outside, new UnsettledDelivery(new Binary(new byte[]{3}), outsideEndpoint));
+
+        final Disposition disposition = new Disposition();
+        disposition.setRole(Role.RECEIVER);
+        disposition.setFirst(first);
+        disposition.setLast(last);
+        disposition.setSettled(Boolean.TRUE);
+        disposition.setState(Accepted.INSTANCE);
+
+        _session.receiveDisposition(disposition);
+
+        verify(firstEndpoint).receiveDeliveryState(any(Binary.class), any(), eq(Boolean.TRUE));
+        verify(lastEndpoint).receiveDeliveryState(any(Binary.class), any(), eq(Boolean.TRUE));
+        verify(outsideEndpoint, never()).receiveDeliveryState(any(Binary.class), any(), any(Boolean.class));
+        assertEquals(1, outgoing.size(), "Only deliveries outside the range should remain unsettled");
+        verify(_connection, never()).close(any(Error.class));
+    }
+
+    @Test
+    void receiveDispositionWithSparseRangeScansRegistry()
+    {
+        final DeliveryRegistry outgoing = _session.getOutgoingDeliveryRegistry();
+        final LinkEndpoint<?, ?> insideStart = mock(LinkEndpoint.class);
+        final LinkEndpoint<?, ?> insideMiddle = mock(LinkEndpoint.class);
+        final LinkEndpoint<?, ?> insideEnd = mock(LinkEndpoint.class);
+        final LinkEndpoint<?, ?> outside = mock(LinkEndpoint.class);
+
+        outgoing.addDelivery(UnsignedInteger.valueOf(100), new UnsettledDelivery(new Binary(new byte[]{1}), insideStart));
+        outgoing.addDelivery(UnsignedInteger.valueOf(450), new UnsettledDelivery(new Binary(new byte[]{2}), insideMiddle));
+        outgoing.addDelivery(UnsignedInteger.valueOf(1000), new UnsettledDelivery(new Binary(new byte[]{3}), insideEnd));
+        outgoing.addDelivery(UnsignedInteger.valueOf(1001), new UnsettledDelivery(new Binary(new byte[]{4}), outside));
+
+        final Disposition disposition = new Disposition();
+        disposition.setRole(Role.RECEIVER);
+        disposition.setFirst(UnsignedInteger.valueOf(100));
+        disposition.setLast(UnsignedInteger.valueOf(1000));
+        disposition.setSettled(Boolean.TRUE);
+        disposition.setState(Accepted.INSTANCE);
+
+        _session.receiveDisposition(disposition);
+
+        verify(insideStart).receiveDeliveryState(any(Binary.class), any(), eq(Boolean.TRUE));
+        verify(insideMiddle).receiveDeliveryState(any(Binary.class), any(), eq(Boolean.TRUE));
+        verify(insideEnd).receiveDeliveryState(any(Binary.class), any(), eq(Boolean.TRUE));
+        verify(outside, never()).receiveDeliveryState(any(Binary.class), any(), any(Boolean.class));
+        assertEquals(1, outgoing.size(), "Only deliveries outside the range should remain unsettled");
+    }
+
+    @Test
+    void receiveDispositionWithValidWrapAroundRangeSettlesDeliveries()
+    {
+        final DeliveryRegistry outgoing = _session.getOutgoingDeliveryRegistry();
+        final LinkEndpoint<?, ?> firstEndpoint = mock(LinkEndpoint.class);
+        final LinkEndpoint<?, ?> secondEndpoint = mock(LinkEndpoint.class);
+        final LinkEndpoint<?, ?> thirdEndpoint = mock(LinkEndpoint.class);
+        final LinkEndpoint<?, ?> fourthEndpoint = mock(LinkEndpoint.class);
+        final LinkEndpoint<?, ?> outsideEndpoint = mock(LinkEndpoint.class);
+
+        outgoing.addDelivery(UnsignedInteger.valueOf(0xFFFFFFFEL), new UnsettledDelivery(new Binary(new byte[]{1}), firstEndpoint));
+        outgoing.addDelivery(UnsignedInteger.valueOf(0xFFFFFFFFL), new UnsettledDelivery(new Binary(new byte[]{2}), secondEndpoint));
+        outgoing.addDelivery(UnsignedInteger.ZERO, new UnsettledDelivery(new Binary(new byte[]{3}), thirdEndpoint));
+        outgoing.addDelivery(UnsignedInteger.ONE, new UnsettledDelivery(new Binary(new byte[]{4}), fourthEndpoint));
+        outgoing.addDelivery(UnsignedInteger.valueOf(2), new UnsettledDelivery(new Binary(new byte[]{5}), outsideEndpoint));
+
+        final Disposition disposition = new Disposition();
+        disposition.setRole(Role.RECEIVER);
+        disposition.setFirst(UnsignedInteger.valueOf(0xFFFFFFFEL));
+        disposition.setLast(UnsignedInteger.ONE);
+        disposition.setSettled(Boolean.TRUE);
+        disposition.setState(Accepted.INSTANCE);
+
+        _session.receiveDisposition(disposition);
+
+        verify(firstEndpoint).receiveDeliveryState(any(Binary.class), any(), eq(Boolean.TRUE));
+        verify(secondEndpoint).receiveDeliveryState(any(Binary.class), any(), eq(Boolean.TRUE));
+        verify(thirdEndpoint).receiveDeliveryState(any(Binary.class), any(), eq(Boolean.TRUE));
+        verify(fourthEndpoint).receiveDeliveryState(any(Binary.class), any(), eq(Boolean.TRUE));
+        verify(outsideEndpoint, never()).receiveDeliveryState(any(Binary.class), any(), any(Boolean.class));
+        assertEquals(1, outgoing.size(), "Only deliveries outside the wrap-around range should remain unsettled");
+    }
+
+    @Test
     void sendTransferWithNullPayloadDoesNotThrowAndDoesNotSendContinuation()
     {
         final Transfer xfr = new Transfer();
         xfr.setSettled(true);
         xfr.setHandle(UnsignedInteger.valueOf(0));
         xfr.setDeliveryTag(new Binary(new byte[]{0x01}));
-        // No payload set
+        // no payload set
 
         when(_connection.sendFrame(eq(0), any(), nullable(QpidByteBuffer.class))).thenReturn(0);
         final ArgumentCaptor<QpidByteBuffer> payloadCaptor = ArgumentCaptor.forClass(QpidByteBuffer.class);
@@ -872,6 +1051,197 @@ class Session_1_0Test extends UnitTestBase
         assertNull(payloadCaptor.getValue(), "Expected payload argument to be null");
 
         xfr.dispose();
+    }
+
+    @Test
+    void receiveFlowWithRewoundNextOutgoingIdEndsSession() throws Exception
+    {
+        final Session_1_0 session = createSession_1_0(_connection, 0, 2);
+        final UnsignedInteger handle = UnsignedInteger.ZERO;
+        final AbstractReceivingLinkEndpoint<?> endpoint = mock(AbstractReceivingLinkEndpoint.class);
+
+        registerInputHandle(session, handle, endpoint);
+        session.receiveTransfer(createTransfer(handle, UnsignedInteger.ZERO, (byte) 0x01));
+        session.receiveTransfer(createTransfer(handle, UnsignedInteger.ONE, (byte) 0x02));
+
+        final Flow flow = new Flow();
+        flow.setIncomingWindow(UnsignedInteger.ONE);
+        flow.setNextIncomingId(UnsignedInteger.ZERO);
+        flow.setNextOutgoingId(UnsignedInteger.ZERO);
+        flow.setOutgoingWindow(UnsignedInteger.ONE);
+        flow.setHandle(handle);
+
+        session.receiveFlow(flow);
+
+        final ArgumentCaptor<End> endCaptor = ArgumentCaptor.forClass(End.class);
+        verify(_connection).sendEnd(eq(session.getChannelId()), endCaptor.capture(), eq(true));
+        assertEquals(SessionError.WINDOW_VIOLATION, endCaptor.getValue().getError().getCondition(),
+                "Session should be ended with WINDOW_VIOLATION error");
+        verify(endpoint, times(2)).receiveTransfer(any(Transfer.class));
+        verify(endpoint, never()).receiveFlow(any(Flow.class));
+    }
+
+    @Test
+    void receiveFlowAfterSessionEndIsIgnoredWithoutSecondEnd()
+    {
+        // End the session first via an unknown-handle transfer (UNATTACHED_HANDLE).
+        _session.receiveTransfer(createTransfer(UnsignedInteger.valueOf(9999), UnsignedInteger.ZERO, (byte) 0x01));
+
+        // Flow pipelined after the broker has ended the session must be ignored: it must not
+        // trigger a second End (which would otherwise carry ILLEGAL_STATE and lose the real cause).
+        final Flow flow = new Flow();
+        flow.setIncomingWindow(UnsignedInteger.ONE);
+        flow.setNextIncomingId(UnsignedInteger.ZERO);
+        flow.setNextOutgoingId(UnsignedInteger.ZERO);
+        flow.setOutgoingWindow(UnsignedInteger.ONE);
+        _session.receiveFlow(flow);
+
+        final ArgumentCaptor<End> endCaptor = ArgumentCaptor.forClass(End.class);
+        verify(_connection, times(1)).sendEnd(eq(_session.getChannelId()), endCaptor.capture(), eq(true));
+        assertEquals(SessionError.UNATTACHED_HANDLE, endCaptor.getValue().getError().getCondition(),
+                "Only the original UNATTACHED_HANDLE End should be sent; the late Flow must not cause a second End");
+    }
+
+    @Test
+    void receiveTransferBeyondInitialIncomingWindowEndsSession() throws Exception
+    {
+        final Session_1_0 session = createSession_1_0(_connection, 0, 2);
+        final UnsignedInteger handle = UnsignedInteger.ZERO;
+        final AbstractReceivingLinkEndpoint<?> endpoint = mock(AbstractReceivingLinkEndpoint.class);
+
+        registerInputHandle(session, handle, endpoint);
+
+        session.receiveTransfer(createTransfer(handle, UnsignedInteger.ZERO, (byte) 0x01));
+        session.receiveTransfer(createTransfer(handle, UnsignedInteger.ONE, (byte) 0x02));
+
+        final Transfer violatingTransfer = spy(createTransfer(handle, UnsignedInteger.valueOf(2), (byte) 0x03));
+        session.receiveTransfer(violatingTransfer);
+
+        verify(endpoint, times(2)).receiveTransfer(any(Transfer.class));
+        verify(violatingTransfer).dispose();
+        final ArgumentCaptor<End> endCaptor = ArgumentCaptor.forClass(End.class);
+        verify(_connection).sendEnd(eq(session.getChannelId()), endCaptor.capture(), eq(true));
+        assertEquals(SessionError.WINDOW_VIOLATION, endCaptor.getValue().getError().getCondition(),
+                "Session should be ended with WINDOW_VIOLATION error");
+    }
+
+    @Test
+    void receiveTransferBeyondFlowAdvertisedIncomingWindowEndsSession() throws Exception
+    {
+        final Session_1_0 session = createSession_1_0(_connection, 0, 2);
+        final UnsignedInteger handle = UnsignedInteger.ZERO;
+        final AbstractReceivingLinkEndpoint<?> endpoint = mock(AbstractReceivingLinkEndpoint.class);
+
+        registerInputHandle(session, handle, endpoint);
+        session.sendFlow();
+
+        session.receiveTransfer(createTransfer(handle, UnsignedInteger.ZERO, (byte) 0x01));
+        session.receiveTransfer(createTransfer(handle, UnsignedInteger.ONE, (byte) 0x02));
+
+        final Transfer violatingTransfer = spy(createTransfer(handle, UnsignedInteger.valueOf(2), (byte) 0x03));
+        session.receiveTransfer(violatingTransfer);
+
+        verify(endpoint, times(2)).receiveTransfer(any(Transfer.class));
+        verify(violatingTransfer).dispose();
+        final ArgumentCaptor<End> endCaptor = ArgumentCaptor.forClass(End.class);
+        verify(_connection).sendEnd(eq(session.getChannelId()), endCaptor.capture(), eq(true));
+        assertEquals(SessionError.WINDOW_VIOLATION, endCaptor.getValue().getError().getCondition(),
+                "Session should be ended with WINDOW_VIOLATION error");
+    }
+
+    @Test
+    void receiveTransferWithUnknownHandleEndsSessionNotConnection()
+    {
+        _session.receiveTransfer(createTransfer(UnsignedInteger.valueOf(9999), UnsignedInteger.ZERO, (byte) 0x01));
+
+        final ArgumentCaptor<End> endCaptor = ArgumentCaptor.forClass(End.class);
+        verify(_connection).sendEnd(eq(_session.getChannelId()), endCaptor.capture(), eq(true));
+        assertEquals(SessionError.UNATTACHED_HANDLE, endCaptor.getValue().getError().getCondition(),
+                "Session should be ended with UNATTACHED_HANDLE error");
+
+        verify(_connection, never()).close(any(org.apache.qpid.server.protocol.v1_0.type.transport.Error.class));
+    }
+
+    @Test
+    void receiveTransferAfterSessionEndIsDisposedAndIgnored()
+    {
+        final Transfer firstTransfer = createTransfer(UnsignedInteger.valueOf(9999), UnsignedInteger.ZERO, (byte) 0x01);
+        final Transfer ignoredTransfer = spy(createTransfer(UnsignedInteger.ZERO, UnsignedInteger.ONE, (byte) 0x02));
+
+        _session.receiveTransfer(firstTransfer);
+        _session.receiveTransfer(ignoredTransfer);
+
+        verify(ignoredTransfer).dispose();
+        final ArgumentCaptor<End> endCaptor = ArgumentCaptor.forClass(End.class);
+        verify(_connection).sendEnd(eq(_session.getChannelId()), endCaptor.capture(), eq(true));
+        assertEquals(SessionError.UNATTACHED_HANDLE, endCaptor.getValue().getError().getCondition(),
+                "Session should retain the original UNATTACHED_HANDLE end");
+
+        verify(_connection, never()).close(any(org.apache.qpid.server.protocol.v1_0.type.transport.Error.class));
+    }
+
+    @Test
+    void rapidRepeatedSessionEchoesProduceOneImmediateAndOneDelayedFlow()
+    {
+        final EchoFlowTestSupport.FakeClock clock = new EchoFlowTestSupport.FakeClock();
+        final EchoFlowTestSupport.FakeScheduler scheduler = new EchoFlowTestSupport.FakeScheduler();
+        final Session_1_0 session = createSession_1_0(_connection, 0, 2048L,
+                AMQPConnection_1_0.DEFAULT_ECHO_FLOW_COALESCE_INTERVAL_MS, clock, scheduler, EchoFlowTestSupport.DIRECT_EXECUTOR);
+
+        final Flow echoFlow = createSessionEchoFlow();
+
+        session.receiveFlow(echoFlow);
+        session.receiveFlow(echoFlow);
+
+        verify(_connection, times(1)).sendFrame(eq(session.getChannelId()), any(Flow.class));
+        assertEquals(1, scheduler.getScheduledTaskCount());
+
+        clock.advanceMillis(AMQPConnection_1_0.DEFAULT_ECHO_FLOW_COALESCE_INTERVAL_MS);
+        scheduler.runNext();
+
+        verify(_connection, times(2)).sendFrame(eq(session.getChannelId()), any(Flow.class));
+        assertEquals(0, scheduler.getScheduledTaskCount());
+    }
+
+    @Test
+    void linkFlowSendDoesNotConsumePendingSessionEcho()
+    {
+        final EchoFlowTestSupport.FakeClock clock = new EchoFlowTestSupport.FakeClock();
+        final EchoFlowTestSupport.FakeScheduler scheduler = new EchoFlowTestSupport.FakeScheduler();
+        final Session_1_0 session = createSession_1_0(_connection, 0, 2048L,
+                AMQPConnection_1_0.DEFAULT_ECHO_FLOW_COALESCE_INTERVAL_MS, clock, scheduler, EchoFlowTestSupport.DIRECT_EXECUTOR);
+
+        session.receiveFlow(createSessionEchoFlow());
+        session.receiveFlow(createSessionEchoFlow());
+
+        final Flow linkFlow = new Flow();
+        linkFlow.setHandle(UnsignedInteger.ZERO);
+        session.sendFlow(linkFlow);
+
+        verify(_connection, times(2)).sendFrame(eq(session.getChannelId()), any(Flow.class));
+        assertEquals(1, scheduler.getScheduledTaskCount());
+
+        clock.advanceMillis(AMQPConnection_1_0.DEFAULT_ECHO_FLOW_COALESCE_INTERVAL_MS);
+        scheduler.runNext();
+
+        verify(_connection, times(3)).sendFrame(eq(session.getChannelId()), any(Flow.class));
+        assertEquals(0, scheduler.getScheduledTaskCount());
+    }
+
+    @Test
+    void endingSessionCancelsPendingDelayedEchoReply()
+    {
+        final EchoFlowTestSupport.FakeClock clock = new EchoFlowTestSupport.FakeClock();
+        final EchoFlowTestSupport.FakeScheduler scheduler = new EchoFlowTestSupport.FakeScheduler();
+        final Session_1_0 session = createSession_1_0(_connection, 0, 2048L,
+                AMQPConnection_1_0.DEFAULT_ECHO_FLOW_COALESCE_INTERVAL_MS, clock, scheduler, EchoFlowTestSupport.DIRECT_EXECUTOR);
+
+        session.receiveFlow(createSessionEchoFlow());
+        session.receiveFlow(createSessionEchoFlow());
+        session.end();
+
+        assertEquals(0, scheduler.getScheduledTaskCount());
+        verify(_connection, times(1)).sendFrame(eq(session.getChannelId()), any(Flow.class));
     }
 
     private static byte[] createSequentialBytes(final int length)
@@ -1185,6 +1555,8 @@ class Session_1_0Test extends UnitTestBase
         when(connection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
         when(connection.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE)).thenReturn(Connection.DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE);
         when(connection.getDescribedTypeRegistry()).thenReturn(DESCRIBED_TYPE_REGISTRY);
+        when(connection.getContextValue(Integer.class, AMQPConnection_1_0.ECHO_FLOW_COALESCE_INTERVAL_MS))
+                .thenReturn(AMQPConnection_1_0.DEFAULT_ECHO_FLOW_COALESCE_INTERVAL_MS);
         when(connection.getMaxFrameSize()).thenReturn(512);
         final ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
         when(connection.doOnIOThreadAsync(runnableCaptor.capture())).thenAnswer((Answer<CompletableFuture<Void>>) invocation ->
@@ -1206,11 +1578,66 @@ class Session_1_0Test extends UnitTestBase
         return connection;
     }
 
-    private Session_1_0 createSession_1_0(final AMQPConnection_1_0<?> connection, int channelId)
+    private Session_1_0 createSession_1_0(final AMQPConnection_1_0<?> connection, final int channelId)
+    {
+        return createSession_1_0(connection, channelId, 2048);
+    }
+
+    private Session_1_0 createSession_1_0(final AMQPConnection_1_0<?> connection,
+                                          final int channelId,
+                                          final long incomingWindow)
     {
         final Begin begin = mock(Begin.class);
         when(begin.getNextOutgoingId()).thenReturn(new UnsignedInteger(channelId));
-        return new Session_1_0(connection, begin, channelId, channelId, 2048);
+        return new Session_1_0(connection, begin, channelId, channelId, incomingWindow);
+    }
+
+    private void registerInputHandle(final Session_1_0 session,
+                                     final UnsignedInteger handle,
+                                     final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> endpoint)
+            throws Exception
+    {
+        final Field field = Session_1_0.class.getDeclaredField("_inputHandleToEndpoint");
+        field.setAccessible(true);
+        final Map<UnsignedInteger, LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> inputHandleToEndpoint =
+                (Map<UnsignedInteger, LinkEndpoint<? extends BaseSource, ? extends BaseTarget>>) field.get(session);
+        inputHandleToEndpoint.put(handle, endpoint);
+    }
+
+    private Transfer createTransfer(final UnsignedInteger handle,
+                                    final UnsignedInteger deliveryId,
+                                    final byte deliveryTag)
+    {
+        final Transfer transfer = new Transfer();
+        transfer.setHandle(handle);
+        transfer.setDeliveryId(deliveryId);
+        transfer.setDeliveryTag(new Binary(new byte[]{deliveryTag}));
+        return transfer;
+    }
+
+    private Session_1_0 createSession_1_0(final AMQPConnection_1_0<?> connection,
+                                          final int channelId,
+                                          final long incomingWindow,
+                                          final int echoFlowCoalesceIntervalMs,
+                                          final EchoFlowTestSupport.FakeClock clock,
+                                          final EchoFlowTestSupport.FakeScheduler scheduler,
+                                          final java.util.concurrent.Executor executor)
+    {
+        final Begin begin = mock(Begin.class);
+        when(begin.getNextOutgoingId()).thenReturn(new UnsignedInteger(channelId));
+        return new Session_1_0(connection, begin, channelId, channelId, incomingWindow, echoFlowCoalesceIntervalMs,
+                clock, scheduler, executor);
+    }
+
+    private Flow createSessionEchoFlow()
+    {
+        final Flow flow = new Flow();
+        flow.setNextOutgoingId(UnsignedInteger.ZERO);
+        flow.setOutgoingWindow(UnsignedInteger.ZERO);
+        flow.setNextIncomingId(UnsignedInteger.ZERO);
+        flow.setIncomingWindow(UnsignedInteger.valueOf(2048));
+        flow.setEcho(Boolean.TRUE);
+        return flow;
     }
 
     private void sendDetach(final Session_1_0 session,

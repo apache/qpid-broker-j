@@ -53,6 +53,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extends AbstractLinkEndpoint<Source, T>
 {
     private final SectionDecoder _sectionDecoder;
+    private final int _maxTransfersPerDelivery;
     final Map<Binary, DeliveryState> _unsettled = Collections.synchronizedMap(new LinkedHashMap<>());
 
     private volatile boolean _creditWindow;
@@ -61,9 +62,22 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
     public AbstractReceivingLinkEndpoint(final Session_1_0 session, final Link_1_0<Source, T> link)
     {
         super(session, link);
+        Integer maxNestedObjects = session.getConnection()
+                .getContextValue(Integer.class, AMQPConnection_1_0.CODEC_MAX_NESTED_OBJECTS);
+        if (maxNestedObjects == null)
+        {
+            maxNestedObjects = AMQPConnection_1_0.DEFAULT_CODEC_MAX_NESTED_OBJECTS;
+        }
         _sectionDecoder = new SectionDecoderImpl(session.getConnection()
                                                         .getDescribedTypeRegistry()
-                                                        .getSectionDecoderRegistry());
+                                                        .getSectionDecoderRegistry(),
+                                                 maxNestedObjects,
+                                                 session.getConnection().getMaxZeroWidthArrayElements());
+        final Integer maxTransfersPerDelivery = session.getConnection()
+                .getContextValue(Integer.class, AMQPConnection_1_0.CONNECTION_MAX_TRANSFERS_PER_DELIVERY);
+        _maxTransfersPerDelivery = Math.max(1, maxTransfersPerDelivery == null
+                ? AMQPConnection_1_0.DEFAULT_MAX_TRANSFERS_PER_DELIVERY
+                : maxTransfersPerDelivery);
     }
 
     @Override
@@ -88,8 +102,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                 transfer.dispose();
                 if (_currentDelivery != null)
                 {
-                    _currentDelivery.discard();
-                    _currentDelivery = null;
+                    cleanUpCurrentDelivery();
                 }
                 close(error);
                 return;
@@ -110,8 +123,8 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                 getDeliveryCount().incr();
 
                 getSession().getIncomingDeliveryRegistry()
-                            .addDelivery(transfer.getDeliveryId(),
-                                         new UnsettledDelivery(transfer.getDeliveryTag(), this));
+                            .addDelivery(_currentDelivery.getDeliveryId(),
+                                         new UnsettledDelivery(_currentDelivery.getDeliveryTag(), this));
             }
             else
             {
@@ -119,8 +132,15 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                 if (error != null)
                 {
                     transfer.dispose();
-                    _currentDelivery.discard();
-                    _currentDelivery = null;
+                    cleanUpCurrentDelivery();
+                    close(error);
+                    return;
+                }
+                if (_currentDelivery.getTransferCount() >= _maxTransfersPerDelivery)
+                {
+                    transfer.dispose();
+                    error = createTransferLimitExceededError();
+                    cleanUpCurrentDelivery();
                     close(error);
                     return;
                 }
@@ -133,8 +153,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                                   String.format("delivery '%s' exceeds max-message-size %d",
                                                 _currentDelivery.getDeliveryTag(),
                                                 getSession().getConnection().getMaxMessageSize()));
-                _currentDelivery.discard();
-                _currentDelivery = null;
+                cleanUpCurrentDelivery();
                 close(error);
                 return;
             }
@@ -146,8 +165,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
 
             if (_currentDelivery.isAborted() || (_currentDelivery.getResume() && !_unsettled.containsKey(_currentDelivery.getDeliveryTag())))
             {
-                _unsettled.remove(_currentDelivery.getDeliveryTag());
-                getSession().getIncomingDeliveryRegistry().removeDelivery(_currentDelivery.getDeliveryId());
+                cleanUpCurrentDelivery();
                 _currentDelivery = null;
 
                 setLinkCredit(getLinkCredit().add(UnsignedInteger.ONE));
@@ -159,8 +177,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                 {
                     if (_currentDelivery.isSettled())
                     {
-                        _unsettled.remove(_currentDelivery.getDeliveryTag());
-                        getSession().getIncomingDeliveryRegistry().removeDelivery(_currentDelivery.getDeliveryId());
+                        unregisterCurrentDelivery();
                     }
                     error = receiveDelivery(_currentDelivery);
                     if (error != null)
@@ -186,6 +203,26 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
                                                  transfer.getHandle())));
             getSession().end(end);
         }
+    }
+
+    private Error createTransferLimitExceededError()
+    {
+        final String description = String.format("delivery '%s' exceeds maximum number of transfers per delivery (%d)",
+                _currentDelivery.getDeliveryTag(), _maxTransfersPerDelivery);
+        return new Error(LinkError.TRANSFER_LIMIT_EXCEEDED, description);
+    }
+
+    private void cleanUpCurrentDelivery()
+    {
+        unregisterCurrentDelivery();
+        _currentDelivery.discard();
+        _currentDelivery = null;
+    }
+
+    private void unregisterCurrentDelivery()
+    {
+        _unsettled.remove(_currentDelivery.getDeliveryTag());
+        getSession().getIncomingDeliveryRegistry().removeDelivery(_currentDelivery.getDeliveryId());
     }
 
     private Error validateTransfer(final Transfer transfer)
@@ -293,7 +330,7 @@ public abstract class AbstractReceivingLinkEndpoint<T extends BaseTarget> extend
 
         if (Boolean.TRUE.equals(flow.getEcho()))
         {
-            sendFlow();
+            requestEchoFlow();
         }
     }
 

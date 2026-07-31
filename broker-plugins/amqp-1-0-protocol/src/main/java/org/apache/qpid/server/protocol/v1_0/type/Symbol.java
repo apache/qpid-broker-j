@@ -26,8 +26,15 @@ import java.util.concurrent.ConcurrentMap;
 
 public final class Symbol implements Comparable<Symbol>, CharSequence
 {
+    public static final int MAX_CACHE_SIZE = 4096;
+    public static final int MAX_CACHEABLE_LENGTH = 64;
+    public static final int MAX_SASL_CACHE_SIZE = 256;
+    public static final int MAX_SASL_CACHEABLE_LENGTH = 32;
+
+    private static final ConcurrentMap<String, Symbol> SYMBOLS = new ConcurrentHashMap<>(MAX_CACHE_SIZE);
+    private static final ConcurrentMap<String, Symbol> SASL_SYMBOLS = new ConcurrentHashMap<>(MAX_SASL_CACHE_SIZE);
+
     private final String _underlying;
-    private static final ConcurrentMap<String, Symbol> _symbols = new ConcurrentHashMap<>(2048);
 
     private Symbol(String underlying)
     {
@@ -87,30 +94,57 @@ public final class Symbol implements Comparable<Symbol>, CharSequence
         return _underlying.hashCode();
     }
 
-    public static Symbol valueOf(String symbolVal)
+    public static Symbol valueOf(final String symbolVal)
     {
         return getSymbol(symbolVal);
     }
 
-    public static Symbol getSymbol(String symbolVal)
+    public static Symbol getSymbol(final String symbolVal)
     {
-        if(symbolVal == null)
+        return getSymbol(symbolVal, false);
+    }
+
+    public static Symbol getSymbol(final String symbolVal, final boolean sasl)
+    {
+        if (symbolVal == null)
         {
             return null;
         }
-        Symbol symbol = _symbols.get(symbolVal);
-        if(symbol == null)
+
+        final int maxCacheableLength = sasl ? MAX_SASL_CACHEABLE_LENGTH : MAX_CACHEABLE_LENGTH;
+        if (symbolVal.length() > maxCacheableLength)
         {
-            symbolVal = symbolVal.intern();
-            symbol = new Symbol(symbolVal);
-            Symbol existing;
-            if((existing = _symbols.putIfAbsent(symbolVal, symbol)) != null)
-            {
-                symbol = existing;
-            }
+            return new Symbol(symbolVal);
+        }
+
+        final ConcurrentMap<String, Symbol> cache = sasl ? SASL_SYMBOLS : SYMBOLS;
+        final int maxCacheSize = sasl ? MAX_SASL_CACHE_SIZE : MAX_CACHE_SIZE;
+
+        Symbol symbol = cache.get(symbolVal);
+        if (symbol == null)
+        {
+            symbol = cacheSymbol(symbolVal, cache, maxCacheSize);
         }
         return symbol;
     }
 
-
+    private static Symbol cacheSymbol(final String symbolVal,
+                                      final ConcurrentMap<String, Symbol> cache,
+                                      final int maxCacheSize)
+    {
+        final Symbol symbol = new Symbol(symbolVal);
+        synchronized (cache)
+        {
+            final Symbol existing = cache.get(symbolVal);
+            if (existing != null)
+            {
+                return existing;
+            }
+            if (cache.size() < maxCacheSize)
+            {
+                cache.put(symbolVal, symbol);
+            }
+        }
+        return symbol;
+    }
 }

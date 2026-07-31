@@ -59,6 +59,9 @@ public class ListConstructor extends VariableWidthTypeConstructor<List<Object>>
             size = in.getInt();
             count = in.getInt();
         }
+
+        CodecValidation.validateCountAndSize(count, size, getSize() == 1 ? "list8" : "list32");
+
         remaining -= getSize();
         if (remaining < size)
         {

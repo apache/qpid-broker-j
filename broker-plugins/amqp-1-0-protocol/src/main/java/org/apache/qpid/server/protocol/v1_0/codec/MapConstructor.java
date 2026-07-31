@@ -68,6 +68,9 @@ public class MapConstructor extends VariableWidthTypeConstructor<Map<Object,Obje
             size = in.getInt();
             count = in.getInt();
         }
+
+        CodecValidation.validateCountAndSize(count, size, getSize() == 1 ? "map8" : "map32");
+
         remaining -= getSize();
         if (remaining < size)
         {

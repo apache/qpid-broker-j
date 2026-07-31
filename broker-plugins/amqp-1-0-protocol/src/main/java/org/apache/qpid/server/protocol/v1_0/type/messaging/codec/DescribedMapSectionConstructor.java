@@ -25,8 +25,6 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.TypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -48,69 +46,44 @@ public abstract class DescribedMapSectionConstructor<S extends AbstractSection> 
         {
             throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode section.");
         }
-        int constructorByte = in.getUnsignedByte();
-        int sizeBytes;
+        final byte constructorByte = (byte) in.getUnsignedByte();
         switch(constructorByte)
         {
-            case 0xc1:
-                sizeBytes = 1;
+            case (byte) 0xc1:
                 break;
-            case 0xd1:
-                sizeBytes = 4;
+            case (byte) 0xd1:
                 break;
             default:
                 throw new AmqpErrorException(ConnectionError.FRAMING_ERROR,
                                              "The described section must always be a map");
         }
 
-        return new LazyConstructor(sizeBytes, originalPosition);
+        return new LazyConstructor(constructorByte, originalPosition);
     }
 
 
     private class LazyConstructor extends AbstractLazyConstructor<S>
     {
-        private final int _sizeBytes;
+        private final byte _constructorByte;
 
-        LazyConstructor(final int sizeBytes, final int originalPosition)
+        LazyConstructor(final byte constructorByte, final int originalPosition)
         {
             super(originalPosition);
-            _sizeBytes = sizeBytes;
+            _constructorByte = constructorByte;
         }
 
         @Override
         protected S createObject(final QpidByteBuffer encoding, final ValueHandler handler)
         {
-            return DescribedMapSectionConstructor.this.createObject(((SectionDecoderRegistry) handler.getDescribedTypeRegistry())
-                                                                            .getUnderlyingRegistry(), encoding);
+            return DescribedMapSectionConstructor.this.createObject(encoding, handler);
         }
 
         @Override
-        protected void skipValue(final QpidByteBuffer in) throws AmqpErrorException
+        protected void skipValue(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
-            if (!in.hasRemaining(_sizeBytes))
-            {
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode section.");
-            }
-            int size;
-            switch(_sizeBytes)
-            {
-                case 1:
-                    size = in.getUnsignedByte();
-                    break;
-                case 4:
-                    size = in.getInt();
-                    break;
-                default:
-                    throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Unexpected constructor type, can only be 1 or 4");
-            }
-            if (!in.hasRemaining(size))
-            {
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode section.");
-            }
-            in.position(in.position() + size);
+            handler.skipValue(in, _constructorByte);
         }
     }
 
-    protected abstract S createObject(final DescribedTypeConstructorRegistry describedTypeRegistry,
-                                      final QpidByteBuffer encodedForm);
+    protected abstract S createObject(final QpidByteBuffer encodedForm, final ValueHandler valueHandler);
 }

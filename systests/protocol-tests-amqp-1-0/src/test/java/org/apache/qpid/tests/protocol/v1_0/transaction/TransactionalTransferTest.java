@@ -278,7 +278,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .flowIncomingWindow(UnsignedInteger.ONE)
                        .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
-                       .flowNextOutgoingId(UnsignedInteger.ZERO)
+                       .flowNextOutgoingId()
                        .flowLinkCredit(UnsignedInteger.ONE)
                        .flowHandleFromLinkHandle()
                        .flow()
@@ -324,7 +324,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .flowIncomingWindow(UnsignedInteger.ONE)
                        .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
-                       .flowNextOutgoingId(UnsignedInteger.ZERO)
+                       .flowNextOutgoingId()
                        .flowLinkCredit(UnsignedInteger.ONE)
                        .flowHandleFromLinkHandle()
                        .flow()
@@ -338,6 +338,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
                        .dispositionTransactionalStateFromCurrentTransaction(new Accepted())
+                       .flowNextOutgoingId()
                        .disposition().txnDischarge(true);
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
@@ -375,7 +376,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                                                   .flowIncomingWindow(UnsignedInteger.ONE)
                                                   .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                                                   .flowOutgoingWindow(UnsignedInteger.ZERO)
-                                                  .flowNextOutgoingId(UnsignedInteger.ZERO)
+                                                  .flowNextOutgoingId()
                                                   .flowLinkCredit(UnsignedInteger.ONE)
                                                   .flowHandleFromLinkHandle()
                                                   .flow()
@@ -435,7 +436,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .flowIncomingWindow(UnsignedInteger.ONE)
                        .flowNextIncomingId(UnsignedInteger.ZERO)
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
-                       .flowNextOutgoingId(UnsignedInteger.ZERO)
+                       .flowNextOutgoingId()
                        .flowLinkCredit(UnsignedInteger.ONE)
                        .flowHandleFromLinkHandle()
                        .flow()
@@ -492,7 +493,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .flowIncomingWindow(UnsignedInteger.ONE)
                        .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
-                       .flowNextOutgoingId(UnsignedInteger.ZERO)
+                       .flowNextOutgoingId()
                        .flowLinkCredit(UnsignedInteger.ONE)
                        .flowHandleFromLinkHandle()
                        .flowProperties(Map.of(Symbols.TXN_ID, interaction.getCurrentTransactionId()))
@@ -510,6 +511,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .dispositionRole(Role.RECEIVER)
                        .dispositionTransactionalStateFromCurrentTransaction(new Accepted())
                        .dispositionFirstFromLatestDelivery()
+                       .flowNextOutgoingId()
                        .disposition().txnDischarge(false);
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));
@@ -554,7 +556,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
                        .flowIncomingWindow(UnsignedInteger.ONE)
                        .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
-                       .flowNextOutgoingId(UnsignedInteger.ZERO)
+                       .flowNextOutgoingId()
                        .flowLinkCredit(UnsignedInteger.ONE)
                        .flowHandleFromLinkHandle()
                        .flowProperties(Map.of(Symbols.TXN_ID, interaction.getCurrentTransactionId()))
@@ -571,6 +573,7 @@ public class TransactionalTransferTest extends BrokerAdminUsingTestBase
             interaction.dispositionSettled(true)
                        .dispositionRole(Role.RECEIVER)
                        .dispositionTransactionalState(interaction.getCurrentTransactionId(), new Accepted())
+                       .flowNextOutgoingId()
                        .disposition().txnDischarge(true);
 
             assertThat(interaction.getCoordinatorLatestDeliveryState(), is(instanceOf(Accepted.class)));

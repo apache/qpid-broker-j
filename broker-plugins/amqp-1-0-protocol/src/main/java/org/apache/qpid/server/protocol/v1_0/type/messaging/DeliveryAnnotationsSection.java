@@ -24,7 +24,9 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 import java.util.Map;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.AMQPConnection_1_0;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.DeliveryAnnotationsConstructor;
 
@@ -32,7 +34,17 @@ public class DeliveryAnnotationsSection extends AbstractSection<Map<Symbol,Objec
 {
     public DeliveryAnnotationsSection(final QpidByteBuffer encodedForm)
     {
-        super(encodedForm);
+        this(encodedForm, AMQPConnection_1_0.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    public DeliveryAnnotationsSection(final QpidByteBuffer encodedForm, final int maxNestedObjects)
+    {
+        super(encodedForm, maxNestedObjects);
+    }
+
+    public DeliveryAnnotationsSection(final QpidByteBuffer encodedForm, final ValueHandler valueHandler)
+    {
+        super(encodedForm, valueHandler);
     }
 
     DeliveryAnnotationsSection(final DeliveryAnnotations deliveryAnnotations)

@@ -28,27 +28,48 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
 {
-
-
     @Override
     public Object[] construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
     {
         int size = read(in);
+        if (size < 0)
+        {
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Invalid negative size %d for 'array'", size);
+        }
         long remaining = in.remaining();
-        if(remaining < (long) size)
+        if (remaining < size)
         {
             throw new AmqpErrorException(AmqpError.DECODE_ERROR,
                                          "Insufficient data to decode array - requires %d octects, only %d remaining.",
                                          size, remaining);
         }
-
-        List<Object> rval;
         int count = read(in);
-        TypeConstructor t = handler.readConstructor(in);
-        rval = new ArrayList<>(count);
-        for(int i = 0; i < count; i++)
+        if (count < 0)
         {
-            rval.add(t.construct(in, handler));
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Invalid negative element count %d for 'array'", count);
+        }
+        final TypeConstructor<?> t = handler.readConstructor(in);
+
+        final long elementDataBytes = in.remaining() - (remaining - size);
+        if (CodecValidation.isZeroWidthArrayElementConstructor(t))
+        {
+            final int maxZeroWidthArrayElements = handler.getMaxZeroWidthArrayElements();
+            if (count > maxZeroWidthArrayElements)
+            {
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR,
+                        "Array element count %d exceeds configured zero-width element limit %d", count, maxZeroWidthArrayElements);
+            }
+        }
+        else if (count > elementDataBytes)
+        {
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Array element count %d exceeds available element " +
+                    "data (%d bytes) for 'array'", count, elementDataBytes);
+        }
+
+        final List<Object> rval = new ArrayList<>(count);
+        for (int i = 0; i < count; i++)
+        {
+            rval.add(handler.parseWithConstructor(in, t));
         }
 
         long expectedRemaining = remaining - size;
@@ -74,8 +95,20 @@ public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
         }
         else
         {
-            return rval.toArray((Object[])Array.newInstance(rval.get(0).getClass(), rval.size()));
+            return rval.toArray((Object[]) Array.newInstance(getComponentType(rval), rval.size()));
         }
+    }
+
+    private Class<?> getComponentType(final List<Object> values)
+    {
+        for (final Object value : values)
+        {
+            if (value != null)
+            {
+                return value.getClass();
+            }
+        }
+        return Object.class;
     }
 
 

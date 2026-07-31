@@ -22,7 +22,9 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.AMQPConnection_1_0;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.DataConstructor;
 
@@ -30,7 +32,17 @@ public class DataSection extends AbstractSection<Binary, Data>
 {
     public DataSection(final QpidByteBuffer encodedForm)
     {
-        super(encodedForm);
+        this(encodedForm, AMQPConnection_1_0.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    public DataSection(final QpidByteBuffer encodedForm, final int maxNestedObjects)
+    {
+        super(encodedForm, maxNestedObjects);
+    }
+
+    public DataSection(final QpidByteBuffer encodedForm, final ValueHandler valueHandler)
+    {
+        super(encodedForm, valueHandler);
     }
 
     DataSection(final Data data)

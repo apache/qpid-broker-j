@@ -36,6 +36,12 @@ class ZeroUIntConstructor implements TypeConstructor<UnsignedInteger>
         return UnsignedInteger.ZERO;
     }
 
+    @Override
+    public boolean isZeroWidthArrayElement()
+    {
+        return true;
+    }
+
     public static ZeroUIntConstructor getInstance()
     {
         return INSTANCE;

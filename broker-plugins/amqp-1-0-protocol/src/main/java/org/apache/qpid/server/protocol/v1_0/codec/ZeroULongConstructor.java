@@ -36,6 +36,12 @@ class ZeroULongConstructor implements TypeConstructor<UnsignedLong>
         return UnsignedLong.ZERO;
     }
 
+    @Override
+    public boolean isZeroWidthArrayElement()
+    {
+        return true;
+    }
+
     public static ZeroULongConstructor getInstance()
     {
         return INSTANCE;

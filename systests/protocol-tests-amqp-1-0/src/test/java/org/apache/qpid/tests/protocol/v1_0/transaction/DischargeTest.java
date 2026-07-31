@@ -156,7 +156,7 @@ public class DischargeTest extends BrokerAdminUsingTestBase
                        .attach().consumeResponse(Attach.class)
 
                        .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
-                       .flowNextOutgoingId(UnsignedInteger.ZERO)
+                       .flowNextOutgoingId()
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
                        .flowIncomingWindow(UnsignedInteger.ONE)
                        .flowLinkCredit(UnsignedInteger.ONE)

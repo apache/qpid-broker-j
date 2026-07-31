@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v1_0.delivery;
 
+import java.util.Collection;
+
 import org.apache.qpid.server.protocol.v1_0.LinkEndpoint;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
@@ -32,4 +34,5 @@ public interface DeliveryRegistry
     void removeDeliveriesForLinkEndpoint(LinkEndpoint<?, ?> linkEndpoint);
     UnsignedInteger getDeliveryId(Binary deliveryTag, LinkEndpoint<?, ?> linkEndpoint);
     int size();
+    Collection<UnsignedInteger> getDeliveryIds();
 }

@@ -68,6 +68,7 @@ import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 import org.apache.qpid.server.protocol.v1_0.constants.Bytes;
+import org.apache.qpid.server.protocol.v1_0.constants.Constants;
 import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
 import org.apache.qpid.server.protocol.v1_0.framing.FrameHandler;
@@ -208,6 +209,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     // Multi session transactions
     private final Map<Integer, ServerTransaction> _openTransactions = new ConcurrentSkipListMap<>();
     private volatile boolean _sendSaslFinalChallengeAsChallenge;
+    private volatile int _maxZeroWidthArrayElements = AMQPConnection_1_0.DEFAULT_CODEC_MAX_ZERO_WIDTH_ARRAY_ELEMENTS;
     private volatile String _closeCause;
 
     AMQPConnection_1_0Impl(final Broker<?> broker,
@@ -242,6 +244,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         super.onOpen();
         _sendSaslFinalChallengeAsChallenge = getContextValue(Boolean.class, AMQPConnection_1_0.SEND_SASL_FINAL_CHALLENGE_AS_CHALLENGE);
+        _maxZeroWidthArrayElements = getContextValue(Integer.class, AMQPConnection_1_0.CODEC_MAX_ZERO_WIDTH_ARRAY_ELEMENTS);
     }
 
     @Override
@@ -798,6 +801,13 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         {
             _receivingSessions = new Session_1_0[_channelMax + 1];
             _sendingSessions = new Session_1_0[_channelMax + 1];
+        }
+
+        if (open.getMaxFrameSize() != null && open.getMaxFrameSize().longValue() < Constants.MIN_MAX_FRAME_SIZE)
+        {
+            closeConnection(ConnectionError.FRAMING_ERROR, "Peer max-frame-size " + open.getMaxFrameSize() +
+                    " violates AMQP minimum of " + Constants.MIN_MAX_FRAME_SIZE);
+            return;
         }
         _maxFrameSize = open.getMaxFrameSize() == null
                 || open.getMaxFrameSize().longValue() > getBroker().getNetworkBufferSize()
@@ -1399,7 +1409,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     private FrameHandler getFrameHandler(final boolean sasl)
     {
-        return new FrameHandler(new ValueHandler(this.getDescribedTypeRegistry()), this, sasl);
+        final Integer configuredMaxNestedObjects = getContextValue(Integer.class, CODEC_MAX_NESTED_OBJECTS);
+        final int maxNestedObjects = configuredMaxNestedObjects == null
+                ? DEFAULT_CODEC_MAX_NESTED_OBJECTS
+                : configuredMaxNestedObjects;
+        return new FrameHandler(new ValueHandler(this.getDescribedTypeRegistry(), maxNestedObjects,
+                _maxZeroWidthArrayElements, sasl), this, sasl);
     }
 
 
@@ -1645,6 +1660,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     public boolean getSendSaslFinalChallengeAsChallenge()
     {
         return _sendSaslFinalChallengeAsChallenge;
+    }
+
+    @Override
+    public int getMaxZeroWidthArrayElements()
+    {
+        return _maxZeroWidthArrayElements;
     }
 
     @Override

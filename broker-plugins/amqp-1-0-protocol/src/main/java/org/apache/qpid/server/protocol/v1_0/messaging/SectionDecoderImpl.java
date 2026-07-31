@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.AMQPConnection_1_0;
 import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -38,7 +39,20 @@ public class SectionDecoderImpl implements SectionDecoder
 
     public SectionDecoderImpl(final SectionDecoderRegistry describedTypeRegistry)
     {
-        _valueHandler = new ValueHandler(describedTypeRegistry);
+        this(describedTypeRegistry, AMQPConnection_1_0.DEFAULT_CODEC_MAX_NESTED_OBJECTS,
+                ValueHandler.DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS);
+    }
+
+    public SectionDecoderImpl(final SectionDecoderRegistry describedTypeRegistry, final int maxNestedObjects)
+    {
+        this(describedTypeRegistry, maxNestedObjects, ValueHandler.DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS);
+    }
+
+    public SectionDecoderImpl(final SectionDecoderRegistry describedTypeRegistry,
+                              final int maxNestedObjects,
+                              final int maxZeroWidthArrayElements)
+    {
+        _valueHandler = new ValueHandler(describedTypeRegistry, maxNestedObjects, maxZeroWidthArrayElements);
     }
 
     @Override

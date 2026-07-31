@@ -24,7 +24,12 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+
+import java.util.Collection;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -119,5 +124,47 @@ class DeliveryRegistryImplTest extends UnitTestBase
         _registry.removeDelivery(DELIVERY_ID);
 
         assertThat(_registry.size(), is(equalTo(0)));
+    }
+
+    @Test
+    void getDeliveryIdsReturnsAllIds()
+    {
+        _registry.addDelivery(UnsignedInteger.valueOf(100), new UnsettledDelivery(new Binary(new byte[]{1}),
+                mock(LinkEndpoint.class)));
+        _registry.addDelivery(UnsignedInteger.valueOf(101), new UnsettledDelivery(new Binary(new byte[]{2}),
+                mock(LinkEndpoint.class)));
+        _registry.addDelivery(UnsignedInteger.valueOf(102), new UnsettledDelivery(new Binary(new byte[]{3}),
+                mock(LinkEndpoint.class)));
+
+        final Collection<UnsignedInteger> ids = _registry.getDeliveryIds();
+        assertNotNull(ids);
+        assertEquals(3, ids.size());
+        assertTrue(ids.contains(UnsignedInteger.valueOf(100)));
+        assertTrue(ids.contains(UnsignedInteger.valueOf(101)));
+        assertTrue(ids.contains(UnsignedInteger.valueOf(102)));
+    }
+
+    @Test
+    void getDeliveryIdsReturnsEmptyForEmptyRegistry()
+    {
+        final Collection<UnsignedInteger> ids = _registry.getDeliveryIds();
+        assertNotNull(ids);
+        assertEquals(0, ids.size());
+    }
+
+    @Test
+    void getDeliveryIdsReturnsCopyNotLiveView()
+    {
+        _registry.addDelivery(UnsignedInteger.valueOf(1), new UnsettledDelivery(new Binary(new byte[]{1}),
+                mock(LinkEndpoint.class)));
+
+        final Collection<UnsignedInteger> ids = _registry.getDeliveryIds();
+        assertEquals(1, ids.size());
+
+        _registry.addDelivery(UnsignedInteger.valueOf(2), new UnsettledDelivery(new Binary(new byte[]{2}),
+                mock(LinkEndpoint.class)));
+
+        assertEquals(1, ids.size());
+        assertEquals(2, _registry.size());
     }
 }

@@ -24,14 +24,26 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 import java.util.List;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.AMQPConnection_1_0;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.AmqpSequenceConstructor;
 
 public class AmqpSequenceSection extends AbstractSection<List, AmqpSequence>
 {
     public AmqpSequenceSection(final QpidByteBuffer encodedForm)
     {
-        super(encodedForm);
+        this(encodedForm, AMQPConnection_1_0.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    public AmqpSequenceSection(final QpidByteBuffer encodedForm, final int maxNestedObjects)
+    {
+        super(encodedForm, maxNestedObjects);
+    }
+
+    public AmqpSequenceSection(final QpidByteBuffer encodedForm, final ValueHandler valueHandler)
+    {
+        super(encodedForm, valueHandler);
     }
 
     AmqpSequenceSection(final AmqpSequence sequence)

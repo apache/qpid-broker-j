@@ -38,7 +38,7 @@ public class Delivery
 {
     private final UnsignedInteger _deliveryId;
     private final Binary _deliveryTag;
-    private final List<Transfer> _transfers = new CopyOnWriteArrayList<>();
+    private final List<QpidByteBuffer> _payloadFragments = new ArrayList<>();
     private final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> _linkEndpoint;
     private final UnsignedInteger _messageFormat;
     private volatile boolean _complete;
@@ -48,8 +48,9 @@ public class Delivery
     private volatile ReceiverSettleMode _receiverSettleMode;
     private volatile boolean _resume;
     private volatile long _totalPayloadSize;
+    private volatile int _transferCount;
 
-    public Delivery(Transfer transfer, final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> endpoint)
+    public Delivery(final Transfer transfer, final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> endpoint)
     {
         _totalPayloadSize = 0L;
         _deliveryId = transfer.getDeliveryId();
@@ -109,7 +110,12 @@ public class Delivery
         return _totalPayloadSize;
     }
 
-    final void addTransfer(Transfer transfer)
+    public int getTransferCount()
+    {
+        return _transferCount;
+    }
+
+    final void addTransfer(final Transfer transfer)
     {
         if (_aborted)
         {
@@ -125,53 +131,77 @@ public class Delivery
                                                           _deliveryId.intValue()));
         }
 
-        _transfers.add(transfer);
-        if (Boolean.TRUE.equals(transfer.getAborted()))
+        QpidByteBuffer payload = null;
+        try
         {
-            _aborted = true;
-            discard();
-        }
-        if(!Boolean.TRUE.equals(transfer.getMore()))
-        {
-            _complete = true;
-        }
-        if(Boolean.TRUE.equals(transfer.getSettled()))
-        {
-            _settled = true;
-        }
-
-        if(Boolean.TRUE.equals(transfer.getResume()))
-        {
-            _resume = true;
-        }
-
-        if (transfer.getState() != null)
-        {
-            DeliveryState currentState;
-            if (_state instanceof TransactionalState)
+            _transferCount++;
+            if (Boolean.TRUE.equals(transfer.getAborted()))
             {
-                currentState = ((TransactionalState) _state).getOutcome();
+                _aborted = true;
+                discard();
             }
             else
             {
-                currentState = _state;
+                payload = transfer.getPayload();
+                if (payload != null)
+                {
+                    final int remaining = payload.remaining();
+                    if (remaining != 0)
+                    {
+                        _payloadFragments.add(payload);
+                        _totalPayloadSize += remaining;
+                        payload = null;
+                    }
+                }
             }
-            if (!(currentState instanceof Outcome))
+
+            if (!Boolean.TRUE.equals(transfer.getMore()))
             {
-                _state = transfer.getState();
+                _complete = true;
+            }
+            if (Boolean.TRUE.equals(transfer.getSettled()))
+            {
+                _settled = true;
+            }
+
+            if (Boolean.TRUE.equals(transfer.getResume()))
+            {
+                _resume = true;
+            }
+
+            if (transfer.getState() != null)
+            {
+                DeliveryState currentState;
+                if (_state instanceof TransactionalState)
+                {
+                    currentState = ((TransactionalState) _state).getOutcome();
+                }
+                else
+                {
+                    currentState = _state;
+                }
+                if (!(currentState instanceof Outcome))
+                {
+                    _state = transfer.getState();
+                }
+            }
+
+            if (transfer.getRcvSettleMode() != null)
+            {
+                if (_receiverSettleMode == null)
+                {
+                    _receiverSettleMode = transfer.getRcvSettleMode();
+                }
             }
         }
-
-        if (transfer.getRcvSettleMode() != null)
+        finally
         {
-            if (_receiverSettleMode == null)
+            if (payload != null)
             {
-                _receiverSettleMode = transfer.getRcvSettleMode();
+                payload.dispose();
             }
+            transfer.dispose();
         }
-
-        final int remaining = transfer.getPayloadRemaining();
-        _totalPayloadSize += (long) remaining;
     }
 
     public LinkEndpoint<? extends BaseSource, ? extends BaseTarget> getLinkEndpoint()
@@ -181,43 +211,32 @@ public class Delivery
 
     public QpidByteBuffer getPayload()
     {
-        final int size = _transfers.size();
+        final int size = _payloadFragments.size();
         if (size == 0)
         {
             return QpidByteBuffer.emptyQpidByteBuffer();
         }
         else if (size == 1)
         {
-            final Transfer transfer = _transfers.get(0);
-            final QpidByteBuffer payload = transfer.getPayload();
-            transfer.dispose();
-            _transfers.clear();
-            return payload == null ? QpidByteBuffer.emptyQpidByteBuffer() : payload;
+            return _payloadFragments.remove(0);
         }
 
-        List<QpidByteBuffer> transferBuffers = new ArrayList<>(_transfers.size());
-        for (Transfer t : _transfers)
+        final List<QpidByteBuffer> payloadFragments = new ArrayList<>(_payloadFragments);
+        _payloadFragments.clear();
+        try
         {
-            QpidByteBuffer payload = t.getPayload();
-            if (payload != null)
-            {
-                transferBuffers.add(payload);
-            }
-            t.dispose();
+            return QpidByteBuffer.concatenate(payloadFragments);
         }
-        _transfers.clear();
-        final QpidByteBuffer combined = QpidByteBuffer.concatenate(transferBuffers);
-        transferBuffers.forEach(QpidByteBuffer::dispose);
-        return combined;
+        finally
+        {
+            payloadFragments.forEach(QpidByteBuffer::dispose);
+        }
     }
 
     public void discard()
     {
-        for (Transfer transfer: _transfers)
-        {
-            transfer.dispose();
-        }
-        _transfers.clear();
+        _payloadFragments.forEach(QpidByteBuffer::dispose);
+        _payloadFragments.clear();
     }
 
 }

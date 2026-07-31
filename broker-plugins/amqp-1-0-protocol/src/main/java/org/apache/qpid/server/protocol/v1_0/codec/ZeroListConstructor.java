@@ -38,6 +38,12 @@ class ZeroListConstructor implements TypeConstructor<List>
         return Collections.EMPTY_LIST;
     }
 
+    @Override
+    public boolean isZeroWidthArrayElement()
+    {
+        return true;
+    }
+
     public static ZeroListConstructor getInstance()
     {
         return INSTANCE;

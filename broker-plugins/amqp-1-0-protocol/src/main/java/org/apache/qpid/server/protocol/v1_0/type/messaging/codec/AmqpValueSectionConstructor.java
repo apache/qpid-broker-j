@@ -32,7 +32,6 @@ import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
-import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public class AmqpValueSectionConstructor implements DescribedTypeConstructor<AmqpValueSection>
 {
@@ -63,6 +62,11 @@ public class AmqpValueSectionConstructor implements DescribedTypeConstructor<Amq
         return new LazyConstructor(originalPosition);
     }
 
+    @Override
+    public boolean allowsDescribedTypeValue()
+    {
+        return true;
+    }
 
     private static class LazyConstructor extends AbstractLazyConstructor<AmqpValueSection>
     {
@@ -74,78 +78,13 @@ public class AmqpValueSectionConstructor implements DescribedTypeConstructor<Amq
         @Override
         protected AmqpValueSection createObject(final QpidByteBuffer encoding, final ValueHandler handler)
         {
-            return new AmqpValueSection(encoding);
+            return new AmqpValueSection(encoding, handler);
         }
 
         @Override
-        protected void skipValue(final QpidByteBuffer in) throws AmqpErrorException
+        protected void skipValue(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
-            if (!in.hasRemaining())
-            {
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode AMQP value section.");
-            }
-            byte formatCode = in.get();
-
-            if (formatCode == ValueHandler.DESCRIBED_TYPE)
-            {
-                // This is only valid if the described value is not an array
-                skipValue(in);
-                skipValue(in);
-            }
-            else
-            {
-                final int skipLength;
-                int category = (formatCode >> 4) & 0x0F;
-                switch (category)
-                {
-                    case 0x04:
-                        skipLength = 0;
-                        break;
-                    case 0x05:
-                        skipLength = 1;
-                        break;
-                    case 0x06:
-                        skipLength = 2;
-                        break;
-                    case 0x07:
-                        skipLength = 4;
-                        break;
-                    case 0x08:
-                        skipLength = 8;
-                        break;
-                    case 0x09:
-                        skipLength = 16;
-                        break;
-                    case 0x0a:
-                    case 0x0c:
-                    case 0x0e:
-                        if (!in.hasRemaining())
-                        {
-                            throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                                         "Insufficient data to decode AMQP value section.");
-                        }
-                        skipLength = in.getUnsignedByte();
-                        break;
-                    case 0x0b:
-                    case 0x0d:
-                    case 0x0f:
-                        if (!in.hasRemaining(4))
-                        {
-                            throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                                         "Insufficient data to decode AMQP value section.");
-                        }
-                        skipLength = in.getInt();
-                        break;
-                    default:
-                        throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Unknown type");
-                }
-                if (!in.hasRemaining(skipLength))
-                {
-                    throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                                 "Insufficient data to decode AMQP value section.");
-                }
-                in.position(in.position() + skipLength);
-            }
+            handler.skipValueAllowingDescribedTypeValue(in);
         }
 
     }

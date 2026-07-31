@@ -93,12 +93,20 @@ public class MessageFormat_1_0 implements MessageFormat<Message_1_0>
                                      final MessageStore store,
                                      final Object connectionReference)
     {
+        return createMessage(payload, store, connectionReference, getSectionDecoder());
+    }
+
+    Message_1_0 createMessage(final QpidByteBuffer payload,
+                              final MessageStore store,
+                              final Object connectionReference,
+                              final SectionDecoder sectionDecoder)
+    {
         List<EncodingRetainingSection<?>> dataSections = new ArrayList<>();
 
         List<EncodingRetainingSection<?>> allSections;
         try
         {
-            allSections = getSectionDecoder().parseAll(payload);
+            allSections = sectionDecoder.parseAll(payload);
         }
         catch (AmqpErrorException e)
         {

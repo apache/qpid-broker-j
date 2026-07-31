@@ -502,15 +502,18 @@ public class SendingLinkEndpoint extends AbstractLinkEndpoint<Source, Target>
             }
         }
 
-        // send flow when echo=true or drain=true but link credit is zero
-        boolean sendFlow = Boolean.TRUE.equals(flow.getEcho()) ||
-                ( Boolean.TRUE.equals(flow.getDrain()) && getLinkCredit().equals(UnsignedInteger.ZERO));
+        final boolean echoRequested = Boolean.TRUE.equals(flow.getEcho());
+        final boolean drainResponse = Boolean.TRUE.equals(flow.getDrain()) && getLinkCredit().equals(UnsignedInteger.ZERO);
 
         flowStateChanged();
 
-        if (sendFlow)
+        if (drainResponse)
         {
             sendFlow();
+        }
+        else if (echoRequested)
+        {
+            requestEchoFlow();
         }
     }
 

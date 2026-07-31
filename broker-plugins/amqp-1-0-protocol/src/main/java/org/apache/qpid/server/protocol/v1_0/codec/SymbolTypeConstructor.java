@@ -33,8 +33,10 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor<Symbol>
 {
     private static final Charset ASCII = Charset.forName("US-ASCII");
 
-    private static final ConcurrentMap<BinaryString, Symbol> SYMBOL_MAP =
-            new ConcurrentHashMap<>(2048);
+    private static final ConcurrentMap<BinaryString, Symbol> AMQP_SYMBOL_MAP =
+            new ConcurrentHashMap<>(Symbol.MAX_CACHE_SIZE);
+    private static final ConcurrentMap<BinaryString, Symbol> SASL_SYMBOL_MAP =
+            new ConcurrentHashMap<>(Symbol.MAX_SASL_CACHE_SIZE);
 
     public static SymbolTypeConstructor getInstance(int i)
     {
@@ -50,8 +52,7 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor<Symbol>
     @Override
     public Symbol construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
     {
-
-        int size;
+        final int size;
 
         if (!in.hasRemaining(getSize()))
         {
@@ -72,15 +73,36 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor<Symbol>
             throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Cannot construct symbol: insufficient input data");
         }
 
-        byte[] data = new byte[size];
+        final byte[] data = new byte[size];
         in.get(data);
+
+        final boolean sasl = handler.isSasl();
+        final int maxCacheableLength = sasl ? Symbol.MAX_SASL_CACHEABLE_LENGTH : Symbol.MAX_CACHEABLE_LENGTH;
+        if (size > maxCacheableLength)
+        {
+            return Symbol.getSymbol(new String(data, ASCII), sasl);
+        }
+
+        final ConcurrentMap<BinaryString, Symbol> symbolMap = sasl ? SASL_SYMBOL_MAP : AMQP_SYMBOL_MAP;
+        final int maxCacheSize = sasl ? Symbol.MAX_SASL_CACHE_SIZE : Symbol.MAX_CACHE_SIZE;
         final BinaryString binaryStr = new BinaryString(data);
 
-        Symbol symbolVal = SYMBOL_MAP.get(binaryStr);
+        Symbol symbolVal = symbolMap.get(binaryStr);
         if (symbolVal == null)
         {
-            symbolVal = Symbol.valueOf(new String(data, ASCII));
-            SYMBOL_MAP.putIfAbsent(binaryStr, symbolVal);
+            symbolVal = Symbol.getSymbol(new String(data, ASCII), sasl);
+            synchronized (symbolMap)
+            {
+                final Symbol existing = symbolMap.get(binaryStr);
+                if (existing != null)
+                {
+                    return existing;
+                }
+                if (symbolMap.size() < maxCacheSize)
+                {
+                    symbolMap.put(binaryStr, symbolVal);
+                }
+            }
         }
 
         return symbolVal;

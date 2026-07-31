@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.AMQPConnection_1_0;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
@@ -37,23 +38,46 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
                                                                                             .registerMessagingLayer()
                                                                                             .registerTransactionLayer()
                                                                                             .registerSecurityLayer();
+    private final int _maxZeroWidthArrayElements;
     private T _value;
 
     private S _section;
     private QpidByteBuffer _encodedForm;
     // _encodedSize is valid only when _encodedForm is non-null
     private long _encodedSize = 0;
+    private final int _maxNestedObjects;
 
     protected AbstractSection(final QpidByteBuffer encodedForm)
     {
+        this(encodedForm, AMQPConnection_1_0.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    protected AbstractSection(final QpidByteBuffer encodedForm, final int maxNestedObjects)
+    {
         _encodedForm = encodedForm.duplicate();
         _encodedSize = encodedForm.remaining();
+        _maxNestedObjects = maxNestedObjects;
+        _maxZeroWidthArrayElements = ValueHandler.DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS;
+    }
+
+    protected AbstractSection(final QpidByteBuffer encodedForm, final ValueHandler valueHandler)
+    {
+        _encodedForm = encodedForm.duplicate();
+        _encodedSize = encodedForm.remaining();
+        _maxNestedObjects = valueHandler == null
+                ? AMQPConnection_1_0.DEFAULT_CODEC_MAX_NESTED_OBJECTS
+                : valueHandler.getMaxNestedObjects();
+        _maxZeroWidthArrayElements = valueHandler == null
+                ? ValueHandler.DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS
+                : valueHandler.getMaxZeroWidthArrayElements();
     }
 
     protected AbstractSection(final S section)
     {
         _value = section.getValue();
         _section = section;
+        _maxNestedObjects = AMQPConnection_1_0.DEFAULT_CODEC_MAX_NESTED_OBJECTS;
+        _maxZeroWidthArrayElements = ValueHandler.DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS;
         encodeIfNecessary();
     }
 
@@ -63,6 +87,8 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
         _section = otherAbstractSection._section;
         _encodedForm = otherAbstractSection.getEncodedForm();
         _encodedSize = _encodedForm.remaining();
+        _maxNestedObjects = otherAbstractSection._maxNestedObjects;
+        _maxZeroWidthArrayElements = otherAbstractSection._maxZeroWidthArrayElements;
     }
 
     protected abstract DescribedTypeConstructor<S> createNonEncodingRetainingSectionConstructor();
@@ -166,7 +192,7 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
                                                            new AmqpErrorException(AmqpError.DECODE_ERROR,
                                                                                   "Not a described type."));
             }
-            ValueHandler handler = new ValueHandler(TYPE_REGISTRY);
+            final ValueHandler handler = new ValueHandler(TYPE_REGISTRY, _maxNestedObjects, _maxZeroWidthArrayElements);
             try
             {
                 Object descriptor = handler.parse(input);

@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DeliveryAnnotationsSection;
@@ -47,10 +48,10 @@ public class DeliveryAnnotationsSectionConstructor extends DescribedMapSectionCo
     }
 
     @Override
-    protected DeliveryAnnotationsSection createObject(final DescribedTypeConstructorRegistry describedTypeRegistry,
-                                                      final QpidByteBuffer encodedForm)
+    protected DeliveryAnnotationsSection createObject(final QpidByteBuffer encodedForm,
+                                                      final ValueHandler valueHandler)
     {
-        return new DeliveryAnnotationsSection(encodedForm);
+        return new DeliveryAnnotationsSection(encodedForm, valueHandler);
     }
 
 }

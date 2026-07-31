@@ -122,7 +122,7 @@ public class TransactionTimeoutTest extends BrokerAdminUsingTestBase
                        .flowIncomingWindow(UnsignedInteger.MAX_VALUE)
                        .flowNextIncomingId(UnsignedInteger.ZERO)
                        .flowOutgoingWindow(UnsignedInteger.ZERO)
-                       .flowNextOutgoingId(UnsignedInteger.ZERO)
+                       .flowNextOutgoingId()
                        .flowLinkCredit(UnsignedInteger.MAX_VALUE)
                        .flowHandleFromLinkHandle()
                        .flow()

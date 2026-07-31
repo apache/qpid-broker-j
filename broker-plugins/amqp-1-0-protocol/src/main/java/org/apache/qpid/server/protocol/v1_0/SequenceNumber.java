@@ -79,9 +79,9 @@ public class SequenceNumber implements Comparable<SequenceNumber>
     }
 
     @Override
-    public int compareTo(SequenceNumber o)
+    public int compareTo(final SequenceNumber o)
     {
-        return _seqNo - o._seqNo;
+        return Integer.signum(_seqNo - o._seqNo);
     }
 
     @Override

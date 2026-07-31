@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v1_0.delivery;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -81,5 +83,11 @@ public class DeliveryRegistryImpl implements DeliveryRegistry
     public int size()
     {
         return _deliveries.size();
+    }
+
+    @Override
+    public Collection<UnsignedInteger> getDeliveryIds()
+    {
+        return new ArrayList<>(_deliveries.keySet());
     }
 }

@@ -53,5 +53,10 @@ public class AmqpValueConstructor extends AbstractDescribedTypeConstructor<AmqpV
         return new AmqpValue(underlying);
     }
 
+    @Override
+    public boolean allowsDescribedTypeValue()
+    {
+        return true;
+    }
 
 }

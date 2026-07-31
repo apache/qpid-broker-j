@@ -186,9 +186,7 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                 }
                 try (QpidByteBuffer payload = delivery.getPayload())
                 {
-                    serverMessage = format.createMessage(payload,
-                                                         getAddressSpace().getMessageStore(),
-                                                         getSession().getConnection().getReference());
+                    serverMessage = createMessage(format, payload);
                 }
                 catch (AmqpErrorRuntimeException e)
                 {
@@ -544,6 +542,16 @@ public class StandardReceivingLinkEndpoint extends AbstractReceivingLinkEndpoint
                 }
             }
         }
+    }
+
+    ServerMessage<?> createMessage(final MessageFormat format, final QpidByteBuffer payload)
+    {
+        if (format instanceof MessageFormat_1_0)
+        {
+            return ((MessageFormat_1_0) format).createMessage(payload, getAddressSpace().getMessageStore(),
+                    getSession().getConnection().getReference(), getSectionDecoder());
+        }
+        return format.createMessage(payload, getAddressSpace().getMessageStore(), getSession().getConnection().getReference());
     }
 
     @Override

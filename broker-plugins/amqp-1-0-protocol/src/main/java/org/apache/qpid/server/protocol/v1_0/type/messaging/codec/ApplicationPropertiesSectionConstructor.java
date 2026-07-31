@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationPropertiesSection;
@@ -47,10 +48,9 @@ public class ApplicationPropertiesSectionConstructor extends DescribedMapSection
     }
 
     @Override
-    protected ApplicationPropertiesSection createObject(final DescribedTypeConstructorRegistry describedTypeRegistry,
-                                                        final QpidByteBuffer encodedForm)
+    protected ApplicationPropertiesSection createObject(final QpidByteBuffer encodedForm, final ValueHandler valueHandler)
     {
-        return new ApplicationPropertiesSection(encodedForm);
+        return new ApplicationPropertiesSection(encodedForm, valueHandler);
     }
 
 }

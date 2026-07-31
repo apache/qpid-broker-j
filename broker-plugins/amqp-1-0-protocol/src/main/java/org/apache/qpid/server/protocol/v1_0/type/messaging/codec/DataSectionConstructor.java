@@ -97,11 +97,11 @@ public class DataSectionConstructor implements DescribedTypeConstructor<DataSect
         @Override
         protected DataSection createObject(final QpidByteBuffer encoding, final ValueHandler handler)
         {
-            return new DataSection(encoding);
+            return new DataSection(encoding, handler);
         }
 
         @Override
-        protected void skipValue(final QpidByteBuffer in) throws AmqpErrorException
+        protected void skipValue(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
             if (!in.hasRemaining(_sizeBytes))
             {

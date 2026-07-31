@@ -60,6 +60,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
 
     private final Link_1_0<S, T> _link;
     private final Session_1_0 _session;
+    private final EchoFlowCoalescer _echoFlowCoalescer;
 
     private volatile SenderSettleMode _sendingSettlementMode;
     private volatile ReceiverSettleMode _receivingSettlementMode;
@@ -94,6 +95,8 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
     {
         _session = session;
         _link = link;
+        _echoFlowCoalescer = new EchoFlowCoalescer(session.getEchoFlowCoalesceIntervalMs(), session.getEchoFlowClock(),
+                session.getEchoFlowScheduler(), session.getEchoFlowExecutor(), this::sendFlow);
     }
 
     protected abstract void handleDeliveryState(final Binary deliveryTag, final DeliveryState state, final Boolean settled);
@@ -304,6 +307,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
     @Override
     public void destroy()
     {
+        _echoFlowCoalescer.cancel();
         setLocalHandle(null);
         getLink().discardEndpoint();
     }
@@ -450,6 +454,7 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
 
     protected void detach(Error error, boolean close)
     {
+        _echoFlowCoalescer.cancel();
         if (error != null && !getSession().isSyntheticError(error))
         {
             _errored = true;
@@ -559,7 +564,13 @@ public abstract class AbstractLinkEndpoint<S extends BaseSource, T extends BaseT
             flow.setAvailable(_available);
             flow.setHandle(getLocalHandle());
             getSession().sendFlow(flow);
+            _echoFlowCoalescer.markFlowSent();
         }
+    }
+
+    protected final void requestEchoFlow()
+    {
+        _echoFlowCoalescer.requestEcho();
     }
 
     protected Link_1_0<S, T> getLink()
