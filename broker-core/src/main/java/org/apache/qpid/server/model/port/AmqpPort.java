@@ -159,6 +159,14 @@ public interface AmqpPort<X extends AmqpPort<X>> extends Port<X>
             " If the connection does not close this time, it will be aborted.")
     long DEFAULT_FINAL_WRITE_TIMEOUT = 1000L;
 
+    String MAX_GATHERING_WRITE_BUFFERS = "qpid.port.amqp.maxGatheringWriteBuffers";
+    int MINIMUM_MAX_GATHERING_WRITE_BUFFERS = 1;
+    int MAXIMUM_MAX_GATHERING_WRITE_BUFFERS = 1024;
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = MAX_GATHERING_WRITE_BUFFERS,
+            description = "Maximum number of underlying NIO buffers included in one gathering socket write.")
+    int DEFAULT_MAX_GATHERING_WRITE_BUFFERS = MAXIMUM_MAX_GATHERING_WRITE_BUFFERS;
+
     @ManagedAttribute( defaultValue = AmqpPort.DEFAULT_AMQP_TCP_NO_DELAY )
     boolean isTcpNoDelay();
 

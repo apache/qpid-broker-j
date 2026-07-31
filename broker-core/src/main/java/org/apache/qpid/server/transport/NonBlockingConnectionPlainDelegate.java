@@ -99,29 +99,25 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
 
     }
 
-
     @Override
-    public WriteResult doWrite(Collection<QpidByteBuffer> buffers) throws IOException
+    public WriteResult doWrite(final Collection<QpidByteBuffer> buffers) throws IOException
     {
-        long bytesToWrite = 0L;
-        if(!buffers.isEmpty())
-        {
-            for (QpidByteBuffer buf : buffers)
-            {
-                bytesToWrite += buf.remaining();
-            }
-        }
-        if(bytesToWrite == 0L)
+        if (buffers.isEmpty())
         {
             return new WriteResult(true, 0);
         }
-        else
+
+        final long bytesWritten = _parent.writeToTransport(buffers);
+        boolean complete = true;
+        for (final QpidByteBuffer buffer : buffers)
         {
-
-            long bytesWritten = _parent.writeToTransport(buffers);
-            return new WriteResult(bytesWritten >= bytesToWrite, bytesWritten);
+            if (buffer.hasRemaining())
+            {
+                complete = false;
+                break;
+            }
         }
-
+        return new WriteResult(complete, bytesWritten);
     }
 
     @Override

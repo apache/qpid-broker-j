@@ -63,6 +63,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private final Runnable _onTransportEncryptionAction;
     private final int _finalWriteThreshold;
     private final long _finalWriteTimeout;
+    private final int _maxGatheringWriteBuffers;
 
     private volatile boolean _fullyWritten = true;
 
@@ -83,8 +84,8 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private volatile long _bufferedSize;
     private String _selectedHost;
 
-    public NonBlockingConnection(SocketChannel socketChannel,
-                                 ProtocolEngine protocolEngine,
+    public NonBlockingConnection(final SocketChannel socketChannel,
+                                 final ProtocolEngine protocolEngine,
                                  final Set<TransportEncryption> encryptionSet,
                                  final Runnable onTransportEncryptionAction,
                                  final NetworkConnectionScheduler scheduler,
@@ -118,6 +119,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         }
         _finalWriteThreshold = port.getContextValue(Integer.class, AmqpPort.FINAL_WRITE_THRESHOLD);
         _finalWriteTimeout = port.getContextValue(Long.class, AmqpPort.FINAL_WRITE_TIMEOUT);
+        _maxGatheringWriteBuffers = port.getContextValue(Integer.class, AmqpPort.MAX_GATHERING_WRITE_BUFFERS);
 
         final Broker broker = (Broker<?>) port.getParent();
         _eventLogger = broker.getEventLogger();
@@ -259,33 +261,36 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         {
             try
             {
-                long currentTime = System.currentTimeMillis();
-                int tick = getTicker().getTimeToNextTick(currentTime);
+                final long currentTime = System.currentTimeMillis();
+                final int tick = getTicker().getTimeToNextTick(currentTime);
                 if (tick <= 0)
                 {
                     getTicker().tick(currentTime);
                 }
+                _scheduledTime = 0L;
 
-                _protocolEngine.setIOThread(Thread.currentThread());
-
-                boolean processPendingComplete = processPending();
-
-                if(processPendingComplete)
+                if (!_closed.get())
                 {
-                    _pendingIterator = null;
-                    _protocolEngine.setTransportBlockedForWriting(false);
-                    boolean dataRead = doRead();
-                    _protocolEngine.setTransportBlockedForWriting(!doWrite());
+                    _protocolEngine.setIOThread(Thread.currentThread());
 
-                    if (!_fullyWritten || dataRead || (_delegate.needsWork() && _delegate.getNetInputBuffer().position() != 0))
+                    final boolean processPendingComplete = processPending();
+
+                    if (processPendingComplete)
+                    {
+                        _pendingIterator = null;
+                        _protocolEngine.setTransportBlockedForWriting(false);
+                        final boolean dataRead = doRead();
+                        _protocolEngine.setTransportBlockedForWriting(!doWrite());
+
+                        if (!_fullyWritten || dataRead || (_delegate.needsWork() && _delegate.getNetInputBuffer().position() != 0))
+                        {
+                            _protocolEngine.notifyWork();
+                        }
+                    }
+                    else
                     {
                         _protocolEngine.notifyWork();
                     }
-
-                }
-                else
-                {
-                    _protocolEngine.notifyWork();
                 }
 
             }
@@ -523,9 +528,9 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         }
     }
 
-    long writeToTransport(Collection<QpidByteBuffer> buffers) throws IOException
+    long writeToTransport(final Collection<QpidByteBuffer> buffers) throws IOException
     {
-        long written  = QpidByteBuffer.write(_socketChannel, buffers);
+        final long written = QpidByteBuffer.write(_socketChannel, buffers, _maxGatheringWriteBuffers);
         if (LOGGER.isDebugEnabled())
         {
             LOGGER.debug("Written " + written + " bytes");

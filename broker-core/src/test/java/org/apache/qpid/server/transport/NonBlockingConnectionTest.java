@@ -96,6 +96,7 @@ class NonBlockingConnectionTest
         when(broker.getEventLogger()).thenReturn(eventLogger);
         when(port.getContextValue(Integer.class, AmqpPort.FINAL_WRITE_THRESHOLD)).thenReturn(100);
         when(port.getContextValue(Long.class, AmqpPort.FINAL_WRITE_TIMEOUT)).thenReturn(100L);
+        when(port.getContextValue(Integer.class, AmqpPort.MAX_GATHERING_WRITE_BUFFERS)).thenReturn(1024);
         when(port.getParent()).thenReturn(broker);
         final Set<TransportEncryption> encryptionSet = Set.of(TransportEncryption.NONE);
 

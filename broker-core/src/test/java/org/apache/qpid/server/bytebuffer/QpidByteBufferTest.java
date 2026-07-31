@@ -27,6 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -38,8 +41,11 @@ import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.InvalidMarkException;
+import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -920,6 +926,109 @@ public class QpidByteBufferTest extends UnitTestBase
                 assertEquals(buffer2Value, (long) concatenate.getChar(4), "Unexpected value 2");
             }
         }
+    }
+
+    @Test
+    public void testGatheringWriteLimitsUnderlyingBuffers() throws Exception
+    {
+        final List<QpidByteBuffer> buffers = new ArrayList<>();
+        final List<Integer> batchSizes = new ArrayList<>();
+
+        try (final ByteArrayOutputStream output = new ByteArrayOutputStream();
+             final GatheringByteChannel channel = createWritingChannel(output, batchSizes))
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                buffers.add(QpidByteBuffer.wrap(new byte[] {(byte) i}));
+            }
+
+            while (hasRemaining(buffers))
+            {
+                QpidByteBuffer.write(channel, buffers, 2);
+            }
+
+            assertEquals(List.of(2, 2, 1), batchSizes, "Unexpected gathering write batch sizes");
+            assertArrayEquals(new byte[] {0, 1, 2, 3, 4}, output.toByteArray(), "Gathering write changed buffer order");
+        }
+        finally
+        {
+            for (final QpidByteBuffer buffer : buffers)
+            {
+                buffer.dispose();
+            }
+        }
+    }
+
+    @Test
+    public void testGatheringWriteLimitsCompositeBufferFragments() throws Exception
+    {
+        final byte[] content = new byte[BUFFER_FRAGMENT_SIZE * 3];
+        for (int i = 0; i < content.length; i++)
+        {
+            content[i] = (byte) i;
+        }
+
+        final List<Integer> batchSizes = new ArrayList<>();
+
+        try (final ByteArrayOutputStream output = new ByteArrayOutputStream();
+             final GatheringByteChannel channel = createWritingChannel(output, batchSizes);
+             final QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(content.length))
+        {
+            buffer.put(content);
+            buffer.flip();
+
+            assertEquals(BUFFER_FRAGMENT_SIZE * 2, QpidByteBuffer.write(channel, List.of(buffer), 2),
+                    "Unexpected first gathering write size");
+            assertEquals(BUFFER_FRAGMENT_SIZE, QpidByteBuffer.write(channel, List.of(buffer), 2),
+                    "Unexpected second gathering write size");
+
+            assertEquals(List.of(2, 1), batchSizes, "Exhausted fragments should not count towards the limit");
+            assertArrayEquals(content, output.toByteArray(), "Gathering write changed fragment order");
+        }
+    }
+
+    @Test
+    public void testGatheringWriteRejectsInvalidMaximum() throws Exception
+    {
+        try (final GatheringByteChannel channel = mock(GatheringByteChannel.class))
+        {
+            assertThrows(IllegalArgumentException.class, () -> QpidByteBuffer.write(channel, List.of(_parent), 0));
+            assertThrows(IllegalArgumentException.class, () -> QpidByteBuffer.write(channel, List.of(_parent), -1));
+        }
+    }
+
+    private GatheringByteChannel createWritingChannel(final ByteArrayOutputStream output,
+                                                      final List<Integer> batchSizes) throws IOException
+    {
+        final GatheringByteChannel channel = mock(GatheringByteChannel.class);
+        when(channel.write(any(ByteBuffer[].class))).thenAnswer(invocation ->
+        {
+            final ByteBuffer[] byteBuffers = invocation.getArgument(0);
+            batchSizes.add(byteBuffers.length);
+            long written = 0;
+            for (final ByteBuffer byteBuffer : byteBuffers)
+            {
+                while (byteBuffer.hasRemaining())
+                {
+                    output.write(byteBuffer.get());
+                    written++;
+                }
+            }
+            return written;
+        });
+        return channel;
+    }
+
+    private boolean hasRemaining(final List<QpidByteBuffer> buffers)
+    {
+        for (final QpidByteBuffer buffer : buffers)
+        {
+            if (buffer.hasRemaining())
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void doDeflateInflate(final byte[] input,

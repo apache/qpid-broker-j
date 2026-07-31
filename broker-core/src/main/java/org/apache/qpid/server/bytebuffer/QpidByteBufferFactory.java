@@ -265,15 +265,49 @@ final class QpidByteBufferFactory
         }
     }
 
-    static long write(GatheringByteChannel channel, Collection<QpidByteBuffer> qpidByteBuffers)
-            throws IOException
+    static long write(final GatheringByteChannel channel, final Collection<QpidByteBuffer> qpidByteBuffers) throws IOException
     {
-        List<ByteBuffer> byteBuffers = new ArrayList<>();
-        for (QpidByteBuffer qpidByteBuffer : qpidByteBuffers)
+        return write(channel, qpidByteBuffers, Integer.MAX_VALUE);
+    }
+
+    static long write(final GatheringByteChannel channel,
+                      final Collection<QpidByteBuffer> qpidByteBuffers,
+                      final int maxBuffers) throws IOException
+    {
+        if (maxBuffers <= 0)
         {
-            Collections.addAll(byteBuffers, getUnderlyingBuffers(qpidByteBuffer));
+            throw new IllegalArgumentException("Maximum number of buffers must be greater than zero");
         }
-        return channel.write(byteBuffers.toArray(new ByteBuffer[byteBuffers.size()]));
+
+        final List<ByteBuffer> byteBuffers = new ArrayList<>();
+
+        outer: for (final QpidByteBuffer qpidByteBuffer : qpidByteBuffers)
+        {
+            if (qpidByteBuffer instanceof MultiQpidByteBuffer multiQpidByteBuffer)
+            {
+                for (final SingleQpidByteBuffer fragment : multiQpidByteBuffer.getFragments())
+                {
+                    if (fragment.hasRemaining())
+                    {
+                        byteBuffers.add(fragment.getUnderlyingBuffer());
+                        if (byteBuffers.size() == maxBuffers)
+                        {
+                            break outer;
+                        }
+                    }
+                }
+            }
+            else if (qpidByteBuffer.hasRemaining())
+            {
+                byteBuffers.add(((SingleQpidByteBuffer) qpidByteBuffer).getUnderlyingBuffer());
+                if (byteBuffers.size() == maxBuffers)
+                {
+                    break;
+                }
+            }
+        }
+
+        return byteBuffers.isEmpty() ? 0L : channel.write(byteBuffers.toArray(new ByteBuffer[0]));
     }
 
     static QpidByteBuffer wrap(ByteBuffer wrap)
