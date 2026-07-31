@@ -42,6 +42,8 @@ import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -232,6 +234,63 @@ public class AmqpPortImplTest extends UnitTestBase
         assertThrows(IllegalConfigurationException.class,
                 () -> _port.setAttributes(Map.of(AmqpPort.NUMBER_OF_SELECTORS, AmqpPort.DEFAULT_PORT_AMQP_THREAD_POOL_SIZE)),
                 "Exception not thrown for number of selectors equal to thread pool size");
+    }
+
+    @Test
+    public void testDefaultMaxGatheringWriteBuffers()
+    {
+        _port = createPort(getTestName());
+
+        assertEquals(AmqpPort.DEFAULT_MAX_GATHERING_WRITE_BUFFERS,
+                _port.getContextValue(Integer.class, AmqpPort.MAX_GATHERING_WRITE_BUFFERS),
+                "Unexpected default maximum gathering write buffer count");
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 1, 16, 1024 })
+    public void testValidMaxGatheringWriteBuffersOnCreate(final int value)
+    {
+        _port = createPort(getTestName(), Map.of(AmqpPort.CONTEXT, Map.of(AmqpPort.MAX_GATHERING_WRITE_BUFFERS,
+                String.valueOf(value))));
+
+        assertEquals(value, _port.getContextValue(Integer.class, AmqpPort.MAX_GATHERING_WRITE_BUFFERS),
+                "Unexpected maximum gathering write buffer count");
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -1, 0, 1025 })
+    public void testInvalidMaxGatheringWriteBuffersOnCreate(final int value)
+    {
+        final Map<String, Object> attributes = Map.of(AmqpPort.CONTEXT, Map.of(AmqpPort.MAX_GATHERING_WRITE_BUFFERS,
+                String.valueOf(value)));
+
+        assertThrows(IllegalConfigurationException.class, () -> createPort(getTestName(), attributes),
+                "Creation should reject an out-of-range maximum gathering write buffer count");
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { -1, 0, 1025 })
+    public void testInvalidMaxGatheringWriteBuffersOnChange(final int value)
+    {
+        _port = createPort(getTestName());
+        final Map<String, Object> context = Map.of(AmqpPort.MAX_GATHERING_WRITE_BUFFERS, String.valueOf(value));
+
+        assertThrows(IllegalConfigurationException.class, () ->
+                _port.setAttributes(Map.of(AmqpPort.CONTEXT, context)),
+                "Update should reject an out-of-range maximum gathering write buffer count");
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 1, 16, 1024 })
+    public void testValidMaxGatheringWriteBuffersOnChange(final int value)
+    {
+        _port = createPort(getTestName());
+        final Map<String, Object> context = Map.of(AmqpPort.MAX_GATHERING_WRITE_BUFFERS, String.valueOf(value));
+
+        _port.setAttributes(Map.of(AmqpPort.CONTEXT, context));
+
+        assertEquals(value, _port.getContextValue(Integer.class, AmqpPort.MAX_GATHERING_WRITE_BUFFERS),
+                "Unexpected updated maximum gathering write buffer count");
     }
 
     @Test

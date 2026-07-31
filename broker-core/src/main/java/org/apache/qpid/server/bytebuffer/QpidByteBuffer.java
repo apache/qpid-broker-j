@@ -84,6 +84,13 @@ public interface QpidByteBuffer extends AutoCloseable
         return QpidByteBufferFactory.write(channel, qpidByteBuffers);
     }
 
+    static long write(final GatheringByteChannel channel,
+                      final Collection<QpidByteBuffer> qpidByteBuffers,
+                      final int maxBuffers) throws IOException
+    {
+        return QpidByteBufferFactory.write(channel, qpidByteBuffers, maxBuffers);
+    }
+
     static QpidByteBuffer wrap(ByteBuffer wrap)
     {
         return QpidByteBufferFactory.wrap(wrap);

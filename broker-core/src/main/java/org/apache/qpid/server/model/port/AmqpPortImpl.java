@@ -350,20 +350,37 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
         }
 
         validateThreadPoolSettings(this);
+        validateMaxGatheringWriteBuffers(getContextValue(Integer.class, MAX_GATHERING_WRITE_BUFFERS));
     }
 
     @Override
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
-        AmqpPort changed = (AmqpPort) proxyForValidation;
+        final AmqpPort<?> changed = (AmqpPort<?>) proxyForValidation;
         if (changedAttributes.contains(THREAD_POOL_SIZE) || changedAttributes.contains(NUMBER_OF_SELECTORS))
         {
             validateThreadPoolSettings(changed);
         }
+        if (changedAttributes.contains(CONTEXT))
+        {
+            final String configuredValue = changed.getContext().get(MAX_GATHERING_WRITE_BUFFERS);
+            try
+            {
+                validateMaxGatheringWriteBuffers(configuredValue == null
+                        ? DEFAULT_MAX_GATHERING_WRITE_BUFFERS
+                        : Integer.parseInt(configuredValue));
+            }
+            catch (NumberFormatException e)
+            {
+                final String message = "Maximum number of gathering write buffers on Port %s must be an integer"
+                        .formatted(getName());
+                throw new IllegalConfigurationException(message, e);
+            }
+        }
     }
 
-    private void validateThreadPoolSettings(final AmqpPort changed)
+    private void validateThreadPoolSettings(final AmqpPort<?> changed)
     {
         if (changed.getThreadPoolSize() < 1)
         {
@@ -376,6 +393,17 @@ public class AmqpPortImpl extends AbstractPort<AmqpPortImpl> implements AmqpPort
         if (changed.getThreadPoolSize() <= changed.getNumberOfSelectors())
         {
             throw new IllegalConfigurationException(String.format("Number of Selectors %d on Port %s must be greater than the thread pool size %d.", changed.getNumberOfSelectors(), getName(), changed.getThreadPoolSize()));
+        }
+    }
+
+    private void validateMaxGatheringWriteBuffers(final int maxGatheringWriteBuffers)
+    {
+        if (maxGatheringWriteBuffers < MINIMUM_MAX_GATHERING_WRITE_BUFFERS || maxGatheringWriteBuffers > MAXIMUM_MAX_GATHERING_WRITE_BUFFERS)
+        {
+            final String message = "Maximum number of gathering write buffers %d on Port %s must be between %d and %d"
+                    .formatted(maxGatheringWriteBuffers, getName(), MINIMUM_MAX_GATHERING_WRITE_BUFFERS,
+                            MAXIMUM_MAX_GATHERING_WRITE_BUFFERS);
+            throw new IllegalConfigurationException(message);
         }
     }
 
