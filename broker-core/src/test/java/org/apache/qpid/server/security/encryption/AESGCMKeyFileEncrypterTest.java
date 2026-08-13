@@ -63,7 +63,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.User;
-import org.apache.qpid.server.util.FileUtils;
+import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AESGCMKeyFileEncrypterTest extends UnitTestBase
@@ -91,13 +91,19 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
     @AfterEach
     public void tearDown() throws Exception
     {
-        if (_systemLauncher != null)
+        try
         {
-            _systemLauncher.shutdown();
+            if (_systemLauncher != null)
+            {
+                _systemLauncher.shutdown();
+            }
         }
-        if (_workDir != null)
+        finally
         {
-            FileUtils.deleteDirectory(_workDir.toFile().getAbsolutePath());
+            if (_workDir != null)
+            {
+                TestFileUtils.deleteRecursively(_workDir);
+            }
         }
     }
 
@@ -205,14 +211,14 @@ public class AESGCMKeyFileEncrypterTest extends UnitTestBase
     @Test
     public void testSetKeyLocationAsExpression() throws Exception
     {
-        final Path workDir = Files.createTempDirectory("qpid_work_dir");
-        final File keyFile = new File(workDir.toFile(), "test.key");
+        _workDir = Files.createTempDirectory("qpid_work_dir");
+        final File keyFile = new File(_workDir.toFile(), "test.key");
         AbstractAESKeyFileEncrypterFactory.createAndPopulateKeyFile(keyFile);
         final Map<String, String> context = Map.of(
                 AbstractAESKeyFileEncrypterFactory.ENCRYPTER_KEY_FILE,
                 "${qpid.work_dir}" + File.separator + keyFile.getName());
         createBrokerAndAuthenticationProviderWithEncrypterPassword(AESGCMKeyFileEncrypterFactory.TYPE,
-                                                                   workDir,
+                                                                   _workDir,
                                                                    context);
         final String encryptedPassword = getEncryptedPasswordFromConfig();
         final SecretKeySpec aesSecretKey = new SecretKeySpec(Files.readAllBytes(keyFile.toPath()), "AES");
