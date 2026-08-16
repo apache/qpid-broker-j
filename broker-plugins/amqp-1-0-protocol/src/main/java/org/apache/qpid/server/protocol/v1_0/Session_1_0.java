@@ -529,6 +529,8 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             return;
         }
 
+        final boolean hadCreditToSend = hasCreditToSend();
+
         _remoteIncomingWindow = flowNextIncomingId.longValue() + flow.getIncomingWindow().longValue()
                                 - _nextOutgoingId.longValue();
 
@@ -548,20 +550,39 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
             else
             {
                 endpoint.receiveFlow(flow);
+
+                // Regaining session credit is a session scoped event: it makes every sending link on the session
+                // sendable again, not only the one named by the flow's optional handle. A link suspended whilst the
+                // session had no credit has no other route back, since it is offered no message, its own link credit
+                // therefore never changes, and a well behaved peer has no reason to send a flow naming it. Losing
+                // session credit needs no such sweep: a still interested consumer is simply refused by
+                // ConsumerTarget_1_0#allocateCredit on the next delivery attempt, which suspends it accurately.
+                if (!hadCreditToSend && hasCreditToSend())
+                {
+                    notifyFlowStateChanged(endpoint);
+                }
             }
         }
         else
         {
-            final Collection<LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> allLinkEndpoints =
-                    _inputHandleToEndpoint.values();
-            for (final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> le : allLinkEndpoints)
-            {
-                le.flowStateChanged();
-            }
+            notifyFlowStateChanged(null);
 
             if (Boolean.TRUE.equals(flow.getEcho()))
             {
                 _sessionEchoFlowCoalescer.requestEcho();
+            }
+        }
+    }
+
+    private void notifyFlowStateChanged(final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> alreadyNotified)
+    {
+        final Collection<LinkEndpoint<? extends BaseSource, ? extends BaseTarget>> allLinkEndpoints =
+                new ArrayList<>(_inputHandleToEndpoint.values());
+        for (final LinkEndpoint<? extends BaseSource, ? extends BaseTarget> le : allLinkEndpoints)
+        {
+            if (le != alreadyNotified && le instanceof SendingLinkEndpoint)
+            {
+                le.flowStateChanged();
             }
         }
     }
