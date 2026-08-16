@@ -202,7 +202,8 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
         {
             CompletableFuture<Void> future;
             final MessageEnqueueRecord enqueueRecord;
-            if(queue.getMessageDurability().persist(message.isPersistent()))
+            boolean persist = queue.getMessageDurability().persist(message.isPersistent());
+            if(persist)
             {
                 LOGGER.debug("Enqueue of message number {} to transaction log. Queue : {}", message.getMessageNumber(), queue.getName());
 
@@ -230,7 +231,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
                 {
                     underlying.onRollback();
                 }
-            }, message.isPersistent());
+            }, persist);
             postTransactionAction = null;
         }
         finally
@@ -285,7 +286,8 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
             }
 
             CompletableFuture<Void> future;
-            if (txn != null)
+            final boolean persist = txn != null;
+            if (persist)
             {
                 future = txn.commitTranAsync(null);
                 txn = null;
@@ -311,7 +313,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
                 {
                      underlying.onRollback();
                 }
-            }, message.isPersistent());
+            }, persist);
             postTransactionAction = null;
 
 
