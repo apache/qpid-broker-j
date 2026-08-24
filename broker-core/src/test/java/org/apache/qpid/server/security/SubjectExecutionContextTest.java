@@ -22,24 +22,35 @@
 package org.apache.qpid.server.security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.security.Permission;
+import java.security.Policy;
+import java.security.ProtectionDomain;
+import java.security.SecurityPermission;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
 import org.junit.jupiter.api.Test;
-
-import org.apache.qpid.test.utils.UnitTestBase;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
+
+import org.apache.qpid.test.utils.UnitTestBase;
 
 class SubjectExecutionContextTest extends UnitTestBase
 {
@@ -86,6 +97,133 @@ class SubjectExecutionContextTest extends UnitTestBase
         });
 
         assertNull(SubjectExecutionContext.currentSubject(), SUBJECT_MUST_BE_RESTORED_AFTER_CONTEXT);
+    }
+
+    @Test
+    void reusableContextRestoresPreviousSubject()
+    {
+        final Subject subjectA = new Subject();
+        final Subject subjectB = new Subject();
+        final SubjectExecutionContext contextA = SubjectExecutionContext.create(subjectA);
+        final SubjectExecutionContext contextB = SubjectExecutionContext.create(subjectB);
+
+        assertNull(SubjectExecutionContext.currentSubject());
+
+        contextA.run(() ->
+        {
+            assertSame(subjectA, SubjectExecutionContext.currentSubject());
+            contextB.run(() -> assertSame(subjectB, SubjectExecutionContext.currentSubject()));
+            assertSame(subjectA, SubjectExecutionContext.currentSubject());
+        });
+
+        assertNull(SubjectExecutionContext.currentSubject());
+    }
+
+    @Test
+    @EnabledForJreRange(max = JRE.JAVA_17)
+    void reusableContextCreationDoesNotRequireCreateAccessControlContextPermission()
+    {
+        final Policy originalPolicy = Policy.getPolicy();
+        final SecurityManager originalSecurityManager = System.getSecurityManager();
+        try
+        {
+            Policy.setPolicy(new Policy()
+            {
+                @Override
+                public boolean implies(final ProtectionDomain domain, final Permission permission)
+                {
+                    return !(permission instanceof SecurityPermission &&
+                            "createAccessControlContext".equals(permission.getName()));
+                }
+            });
+            System.setSecurityManager(new SecurityManager());
+
+            final Subject subject = new Subject();
+            final SubjectExecutionContext context = SubjectExecutionContext.create(subject);
+
+            context.run(() -> assertSame(subject, SubjectExecutionContext.currentSubject()));
+        }
+        finally
+        {
+            System.setSecurityManager(originalSecurityManager);
+            Policy.setPolicy(originalPolicy);
+        }
+    }
+
+    @Test
+    void reusableContextCallRestoresAfterException()
+    {
+        final Subject subject = new Subject();
+        final SubjectExecutionContext context = SubjectExecutionContext.create(subject);
+        final Exception expected = new Exception();
+
+        final Exception thrown = assertThrows(Exception.class, () -> context.call(() ->
+        {
+            assertSame(subject, SubjectExecutionContext.currentSubject());
+            throw expected;
+        }));
+
+        assertSame(expected, thrown);
+        assertNull(SubjectExecutionContext.currentSubject());
+    }
+
+    @Test
+    void reusableContextCallUncheckedWrapsCheckedException()
+    {
+        final SubjectExecutionContext context = SubjectExecutionContext.create(new Subject());
+        final Exception expected = new Exception();
+
+        final SubjectActionException thrown = assertThrows(SubjectActionException.class, () ->
+                context.callUnchecked(() ->
+                {
+                    throw expected;
+                }));
+
+        assertSame(expected, thrown.getCause());
+        assertNull(SubjectExecutionContext.currentSubject());
+    }
+
+    @Test
+    void reusableContextSupportsConcurrentUse() throws Exception
+    {
+        final long timeout = 10L;
+        final int concurrencyLevel = 4;
+        final CyclicBarrier barrier = new CyclicBarrier(concurrencyLevel);
+        final Subject subject = new Subject();
+        final SubjectExecutionContext context = SubjectExecutionContext.create(subject);
+        final ExecutorService executor = Executors.newFixedThreadPool(concurrencyLevel);
+        final List<Callable<Subject>> actions = new ArrayList<>();
+        for (int i = 0; i < concurrencyLevel; i++)
+        {
+            actions.add(() ->
+            {
+                final Subject observedSubject = context.call(() ->
+                {
+                    barrier.await(timeout, TimeUnit.SECONDS);
+                    return SubjectExecutionContext.currentSubject();
+                });
+
+                assertNull(SubjectExecutionContext.currentSubject(), "Subject must be restored after context");
+
+                return observedSubject;
+            });
+        }
+
+        try
+        {
+            final List<Future<Subject>> results = executor.invokeAll(actions, timeout, TimeUnit.SECONDS);
+            for (final Future<Subject> result : results)
+            {
+                assertFalse(result.isCancelled(), "Concurrent subject action timed out");
+                assertSame(subject, result.get());
+            }
+        }
+        finally
+        {
+            executor.shutdownNow();
+        }
+
+        assertNull(SubjectExecutionContext.currentSubject(), "Subject must be restored after context");
     }
 
     @Test

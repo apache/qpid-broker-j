@@ -40,7 +40,6 @@ import org.apache.qpid.server.protocol.v0_10.transport.ProtocolError;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolEvent;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolHeader;
 import org.apache.qpid.server.protocol.v0_10.transport.Struct;
-import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.util.PeekingIterator;
 import org.apache.qpid.server.util.PeekingIteratorImpl;
 
@@ -84,7 +83,7 @@ public class ServerAssembler
                     final ServerSession channel = _connection.getSession(frameChannel);
                     if (channel != null)
                     {
-                        SubjectExecutionContext.withSubject(channel.getSubject(), () ->
+                        channel.getSubjectExecutionContext().run(() ->
                         {
                             ServerFrame channelFrame = frame;
                             boolean nextIsSameChannel;
