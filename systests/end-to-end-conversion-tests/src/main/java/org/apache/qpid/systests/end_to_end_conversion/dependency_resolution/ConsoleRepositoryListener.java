@@ -63,12 +63,12 @@ public class ConsoleRepositoryListener extends AbstractRepositoryListener
 
     public void artifactInstalled(RepositoryEvent event)
     {
-        _out.println("Installed " + event.getArtifact() + " to " + event.getFile());
+        _out.println("Installed " + event.getArtifact() + " to " + event.getPath());
     }
 
     public void artifactInstalling(RepositoryEvent event)
     {
-        _out.println("Installing " + event.getArtifact() + " to " + event.getFile());
+        _out.println("Installing " + event.getArtifact() + " to " + event.getPath());
     }
 
     public void artifactResolved(RepositoryEvent event)
@@ -103,12 +103,12 @@ public class ConsoleRepositoryListener extends AbstractRepositoryListener
 
     public void metadataInstalled(RepositoryEvent event)
     {
-        _out.println("Installed " + event.getMetadata() + " to " + event.getFile());
+        _out.println("Installed " + event.getMetadata() + " to " + event.getPath());
     }
 
     public void metadataInstalling(RepositoryEvent event)
     {
-        _out.println("Installing " + event.getMetadata() + " to " + event.getFile());
+        _out.println("Installing " + event.getMetadata() + " to " + event.getPath());
     }
 
     public void metadataInvalid(RepositoryEvent event)
