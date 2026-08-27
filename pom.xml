@@ -136,7 +136,6 @@
     <hamcrest-version>3.0</hamcrest-version>
     <maven-resolver-provider-version>3.8.6</maven-resolver-provider-version>
     <maven-resolver-version>1.9.22</maven-resolver-version>
-    <httpclient-version>5.6.2</httpclient-version>
     <qpid-jms-client-version>1.16.0</qpid-jms-client-version>
     <qpid-jms-client-amqp-0-x-version>6.4.0</qpid-jms-client-amqp-0-x-version>
     <nashorn-version>15.7</nashorn-version>
@@ -717,16 +716,6 @@
         <groupId>jfree</groupId>
         <artifactId>jfreechart</artifactId>
         <version>${jfreechart-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.httpcomponents.client5</groupId>
-        <artifactId>httpclient5</artifactId>
-        <version>${httpclient-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.httpcomponents.client5</groupId>
-        <artifactId>httpclient5-fluent</artifactId>
-        <version>${httpclient-version}</version>
       </dependency>
       <dependency>
         <groupId>org.dojotoolkit</groupId>
