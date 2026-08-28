@@ -322,18 +322,16 @@ public class GroupBrokerAdmin
                       attributes);
     }
 
-    public void awaitRemoteNodeRole(final int amqpPort, final int remoteAmqpPort, final String... role)
+    public Object awaitRemoteNodeRole(final int amqpPort, final int remoteAmqpPort, final String... role)
     {
-
-        GroupMember member = getMemberByAmqpPort(amqpPort);
-        GroupMember member2 = getMemberByAmqpPort(remoteAmqpPort);
-        member.getAdmin().awaitAttributeValue(WAIT_LIMIT,
-                                              true,
-                                              member.getName() + "/" + member2.getName(),
-                                              AMQP_REMOTE_NODE_TYPE,
-                                              BDBHARemoteReplicationNode.ROLE,
-                                              ROLE_REPLICA,
-                                              ROLE_MASTER);
+        final GroupMember member = getMemberByAmqpPort(amqpPort);
+        final GroupMember member2 = getMemberByAmqpPort(remoteAmqpPort);
+        return member.getAdmin().awaitAttributeValue(WAIT_LIMIT,
+                                                     true,
+                                                     member.getName() + "/" + member2.getName(),
+                                                     AMQP_REMOTE_NODE_TYPE,
+                                                     BDBHARemoteReplicationNode.ROLE,
+                                                     (Object[]) role);
     }
 
     private SpawnBrokerAdmin getNodeAdmin(final int amqpPort)
