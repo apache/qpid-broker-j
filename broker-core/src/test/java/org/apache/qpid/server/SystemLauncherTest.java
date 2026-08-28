@@ -22,12 +22,18 @@ package org.apache.qpid.server;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.file.Files;
 import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,8 +52,9 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class SystemLauncherTest extends UnitTestBase
 {
-    private static final String INITIAL_SYSTEM_PROPERTY = "test";
+    private static final String INITIAL_SYSTEM_PROPERTY = "SystemLauncherTest.initialSystemProperty";
     private static final String INITIAL_SYSTEM_PROPERTY_VALUE = "testValue";
+    private static final String INITIAL_PATH_SYSTEM_PROPERTY = "SystemLauncherTest.pathSystemProperty";
 
     private File _initialSystemProperties;
     private File _initialConfiguration;
@@ -66,10 +73,10 @@ public class SystemLauncherTest extends UnitTestBase
         final String config = mapper.writeValueAsString(initialConfig);
         _initialConfiguration = TestFileUtils.createTempFile(this, ".initial-config.json", config);
         _brokerWork = TestFileUtils.createTestDirectory("qpid-work", true);
-        _initialSystemProperties = TestFileUtils.createTempFile(this, ".initial-system.properties",
-                INITIAL_SYSTEM_PROPERTY + "=" + INITIAL_SYSTEM_PROPERTY_VALUE
-                + "\nQPID_WORK=" +  _brokerWork.getAbsolutePath() + "_test");
-        setTestSystemProperty("QPID_WORK", _brokerWork.getAbsolutePath());
+        createInitialSystemProperties();
+        setTestSystemProperty(INITIAL_SYSTEM_PROPERTY, null);
+        setTestSystemProperty(INITIAL_PATH_SYSTEM_PROPERTY, null);
+        setTestSystemProperty(SystemConfig.PROPERTY_QPID_WORK, _brokerWork.getAbsolutePath());
     }
 
     @AfterEach
@@ -79,7 +86,6 @@ public class SystemLauncherTest extends UnitTestBase
         {
             _systemLauncher.shutdown();
         }
-        System.clearProperty(INITIAL_SYSTEM_PROPERTY);
         FileUtils.delete(_brokerWork, true);
         FileUtils.delete(_initialSystemProperties, false);
         FileUtils.delete(_initialConfiguration, false);
@@ -92,16 +98,29 @@ public class SystemLauncherTest extends UnitTestBase
                 SystemConfig.INITIAL_CONFIGURATION_LOCATION, _initialConfiguration.getAbsolutePath(),
                 SystemConfig.TYPE, JsonSystemConfigImpl.SYSTEM_CONFIG_TYPE,
                 SystemConfig.STARTUP_LOGGED_TO_SYSTEM_OUT, Boolean.TRUE);
-        _systemLauncher = new SystemLauncher();
+        final AtomicReference<RuntimeException> startupException = new AtomicReference<>();
+        _systemLauncher = new SystemLauncher(new SystemLauncherListener.DefaultSystemLauncherListener()
+        {
+            @Override
+            public void errorOnStartup(final RuntimeException e)
+            {
+                startupException.set(e);
+            }
+        });
         _systemLauncher.startup(attributes);
+
+        assertNull(startupException.get(), "Unexpected broker startup error");
 
         // test JVM system property should be set from initial system config file
         assertEquals(INITIAL_SYSTEM_PROPERTY_VALUE, System.getProperty(INITIAL_SYSTEM_PROPERTY),
                 "Unexpected JVM system property");
 
+        // paths in properties files should retain their platform-specific separators
+        assertEquals(_brokerWork.getAbsolutePath() + "_test", System.getProperty(INITIAL_PATH_SYSTEM_PROPERTY),
+                "Unexpected path system property");
 
         // existing system property should not be overridden
-        assertEquals(_brokerWork.getAbsolutePath(), System.getProperty("QPID_WORK"),
+        assertEquals(_brokerWork.getAbsolutePath(), System.getProperty(SystemConfig.PROPERTY_QPID_WORK),
                 "Unexpected QPID_WORK system property");
     }
 
@@ -152,6 +171,20 @@ public class SystemLauncherTest extends UnitTestBase
                 System.setOut(originalOutput);
             }
             return out.toByteArray();
+        }
+    }
+
+    private void createInitialSystemProperties() throws IOException
+    {
+        final Properties properties = new Properties();
+        properties.setProperty(INITIAL_SYSTEM_PROPERTY, INITIAL_SYSTEM_PROPERTY_VALUE);
+        properties.setProperty(INITIAL_PATH_SYSTEM_PROPERTY, _brokerWork.getAbsolutePath() + "_test");
+        properties.setProperty(SystemConfig.PROPERTY_QPID_WORK, _brokerWork.getAbsolutePath() + "_test");
+
+        _initialSystemProperties = TestFileUtils.createTempFile(this, ".initial-system.properties");
+        try (final OutputStream outputStream = Files.newOutputStream(_initialSystemProperties.toPath()))
+        {
+            properties.store(outputStream, null);
         }
     }
 }
