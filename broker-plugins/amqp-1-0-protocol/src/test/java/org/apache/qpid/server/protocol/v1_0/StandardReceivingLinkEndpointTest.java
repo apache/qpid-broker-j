@@ -171,7 +171,7 @@ public class StandardReceivingLinkEndpointTest extends UnitTestBase
                 .getContextValue(Integer.class, AMQPConnection_1_0.ECHO_FLOW_COALESCE_INTERVAL_MS);
 
         final Begin begin = mock(Begin.class);
-        doReturn(new UnsignedInteger(0)).when(begin).getNextOutgoingId();
+        doReturn(UnsignedInteger.valueOf(0)).when(begin).getNextOutgoingId();
         final Session_1_0 session = spy(new Session_1_0(connection, begin, 0, 0, 1000L));
 
         final Link_1_0<Source, Target> link = mock(Link_1_0.class);

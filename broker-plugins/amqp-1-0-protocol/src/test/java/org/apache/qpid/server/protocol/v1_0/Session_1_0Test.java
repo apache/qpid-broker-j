@@ -1598,7 +1598,7 @@ class Session_1_0Test extends UnitTestBase
         final Attach attach = new Attach();
         final Target target = new Target();
         attach.setTarget(target);
-        attach.setHandle(new UnsignedInteger(_handle++));
+        attach.setHandle(UnsignedInteger.valueOf(_handle++));
         attach.setIncompleteUnsettled(false);
         attach.setName(linkName);
         attach.setRole(Role.RECEIVER);
@@ -1658,7 +1658,7 @@ class Session_1_0Test extends UnitTestBase
                                           final long incomingWindow)
     {
         final Begin begin = mock(Begin.class);
-        when(begin.getNextOutgoingId()).thenReturn(new UnsignedInteger(channelId));
+        when(begin.getNextOutgoingId()).thenReturn(UnsignedInteger.valueOf(channelId));
         return new Session_1_0(connection, begin, channelId, channelId, incomingWindow);
     }
 
@@ -1694,7 +1694,7 @@ class Session_1_0Test extends UnitTestBase
                                           final java.util.concurrent.Executor executor)
     {
         final Begin begin = mock(Begin.class);
-        when(begin.getNextOutgoingId()).thenReturn(new UnsignedInteger(channelId));
+        when(begin.getNextOutgoingId()).thenReturn(UnsignedInteger.valueOf(channelId));
         return new Session_1_0(connection, begin, channelId, channelId, incomingWindow, echoFlowCoalesceIntervalMs,
                 clock, scheduler, executor);
     }
