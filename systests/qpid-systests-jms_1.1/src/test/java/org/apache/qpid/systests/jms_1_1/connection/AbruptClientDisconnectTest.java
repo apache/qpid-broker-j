@@ -126,18 +126,30 @@ public class AbruptClientDisconnectTest extends JmsTestBase
     @Test
     public void messagingOnAbruptConnectivityLostWhilstPublishing() throws Exception
     {
+        final int minimumNumberOfMessagesToPublish = 10;
         final ClientMonitor clientMonitor = new ClientMonitor();
         _tunneledConnection = createTunneledConnection(clientMonitor);
-        Producer producer =
-                new Producer(_tunneledConnection, _testQueue, Session.SESSION_TRANSACTED, 10,
-                             () -> _tcpTunneler.disconnect(clientMonitor.getClientAddress())
-                );
+        final Producer producer = new Producer(_tunneledConnection, _testQueue, Session.SESSION_TRANSACTED,
+                minimumNumberOfMessagesToPublish, () -> _tcpTunneler.disconnect(clientMonitor.getClientAddress()));
+
+        final boolean disconnected;
         _executorService.submit(producer);
-        boolean disconnected = clientMonitor.awaitDisconnect(10, TimeUnit.SECONDS);
-        producer.stop();
-        assertTrue(disconnected, "Client disconnect did not happen");
-        assertTrue(producer.getNumberOfPublished() >= 10,
-                "Unexpected number of published messages " + producer.getNumberOfPublished());
+        try
+        {
+            disconnected = clientMonitor.awaitDisconnect(getReceiveTimeout() * minimumNumberOfMessagesToPublish,
+                    TimeUnit.MILLISECONDS);
+        }
+        finally
+        {
+            producer.stop();
+        }
+
+        assertTrue(disconnected, "Client disconnect did not happen after publishing " + minimumNumberOfMessagesToPublish +
+                " messages. Producer published " + producer.getNumberOfPublished() + ". Producer exception: " +
+                producer.getException());
+        assertTrue(producer.getNumberOfPublished() >= minimumNumberOfMessagesToPublish, "Expected at least " +
+                minimumNumberOfMessagesToPublish + " published messages, but got " + producer.getNumberOfPublished() +
+                ". Producer exception: " + producer.getException());
 
         consumeIgnoringLastSeenOmission(_utilityConnection, _testQueue, 0, producer.getNumberOfPublished(), -1);
     }
@@ -145,8 +157,8 @@ public class AbruptClientDisconnectTest extends JmsTestBase
     @Test
     public void messagingOnAbruptConnectivityLostWhilstConsuming() throws Exception
     {
-        int minimumNumberOfMessagesToProduce = 40;
-        int minimumNumberOfMessagesToConsume = 20;
+        final int minimumNumberOfMessagesToProduce = 40;
+        final int minimumNumberOfMessagesToConsume = 20;
 
         // produce minimum required number of messages before starting consumption
         final CountDownLatch queueDataWaiter = new CountDownLatch(1);
@@ -180,29 +192,43 @@ public class AbruptClientDisconnectTest extends JmsTestBase
 
         LOGGER.debug("Waiting for producer to produce {} messages before consuming", minimumNumberOfMessagesToProduce);
         _executorService.submit(producer);
+        final boolean disconnectOccurred;
+        try
+        {
+            assertTrue(queueDataWaiter.await(getReceiveTimeout() * minimumNumberOfMessagesToProduce, TimeUnit.MILLISECONDS),
+                    "Producer did not publish " + minimumNumberOfMessagesToProduce +
+                    " messages within the allowed time. Producer published " + producer.getNumberOfPublished() +
+                    ". Producer exception: " + producer.getException());
 
-        assertTrue(queueDataWaiter.await(10, TimeUnit.SECONDS),
-                "Latch waiting for produced messages was not count down");
+            LOGGER.debug("Producer sent {} messages. Starting consumption...", producer.getNumberOfPublished());
 
-        LOGGER.debug("Producer sent {} messages. Starting consumption...", producer.getNumberOfPublished());
+            _executorService.submit(consumer);
 
-        _executorService.submit(consumer);
-
-        boolean disconnectOccurred = clientMonitor.awaitDisconnect(10, TimeUnit.SECONDS);
-
-        LOGGER.debug("Stopping consumer and producer");
-        consumer.stop();
-        producer.stop();
+            disconnectOccurred = clientMonitor.awaitDisconnect(getReceiveTimeout() * minimumNumberOfMessagesToConsume,
+                    TimeUnit.MILLISECONDS);
+        }
+        finally
+        {
+            LOGGER.debug("Stopping consumer and producer");
+            consumer.stop();
+            producer.stop();
+        }
 
         LOGGER.debug("Producer sent {} messages. Consumer received {} messages",
                      producer.getNumberOfPublished(),
                      consumer.getNumberOfConsumed());
 
-        assertTrue(disconnectOccurred, "Client disconnect did not happen");
-        assertTrue(producer.getNumberOfPublished() >= minimumNumberOfMessagesToProduce,
-                "Unexpected number of published messages " + producer.getNumberOfPublished());
-        assertTrue(consumer.getNumberOfConsumed() >= minimumNumberOfMessagesToConsume,
-                "Unexpected number of consumed messages " + consumer.getNumberOfConsumed());
+        assertTrue(disconnectOccurred, "Client disconnect did not happen after consuming " +
+                minimumNumberOfMessagesToConsume + " messages. Producer published " + producer.getNumberOfPublished() +
+                ", consumer received " + consumer.getNumberOfConsumed() +
+                ". Producer exception: " + producer.getException() +
+                ". Consumer exception: " + consumer.getException());
+        assertTrue(producer.getNumberOfPublished() >= minimumNumberOfMessagesToProduce, "Expected at least " +
+                minimumNumberOfMessagesToProduce + " published messages, but got " +
+                producer.getNumberOfPublished() + ". Producer exception: " + producer.getException());
+        assertTrue(consumer.getNumberOfConsumed() >= minimumNumberOfMessagesToConsume, "Expected at least " +
+                minimumNumberOfMessagesToConsume + " consumed messages, but got " + consumer.getNumberOfConsumed() +
+                ". Consumer exception: " + consumer.getException());
 
         LOGGER.debug("Remaining number to consume {}.",
                      (producer.getNumberOfPublished() - consumer.getNumberOfConsumed()));
@@ -277,7 +303,7 @@ public class AbruptClientDisconnectTest extends JmsTestBase
         {
             try
             {
-                thread.join(2000);
+                thread.join(Math.max(2000L, getReceiveTimeout()));
             }
             catch (InterruptedException e)
             {
@@ -308,7 +334,7 @@ public class AbruptClientDisconnectTest extends JmsTestBase
             }
         }
 
-        boolean awaitDisconnect(int period, TimeUnit timeUnit) throws InterruptedException
+        boolean awaitDisconnect(final long period, final TimeUnit timeUnit) throws InterruptedException
         {
             return _closeLatch.await(period, timeUnit);
         }
@@ -385,10 +411,8 @@ public class AbruptClientDisconnectTest extends JmsTestBase
 
         void stop()
         {
-            if (_closed.compareAndSet(false, true))
-            {
-                threadJoin(_thread);
-            }
+            _closed.set(true);
+            threadJoin(_thread);
         }
 
 
@@ -472,10 +496,8 @@ public class AbruptClientDisconnectTest extends JmsTestBase
 
         void stop()
         {
-            if (_closed.compareAndSet(false, true))
-            {
-                threadJoin(_thread);
-            }
+            _closed.set(true);
+            threadJoin(_thread);
         }
 
         int getNumberOfConsumed()
