@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
+import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
@@ -51,6 +52,8 @@ import javax.jms.TextMessage;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.systests.AmqpManagementFacade;
 import org.apache.qpid.test.utils.UnitTestBase;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -118,6 +121,32 @@ public class SpawnBrokerAdminTest extends UnitTestBase
             {
                 connection.close();
             }
+        }
+    }
+
+    @Test
+    public void resourcePropertiesArePropagated() throws Exception
+    {
+        setTestSystemProperty(AmqpPort.PORT_AMQP_THREAD_POOL_SIZE, "5");
+        setTestSystemProperty(AmqpPort.PORT_AMQP_NUMBER_OF_SELECTORS, "2");
+        setTestSystemProperty(QueueManagingVirtualHost.VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE, "6");
+        setTestSystemProperty(QueueManagingVirtualHost.VIRTUALHOST_CONNECTION_THREAD_POOL_NUMBER_OF_SELECTORS, "3");
+
+        try (final SpawnBrokerAdmin admin = new SpawnBrokerAdmin())
+        {
+            admin.beforeTestClass(SpawnBrokerAdminTest.class);
+            admin.beforeTestMethod(SpawnBrokerAdminTest.class, getClass().getMethod("resourcePropertiesArePropagated"));
+
+            final Map<String, Object> portAttributes = admin.getAttributes(true, "AMQP", "org.apache.qpid.AmqpPort");
+            final Map<String, Object> virtualHostAttributes = admin.getAttributes(false, admin.getVirtualHostName(),
+                    "org.apache.qpid.VirtualHost");
+
+            assertThat(((Number) portAttributes.get(AmqpPort.THREAD_POOL_SIZE)).intValue(), is(equalTo(5)));
+            assertThat(((Number) portAttributes.get(AmqpPort.NUMBER_OF_SELECTORS)).intValue(), is(equalTo(2)));
+            assertThat(((Number) virtualHostAttributes.get(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE)).intValue(),
+                    is(equalTo(6)));
+            assertThat(((Number) virtualHostAttributes.get(QueueManagingVirtualHost.NUMBER_OF_SELECTORS)).intValue(),
+                    is(equalTo(3)));
         }
     }
 
