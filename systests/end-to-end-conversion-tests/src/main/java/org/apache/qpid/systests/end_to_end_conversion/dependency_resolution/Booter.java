@@ -23,20 +23,28 @@ package org.apache.qpid.systests.end_to_end_conversion.dependency_resolution;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
-import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession.CloseableSession;
+import org.eclipse.aether.RepositorySystemSession.SessionBuilder;
 import org.eclipse.aether.repository.Proxy;
-import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.spi.connector.transport.TransporterFactory;
+import org.eclipse.aether.supplier.Maven3ScopeManagerConfiguration;
+import org.eclipse.aether.supplier.RepositorySystemSupplier;
+import org.eclipse.aether.supplier.SessionBuilderSupplier;
+import org.eclipse.aether.transport.file.FileTransporterFactory;
+import org.eclipse.aether.transport.jdk.JdkTransporterFactory;
 
 public class Booter
 {
     private static final String FALLBACK_LOCAL_REPO_URL =
-            String.join(File.pathSeparator, System.getProperty("user.home"), ".m2", "repository");
+            Path.of(System.getProperty("user.home"), ".m2", "repository").toString();
     private static final String REMOTE_REPO_URL = System.getProperty(
             "qpid.systests.end_to_end_conversion.remoteRepository",
             "https://repo.maven.apache.org/maven2/");
@@ -46,23 +54,21 @@ public class Booter
 
     public static RepositorySystem newRepositorySystem()
     {
-        return ManualRepositorySystemFactory.newRepositorySystem();
+        return new JdkRepositorySystemSupplier().get();
     }
 
-    public static DefaultRepositorySystemSession newRepositorySystemSession(RepositorySystem system)
+    public static CloseableSession newRepositorySystemSession(final RepositorySystem system)
     {
-        DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
-
-        LocalRepository localRepo = new LocalRepository("target/local-repo");
-        session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
-
+        final SessionBuilder session = new SessionBuilderSupplier(
+                system, Maven3ScopeManagerConfiguration.INSTANCE).get();
+        session.withLocalRepositoryBaseDirectories(Path.of("target", "local-repo"));
         session.setTransferListener(new ConsoleTransferListener());
         session.setRepositoryListener(new ConsoleRepositoryListener());
 
         // uncomment to generate dirty trees
         // session.setDependencyGraphTransformer( null );
 
-        return session;
+        return session.build();
     }
 
     public static List<RemoteRepository> newRepositories()
@@ -127,6 +133,20 @@ public class Booter
             {
                 throw new RuntimeException(String.format("Failed to convert '%s' into a URL", localRepo), e);
             }
+        }
+    }
+
+    private static final class JdkRepositorySystemSupplier extends RepositorySystemSupplier
+    {
+        @Override
+        protected Map<String, TransporterFactory> createTransporterFactories()
+        {
+            final JdkTransporterFactory jdkTransporterFactory =
+                    new JdkTransporterFactory(getChecksumExtractor(), getPathProcessor());
+            final Map<String, TransporterFactory> factories = new HashMap<>();
+            factories.put(FileTransporterFactory.NAME, new FileTransporterFactory());
+            factories.put(JdkTransporterFactory.NAME, jdkTransporterFactory);
+            return factories;
         }
     }
 }

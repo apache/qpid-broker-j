@@ -20,7 +20,6 @@
 
 package org.apache.qpid.systests.end_to_end_conversion.dependency_resolution;
 
-import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -34,7 +33,7 @@ import java.util.stream.Collectors;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.RepositorySystemSession.CloseableSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
@@ -43,14 +42,14 @@ import org.eclipse.aether.graph.DependencyFilter;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResolutionException;
-import org.eclipse.aether.util.artifact.JavaScopes;
-import org.eclipse.aether.util.filter.DependencyFilterUtils;
+import org.eclipse.aether.scope.ResolutionScope;
+import org.eclipse.aether.supplier.Maven3ScopeManagerConfiguration;
 
 public class ClasspathQuery
 {
-    private static final LoadingCache<Collection<String>, List<File>> _classpathCache;
+    private static final LoadingCache<Collection<String>, List<Path>> _classpathCache;
     private static final RepositorySystem _mavenRepositorySystem;
-    private static final RepositorySystemSession _mavenRepositorySession;
+    private static final CloseableSession _mavenRepositorySession;
 
     static
     {
@@ -77,26 +76,35 @@ public class ClasspathQuery
         return _classpathCache.stats().toString();
     }
 
-    private static List<File> doBuildClassPath(final Collection<String> gavs)
+    public static void close()
+    {
+        _mavenRepositorySession.close();
+        _mavenRepositorySystem.shutdown();
+    }
+
+    private static List<Path> doBuildClassPath(final Collection<String> gavs)
     {
         return List.copyOf(new ArrayList<>(getJarFiles(gavs)));
     }
 
-    private static Set<File> getJarFiles(final Collection<String> gavs)
+    private static Set<Path> getJarFiles(final Collection<String> gavs)
     {
-        Set<File> jars = new HashSet<>();
+        final Set<Path> jars = new HashSet<>();
+        final ResolutionScope compileScope = _mavenRepositorySession.getScopeManager().getResolutionScope(
+                Maven3ScopeManagerConfiguration.RS_MAIN_COMPILE).orElseThrow();
+        final DependencyFilter classpathFilter = _mavenRepositorySession.getScopeManager().getDependencyFilter(
+                _mavenRepositorySession, compileScope);
 
         for (final String gav : gavs)
         {
-            Artifact artifact = new DefaultArtifact(gav);
+            final Artifact artifact = new DefaultArtifact(gav);
 
-            DependencyFilter classpathFlter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
-
-            CollectRequest collectRequest = new CollectRequest();
-            collectRequest.setRoot(new Dependency(artifact, JavaScopes.COMPILE));
+            final CollectRequest collectRequest = new CollectRequest();
+            collectRequest.setRoot(new Dependency(artifact, Maven3ScopeManagerConfiguration.DS_COMPILE));
             collectRequest.setRepositories(Booter.newRepositories());
+            collectRequest.setResolutionScope(compileScope);
 
-            DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, classpathFlter);
+            final DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, classpathFilter);
 
             List<ArtifactResult> artifactResults = null;
             try
@@ -117,11 +125,11 @@ public class ClasspathQuery
             for (ArtifactResult artifactResult : artifactResults)
             {
                 System.out.println(artifactResult.getArtifact() + " resolved to "
-                                   + artifactResult.getArtifact().getFile());
+                                   + artifactResult.getArtifact().getPath());
             }
 
             jars.addAll(artifactResults.stream()
-                                       .map(result -> result.getArtifact().getFile())
+                                       .map(result -> result.getArtifact().getPath())
                                        .collect(Collectors.toSet()));
         }
         return jars;
@@ -144,8 +152,8 @@ public class ClasspathQuery
 
     private String buildClassPath(final Class<?> clientClazz, final Collection<String> gavs)
     {
-        final List<File> classpathElements = new ArrayList<>();
-        final List<File> cached = _classpathCache.get(gavs);
+        final List<Path> classpathElements = new ArrayList<>();
+        final List<Path> cached = _classpathCache.get(gavs);
         if (cached != null)
         {
             classpathElements.addAll(cached);
@@ -153,25 +161,24 @@ public class ClasspathQuery
         classpathElements.add(getLocalClasspathElement(clientClazz));
 
         final String collect = classpathElements.stream()
-                                                .map(File::toString)
+                                                .map(Path::toString)
                                                 .collect(Collectors.joining(System.getProperty("path.separator")));
         return collect;
     }
 
-    private File getLocalClasspathElement(final Class<?> clazz)
+    private Path getLocalClasspathElement(final Class<?> clazz)
     {
         int packageDepth = getPackageDepth(clazz);
         final URL resource = clazz.getResource("/" + clazz.getName().replace(".", "/") + ".class");
         // TODO handle JAR case
         try
         {
-            Path path = new File(resource.toURI()).toPath();
+            Path path = Path.of(resource.toURI());
             for (int i = 0; i < packageDepth + 1; ++i)
             {
                 path = path.getParent();
             }
-
-            return path.toFile();
+            return path;
         }
         catch (URISyntaxException e)
         {
