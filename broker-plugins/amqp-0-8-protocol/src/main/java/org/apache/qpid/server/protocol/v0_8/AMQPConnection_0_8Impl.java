@@ -77,7 +77,6 @@ import org.apache.qpid.server.protocol.v0_8.transport.ServerMethodDispatcher;
 import org.apache.qpid.server.protocol.v0_8.transport.ServerMethodProcessor;
 import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SubjectCreator;
-import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.session.AMQPSession;
@@ -718,9 +717,11 @@ public class AMQPConnection_0_8Impl
     @Override
     public final void readerIdle()
     {
-        SubjectExecutionContext.withSubject(getSubject(), () -> {
+        runAsSubject(() ->
+        {
             getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " + _state, true));
             getNetwork().close();
+            return null;
         });
     }
 

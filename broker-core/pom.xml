@@ -241,7 +241,7 @@
     <profile>
       <id>jdk17on</id>
       <activation>
-        <jdk>(,23]</jdk>
+        <jdk>(,23)</jdk>
       </activation>
       <build>
         <plugins>
@@ -261,9 +261,9 @@
       </build>
     </profile>
     <profile>
-      <id>jdk24on</id>
+      <id>jdk23on</id>
       <activation>
-        <jdk>[24,)</jdk>
+        <jdk>[23,)</jdk>
       </activation>
       <build>
         <plugins>
@@ -272,14 +272,14 @@
             <artifactId>maven-compiler-plugin</artifactId>
             <executions>
               <execution>
-                <id>java24-compile</id>
+                <id>java23-compile</id>
                 <phase>compile</phase>
                 <goals>
                   <goal>compile</goal>
                 </goals>
                 <configuration>
-                  <release>24</release>
-                  <compileSourceRoots>${project.basedir}/src/main/java24</compileSourceRoots>
+                  <release>23</release>
+                  <compileSourceRoots>${project.basedir}/src/main/java23</compileSourceRoots>
                   <multiReleaseOutput>true</multiReleaseOutput>
                 </configuration>
               </execution>

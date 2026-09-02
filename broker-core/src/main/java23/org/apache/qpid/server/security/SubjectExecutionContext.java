@@ -28,16 +28,23 @@ import java.util.function.Function;
 import javax.security.auth.Subject;
 
 /**
- * Java 24+ implementation backed by {@link Subject#current()} and {@link Subject#callAs(Subject, Callable)}.
+ * Java 23+ implementation backed by {@link Subject#current()} and {@link Subject#callAs(Subject, Callable)}.
  * <br>
  * Provides the same API surface as the Java 17 implementation, but relies on the JDK-managed current Subject
  * rather than removed Subject.getSubject().
  */
 public final class SubjectExecutionContext
 {
-    private SubjectExecutionContext()
+    private final Subject _subject;
+
+    private SubjectExecutionContext(final Subject subject)
     {
-        // utility class has private constructor
+        _subject = subject;
+    }
+
+    public static SubjectExecutionContext create(final Subject subject)
+    {
+        return new SubjectExecutionContext(subject);
     }
 
     public static Subject currentSubject()
@@ -143,6 +150,21 @@ public final class SubjectExecutionContext
             }
             throw ce;
         }
+    }
+
+    public <T> T call(final Callable<T> action) throws Exception
+    {
+        return withSubject(_subject, action);
+    }
+
+    public <T> T callUnchecked(final Callable<T> action)
+    {
+        return withSubjectUnchecked(_subject, action);
+    }
+
+    public void run(final Runnable action)
+    {
+        withSubject(_subject, action);
     }
 
     public static Throwable unwrapSubjectActionException(final Throwable throwable)

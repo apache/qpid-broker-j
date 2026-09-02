@@ -104,6 +104,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     private final List<Action<? super C>> _connectionCloseTaskList = new CopyOnWriteArrayList<>();
 
     private final LogSubject _logSubject;
+    private volatile SubjectExecutionContext _subjectExecutionContext;
     private volatile ContextProvider _contextProvider;
     private volatile EventLoggerProvider _eventLoggerProvider;
     private String _clientProduct;
@@ -167,6 +168,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         _aggregateTicker = aggregateTicker;
         _subject = new Subject();
         _subject.getPrincipals().add(new ConnectionPrincipal(this));
+        updateSubjectExecutionContext();
 
         _transportClosedFuture.thenRunAsync(() ->
         {
@@ -535,7 +537,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     @Override
     public final void received(final QpidByteBuffer buf)
     {
-        SubjectExecutionContext.withSubject(_subject, () ->
+        _subjectExecutionContext.run(() ->
         {
             updateLastReadTime();
             try
@@ -562,9 +564,9 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     protected abstract boolean isOpeningInProgress();
 
-    protected <T> T runAsSubject(Supplier<T> action)
+    protected <T> T runAsSubject(final Supplier<T> action)
     {
-        return SubjectExecutionContext.withSubjectUnchecked(_subject, action::get);
+        return _subjectExecutionContext.callUnchecked(action::get);
     }
 
     private boolean runningAsSubject()
@@ -856,6 +858,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
         _subject.getPrincipals().add(addressSpace.getPrincipal());
 
+        updateSubjectExecutionContext();
         logConnectionOpen();
     }
 
@@ -893,6 +896,12 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         _subject.getPrincipals().addAll(subject.getPrincipals());
         _subject.getPrivateCredentials().addAll(subject.getPrivateCredentials());
         _subject.getPublicCredentials().addAll(subject.getPublicCredentials());
+        updateSubjectExecutionContext();
+    }
+
+    private void updateSubjectExecutionContext()
+    {
+        _subjectExecutionContext = SubjectExecutionContext.create(_subject);
     }
 
     @Override

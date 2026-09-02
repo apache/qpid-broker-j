@@ -89,7 +89,7 @@ public class BrokerDecoder extends ServerDecoder
             {
                 try
                 {
-                    return SubjectExecutionContext.withSubjectUnchecked(channel.getSubject(), () ->
+                    return channel.getSubjectExecutionContext().callUnchecked(() ->
                     {
                         int required1;
                         while (true)

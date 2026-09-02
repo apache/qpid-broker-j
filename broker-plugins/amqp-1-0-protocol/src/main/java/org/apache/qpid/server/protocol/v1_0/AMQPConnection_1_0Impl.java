@@ -107,7 +107,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SubjectCreator;
-import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
@@ -437,7 +436,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                             : _receivingSessions[frameChannel];
                     if (session != null)
                     {
-                        SubjectExecutionContext.withSubject(session.getSubject(), () ->
+                        session.getSubjectExecutionContext().run(() ->
                         {
                             ChannelFrameBody channelFrame = channelFrameBody;
                             boolean nextIsSameChannel;
@@ -549,7 +548,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
         for (final Session_1_0 session : sessions)
         {
-            SubjectExecutionContext.withSubject(session.getSubject(), () -> session.remoteEnd(new End()));
+            session.getSubjectExecutionContext().run(() -> session.remoteEnd(new End()));
         }
     }
 
@@ -1326,7 +1325,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             {
                 if (session != null)
                 {
-                    SubjectExecutionContext.withSubject(session.getSubject(), () -> session.receivedComplete());
+                    session.getSubjectExecutionContext().run(session::receivedComplete);
                 }
             }
         }
@@ -1578,9 +1577,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 cause = AmqpError.INTERNAL_ERROR;
         }
         final Session_1_0 actualSession = (Session_1_0) session;
-        addAsyncTask(object ->
-                SubjectExecutionContext.withSubject(actualSession.getSubject(),
-                                                    () -> actualSession.close(cause, message)));
+        addAsyncTask(object -> actualSession.getSubjectExecutionContext().run(
+                () -> actualSession.close(cause, message)));
 
     }
 
