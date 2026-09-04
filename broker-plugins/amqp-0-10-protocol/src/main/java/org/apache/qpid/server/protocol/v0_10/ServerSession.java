@@ -64,6 +64,7 @@ import javax.security.auth.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.txn.AsyncCommand;
 import org.apache.qpid.server.logging.LogMessage;
@@ -139,7 +140,9 @@ public class ServerSession extends SessionInvoker
     private final int commandLimit = Integer.getInteger("qpid.session.command_limit", 64 * 1024);
     private final Object commandsLock = new Object();
     private final Object stateLock = new Object();
+    private final Object _subscriptionCreditFlushLock = new Object();
     private final Map<String, ConsumerTarget_0_10> _subscriptions = new ConcurrentHashMap<>();
+    private final Set<ConsumerTarget_0_10> _subscriptionsNeedingCreditFlush = ConcurrentHashMap.newKeySet();
     private final AtomicReference<LogMessage> _forcedCloseLogMessage = new AtomicReference<>();
     private final long _blockingTimeout;
     private final ServerConnection connection;
@@ -1226,7 +1229,10 @@ public class ServerSession extends SessionInvoker
     {
         _subscriptions.remove(sub.getName());
         sub.close();
-
+        synchronized (_subscriptionCreditFlushLock)
+        {
+            _subscriptionsNeedingCreditFlush.remove(sub);
+        }
     }
 
     public boolean isTransactional()
@@ -1579,14 +1585,41 @@ public class ServerSession extends SessionInvoker
     {
         runAsSubject(() ->
         {
-            final Collection<ConsumerTarget_0_10> subscriptions = getSubscriptions();
-            for (ConsumerTarget_0_10 subscription_0_10 : subscriptions)
+            if (!_subscriptionsNeedingCreditFlush.isEmpty())
             {
-                subscription_0_10.flushCreditState(false);
+                final Set<ConsumerTarget_0_10> subscriptionsNeedingCreditFlush =
+                        new HashSet<>(_subscriptionsNeedingCreditFlush);
+                _subscriptionsNeedingCreditFlush.removeAll(subscriptionsNeedingCreditFlush);
+                for (final ConsumerTarget_0_10 subscription : subscriptionsNeedingCreditFlush)
+                {
+                    boolean creditFlushed = false;
+                    try
+                    {
+                        creditFlushed = subscription.flushCreditState(false);
+                    }
+                    finally
+                    {
+                        if (!creditFlushed)
+                        {
+                            addConsumerTargetNeedingFlush(subscription);
+                        }
+                    }
+                }
             }
             awaitCommandCompletion();
             return null;
         });
+    }
+
+    void addConsumerTargetNeedingFlush(final ConsumerTarget_0_10 consumerTarget)
+    {
+        synchronized (_subscriptionCreditFlushLock)
+        {
+            if (consumerTarget.getState() != ConsumerTarget.State.CLOSED)
+            {
+                _subscriptionsNeedingCreditFlush.add(consumerTarget);
+            }
+        }
     }
 
     public int getUnacknowledgedMessageCount()
