@@ -92,7 +92,7 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
 
                 Message message2 = consumer.receive(getReceiveTimeout());
                 assertNotNull(message2, "Message is not received");
-                assertTrue(messageSender.getSendLatch().await(1000, TimeUnit.MILLISECONDS),
+                assertTrue(messageSender.getSendLatch().await(getReceiveTimeout(), TimeUnit.MILLISECONDS),
                         "Message sending is not finished");
                 assertEquals(5, messageSender.getNumberOfSentMessages(),
                         "Message not sent after two messages received");
@@ -141,7 +141,7 @@ public class ProducerFlowControlTest extends OverflowPolicyTestBase
                 Message message = consumer.receive(getReceiveTimeout());
                 assertNotNull(message, "Message is not received");
 
-                assertTrue(messageSender.getSendLatch().await(1000, TimeUnit.MILLISECONDS),
+                assertTrue(messageSender.getSendLatch().await(getReceiveTimeout(), TimeUnit.MILLISECONDS),
                         "Message sending is not finished");
 
                 assertEquals(5, messageSender.getNumberOfSentMessages(),

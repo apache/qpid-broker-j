@@ -109,8 +109,10 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
                 System.setProperty(i.name(), i.value());
             });
             Map<String, String> context = new HashMap<>();
+            SystemTestBrokerContext.applyResourceDefaults(context);
+            SystemTestBrokerContext.copyBrokerSystemProperties(context);
             context.put("qpid.work_dir", _currentWorkDirectory);
-            context.put("qpid.port.protocol_handshake_timeout", "1000000");
+            context.putIfAbsent(AmqpPort.PROTOCOL_HANDSHAKE_TIMEOUT, "1000000");
             context.putAll(Arrays.stream(configItems)
                     .filter(i -> !i.jvm())
                     .collect(Collectors.toMap(ConfigItem::name, ConfigItem::value, (name, value) -> value)));
