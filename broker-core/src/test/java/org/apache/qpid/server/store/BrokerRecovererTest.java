@@ -25,36 +25,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Method;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.AclEntry;
-import java.nio.file.attribute.AclEntryPermission;
-import java.nio.file.attribute.AclEntryType;
-import java.nio.file.attribute.AclFileAttributeView;
-import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.UserPrincipal;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
@@ -70,6 +53,7 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.server.security.encryption.AESGCMKeyFileEncrypterFactory;
 import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
+import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class BrokerRecovererTest extends UnitTestBase
@@ -80,17 +64,23 @@ public class BrokerRecovererTest extends UnitTestBase
 
     private SystemConfig<?> _systemConfig;
     private TaskExecutor _taskExecutor;
+    private Path _workDir;
 
     @BeforeEach
     public void setUp() throws Exception
     {
+        cleanUp();
+        _workDir = Files.createTempDirectory(getTestName());
         _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-        _systemConfig = new JsonSystemConfigImpl(_taskExecutor, mock(EventLogger.class),null, Map.of())
+        _systemConfig = new JsonSystemConfigImpl(_taskExecutor, mock(EventLogger.class), null, Map.of())
         {
             {
                 updateModel(BrokerModel.getInstance());
             }
         };
+        _systemConfig.setContextVariable(SystemConfig.QPID_WORK_DIR, _workDir.toString());
+        assertEquals(_workDir.toString(), _systemConfig.getContextValue(String.class, SystemConfig.QPID_WORK_DIR),
+                "Unexpected test work directory");
 
         when(_brokerEntry.getId()).thenReturn(_brokerId);
         when(_brokerEntry.getType()).thenReturn(Broker.class.getSimpleName());
@@ -111,42 +101,7 @@ public class BrokerRecovererTest extends UnitTestBase
     @AfterEach
     public void tearDown() throws Exception
     {
-        _taskExecutor.stop();
-        final Path path = Path.of(_systemConfig.getContextValue(String.class, SystemConfig.QPID_WORK_DIR));
-        if (path.toFile().exists())
-        {
-            try
-            {
-                Files.walkFileTree(path, new SimpleFileVisitor<>()
-                {
-                    @Override
-                    public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException
-                    {
-                        makeFileDeletable(file.toFile());
-                        Files.deleteIfExists(file);
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                    @Override
-                    public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException
-                    {
-                        makeFileDeletable(dir.toFile());
-                        Files.deleteIfExists(dir);
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                    @Override
-                    public FileVisitResult visitFileFailed(final Path file, final IOException exc)
-                    {
-                        return FileVisitResult.CONTINUE;
-                    }
-                });
-            }
-            catch (IOException e)
-            {
-                // ignore cleanup issues in tests
-            }
-        }
+        cleanUp();
     }
 
     @Test
@@ -387,38 +342,30 @@ public class BrokerRecovererTest extends UnitTestBase
         recoverer.recover(Arrays.asList(records), false);
     }
 
-    private void makeFileDeletable(File file)
+    private void cleanUp() throws Exception
     {
         try
         {
-            if (Files.getFileAttributeView(file.toPath(), PosixFileAttributeView.class) != null)
+            if (_taskExecutor != null)
             {
-                Files.setPosixFilePermissions(file.toPath(), EnumSet.of(PosixFilePermission.OTHERS_WRITE));
-            }
-            else if (Files.getFileAttributeView(file.toPath(), AclFileAttributeView.class) != null)
-            {
-                file.setWritable(true);
-                final AclFileAttributeView attributeView =
-                        Files.getFileAttributeView(file.toPath(), AclFileAttributeView.class);
-                final ArrayList<AclEntry> acls = new ArrayList<>(attributeView.getAcl());
-
-                final AclEntry.Builder builder = AclEntry.newBuilder();
-                final UserPrincipal everyone = FileSystems.getDefault().getUserPrincipalLookupService()
-                    .lookupPrincipalByName("Everyone");
-                builder.setPrincipal(everyone);
-                builder.setType(AclEntryType.ALLOW);
-                builder.setPermissions(Stream.of(AclEntryPermission.values()).collect(Collectors.toSet()));
-                acls.add(builder.build());
-                attributeView.setAcl(acls);
-            }
-            else
-            {
-                throw new IllegalConfigurationException("Failed to change file permissions");
+                _taskExecutor.stop();
             }
         }
-        catch (IOException e)
+        finally
         {
-            throw new IllegalConfigurationException("Failed to change file permissions", e);
+            _taskExecutor = null;
+            _systemConfig = null;
+            if (_workDir != null)
+            {
+                try
+                {
+                    TestFileUtils.deleteRecursively(_workDir);
+                }
+                finally
+                {
+                    _workDir = null;
+                }
+            }
         }
     }
 }

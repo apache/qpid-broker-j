@@ -21,11 +21,28 @@
 package org.apache.qpid.test.utils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import java.io.FileOutputStream;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.DosFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.UserPrincipal;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Set;
 
 import org.junit.jupiter.api.TestInfo;
 
@@ -239,6 +256,99 @@ public class TestFileUtils
         }
 
         return file.delete();
+    }
+
+    /**
+     * Recursively deletes a test file tree whose owner permissions may have been restricted.
+     * Symbolic links are deleted without following them.
+     *
+     * @param path root of the test file tree
+     * @throws IOException if owner permissions cannot be restored or a file cannot be deleted
+     */
+    public static void deleteRecursively(final Path path) throws IOException
+    {
+        if (Files.isSymbolicLink(path))
+        {
+            Files.deleteIfExists(path);
+            return;
+        }
+
+        try
+        {
+            restoreOwnerPermissions(path);
+        }
+        catch (NoSuchFileException e)
+        {
+            return;
+        }
+
+        if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS))
+        {
+            try (final DirectoryStream<Path> children = Files.newDirectoryStream(path))
+            {
+                for (final Path child : children)
+                {
+                    deleteRecursively(child);
+                }
+            }
+        }
+        Files.deleteIfExists(path);
+    }
+
+    private static void restoreOwnerPermissions(final Path path) throws IOException
+    {
+        final PosixFileAttributeView posixView = Files.getFileAttributeView(path, PosixFileAttributeView.class,
+                LinkOption.NOFOLLOW_LINKS);
+
+        if (posixView != null)
+        {
+            final Set<PosixFilePermission> permissions = EnumSet.noneOf(PosixFilePermission.class);
+            permissions.addAll(posixView.readAttributes().permissions());
+            permissions.add(PosixFilePermission.OWNER_READ);
+            permissions.add(PosixFilePermission.OWNER_WRITE);
+            permissions.add(PosixFilePermission.OWNER_EXECUTE);
+            posixView.setPermissions(permissions);
+        }
+        else
+        {
+            final AclFileAttributeView aclView = Files.getFileAttributeView(path, AclFileAttributeView.class,
+                    LinkOption.NOFOLLOW_LINKS);
+            if (aclView != null)
+            {
+                final UserPrincipal owner = Files.getOwner(path, LinkOption.NOFOLLOW_LINKS);
+                final List<AclEntry> acl = new ArrayList<>(aclView.getAcl());
+                final ListIterator<AclEntry> iterator = acl.listIterator();
+                boolean ownerEntryFound = false;
+                while (iterator.hasNext())
+                {
+                    final AclEntry entry = iterator.next();
+                    if (entry.type() == AclEntryType.ALLOW && owner.equals(entry.principal()))
+                    {
+                        ownerEntryFound = true;
+                        iterator.set(AclEntry.newBuilder(entry)
+                                .setPermissions(EnumSet.allOf(AclEntryPermission.class))
+                                .build());
+                    }
+                }
+                if (!ownerEntryFound)
+                {
+                    acl.add(AclEntry.newBuilder()
+                            .setType(AclEntryType.ALLOW)
+                            .setPrincipal(owner)
+                            .setPermissions(EnumSet.allOf(AclEntryPermission.class))
+                            .build());
+                }
+                aclView.setAcl(acl);
+            }
+        }
+
+        final DosFileAttributeView dosView = Files.getFileAttributeView(path, DosFileAttributeView.class,
+                LinkOption.NOFOLLOW_LINKS);
+
+        if (dosView != null)
+        {
+            dosView.setReadOnly(false);
+        }
     }
 
     /**

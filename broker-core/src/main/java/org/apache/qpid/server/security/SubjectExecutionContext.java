@@ -33,15 +33,25 @@ import java.util.function.Function;
 import javax.security.auth.Subject;
 
 /**
- * Java 17-23 implementation backed by {@link Subject#getSubject(AccessControlContext)} ()} and {@link Subject#doAs(Subject, PrivilegedAction)}}.
+ * Java 17-22 implementation backed by {@link Subject#getSubject(AccessControlContext)} and the deprecated access
+ * control APIs.
  * <br>
- * Provides the same API surface as the Java 24+ implementation, but relies on the deprecated Security manager APIs.
+ * Provides the same API surface as the Java 23+ implementation. A reusable instance captures the caller's access
+ * control context and combines it with the supplied subject once, avoiding the allocation performed by
+ * {@link Subject#doAs(Subject, PrivilegedAction)} on every invocation.
  */
 public final class SubjectExecutionContext
 {
-    private SubjectExecutionContext()
+    private final AccessControlContext _accessControlContext;
+
+    private SubjectExecutionContext(final Subject subject)
     {
-        // utility class has private constructor
+        _accessControlContext = Subject.doAs(subject, (PrivilegedAction<AccessControlContext>) AccessController::getContext);
+    }
+
+    public static SubjectExecutionContext create(final Subject subject)
+    {
+        return new SubjectExecutionContext(subject);
     }
 
     public static Subject currentSubject()
@@ -125,6 +135,79 @@ public final class SubjectExecutionContext
             runnable.run();
             return null;
         });
+    }
+
+    public <T> T call(final Callable<T> action) throws Exception
+    {
+        try
+        {
+            return AccessController.doPrivileged((PrivilegedExceptionAction<T>) action::call, _accessControlContext);
+        }
+        catch (PrivilegedActionException pae)
+        {
+            final Throwable cause = pae.getCause();
+            if (cause == null)
+            {
+                throw pae;
+            }
+            if (cause instanceof Error err)
+            {
+                err.addSuppressed(pae);
+                throw err;
+            }
+            if (cause instanceof RuntimeException re)
+            {
+                re.addSuppressed(pae);
+                throw re;
+            }
+            if (cause instanceof Exception ex)
+            {
+                ex.addSuppressed(pae);
+                throw ex;
+            }
+            throw pae;
+        }
+    }
+
+    public <T> T callUnchecked(final Callable<T> action)
+    {
+        try
+        {
+            return AccessController.doPrivileged((PrivilegedExceptionAction<T>) action::call, _accessControlContext);
+        }
+        catch (PrivilegedActionException pae)
+        {
+            final Throwable cause = pae.getCause();
+            if (cause == null)
+            {
+                throw new CompletionException(pae);
+            }
+            if (cause instanceof Error err)
+            {
+                err.addSuppressed(pae);
+                throw err;
+            }
+            if (cause instanceof RuntimeException re)
+            {
+                re.addSuppressed(pae);
+                throw re;
+            }
+            if (cause instanceof Exception ex)
+            {
+                ex.addSuppressed(pae);
+                throw new SubjectActionException(ex);
+            }
+            throw new CompletionException(pae);
+        }
+    }
+
+    public void run(final Runnable action)
+    {
+        AccessController.doPrivileged((PrivilegedAction<Object>) () ->
+        {
+            action.run();
+            return null;
+        }, _accessControlContext);
     }
 
     public static Throwable unwrapSubjectActionException(final Throwable throwable)

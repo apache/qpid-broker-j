@@ -369,10 +369,8 @@ public class MultiNodeTest extends GroupJmsTestBase
         _failoverListener = new FailoverAwaitingListener();
         getJmsProvider().addGenericConnectionListener(connection, _failoverListener);
 
-        getBrokerAdmin().awaitRemoteNodeRole(activeBrokerPort, inactiveBrokerPort, "REPLICA");
-        Map<String, Object> attributes = getBrokerAdmin().getRemoteNodeAttributes(activeBrokerPort, inactiveBrokerPort);
-        assertEquals("REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE),
-                     "Inactive broker has unexpected role");
+        final Object role = getBrokerAdmin().awaitRemoteNodeRole(activeBrokerPort, inactiveBrokerPort, "REPLICA");
+        assertEquals("REPLICA", role, "Inactive broker has unexpected role");
 
         getBrokerAdmin().setRemoteNodeAttributes(activeBrokerPort,
                                                  inactiveBrokerPort,
@@ -381,7 +379,7 @@ public class MultiNodeTest extends GroupJmsTestBase
         _failoverListener.awaitFailoverCompletion(FAILOVER_COMPLETION_TIMEOUT);
         LOGGER.info("Listener has finished");
 
-        attributes = getBrokerAdmin().getNodeAttributes(inactiveBrokerPort);
+        final Map<String, Object> attributes = getBrokerAdmin().getNodeAttributes(inactiveBrokerPort);
         assertEquals("MASTER", attributes.get(BDBHAVirtualHostNode.ROLE), "Inactive broker has unexpected role");
 
         assumeTrue(Utils.produceConsume(connection, queue), "Message should be produced and consumed");

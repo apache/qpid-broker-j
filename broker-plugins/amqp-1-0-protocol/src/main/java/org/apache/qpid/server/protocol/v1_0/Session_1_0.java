@@ -195,7 +195,7 @@ public class Session_1_0 extends AbstractAMQPSession<Session_1_0, ConsumerTarget
                                       _echoFlowExecutor,
                                       this::sendFlow);
 
-        SubjectExecutionContext.withSubject(_subject, () -> _connection.getEventLogger().message(ChannelMessages.CREATE()));
+        getSubjectExecutionContext().run(() -> _connection.getEventLogger().message(ChannelMessages.CREATE()));
     }
 
     public void sendDetach(final Detach detach)

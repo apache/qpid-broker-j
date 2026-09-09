@@ -43,11 +43,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.NoSuchAlgorithmException;
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
@@ -62,6 +60,7 @@ import org.mockito.stubbing.Answer;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
@@ -240,9 +239,9 @@ public class AbstractAESKeyFileEncrypterFactoryTest extends UnitTestBase
     @AfterEach
     public void tearDown() throws Exception
     {
-        try (final Stream<Path> stream = Files.walk(_tmpDir))
+        if (_tmpDir != null)
         {
-            stream.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            TestFileUtils.deleteRecursively(_tmpDir);
         }
     }
 

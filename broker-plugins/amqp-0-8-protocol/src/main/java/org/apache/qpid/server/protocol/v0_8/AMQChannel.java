@@ -98,7 +98,6 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.security.AccessDeniedException;
-import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
@@ -219,7 +218,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
         _clientDeliveryMethod = connection.createDeliveryMethod(_channelId);
 
-        SubjectExecutionContext.withSubject(_subject, () -> message(ChannelMessages.CREATE()));
+        getSubjectExecutionContext().run(() -> message(ChannelMessages.CREATE()));
 
         _forceMessageValidation = connection.getContextValue(Boolean.class, AMQPConnection_0_8.FORCE_MESSAGE_VALIDATION);
 
@@ -279,7 +278,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     public final void receivedComplete()
     {
-        SubjectExecutionContext.withSubject(_subject, this::sync);
+        getSubjectExecutionContext().run(this::sync);
 
     }
 

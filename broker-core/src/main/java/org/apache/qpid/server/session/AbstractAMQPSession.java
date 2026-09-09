@@ -63,6 +63,7 @@ import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.network.Ticker;
 import org.apache.qpid.server.util.Action;
@@ -77,6 +78,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     private final Action _deleteModelTask;
     private final AMQPConnection<?> _connection;
     private final int _sessionId;
+    private final SubjectExecutionContext _subjectExecutionContext;
 
     protected final Subject _subject;
     protected final SecurityToken _token;
@@ -132,6 +134,7 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
             final Broker<?> broker = (Broker<?>) _connection.getBroker();
             _token = broker.newToken(_subject);
         }
+        _subjectExecutionContext = SubjectExecutionContext.create(_subject);
 
         final long authCacheTimeout = _connection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT);
         final int authCacheSize = _connection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE);
@@ -167,6 +170,11 @@ public abstract class AbstractAMQPSession<S extends AbstractAMQPSession<S, X>,
     public AMQPConnection<?> getAMQPConnection()
     {
         return _connection;
+    }
+
+    public final SubjectExecutionContext getSubjectExecutionContext()
+    {
+        return _subjectExecutionContext;
     }
 
     @Override

@@ -894,6 +894,11 @@ public class ServerSession extends SessionInvoker
         return _modelObject.getSubject();
     }
 
+    public SubjectExecutionContext getSubjectExecutionContext()
+    {
+        return _modelObject.getSubjectExecutionContext();
+    }
+
     protected void setState(final State state)
     {
         if(runningAsSubject())
@@ -928,7 +933,7 @@ public class ServerSession extends SessionInvoker
 
     private <T> T runAsSubject(final Supplier<T> action)
     {
-        return SubjectExecutionContext.withSubjectUnchecked(getAuthorizedSubject(), action::get);
+        return getSubjectExecutionContext().callUnchecked(action::get);
     }
 
     private void invokeBlock()
