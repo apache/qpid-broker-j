@@ -1150,7 +1150,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 throw new ConnectionScopedRuntimeException("Connection is closed before being fully established: " + error.getDescription());
 
             case AWAIT_OPEN:
-                sendOpen(0, 0);
+                sendOpen(0, Constants.MIN_MAX_FRAME_SIZE);
                 sendClose(close);
                 _connectionState = ConnectionState.CLOSED;
                 getSender().close();
