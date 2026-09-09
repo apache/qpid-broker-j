@@ -23,8 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -32,6 +36,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
@@ -43,7 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
+import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -63,6 +68,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.Method;
 import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 @SuppressWarnings({"rawtypes"})
@@ -206,21 +212,181 @@ class ServerSessionTest extends UnitTestBase
         doAnswer(invocation ->
         {
             capturedSubject.set(SubjectExecutionContext.currentSubject());
-            return null;
+            return true;
         }).when(subscription).flushCreditState(anyBoolean());
 
         session.register("dest", subscription);
+        session.addConsumerTargetNeedingFlush(subscription);
         session.receivedComplete();
 
         assertEquals(session.getSubject(), capturedSubject.get(), "Unexpected subject in receivedComplete");
     }
 
-    AmqpPort<?> createMockPort()
+    @Test
+    void receivedCompleteFlushesOnlyMarkedSubscriptions()
     {
-        AmqpPort port = mock(AmqpPort.class);
-        TaskExecutor childExecutor = new TaskExecutorImpl();
-        childExecutor.start();
-        when(port.getChildExecutor()).thenReturn(childExecutor);
+        final ServerSession session = createServerSession();
+        final List<ConsumerTarget_0_10> subscriptions = new ArrayList<>();
+
+        for (int i = 0; i < 100; i++)
+        {
+            final ConsumerTarget_0_10 subscription = mock(ConsumerTarget_0_10.class);
+            when(subscription.flushCreditState(false)).thenReturn(true);
+            session.register("destination-" + i, subscription);
+            subscriptions.add(subscription);
+        }
+
+        final ConsumerTarget_0_10 markedSubscription = subscriptions.get(37);
+        session.addConsumerTargetNeedingFlush(markedSubscription);
+        session.receivedComplete();
+
+        verify(markedSubscription).flushCreditState(false);
+        for (final ConsumerTarget_0_10 subscription : subscriptions)
+        {
+            if (subscription != markedSubscription)
+            {
+                verify(subscription, never()).flushCreditState(anyBoolean());
+            }
+        }
+    }
+
+    @Test
+    void duplicateMarksAreDeduplicatedAndSuccessfulFlushRemovesMark()
+    {
+        final ServerSession session = createServerSession();
+        final ConsumerTarget_0_10 subscription = mock(ConsumerTarget_0_10.class);
+        when(subscription.flushCreditState(false)).thenReturn(true);
+        session.register("destination", subscription);
+
+        session.addConsumerTargetNeedingFlush(subscription);
+        session.addConsumerTargetNeedingFlush(subscription);
+        session.receivedComplete();
+        session.receivedComplete();
+
+        verify(subscription).flushCreditState(false);
+    }
+
+    @Test
+    void receivedCompleteWithoutPendingCreditFlushCompletesAsyncCommands()
+    {
+        final ServerSession session = createServerSession();
+        final ServerTransaction.Action action = mock(ServerTransaction.Action.class);
+        session.recordFuture(CompletableFuture.completedFuture(null), action);
+
+        session.receivedComplete();
+
+        verify(action).postCommit();
+    }
+
+    @Test
+    void retainedCreditIsRetriedUntilFlushed()
+    {
+        final ServerSession session = createServerSession();
+        final ConsumerTarget_0_10 subscription = mock(ConsumerTarget_0_10.class);
+        when(subscription.flushCreditState(false)).thenReturn(false, true);
+        session.register("destination", subscription);
+
+        session.addConsumerTargetNeedingFlush(subscription);
+        session.receivedComplete();
+        session.receivedComplete();
+        session.receivedComplete();
+
+        verify(subscription, times(2)).flushCreditState(false);
+    }
+
+    @Test
+    void markAddedDuringFlushIsProcessedOnNextReceivedComplete()
+    {
+        final ServerSession session = createServerSession();
+        final ConsumerTarget_0_10 subscription = mock(ConsumerTarget_0_10.class);
+        final AtomicBoolean firstFlush = new AtomicBoolean(true);
+        doAnswer(invocation ->
+        {
+            if (firstFlush.getAndSet(false))
+            {
+                session.addConsumerTargetNeedingFlush(subscription);
+            }
+            return true;
+        }).when(subscription).flushCreditState(false);
+        session.register("destination", subscription);
+
+        session.addConsumerTargetNeedingFlush(subscription);
+        session.receivedComplete();
+        session.receivedComplete();
+        session.receivedComplete();
+
+        verify(subscription, times(2)).flushCreditState(false);
+    }
+
+    @Test
+    void unregisterRemovesPendingCreditFlush()
+    {
+        final ServerSession session = createServerSession();
+        final ConsumerTarget_0_10 subscription = mock(ConsumerTarget_0_10.class);
+        final AtomicReference<ConsumerTarget.State> state = new AtomicReference<>(ConsumerTarget.State.OPEN);
+        when(subscription.getName()).thenReturn("destination");
+        when(subscription.getState()).thenAnswer(invocation -> state.get());
+        doAnswer(invocation ->
+        {
+            state.set(ConsumerTarget.State.CLOSED);
+            return true;
+        }).when(subscription).close();
+        session.register("destination", subscription);
+        session.addConsumerTargetNeedingFlush(subscription);
+
+        session.unregister(subscription);
+        clearInvocations(subscription);
+        session.addConsumerTargetNeedingFlush(subscription);
+        session.receivedComplete();
+
+        assertEquals(ConsumerTarget.State.CLOSED, state.get(), "Unexpected consumer target state");
+        verify(subscription, never()).flushCreditState(anyBoolean());
+    }
+
+    private ServerSession createServerSession()
+    {
+        final Broker<?> broker = mock(Broker.class);
+        when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT)))
+                .thenReturn(0L);
+
+        final AmqpPort<?> port = createMockPort();
+        final AMQPConnection_0_10 modelConnection = mock(AMQPConnection_0_10.class);
+        when(modelConnection.getCategoryClass()).thenReturn(Connection.class);
+        when(modelConnection.getTypeClass()).thenReturn(AMQPConnection_0_10.class);
+        when(modelConnection.closeAsync()).thenReturn(CompletableFuture.completedFuture(null));
+        when(modelConnection.getAddressSpace()).thenReturn(_virtualHost);
+        when(modelConnection.getContextProvider()).thenReturn(_virtualHost);
+        when(modelConnection.getBroker()).thenReturn(broker);
+        when(modelConnection.getEventLogger()).thenReturn(mock(EventLogger.class));
+        when(modelConnection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT))
+                .thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
+        when(modelConnection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE))
+                .thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
+        when(modelConnection.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE))
+                .thenReturn(Connection.DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+        when(modelConnection.getChildExecutor()).thenReturn(_taskExecutor);
+        when(modelConnection.getModel()).thenReturn(BrokerModel.getInstance());
+        when(modelConnection.getPort()).thenReturn(port);
+
+        final AuthenticatedPrincipal principal =
+                new AuthenticatedPrincipal(new UsernamePrincipal(getTestName(), mock(AuthenticationProvider.class)));
+        final Subject subject = new Subject(false, Set.of(principal), Set.of(), Set.of());
+        when(modelConnection.getSubject()).thenReturn(subject);
+
+        final ServerConnection connection = new ServerConnection(1, broker, port, Transport.TCP, modelConnection);
+        connection.setVirtualHost(_virtualHost);
+
+        final ServerSession session =
+                new ServerSession(connection, new ServerSessionDelegate(), new Binary(getTestName().getBytes()), 0);
+        final Session_0_10 modelSession = new Session_0_10(modelConnection, 1, session, getTestName());
+        session.setModelObject(modelSession);
+        return session;
+    }
+
+    private AmqpPort<?> createMockPort()
+    {
+        final AmqpPort port = mock(AmqpPort.class);
+        when(port.getChildExecutor()).thenReturn(_taskExecutor);
         when(port.getCategoryClass()).thenReturn(Port.class);
         when(port.getModel()).thenReturn(BrokerModel.getInstance());
         return port;

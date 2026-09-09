@@ -67,11 +67,12 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
     private final MessageAcceptMode _acceptMode;
     private final MessageAcquireMode _acquireMode;
     private final ServerSession _session;
+    private final Object _deferredCreditLock = new Object();
 
     private volatile MessageFlowMode _flowMode;
     private volatile FlowCreditManager_0_10 _creditManager;
-    private volatile int _deferredMessageCredit;
-    private volatile long _deferredSizeCredit;
+    private int _deferredMessageCredit;
+    private long _deferredSizeCredit;
 
     private final StateChangeListener<MessageInstance, EntryState> _unacknowledgedMessageListener =
             new StateChangeListener<>()
@@ -347,21 +348,34 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
 
     private void deferredAddCredit(final int deferredMessageCredit, final long deferredSizeCredit)
     {
-        _deferredMessageCredit += deferredMessageCredit;
-        _deferredSizeCredit += deferredSizeCredit;
-
+        synchronized (_deferredCreditLock)
+        {
+            _deferredMessageCredit += deferredMessageCredit;
+            _deferredSizeCredit += deferredSizeCredit;
+            _session.addConsumerTargetNeedingFlush(this);
+        }
     }
 
-    public void flushCreditState(boolean strict)
+    public boolean flushCreditState(final boolean strict)
     {
-        if(strict || !isSuspended() || _deferredMessageCredit >= 200
-           || !(_creditManager instanceof WindowCreditManager)
-           || ((WindowCreditManager)_creditManager).getMessageCreditLimit() < 400 )
+        synchronized (_deferredCreditLock)
         {
-            restoreCredit(_deferredMessageCredit, _deferredSizeCredit);
+            if (_deferredMessageCredit == 0 && _deferredSizeCredit == 0L)
+            {
+                return true;
+            }
 
-            _deferredMessageCredit = 0;
-            _deferredSizeCredit = 0L;
+            if (strict || !isSuspended() || _deferredMessageCredit >= 200
+                || !(_creditManager instanceof WindowCreditManager)
+                || ((WindowCreditManager) _creditManager).getMessageCreditLimit() < 400)
+            {
+                restoreCredit(_deferredMessageCredit, _deferredSizeCredit);
+
+                _deferredMessageCredit = 0;
+                _deferredSizeCredit = 0L;
+                return true;
+            }
+            return false;
         }
     }
 

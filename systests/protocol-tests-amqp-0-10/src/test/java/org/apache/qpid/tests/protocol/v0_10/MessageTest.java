@@ -35,6 +35,8 @@ import org.apache.qpid.server.protocol.v0_10.transport.ExecutionResult;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcceptMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageAcquireMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageCreditUnit;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageFlowMode;
+import org.apache.qpid.server.protocol.v0_10.transport.MessageSetFlowMode;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageTransfer;
 import org.apache.qpid.server.protocol.v0_10.transport.Range;
 import org.apache.qpid.server.protocol.v0_10.transport.RangeSet;
@@ -159,6 +161,130 @@ public class MessageTest extends BrokerAdminUsingTestBase
                 final byte[] dst = new byte[buffer.remaining()];
                 buffer.get(dst);
                 assertThat(new String(dst, UTF_8), is(equalTo(testMessageBody)));
+            }
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "10.message.flow",
+            description = "In window mode, completing a transfer restores credit for another transfer.")
+    public void completedTransferRestoresWindowCredit() throws Exception
+    {
+        final String firstMessageBody = "firstMessage";
+        final String secondMessageBody = "secondMessage";
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, firstMessageBody, secondMessageBody);
+
+        try (final FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            final byte[] sessionName = "testSession".getBytes(UTF_8);
+            final String subscriberName = "testSubscriber";
+            interaction.negotiateOpen()
+                       .channelId(1)
+                       .attachSession(sessionName)
+                       .message()
+                       .subscribeAcceptMode(MessageAcceptMode.EXPLICIT)
+                       .subscribeAcquireMode(MessageAcquireMode.PRE_ACQUIRED)
+                       .subscribeDestination(subscriberName)
+                       .subscribeQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                       .subscribeId(0)
+                       .subscribe();
+
+            final MessageSetFlowMode setFlowMode = new MessageSetFlowMode(subscriberName, MessageFlowMode.WINDOW);
+            setFlowMode.setId(1);
+            interaction.sendPerformative(setFlowMode)
+                       .message()
+                       .flowId(2)
+                       .flowDestination(subscriberName)
+                       .flowUnit(MessageCreditUnit.MESSAGE)
+                       .flowValue(1)
+                       .flow()
+                       .message()
+                       .flowId(3)
+                       .flowDestination(subscriberName)
+                       .flowUnit(MessageCreditUnit.BYTE)
+                       .flowValue(-1)
+                       .flow();
+
+            final MessageTransfer firstTransfer = interaction.consume(MessageTransfer.class, SessionCompleted.class,
+                    SessionCommandPoint.class, SessionConfirmed.class, SessionFlush.class);
+            try (final QpidByteBuffer buffer = firstTransfer.getBody())
+            {
+                final byte[] body = new byte[buffer.remaining()];
+                buffer.get(body);
+                assertThat(new String(body, UTF_8), is(equalTo(firstMessageBody)));
+            }
+
+            interaction.sendPerformative(new SessionCompleted(Range.newInstance(firstTransfer.getId())));
+
+            final MessageTransfer secondTransfer = interaction.consume(MessageTransfer.class, SessionCompleted.class,
+                    SessionCommandPoint.class, SessionConfirmed.class, SessionFlush.class);
+            try (final QpidByteBuffer buffer = secondTransfer.getBody())
+            {
+                final byte[] body = new byte[buffer.remaining()];
+                buffer.get(body);
+                assertThat(new String(body, UTF_8), is(equalTo(secondMessageBody)));
+            }
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "10.message.flow",
+            description = "In credit mode, granting new credit re-enables delivery without a periodic credit refresh.")
+    public void creditModeDeliveryContinuesWithoutCompletionRefresh() throws Exception
+    {
+        final String[] messages = new String[20];
+        for (int i = 0; i < messages.length; i++)
+        {
+            messages[i] = "message-" + i;
+        }
+        getBrokerAdmin().putMessageOnQueue(BrokerAdmin.TEST_QUEUE_NAME, messages);
+
+        try (final FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            final byte[] sessionName = "testSession".getBytes(UTF_8);
+            final String subscriberName = "testSubscriber";
+            interaction.negotiateOpen()
+                       .channelId(1)
+                       .attachSession(sessionName)
+                       .message()
+                       .subscribeAcceptMode(MessageAcceptMode.EXPLICIT)
+                       .subscribeAcquireMode(MessageAcquireMode.PRE_ACQUIRED)
+                       .subscribeDestination(subscriberName)
+                       .subscribeQueue(BrokerAdmin.TEST_QUEUE_NAME)
+                       .subscribeId(0)
+                       .subscribe();
+
+            final MessageSetFlowMode setFlowMode = new MessageSetFlowMode(subscriberName, MessageFlowMode.CREDIT);
+            setFlowMode.setId(1);
+            interaction.sendPerformative(setFlowMode)
+                       .message()
+                       .flowId(2)
+                       .flowDestination(subscriberName)
+                       .flowUnit(MessageCreditUnit.BYTE)
+                       .flowValue(-1)
+                       .flow();
+
+            for (int i = 0; i < messages.length; i++)
+            {
+                interaction.message()
+                           .flowId(3 + i)
+                           .flowDestination(subscriberName)
+                           .flowUnit(MessageCreditUnit.MESSAGE)
+                           .flowValue(1)
+                           .flow();
+
+                final MessageTransfer transfer = interaction.consume(MessageTransfer.class, SessionCompleted.class,
+                        SessionCommandPoint.class, SessionConfirmed.class, SessionFlush.class);
+                try (final QpidByteBuffer buffer = transfer.getBody())
+                {
+                    final byte[] body = new byte[buffer.remaining()];
+                    buffer.get(body);
+                    assertThat(new String(body, UTF_8), is(equalTo(messages[i])));
+                }
+
+                interaction.sendPerformative(new SessionCompleted(Range.newInstance(transfer.getId())));
             }
         }
     }
