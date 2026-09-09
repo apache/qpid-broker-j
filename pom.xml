@@ -134,9 +134,7 @@
     <mockito-version>5.23.0</mockito-version>
     <netty-version>4.2.16.Final</netty-version>
     <hamcrest-version>3.0</hamcrest-version>
-    <maven-resolver-provider-version>3.8.6</maven-resolver-provider-version>
-    <maven-resolver-version>1.9.22</maven-resolver-version>
-    <httpclient-version>5.6.2</httpclient-version>
+    <maven-resolver-version>2.0.22</maven-resolver-version>
     <qpid-jms-client-version>1.17.0</qpid-jms-client-version>
     <qpid-jms-client-amqp-0-x-version>6.4.0</qpid-jms-client-amqp-0-x-version>
     <nashorn-version>15.7</nashorn-version>
@@ -719,16 +717,6 @@
         <version>${jfreechart-version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.httpcomponents.client5</groupId>
-        <artifactId>httpclient5</artifactId>
-        <version>${httpclient-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.httpcomponents.client5</groupId>
-        <artifactId>httpclient5-fluent</artifactId>
-        <version>${httpclient-version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.dojotoolkit</groupId>
         <artifactId>dojo</artifactId>
         <version>${dojo-version}</version>
@@ -830,34 +818,19 @@
         <version>${hamcrest-version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.maven</groupId>
-        <artifactId>maven-resolver-provider</artifactId>
-        <version>${maven-resolver-provider-version}</version>
+        <groupId>org.apache.maven.resolver</groupId>
+        <artifactId>maven-resolver-supplier-mvn3</artifactId>
+        <version>${maven-resolver-version}</version>
         <exclusions>
           <exclusion>
             <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>*</artifactId>
+            <artifactId>maven-resolver-transport-apache</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.maven.resolver</groupId>
-        <artifactId>maven-resolver-impl</artifactId>
-        <version>${maven-resolver-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven.resolver</groupId>
-        <artifactId>maven-resolver-connector-basic</artifactId>
-        <version>${maven-resolver-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven.resolver</groupId>
-        <artifactId>maven-resolver-transport-file</artifactId>
-        <version>${maven-resolver-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.maven.resolver</groupId>
-        <artifactId>maven-resolver-transport-http</artifactId>
+        <artifactId>maven-resolver-transport-jdk</artifactId>
         <version>${maven-resolver-version}</version>
       </dependency>
 
@@ -1835,4 +1808,3 @@
 
   </profiles>
 </project>
-

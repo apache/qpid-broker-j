@@ -90,7 +90,14 @@ public class EndToEndConversionTestBase extends BrokerAdminUsingTestBase
     @AfterAll
     public static void reportStats()
     {
-        System.out.println("LQDEBUG: " + ClasspathQuery.getCacheStats());
+        try
+        {
+            System.out.println("LQDEBUG: " + ClasspathQuery.getCacheStats());
+        }
+        finally
+        {
+            ClasspathQuery.close();
+        }
     }
 
     protected CompletableFuture<ClientResult> runPublisher(final List<ClientInstruction> clientInstructions)

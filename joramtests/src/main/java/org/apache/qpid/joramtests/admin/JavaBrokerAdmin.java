@@ -21,8 +21,17 @@
 
 package org.apache.qpid.joramtests.admin;
 
+import static java.net.HttpURLConnection.HTTP_CREATED;
+import static java.net.HttpURLConnection.HTTP_OK;
+
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Hashtable;
 
 import javax.jms.ConnectionFactory;
@@ -34,33 +43,20 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import org.apache.hc.client5.http.auth.AuthScope;
-import org.apache.hc.client5.http.auth.CredentialsProvider;
-import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
-import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
-import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
-import org.apache.hc.client5.http.impl.auth.BasicScheme;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.hc.client5.http.protocol.HttpClientContext;
-import org.apache.hc.core5.http.ClassicHttpRequest;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.client5.http.classic.methods.HttpDelete;
-import org.apache.hc.client5.http.classic.methods.HttpPut;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.ProtocolVersion;
-import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.objectweb.jtests.jms.admin.Admin;
 
 public class JavaBrokerAdmin implements Admin
 {
+    private static final String APPLICATION_JSON = "application/json; charset=UTF-8";
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String CONTENT_TYPE = "Content-Type";
+
     private final String _virtualhostnode;
     private final String _virtualhost;
 
-    private final HttpHost _management;
-    private final CredentialsProvider _credentialsProvider;
-    private final HttpClientContext _httpClientContext;
+    private final URI _management;
+    private final HttpClient _httpClient;
+    private final String _authorization;
 
     private final InitialContext _context;
     private final String _queueApiUrl;
@@ -71,18 +67,22 @@ public class JavaBrokerAdmin implements Admin
         final Hashtable<String, String> env = new Hashtable<>();
         _context = new InitialContext(env);
 
-        final String managementUser = System.getProperty("joramtests.manangement-user", "guest");
+        final String managementUser = System.getProperty("joramtests.manangement-username",
+                System.getProperty("joramtests.manangement-user", "guest"));
         final String managementPassword = System.getProperty("joramtests.manangement-password", "guest");
 
         _virtualhostnode = System.getProperty("joramtests.broker-virtualhostnode", "default");
         _virtualhost = System.getProperty("joramtests.broker-virtualhost", "default");
 
-        _management = HttpHost.create(System.getProperty("joramtests.manangement-url", "http://localhost:8080"));
+        _management = new URI(System.getProperty("joramtests.manangement-url", "http://localhost:8080"));
+        _httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .proxy(HttpClient.Builder.NO_PROXY)
+                .build();
+        _authorization = getAuthorization(managementUser, managementPassword);
         _queueApiUrl = System.getProperty("joramtests.manangement-api-queue", "/api/latest/queue/%s/%s/%s");
         _topicApiUrl = System.getProperty("joramtests.manangement-api-topic", "/api/latest/exchange/%s/%s/%s");
-
-        _credentialsProvider = getCredentialsProvider(managementUser, managementPassword);
-        _httpClientContext = getHttpClientContext(_management);
     }
 
 
@@ -193,9 +193,7 @@ public class JavaBrokerAdmin implements Admin
             if (!clazz.isInstance(object))
             {
                 throw new IllegalArgumentException(String.format("'%s' has unexpected type. It is a '%s', but expected a '%s'",
-                                                                 name,
-                                                                 object.getClass().getName(),
-                                                                 clazz.getName()));
+                        name, object.getClass().getName(), clazz.getName()));
             }
         }
         catch (NamingException e)
@@ -207,43 +205,57 @@ public class JavaBrokerAdmin implements Admin
 
     private void managementCreateQueue(final String name)
     {
-        final HttpPut put = new HttpPut(String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name));
-        final StringEntity input = new StringEntity("{}", ContentType.APPLICATION_JSON, "UTF_8", false);
-        put.setEntity(input);
-        executeManagement(put);
+        final String path = String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name);
+        final HttpRequest request = newManagementRequest(path)
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .PUT(HttpRequest.BodyPublishers.ofString("{}", StandardCharsets.UTF_8))
+                .build();
+        executeManagement(request);
     }
 
     private void managementCreateTopic(final String name)
     {
-        final HttpPut put = new HttpPut(String.format(_topicApiUrl, _virtualhostnode, _virtualhost, name));
-        final StringEntity input = new StringEntity("{\"type\" : \"fanout\"}", ContentType.APPLICATION_JSON, "UTF_8", false);
-        put.setEntity(input);
-        executeManagement(put);
+        final String path = String.format(_topicApiUrl, _virtualhostnode, _virtualhost, name);
+        final HttpRequest request = newManagementRequest(path)
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .PUT(HttpRequest.BodyPublishers.ofString("{\"type\" : \"fanout\"}", StandardCharsets.UTF_8))
+                .build();
+        executeManagement(request);
     }
 
     private void managementDeleteQueue(final String name)
     {
-        final HttpDelete delete = new HttpDelete(String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name));
-        executeManagement(delete);
+        final String path = String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name);
+        final HttpRequest request = newManagementRequest(path)
+                .DELETE()
+                .build();
+        executeManagement(request);
     }
 
     private void managementDeleteTopic(final String name)
     {
-        final HttpDelete delete = new HttpDelete(String.format(_topicApiUrl, _virtualhostnode, _virtualhost, name));
-        executeManagement(delete);
+        final String path = String.format(_topicApiUrl, _virtualhostnode, _virtualhost, name);
+        final HttpRequest request = newManagementRequest(path)
+                .DELETE()
+                .build();
+        executeManagement(request);
     }
 
-    private void executeManagement(final ClassicHttpRequest httpRequest)
+    private HttpRequest.Builder newManagementRequest(final String path)
     {
-        try (final CloseableHttpClient httpClient = HttpClients.custom().setDefaultCredentialsProvider(_credentialsProvider).build();
-             final CloseableHttpResponse response = httpClient.execute(_management, httpRequest, _httpClientContext, reply -> (CloseableHttpResponse) reply))
+        return HttpRequest.newBuilder(_management.resolve(path)).header(AUTHORIZATION, _authorization);
+    }
+
+    private void executeManagement(final HttpRequest httpRequest)
+    {
+        try
         {
-            final int status = response.getCode();
-            final ProtocolVersion version = response.getVersion();
-            final String reason = response.getReasonPhrase();
-            if (status != 200 && status != 201)
+            final HttpResponse<Void> response = _httpClient.send(httpRequest, HttpResponse.BodyHandlers.discarding());
+            final int status = response.statusCode();
+            final HttpClient.Version version = response.version();
+            if (status != HTTP_OK && status != HTTP_CREATED)
             {
-                final String msg = String.format("Failed: HTTP error code: %d, Version: %s, Reason: %s", status, version, reason);
+                final String msg = String.format("Failed: HTTP error code: %d, Version: %s", status, version);
                 throw new RuntimeException(msg);
             }
         }
@@ -251,21 +263,18 @@ public class JavaBrokerAdmin implements Admin
         {
             throw new RuntimeException(e);
         }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
     }
 
-    private HttpClientContext getHttpClientContext(final HttpHost management)
+    private static String getAuthorization(final String managementUser, final String managementPassword)
     {
-        final BasicAuthCache authCache = new BasicAuthCache();
-        authCache.put(management, new BasicScheme());
-        final HttpClientContext localContext = HttpClientContext.create();
-        localContext.setAuthCache(authCache);
-        return localContext;
-    }
-
-    private CredentialsProvider getCredentialsProvider(final String managementUser, final String managementPassword)
-    {
-        final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(new AuthScope("localhost", 8080), new UsernamePasswordCredentials(managementUser, managementPassword.toCharArray()));
-        return credentialsProvider;
+        final String credentials = managementUser + ":" + managementPassword;
+        final String encodedCredentials = Base64.getEncoder()
+                .encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+        return "Basic " + encodedCredentials;
     }
 }
