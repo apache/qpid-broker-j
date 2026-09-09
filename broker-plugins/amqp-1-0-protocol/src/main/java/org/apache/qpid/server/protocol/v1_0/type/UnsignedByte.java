@@ -36,6 +36,8 @@ public final class UnsignedByte extends Number implements Comparable<UnsignedByt
         }
     }
 
+    /** Deprecated, use {@link UnsignedByte#valueOf(byte)}, planned for removal in version 12.0.0 */
+    @Deprecated(forRemoval = true)
     public UnsignedByte(byte underlying)
     {
         _underlying = underlying;
@@ -97,7 +99,7 @@ public final class UnsignedByte extends Number implements Comparable<UnsignedByt
     @Override
     public int compareTo(UnsignedByte o)
     {
-        return Integer.signum(intValue() - o.intValue());
+        return Byte.compareUnsigned(_underlying, o._underlying);
     }
 
     @Override

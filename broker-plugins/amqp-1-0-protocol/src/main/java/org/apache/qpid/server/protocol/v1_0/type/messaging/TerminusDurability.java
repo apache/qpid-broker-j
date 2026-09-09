@@ -101,6 +101,6 @@ public class TerminusDurability implements RestrictedType<UnsignedInteger>
     {
         int durabilitAValue = durabilityA != null ? durabilityA._val.intValue() : 0;
         int durabilityBValue = durabilityB != null ? durabilityB._val.intValue() : 0;
-        return TerminusDurability.valueOf(new UnsignedInteger(Math.min(durabilitAValue, durabilityBValue)));
+        return TerminusDurability.valueOf(UnsignedInteger.valueOf(Math.min(durabilitAValue, durabilityBValue)));
     }
 }

@@ -32,20 +32,20 @@ class SoleConnectionDetectionPolicyTest extends UnitTestBase
     @Test
     void value()
     {
-        assertEquals(new UnsignedInteger(0), SoleConnectionDetectionPolicy.STRONG.getValue());
-        assertEquals(new UnsignedInteger(1), SoleConnectionDetectionPolicy.WEAK.getValue());
+        assertEquals(UnsignedInteger.valueOf(0), SoleConnectionDetectionPolicy.STRONG.getValue());
+        assertEquals(UnsignedInteger.valueOf(1), SoleConnectionDetectionPolicy.WEAK.getValue());
     }
 
     @Test
     void valueOf()
     {
         assertEquals(SoleConnectionDetectionPolicy.STRONG,
-                SoleConnectionDetectionPolicy.valueOf(new UnsignedInteger(0)));
+                SoleConnectionDetectionPolicy.valueOf(UnsignedInteger.valueOf(0)));
         assertEquals(SoleConnectionDetectionPolicy.WEAK,
-                SoleConnectionDetectionPolicy.valueOf(new UnsignedInteger(1)));
+                SoleConnectionDetectionPolicy.valueOf(UnsignedInteger.valueOf(1)));
 
         final RuntimeException thrown = assertThrows(RuntimeException.class,
-                () -> SoleConnectionDetectionPolicy.valueOf(new UnsignedInteger(2)),
+                () -> SoleConnectionDetectionPolicy.valueOf(UnsignedInteger.valueOf(2)),
                 "An exception is expected");
         assertNotNull(thrown.getMessage());
     }
