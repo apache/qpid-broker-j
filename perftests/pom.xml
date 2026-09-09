@@ -95,11 +95,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.httpcomponents.client5</groupId>
-      <artifactId>httpclient5</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.github.resilience4j</groupId>
       <artifactId>resilience4j-ratelimiter</artifactId>
     </dependency>

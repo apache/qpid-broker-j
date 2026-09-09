@@ -21,9 +21,18 @@
 
 package org.apache.qpid.tck;
 
+import static java.net.HttpURLConnection.HTTP_CREATED;
+import static java.net.HttpURLConnection.HTTP_OK;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -35,29 +44,14 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
-import org.apache.hc.client5.http.auth.AuthScope;
-import org.apache.hc.client5.http.auth.CredentialsProvider;
-import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
-import org.apache.hc.client5.http.classic.methods.HttpDelete;
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.classic.methods.HttpPut;
-import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
-import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
-import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
-import org.apache.hc.client5.http.impl.auth.BasicScheme;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.protocol.HttpClientContext;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.http.io.entity.StringEntity;
-
 /**
  * Used pre/post-integration-test to create/delete JMS resources required for the TCK run.
  */
 public class ManageQpidJMSResources
 {
+    private static final String APPLICATION_JSON = "application/json; charset=UTF-8";
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String CONTENT_TYPE = "Content-Type";
     private static final Logger LOGGER = LoggerFactory.getLogger(ManageQpidJMSResources.class);
 
     private static final TypeReference<List<Map<String, Object>>> VALUE_TYPE_REF =
@@ -68,13 +62,13 @@ public class ManageQpidJMSResources
 
     private final String _virtualhostnode;
     private final String _virtualhost;
-    private final HttpHost _management;
+    private final URI _management;
+    private final HttpClient _httpClient;
+    private final String _authorization;
     private final String _queueApiUrl;
     private final String _queueApiClearQueueUrl;
     private final String _topicApiUrl;
     private final ObjectMapper _objectMapper;
-    private final CredentialsProvider _credentialsProvider;
-    private final HttpClientContext _httpClientContext;
 
     private enum NodeType
     {
@@ -107,13 +101,16 @@ public class ManageQpidJMSResources
         _virtualhostnode = System.getProperty("tck.broker-virtualhostnode", "default");
         _virtualhost = System.getProperty("tck.broker-virtualhost", "default");
 
-        _management = HttpHost.create(System.getProperty("tck.management-url", "http://localhost:8080"));
+        _management = new URI(System.getProperty("tck.management-url", "http://localhost:8080"));
+        _httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .proxy(HttpClient.Builder.NO_PROXY)
+                .build();
+        _authorization = getAuthorization(managementUser, managementPassword);
         _queueApiUrl = System.getProperty("tck.management-api-queue", "/api/latest/queue/%s/%s/%s");
         _queueApiClearQueueUrl = System.getProperty("tck.management-api-queue-clear", "/api/latest/queue/%s/%s/%s/clearQueue");
         _topicApiUrl = System.getProperty("tck.management-api-topic", "/api/latest/exchange/%s/%s/%s");
-
-        _credentialsProvider = getCredentialsProvider(managementUser, managementPassword);
-        _httpClientContext = getHttpClientContext(_management);
     }
 
     private void createResources() throws IOException
@@ -187,80 +184,83 @@ public class ManageQpidJMSResources
 
     private void managementCreateQueue(final String name, final Map<String, Object> arguments) throws IOException
     {
-        HttpPut put = new HttpPut(String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name));
-
-        management(put, arguments);
+        management("PUT", String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name), arguments);
     }
 
     private void managementClearQueue(final String name) throws IOException
     {
-        HttpPost post = new HttpPost(String.format(_queueApiClearQueueUrl, _virtualhostnode, _virtualhost, name));
-
-        management(post, Map.of());
+        final String path = String.format(_queueApiClearQueueUrl, _virtualhostnode, _virtualhost, name);
+        management("POST", path, Map.of());
     }
 
     private void managementCreateExchange(final String name, final Map<String, Object> arguments) throws IOException
     {
-        HttpPut put = new HttpPut(String.format(_topicApiUrl, _virtualhostnode, _virtualhost, name));
-
-        management(put, arguments);
+        final String path = String.format(_topicApiUrl, _virtualhostnode, _virtualhost, name);
+        management("PUT", path, arguments);
     }
+
     private void managementDeleteQueue(final String name)
     {
-        HttpDelete delete = new HttpDelete(String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name));
-        executeManagement(delete);
+        final String path = String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name);
+        final HttpRequest request = newManagementRequest(path)
+                .DELETE()
+                .build();
+        executeManagement(request);
     }
 
     private void managementDeleteExchange(final String name)
     {
-        HttpDelete delete = new HttpDelete(String.format(_topicApiUrl, _virtualhostnode, _virtualhost, name));
-        executeManagement(delete);
+        final String path = String.format(_topicApiUrl, _virtualhostnode, _virtualhost, name);
+        final HttpRequest request = newManagementRequest(path)
+                .DELETE()
+                .build();
+        executeManagement(request);
     }
 
-    private void management(final HttpUriRequest request, final Object obj) throws IOException
+    private void management(final String method, final String path, final Object obj) throws IOException
     {
-        StringEntity input = new StringEntity(_objectMapper.writeValueAsString(obj), ContentType.APPLICATION_JSON, "UTF_8", false);
-        request.setEntity(input);
+        final String body = _objectMapper.writeValueAsString(obj);
+        final HttpRequest.BodyPublisher bodyPublisher = HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8);
+        final HttpRequest request = newManagementRequest(path)
+                .header(CONTENT_TYPE, APPLICATION_JSON)
+                .method(method, bodyPublisher)
+                .build();
 
-        int statusCode = executeManagement(request);
-        if (statusCode != 200 && statusCode != 201)
+        final int statusCode = executeManagement(request);
+        if (statusCode != HTTP_OK && statusCode != HTTP_CREATED)
         {
             throw new RuntimeException(String.format("Failed : HTTP error code : %d", statusCode));
         }
     }
 
-    private int executeManagement(final HttpUriRequest httpRequest)
+    private HttpRequest.Builder newManagementRequest(final String path)
     {
+        return HttpRequest.newBuilder(_management.resolve(path)).header(AUTHORIZATION, _authorization);
+    }
 
-        try(CloseableHttpClient httpClient = HttpClients.custom()
-                                                        .setDefaultCredentialsProvider(_credentialsProvider)
-                                                        .build())
+    private int executeManagement(final HttpRequest httpRequest)
+    {
+        try
         {
-            try (CloseableHttpResponse response = httpClient.execute(_management, httpRequest, _httpClientContext, reply -> (CloseableHttpResponse) reply))
-            {
-                return response.getCode();
-            }
+            final HttpResponse<Void> response = _httpClient.send(httpRequest, HttpResponse.BodyHandlers.discarding());
+            return response.statusCode();
         }
         catch (IOException e)
         {
             throw new RuntimeException(e);
         }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
     }
 
-    private HttpClientContext getHttpClientContext(final HttpHost management)
+    private static String getAuthorization(final String managementUser, final String managementPassword)
     {
-        final BasicAuthCache authCache = new BasicAuthCache();
-        authCache.put(management, new BasicScheme());
-        HttpClientContext localContext = HttpClientContext.create();
-        localContext.setAuthCache(authCache);
-        return localContext;
+        final String credentials = managementUser + ":" + managementPassword;
+        final String encodedCredentials = Base64.getEncoder()
+                .encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+        return "Basic " + encodedCredentials;
     }
-
-    private CredentialsProvider getCredentialsProvider(final String managementUser, final String managementPassword)
-    {
-        final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(new AuthScope("localhost", 8080), new UsernamePasswordCredentials(managementUser, managementPassword.toCharArray()));
-        return credentialsProvider;
-    }
-
 }
