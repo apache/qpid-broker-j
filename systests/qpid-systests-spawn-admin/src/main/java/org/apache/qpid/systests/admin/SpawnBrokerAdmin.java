@@ -73,6 +73,7 @@ import org.apache.qpid.server.util.SystemUtils;
 import org.apache.qpid.systests.AmqpManagementFacade;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.ConfigItem;
+import org.apache.qpid.tests.utils.SystemTestBrokerContext;
 
 @SuppressWarnings("unused")
 @PluggableService
@@ -768,11 +769,8 @@ public class SpawnBrokerAdmin implements BrokerAdmin, Closeable
         context.put("qpid.port.protocol_handshake_timeout", "1000000");
         context.put("qpid.amqp_port", "0");
 
-        System.getProperties()
-              .stringPropertyNames()
-              .stream()
-              .filter(n -> n.startsWith("qpid."))
-              .forEach(n -> context.put(n, System.getProperty(n)));
+        SystemTestBrokerContext.applyResourceDefaults(context);
+        SystemTestBrokerContext.copyBrokerSystemProperties(context);
 
         context.putAll(Arrays.stream(configItems)
                              .filter(i -> !i.jvm())
