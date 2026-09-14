@@ -93,7 +93,7 @@ public final class UnsignedShort extends Number implements Comparable<UnsignedSh
     @Override
     public int compareTo(UnsignedShort o)
     {
-        return Integer.signum(intValue() - o.intValue());
+        return Short.compareUnsigned(_underlying, o._underlying);
     }
 
     @Override
@@ -105,7 +105,7 @@ public final class UnsignedShort extends Number implements Comparable<UnsignedSh
     @Override
     public String toString()
     {
-        return String.valueOf(longValue());
+        return Integer.toString(intValue());
     }
 
     public static UnsignedShort valueOf(short underlying)

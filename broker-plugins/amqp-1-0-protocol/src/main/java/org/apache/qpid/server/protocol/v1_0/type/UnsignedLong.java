@@ -28,7 +28,6 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
     private static final long serialVersionUID = 1L;
 
     private static final BigInteger TWO_TO_THE_SIXTY_FOUR = new BigInteger( new byte[] { (byte) 1, (byte) 0, (byte) 0, (byte) 0, (byte) 0, (byte) 0, (byte) 0, (byte) 0, (byte) 0 });
-    private static final BigInteger LONG_MAX_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
 
     private static final UnsignedLong[] cachedValues = new UnsignedLong[256];
 
@@ -45,8 +44,8 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
 
     private final long _underlying;
 
-
-
+    /** Deprecated, use {@link UnsignedLong#valueOf(long)}, planned for removal in version 12.0.0 */
+    @Deprecated(forRemoval = true)
     public UnsignedLong(long underlying)
     {
         _underlying = underlying;
@@ -108,7 +107,7 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
     @Override
     public int compareTo(UnsignedLong o)
     {
-        return bigIntegerValue().compareTo(o.bigIntegerValue());
+        return Long.compareUnsigned(_underlying, o._underlying);
     }
 
     @Override
@@ -120,7 +119,7 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
     @Override
     public String toString()
     {
-        return String.valueOf(bigIntegerValue());
+        return Long.toUnsignedString(_underlying);
     }
 
     public static UnsignedLong valueOf(long underlying)
@@ -137,20 +136,8 @@ public final class UnsignedLong extends Number implements Comparable<UnsignedLon
 
     public static UnsignedLong valueOf(final String value)
     {
-        BigInteger bigInt = new BigInteger(value);
-        if(bigInt.signum() == -1 || bigInt.bitCount()>64)
-        {
-            throw new NumberFormatException("Value \""+value+"\" lies outside the range [" + 0L + "- 2^64).");
-        }
-        else if(bigInt.compareTo(LONG_MAX_VALUE)>=0)
-        {
-            return UnsignedLong.valueOf(bigInt.longValue());
-        }
-        else
-        {
-            return UnsignedLong.valueOf(TWO_TO_THE_SIXTY_FOUR.subtract(bigInt).negate().longValue());
-        }
-
+        final long parsed = Long.parseUnsignedLong(value);
+        return valueOf(parsed);
     }
 
     public UnsignedLong add(UnsignedLong unsignedLong)

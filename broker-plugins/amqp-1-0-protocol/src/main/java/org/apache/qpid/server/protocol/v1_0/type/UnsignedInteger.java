@@ -40,7 +40,8 @@ public final class UnsignedInteger extends Number implements Comparable<Unsigned
     public static final UnsignedInteger ONE = cachedValues[1];
     public static final UnsignedInteger MAX_VALUE = new UnsignedInteger(0xffffffff);
 
-
+    /** Deprecated, use {@link UnsignedInteger#valueOf(int)}, planned for removal in version 12.0.0 */
+    @Deprecated(forRemoval = true)
     public UnsignedInteger(int underlying)
     {
         _underlying = underlying;
@@ -90,7 +91,7 @@ public final class UnsignedInteger extends Number implements Comparable<Unsigned
     @Override
     public int compareTo(UnsignedInteger o)
     {
-        return Long.signum(longValue() - o.longValue());
+        return Integer.compareUnsigned(_underlying, o._underlying);
     }
 
     @Override
@@ -102,12 +103,16 @@ public final class UnsignedInteger extends Number implements Comparable<Unsigned
     @Override
     public String toString()
     {
-        return String.valueOf(longValue());
+        return Integer.toUnsignedString(_underlying);
     }
 
     public static UnsignedInteger valueOf(int underlying)
     {
-        if((underlying & 0xFFFFFF00) == 0)
+        if (underlying == -1)
+        {
+            return MAX_VALUE;
+        }
+        else if (0 == (underlying & 0xFFFFFF00))
         {
             return cachedValues[underlying];
         }
@@ -131,8 +136,8 @@ public final class UnsignedInteger extends Number implements Comparable<Unsigned
 
     public static UnsignedInteger valueOf(final String value)
     {
-        long longVal = Long.parseLong(value);
-        return valueOf(longVal);
+        final int parsed = Integer.parseUnsignedInt(value);
+        return valueOf(parsed);
     }
 
     public static UnsignedInteger valueOf(final long longVal)

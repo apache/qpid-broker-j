@@ -57,7 +57,7 @@ public class UnsignedIntegerWriter
         {
             return ZERO_BYTE_WRITER;
         }
-        else if(uint.compareTo(UnsignedInteger.valueOf(256))<0)
+        else if(uint.longValue() < 256L)
         {
             return new UnsignedIntegerFixedOneWriter(uint);
         }
