@@ -52,6 +52,13 @@
             <artifactId>jetty-ee11-websocket-jetty-server</artifactId>
         </dependency>
 
+        <!-- test dependencies -->
+        <dependency>
+            <groupId>org.apache.qpid</groupId>
+            <artifactId>qpid-test-utils</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
