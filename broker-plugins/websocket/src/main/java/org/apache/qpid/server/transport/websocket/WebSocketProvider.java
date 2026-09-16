@@ -29,11 +29,15 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.LongSupplier;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -89,12 +93,17 @@ class WebSocketProvider implements AcceptingTransport
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketProvider.class);
     private static final String AMQP_WEBSOCKET_SUBPROTOCOL = "amqp";
+    // Defensive backoff for tickers that remain overdue or fail. Normal scheduling uses the ticker's deadline.
+    private static final int IMMEDIATE_OVERDUE_TICK_RETRY_LIMIT = 1;
+    private static final long INITIAL_TICK_RETRY_BACKOFF_MILLIS = 100L;
+    private static final long MAXIMUM_TICK_RETRY_BACKOFF_MILLIS = 1_000L;
 
     private final Transport _transport;
     private final SslContextFactory.Server _sslContextFactory;
     private final AmqpPort<?> _port;
     private final Broker<?> _broker;
     private final MultiVersionProtocolEngineFactory _factory;
+    private final LongSupplier _currentTimeSupplier;
 
     private Server _server;
 
@@ -102,6 +111,7 @@ class WebSocketProvider implements AcceptingTransport
 
     private final WebSocketIdleTimeoutChecker _idleTimeoutChecker = new WebSocketIdleTimeoutChecker();
     private final AtomicBoolean _closed = new AtomicBoolean();
+    private boolean _tickSubmissionFailureReported;
 
     WebSocketProvider(final Transport transport,
                       final SSLContext sslContext,
@@ -109,10 +119,21 @@ class WebSocketProvider implements AcceptingTransport
                       final Set<Protocol> supported,
                       final Protocol defaultSupportedProtocolReply)
     {
+        this(transport, sslContext, port, supported, defaultSupportedProtocolReply, System::currentTimeMillis);
+    }
+
+    WebSocketProvider(final Transport transport,
+                      final SSLContext sslContext,
+                      final AmqpPort<?> port,
+                      final Set<Protocol> supported,
+                      final Protocol defaultSupportedProtocolReply,
+                      final LongSupplier currentTimeSupplier)
+    {
         _transport = transport;
         _sslContextFactory = transport == Transport.WSS ? createSslContextFactory(port) : null;
         _port = port;
         _broker = ((Broker<?>) port.getParent());
+        _currentTimeSupplier = Objects.requireNonNull(currentTimeSupplier, "Current time supplier must not be null");
 
         _factory = new MultiVersionProtocolEngineFactory(
                 _broker,
@@ -362,8 +383,7 @@ class WebSocketProvider implements AcceptingTransport
             }
             _protocolEngine.setNetworkConnection(_connectionWrapper);
             _protocolEngine.setWorkListener(object -> _server.getThreadPool().execute(() -> _connectionWrapper.doWork()));
-            _activeConnections.add(_connectionWrapper);
-            _idleTimeoutChecker.wakeup();
+            registerConnection(_connectionWrapper);
         }
 
         @OnWebSocketMessage
@@ -478,13 +498,12 @@ class WebSocketProvider implements AcceptingTransport
             {
                 _protocolEngine.closed();
             }
-            _activeConnections.remove(_connectionWrapper);
-            _idleTimeoutChecker.wakeup();
+            unregisterConnection(_connectionWrapper);
             _netInputBuffer.dispose();
         }
     }
 
-    private class ConnectionWrapper implements ServerNetworkConnection, ByteBufferSender
+    class ConnectionWrapper implements ServerNetworkConnection, ByteBufferSender
     {
         private final Session _connection;
         private final SocketAddress _localAddress;
@@ -493,6 +512,12 @@ class WebSocketProvider implements AcceptingTransport
         private final MultiVersionProtocolEngine _protocolEngine;
         private final ThreadPool _threadPool;
         private final Runnable _tickJob;
+        // Remains set while the job is queued, blocked on this wrapper's monitor, or executing.
+        private final AtomicBoolean _tickOutstanding = new AtomicBoolean();
+        private final AtomicInteger _consecutiveTickRetries = new AtomicInteger();
+
+        // Per-connection eligibility prevents unrelated checker wakeups from bypassing retry backoff.
+        private volatile long _tickNotBeforeTime;
 
         private Certificate _certificate;
         private long _maxWriteIdleMillis;
@@ -511,12 +536,92 @@ class WebSocketProvider implements AcceptingTransport
             _threadPool = threadPool;
             _tickJob = () ->
             {
-                synchronized (ConnectionWrapper.this)
+                long nextTickTime = 0L;
+                boolean tickSucceeded = false;
+                try
                 {
-                    protocolEngine.getAggregateTicker().tick(System.currentTimeMillis());
-                    doWrite();
+                    nextTickTime = processTick();
+                    tickSucceeded = true;
+                }
+                finally
+                {
+                    final long currentTime = _currentTimeSupplier.getAsLong();
+                    final long tickRetryTime = tickSucceeded
+                            ? processTickResult(nextTickTime, currentTime)
+                            : deferTick(currentTime, false);
+                    _tickOutstanding.set(false);
+                    _idleTimeoutChecker.tickCompleted(tickRetryTime);
                 }
             };
+        }
+
+        private long processTick()
+        {
+            synchronized (this)
+            {
+                final Ticker ticker = _protocolEngine.getAggregateTicker();
+                ticker.tick(_currentTimeSupplier.getAsLong());
+                doWrite();
+
+                final long currentTime = _currentTimeSupplier.getAsLong();
+                final long timeToNextTick = ticker.getTimeToNextTick(currentTime);
+                return timeToNextTick <= 0L ? currentTime : currentTime + timeToNextTick;
+            }
+        }
+
+        private long processTickResult(final long nextTickTime, final long currentTime)
+        {
+            if (nextTickTime > currentTime)
+            {
+                resetTickRetry();
+                return nextTickTime;
+            }
+
+            return deferTick(currentTime, true);
+        }
+
+        private long deferTick(final long currentTime, final boolean immediateRetryAllowed)
+        {
+            final int retryCount = _consecutiveTickRetries.incrementAndGet();
+            final int backoffRetryCount = immediateRetryAllowed
+                    ? retryCount - IMMEDIATE_OVERDUE_TICK_RETRY_LIMIT
+                    : retryCount;
+            final long retryDelay = backoffRetryCount <= 0 ? 0L : calculateTickRetryBackoff(backoffRetryCount);
+            final long retryTime = currentTime > Long.MAX_VALUE - retryDelay
+                    ? Long.MAX_VALUE
+                    : currentTime + retryDelay;
+            _tickNotBeforeTime = retryTime;
+            return retryTime;
+        }
+
+        private long calculateTickRetryBackoff(final int retryCount)
+        {
+            long retryDelay = INITIAL_TICK_RETRY_BACKOFF_MILLIS;
+            for (int i = 1; i < retryCount && retryDelay < MAXIMUM_TICK_RETRY_BACKOFF_MILLIS; i++)
+            {
+                retryDelay = Math.min(retryDelay * 2L, MAXIMUM_TICK_RETRY_BACKOFF_MILLIS);
+            }
+            return retryDelay;
+        }
+
+        private void resetTickRetry()
+        {
+            _consecutiveTickRetries.set(0);
+            _tickNotBeforeTime = 0L;
+        }
+
+        long getTickRetryDelay(final long currentTime)
+        {
+            final long tickNotBeforeTime = _tickNotBeforeTime;
+            return tickNotBeforeTime > currentTime ? tickNotBeforeTime - currentTime : 0L;
+        }
+
+        private void tickNoLongerOverdue()
+        {
+            if (_tickNotBeforeTime != 0L)
+            {
+                resetTickRetry();
+            }
         }
 
         @Override
@@ -692,20 +797,141 @@ class WebSocketProvider implements AcceptingTransport
             {
                 _protocolEngine.setIOThread(null);
             }
-
         }
 
-
-        public void tick()
+        boolean tryScheduleTick(final long currentTime)
         {
-            _threadPool.execute(_tickJob);
+            if (getTickRetryDelay(currentTime) > 0L)
+            {
+                return false;
+            }
+
+            if (_tickOutstanding.compareAndSet(false, true))
+            {
+                boolean submissionAttempted = false;
+                boolean submitted = false;
+                try
+                {
+                    // Completion publishes its retry deadline before releasing the outstanding guard.
+                    if (getTickRetryDelay(_currentTimeSupplier.getAsLong()) > 0L)
+                    {
+                        return false;
+                    }
+
+                    submissionAttempted = true;
+                    _threadPool.execute(_tickJob);
+                    submitted = true;
+                    return true;
+                }
+                finally
+                {
+                    if (!submitted)
+                    {
+                        if (submissionAttempted)
+                        {
+                            final long tickRetryTime = deferTick(_currentTimeSupplier.getAsLong(), false);
+                            _tickOutstanding.set(false);
+                            _idleTimeoutChecker.tickCompleted(tickRetryTime);
+                        }
+                        else
+                        {
+                            _tickOutstanding.set(false);
+                        }
+                    }
+                }
+            }
+            return false;
         }
     }
 
+    void registerConnection(final ConnectionWrapper connection)
+    {
+        _activeConnections.add(connection);
+        _idleTimeoutChecker.wakeup();
+    }
 
+    private void unregisterConnection(final ConnectionWrapper connection)
+    {
+        _activeConnections.remove(connection);
+        _idleTimeoutChecker.wakeup();
+    }
+
+    long scheduleDueConnections(final long currentTime)
+    {
+        long timeToNextTick = Long.MAX_VALUE;
+        RejectedExecutionException submissionFailure = null;
+        boolean dueConnectionFound = false;
+        boolean tickSubmissionSucceeded = false;
+        for (final ConnectionWrapper connection : _activeConnections)
+        {
+            final ProtocolEngine engine = connection._protocolEngine;
+            final Ticker ticker = engine.getAggregateTicker();
+            final long timeToTick = ticker.getTimeToNextTick(currentTime);
+            if (timeToTick <= 0)
+            {
+                dueConnectionFound = true;
+                final long retryDelay = connection.getTickRetryDelay(currentTime);
+                if (retryDelay > 0L)
+                {
+                    timeToNextTick = Math.min(timeToNextTick, retryDelay);
+                }
+                else
+                {
+                    try
+                    {
+                        final boolean tickScheduled = connection.tryScheduleTick(currentTime);
+                        tickSubmissionSucceeded |= tickScheduled;
+                        if (!tickScheduled)
+                        {
+                            final long updatedRetryDelay = connection.getTickRetryDelay(currentTime);
+                            if (updatedRetryDelay > 0L)
+                            {
+                                timeToNextTick = Math.min(timeToNextTick, updatedRetryDelay);
+                            }
+                        }
+                    }
+                    catch (final RejectedExecutionException e)
+                    {
+                        if (submissionFailure == null)
+                        {
+                            submissionFailure = e;
+                        }
+                        final long submissionRetryDelay = connection.getTickRetryDelay(currentTime);
+                        timeToNextTick = Math.min(timeToNextTick, submissionRetryDelay);
+                    }
+                }
+            }
+            else
+            {
+                connection.tickNoLongerOverdue();
+                if (timeToTick < timeToNextTick)
+                {
+                    timeToNextTick = timeToTick;
+                }
+            }
+        }
+        if (submissionFailure == null)
+        {
+            if (tickSubmissionSucceeded || !dueConnectionFound)
+            {
+                _tickSubmissionFailureReported = false;
+            }
+        }
+        else if (!_closed.get() && !_tickSubmissionFailureReported)
+        {
+            _tickSubmissionFailureReported = true;
+            LOGGER.warn("Failed to schedule WebSocket connection idle timeout processing; " +
+                        "repeated failures will not be reported until scheduling recovers", submissionFailure);
+        }
+        return timeToNextTick;
+    }
 
     private class WebSocketIdleTimeoutChecker extends Thread
     {
+        // Prevents a notification between scanning the tickers and entering wait() from being lost.
+        private long _wakeupSequence;
+        // Earliest deadline reported by a tick job that completed after the current scan began.
+        private long _tickCompletionTime = Long.MAX_VALUE;
 
         public WebSocketIdleTimeoutChecker()
         {
@@ -715,51 +941,66 @@ class WebSocketProvider implements AcceptingTransport
         @Override
         public void run()
         {
-            while(!_closed.get())
+            while (!_closed.get())
             {
-                ConnectionWrapper connectionToTick = null;
-                long currentTime = System.currentTimeMillis();
-                synchronized (this)
+                final long wakeupSequence = beginScan();
+                final long timeToNextTick = scheduleDueConnections(_currentTimeSupplier.getAsLong());
+                try
                 {
-                    long nextTick = Long.MAX_VALUE;
-                    for(ConnectionWrapper connection : _activeConnections)
-                    {
-                        ProtocolEngine engine = connection._protocolEngine;
-                        final Ticker ticker = engine.getAggregateTicker();
-                        long tick = ticker.getTimeToNextTick(currentTime);
-                        if(tick <= 0)
-                        {
-                            connectionToTick = connection;
-                            nextTick = -1;
-                            break;
-                        }
-                        else if(tick < nextTick)
-                        {
-                            nextTick = tick;
-                        }
-                    }
-                    if(nextTick > 0)
-                    {
-                        try
-                        {
-                            wait(nextTick);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            Thread.currentThread().interrupt();
-                            break;
-                        }
-                    }
+                    awaitNextTick(wakeupSequence, timeToNextTick);
                 }
-                if(connectionToTick != null)
+                catch (final InterruptedException e)
                 {
-                    connectionToTick.tick();
+                    Thread.currentThread().interrupt();
+                    break;
                 }
+            }
+        }
+
+        private synchronized long beginScan()
+        {
+            _tickCompletionTime = Long.MAX_VALUE;
+            return _wakeupSequence;
+        }
+
+        private synchronized void awaitNextTick(final long wakeupSequence, final long timeToNextTick)
+                throws InterruptedException
+        {
+            final long currentTime = _currentTimeSupplier.getAsLong();
+            final long scanTime = timeToNextTick == Long.MAX_VALUE
+                    ? Long.MAX_VALUE
+                    : currentTime + Math.max(0L, timeToNextTick);
+            while (!_closed.get() && wakeupSequence == _wakeupSequence)
+            {
+                final long wakeupTime = Math.min(scanTime, _tickCompletionTime);
+                if (wakeupTime == Long.MAX_VALUE)
+                {
+                    wait();
+                }
+                else
+                {
+                    final long waitTime = wakeupTime - _currentTimeSupplier.getAsLong();
+                    if (waitTime <= 0L)
+                    {
+                        break;
+                    }
+                    wait(waitTime);
+                }
+            }
+        }
+
+        private synchronized void tickCompleted(final long nextTickTime)
+        {
+            if (nextTickTime < _tickCompletionTime)
+            {
+                _tickCompletionTime = nextTickTime;
+                notifyAll();
             }
         }
 
         private synchronized void wakeup()
         {
+            _wakeupSequence++;
             notifyAll();
         }
     }

@@ -37,12 +37,14 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpClientCodec;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
+import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketClientCompressionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,20 +54,28 @@ import org.apache.qpid.tests.utils.BrokerAdmin;
 public class WebSocketFrameTransport extends FrameTransport
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketFrameTransport.class);
+    private static final int MAX_DECOMPRESSED_PAYLOAD_SIZE = 65_536;
 
     private final WebSocketFramingOutputHandler _webSocketFramingOutputHandler = new WebSocketFramingOutputHandler();
     private final WebSocketDeframingInputHandler _webSocketDeframingInputHandler = new WebSocketDeframingInputHandler();
     private final WebSocketClientHandler _webSocketClientHandler;
+    private final boolean _compressionEnabled;
 
     public WebSocketFrameTransport(final BrokerAdmin brokerAdmin)
     {
+        this(brokerAdmin, false);
+    }
+
+    WebSocketFrameTransport(final BrokerAdmin brokerAdmin, final boolean compressionEnabled)
+    {
         super(brokerAdmin, BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
-        URI uri = URI.create(String.format("tcp://%s:%d/",
-                                           getBrokerAddress().getHostString(),
-                                           getBrokerAddress().getPort()));
+        _compressionEnabled = compressionEnabled;
+        final URI uri = URI.create(String.format("tcp://%s:%d/",
+                                                 getBrokerAddress().getHostString(),
+                                                 getBrokerAddress().getPort()));
         _webSocketClientHandler = new WebSocketClientHandler(
                 WebSocketClientHandshakerFactory.newHandshaker(
-                        uri, WebSocketVersion.V13, "amqp", false, new DefaultHttpHeaders()));
+                        uri, WebSocketVersion.V13, "amqp", compressionEnabled, new DefaultHttpHeaders()));
     }
 
     @Override
@@ -73,6 +83,10 @@ public class WebSocketFrameTransport extends FrameTransport
     {
         pipeline.addLast(new HttpClientCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
+        if (_compressionEnabled)
+        {
+            pipeline.addLast(new WebSocketClientCompressionHandler(MAX_DECOMPRESSED_PAYLOAD_SIZE));
+        }
         pipeline.addLast(_webSocketClientHandler);
         pipeline.addLast(_webSocketFramingOutputHandler);
         pipeline.addLast(_webSocketDeframingInputHandler);
@@ -91,6 +105,11 @@ public class WebSocketFrameTransport extends FrameTransport
     {
         _webSocketFramingOutputHandler.splitAmqpFrames();
         return this;
+    }
+
+    String getNegotiatedExtensions()
+    {
+        return _webSocketClientHandler.getNegotiatedExtensions();
     }
 
     private static class WebSocketFramingOutputHandler extends ChannelOutboundHandlerAdapter
@@ -169,6 +188,7 @@ public class WebSocketFrameTransport extends FrameTransport
 
         private final WebSocketClientHandshaker _handshaker;
         private ChannelPromise _handshakeFuture;
+        private volatile String _negotiatedExtensions;
 
         WebSocketClientHandler(final WebSocketClientHandshaker handshaker)
         {
@@ -178,6 +198,11 @@ public class WebSocketFrameTransport extends FrameTransport
         ChannelFuture handshakeFuture()
         {
             return _handshakeFuture;
+        }
+
+        String getNegotiatedExtensions()
+        {
+            return _negotiatedExtensions;
         }
 
         @Override
@@ -199,7 +224,9 @@ public class WebSocketFrameTransport extends FrameTransport
             if (!_handshaker.isHandshakeComplete())
             {
                 // web socket client connected
-                _handshaker.finishHandshake(ch, (FullHttpResponse) msg);
+                final FullHttpResponse response = (FullHttpResponse) msg;
+                _negotiatedExtensions = response.headers().get(HttpHeaderNames.SEC_WEBSOCKET_EXTENSIONS);
+                _handshaker.finishHandshake(ch, response);
                 _handshakeFuture.setSuccess();
                 return;
             }
