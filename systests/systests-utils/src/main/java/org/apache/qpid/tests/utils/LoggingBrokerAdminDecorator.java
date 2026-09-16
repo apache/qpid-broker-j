@@ -175,6 +175,24 @@ public class LoggingBrokerAdminDecorator implements BrokerAdmin
     }
 
     @Override
+    public boolean isConnectionManagementSupported()
+    {
+        return _delegate.isConnectionManagementSupported();
+    }
+
+    @Override
+    public boolean isConnectionRegistered(final String clientId)
+    {
+        return _delegate.isConnectionRegistered(clientId);
+    }
+
+    @Override
+    public CompletableFuture<Void> closeConnectionAsync(final String clientId)
+    {
+        return _delegate.closeConnectionAsync(clientId);
+    }
+
+    @Override
     public String getValidUsername()
     {
         return _delegate.getValidUsername();

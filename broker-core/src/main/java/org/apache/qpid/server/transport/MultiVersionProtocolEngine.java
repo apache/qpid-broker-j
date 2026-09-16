@@ -114,6 +114,12 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
     }
 
     @Override
+    public boolean isProtocolCloseComplete()
+    {
+        return _delegate.isProtocolCloseComplete();
+    }
+
+    @Override
     public void writerIdle()
     {
         _delegate.writerIdle();

@@ -1353,6 +1353,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 {
                     getSender().send(protocolHeader);
                 }
+                getSender().flush();
                 SaslMechanisms mechanisms = new SaslMechanisms();
                 ArrayList<Symbol> mechanismsList = new ArrayList<>();
                 for (String name :  authenticationProvider.getAvailableMechanisms(getTransport().isSecure()))
@@ -1391,6 +1392,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 {
                     getSender().send(protocolHeader);
                 }
+                getSender().flush();
                 _connectionState = ConnectionState.AWAIT_OPEN;
                 _frameHandler = getFrameHandler(false);
 
@@ -1640,6 +1642,12 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     public int getSessionCountLimit()
     {
         return _channelMax + 1;
+    }
+
+    @Override
+    public boolean isProtocolCloseComplete()
+    {
+        return _orderlyClose.get();
     }
 
     @Override

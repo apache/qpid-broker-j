@@ -22,9 +22,10 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import static org.apache.qpid.server.protocol.v1_0.constants.Constants.MIN_MAX_FRAME_SIZE;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -36,6 +37,7 @@ import java.lang.reflect.Field;
 import java.net.SocketAddress;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -48,12 +50,18 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.ByteBufferSender;
+import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -280,6 +288,68 @@ class AMQPConnection_1_0ImplTest extends UnitTestBase
 
         assertEquals(1024, connection.getMaxFrameSize(),
                 "max-frame-size should default to broker buffer size when null");
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void testProtocolCloseCompletesOnlyAfterCloseExchange(final boolean brokerInitiated) throws Exception
+    {
+        stubNetworkAndPort();
+        final AMQPConnection_1_0Impl connection = createConnectionAwaitingOpen();
+        final MultiVersionProtocolEngine engine = createDelegatingEngine(connection);
+        setConnectionState(connection, ConnectionState.OPENED);
+        assertFalse(engine.isProtocolCloseComplete());
+
+        if (brokerInitiated)
+        {
+            connection.close(new Error(ConnectionError.CONNECTION_FORCED, "Test broker close"));
+            assertTrue(connection.isClosing());
+            assertFalse(engine.isProtocolCloseComplete(), "Sending CLOSE alone does not complete the exchange");
+        }
+        connection.receiveClose(0, new Close());
+
+        assertTrue(connection.isClosed());
+        assertTrue(engine.isProtocolCloseComplete());
+    }
+
+    @Test
+    void testTransportLossDoesNotCompleteProtocolClose() throws Exception
+    {
+        stubNetworkAndPort();
+        final AMQPConnection_1_0Impl connection = createConnectionAwaitingOpen();
+        final MultiVersionProtocolEngine engine = createDelegatingEngine(connection);
+        setConnectionState(connection, ConnectionState.OPENED);
+
+        connection.closed();
+
+        assertTrue(connection.isClosed());
+        assertFalse(engine.isProtocolCloseComplete());
+    }
+
+    @Test
+    void testCloseBeforeOpenDoesNotCompleteProtocolClose() throws Exception
+    {
+        stubNetworkAndPort();
+        final AMQPConnection_1_0Impl connection = createConnectionAwaitingOpen();
+        final MultiVersionProtocolEngine engine = createDelegatingEngine(connection);
+
+        connection.receiveClose(0, new Close());
+
+        assertTrue(connection.isClosed());
+        assertFalse(engine.isProtocolCloseComplete());
+    }
+
+    private MultiVersionProtocolEngine createDelegatingEngine(final AMQPConnection_1_0Impl connection)
+            throws ReflectiveOperationException
+    {
+        final MultiVersionProtocolEngine engine = new MultiVersionProtocolEngine(
+                _broker, Set.of(Protocol.AMQP_1_0), Protocol.AMQP_1_0, _port, Transport.WS, 0L,
+                new ProtocolEngineCreator[0], null);
+        assertFalse(engine.isProtocolCloseComplete(), "Protocol negotiation cannot have completed a close");
+        final Field delegate = MultiVersionProtocolEngine.class.getDeclaredField("_delegate");
+        delegate.setAccessible(true);
+        delegate.set(engine, connection);
+        return engine;
     }
 
     private void stubNetworkAndPort()

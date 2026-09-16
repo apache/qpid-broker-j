@@ -38,6 +38,17 @@ public interface ProtocolEngine extends TransportActivity
     // Called by the NetworkDriver when the socket has been closed for reading
     void closed();
 
+    /**
+     * Returns whether the protocol closing handshake has completed. This diagnostic query must be nonblocking
+     * and safe to call from transport threads while protocol processing is in progress.
+     *
+     * @return true if the protocol close exchange has completed, otherwise false
+     */
+    default boolean isProtocolCloseComplete()
+    {
+        return false;
+    }
+
     // Called when the NetworkEngine has not written data for the specified period of time (will trigger a
     // heartbeat)
     @Override

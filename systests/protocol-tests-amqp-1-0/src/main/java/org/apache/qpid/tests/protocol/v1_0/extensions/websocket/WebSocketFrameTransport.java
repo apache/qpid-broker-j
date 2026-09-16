@@ -23,6 +23,9 @@ package org.apache.qpid.tests.protocol.v1_0.extensions.websocket;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -30,16 +33,20 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.socket.DuplexChannel;
 import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.ContinuationWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
@@ -54,10 +61,14 @@ import org.apache.qpid.tests.utils.BrokerAdmin;
 public class WebSocketFrameTransport extends FrameTransport
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketFrameTransport.class);
-    private static final int MAX_DECOMPRESSED_PAYLOAD_SIZE = 65_536;
+    private static final int MAX_DECOMPRESSED_WEBSOCKET_MESSAGE_SIZE = 256 * 1024;
+    private static final int MAX_WEBSOCKET_FRAME_SIZE = 2 * MAX_DECOMPRESSED_WEBSOCKET_MESSAGE_SIZE;
 
+    private final AtomicInteger _firstBinaryWebSocketMessageSize = new AtomicInteger(-1);
+    private final AtomicInteger _largestBinaryWebSocketMessageSize = new AtomicInteger();
     private final WebSocketFramingOutputHandler _webSocketFramingOutputHandler = new WebSocketFramingOutputHandler();
-    private final WebSocketDeframingInputHandler _webSocketDeframingInputHandler = new WebSocketDeframingInputHandler();
+    private final WebSocketDeframingInputHandler _webSocketDeframingInputHandler =
+            new WebSocketDeframingInputHandler(_firstBinaryWebSocketMessageSize, _largestBinaryWebSocketMessageSize);
     private final WebSocketClientHandler _webSocketClientHandler;
     private final boolean _compressionEnabled;
 
@@ -75,7 +86,8 @@ public class WebSocketFrameTransport extends FrameTransport
                                                  getBrokerAddress().getPort()));
         _webSocketClientHandler = new WebSocketClientHandler(
                 WebSocketClientHandshakerFactory.newHandshaker(
-                        uri, WebSocketVersion.V13, "amqp", compressionEnabled, new DefaultHttpHeaders()));
+                        uri, WebSocketVersion.V13, "amqp", compressionEnabled, new DefaultHttpHeaders(),
+                        MAX_WEBSOCKET_FRAME_SIZE));
     }
 
     @Override
@@ -85,7 +97,7 @@ public class WebSocketFrameTransport extends FrameTransport
         pipeline.addLast(new HttpObjectAggregator(65536));
         if (_compressionEnabled)
         {
-            pipeline.addLast(new WebSocketClientCompressionHandler(MAX_DECOMPRESSED_PAYLOAD_SIZE));
+            pipeline.addLast(new WebSocketClientCompressionHandler(MAX_DECOMPRESSED_WEBSOCKET_MESSAGE_SIZE));
         }
         pipeline.addLast(_webSocketClientHandler);
         pipeline.addLast(_webSocketFramingOutputHandler);
@@ -107,9 +119,35 @@ public class WebSocketFrameTransport extends FrameTransport
         return this;
     }
 
+    WebSocketFrameTransport withholdWebSocketCloseResponse()
+    {
+        _webSocketClientHandler.withholdWebSocketCloseResponse();
+        return this;
+    }
+
+    boolean awaitWebSocketCloseFrame(final long timeout, final TimeUnit unit) throws InterruptedException
+    {
+        return _webSocketClientHandler.awaitWebSocketCloseFrame(timeout, unit);
+    }
+
+    boolean isChannelOutputOpen()
+    {
+        return _webSocketClientHandler.isChannelOutputOpen();
+    }
+
     String getNegotiatedExtensions()
     {
         return _webSocketClientHandler.getNegotiatedExtensions();
+    }
+
+    int getFirstBinaryWebSocketMessageSize()
+    {
+        return _firstBinaryWebSocketMessageSize.get();
+    }
+
+    int getLargestBinaryWebSocketMessageSize()
+    {
+        return _largestBinaryWebSocketMessageSize.get();
     }
 
     private static class WebSocketFramingOutputHandler extends ChannelOutboundHandlerAdapter
@@ -162,12 +200,39 @@ public class WebSocketFrameTransport extends FrameTransport
 
     private static class WebSocketDeframingInputHandler extends ChannelInboundHandlerAdapter
     {
+        private final AtomicInteger _firstBinaryWebSocketMessageSize;
+        private final AtomicInteger _largestBinaryWebSocketMessageSize;
+        private int _currentBinaryWebSocketMessageSize = -1;
+
+        private WebSocketDeframingInputHandler(final AtomicInteger firstBinaryWebSocketMessageSize,
+                                               final AtomicInteger largestBinaryWebSocketMessageSize)
+        {
+            _firstBinaryWebSocketMessageSize = firstBinaryWebSocketMessageSize;
+            _largestBinaryWebSocketMessageSize = largestBinaryWebSocketMessageSize;
+        }
+
         @Override
-        public void channelRead(ChannelHandlerContext ctx, Object msg)
+        public void channelRead(final ChannelHandlerContext ctx, final Object msg)
         {
             if (msg instanceof WebSocketFrame)
             {
-                WebSocketFrame frame = (WebSocketFrame) msg;
+                final WebSocketFrame frame = (WebSocketFrame) msg;
+                if (frame instanceof BinaryWebSocketFrame)
+                {
+                    _currentBinaryWebSocketMessageSize = frame.content().readableBytes();
+                }
+                else if (frame instanceof ContinuationWebSocketFrame && _currentBinaryWebSocketMessageSize >= 0)
+                {
+                    _currentBinaryWebSocketMessageSize += frame.content().readableBytes();
+                }
+                if (_currentBinaryWebSocketMessageSize >= 0 &&
+                        (frame instanceof BinaryWebSocketFrame || frame instanceof ContinuationWebSocketFrame) &&
+                        frame.isFinalFragment())
+                {
+                    _firstBinaryWebSocketMessageSize.compareAndSet(-1, _currentBinaryWebSocketMessageSize);
+                    _largestBinaryWebSocketMessageSize.accumulateAndGet(_currentBinaryWebSocketMessageSize, Math::max);
+                    _currentBinaryWebSocketMessageSize = -1;
+                }
                 ctx.fireChannelRead(frame.content());
             }
             else
@@ -187,8 +252,11 @@ public class WebSocketFrameTransport extends FrameTransport
     {
 
         private final WebSocketClientHandshaker _handshaker;
+        private final CountDownLatch _webSocketCloseFrameReceived = new CountDownLatch(1);
         private ChannelPromise _handshakeFuture;
         private volatile String _negotiatedExtensions;
+        private volatile Channel _channel;
+        private volatile boolean _withholdWebSocketCloseResponse;
 
         WebSocketClientHandler(final WebSocketClientHandshaker handshaker)
         {
@@ -205,10 +273,33 @@ public class WebSocketFrameTransport extends FrameTransport
             return _negotiatedExtensions;
         }
 
+        void withholdWebSocketCloseResponse()
+        {
+            _withholdWebSocketCloseResponse = true;
+        }
+
+        boolean awaitWebSocketCloseFrame(final long timeout, final TimeUnit unit) throws InterruptedException
+        {
+            return _webSocketCloseFrameReceived.await(timeout, unit);
+        }
+
+        boolean isChannelOutputOpen()
+        {
+            final Channel channel = _channel;
+            return channel instanceof DuplexChannel && !((DuplexChannel) channel).isOutputShutdown();
+        }
+
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx)
         {
             _handshakeFuture = ctx.newPromise();
+            _channel = ctx.channel();
+            if (_withholdWebSocketCloseResponse)
+            {
+                // Keep the client output open when the broker closes its output. Otherwise Netty completes the TCP
+                // shutdown on behalf of the test peer and accidentally satisfies the server-side closing handshake
+                _channel.config().setOption(ChannelOption.ALLOW_HALF_CLOSURE, true);
+            }
         }
 
         @Override
@@ -218,7 +309,7 @@ public class WebSocketFrameTransport extends FrameTransport
         }
 
         @Override
-        protected void channelRead0(ChannelHandlerContext ctx, Object msg)
+        protected void channelRead0(final ChannelHandlerContext ctx, final Object msg)
         {
             final Channel ch = ctx.channel();
             if (!_handshaker.isHandshakeComplete())
@@ -238,7 +329,16 @@ public class WebSocketFrameTransport extends FrameTransport
                                                   response.content().toString(StandardCharsets.UTF_8), response.status()));
             }
 
-            WebSocketFrame frame = (WebSocketFrame) msg;
+            final WebSocketFrame frame = (WebSocketFrame) msg;
+            if (frame instanceof CloseWebSocketFrame)
+            {
+                _webSocketCloseFrameReceived.countDown();
+                if (_withholdWebSocketCloseResponse)
+                {
+                    // consume the frame without writing the peer's WebSocket CLOSE response
+                    return;
+                }
+            }
             ctx.fireChannelRead(frame.retain());
         }
 

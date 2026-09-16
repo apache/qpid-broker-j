@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -92,6 +93,7 @@ class ProtocolEngine_1_0_0Test extends UnitTestBase
 
     private AMQPConnection_1_0Impl _protocolEngine_1_0_0;
     private ServerNetworkConnection _networkConnection;
+    private ByteBufferSender _sender;
     private Broker<?> _broker;
     private AmqpPort _port;
     private AuthenticationProvider<?> _authenticationProvider;
@@ -147,8 +149,8 @@ class ProtocolEngine_1_0_0Test extends UnitTestBase
             return subject;
         });
 
-        final ByteBufferSender sender = mock(ByteBufferSender.class);
-        when(_networkConnection.getSender()).thenReturn(sender);
+        _sender = mock(ByteBufferSender.class);
+        when(_networkConnection.getSender()).thenReturn(_sender);
 
         final AMQPDescribedTypeRegistry registry = AMQPDescribedTypeRegistry.newInstance().registerTransportLayer()
                 .registerMessagingLayer()
@@ -196,6 +198,7 @@ class ProtocolEngine_1_0_0Test extends UnitTestBase
 
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance()
                 .getHeaderIdentifier()));
+        verify(_sender).flush();
 
         final Open open = new Open();
         open.setContainerId("testContainerId");
@@ -270,6 +273,7 @@ class ProtocolEngine_1_0_0Test extends UnitTestBase
 
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0_SASL.getInstance()
                 .getHeaderIdentifier()));
+        verify(_sender).flush();
 
         final SaslInit init = new SaslInit();
         init.setMechanism(Symbol.valueOf("ANONYMOUS"));
@@ -277,6 +281,7 @@ class ProtocolEngine_1_0_0Test extends UnitTestBase
 
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance()
                 .getHeaderIdentifier()));
+        verify(_sender, times(2)).flush();
 
         final Open open = new Open();
         open.setContainerId("testContainerId");
