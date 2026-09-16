@@ -23,13 +23,20 @@ package org.apache.qpid.tests.protocol.v1_0.extensions.websocket;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
+import org.apache.qpid.server.protocol.v1_0.type.extensions.soleconn.SoleConnectionEnforcementPolicy;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.tests.protocol.ChannelClosedResponse;
 import org.apache.qpid.tests.protocol.SpecificationTest;
@@ -42,10 +49,14 @@ import org.apache.qpid.tests.utils.ConfigItem;
 
 @BrokerSpecific(kind = BrokerAdmin.KIND_BROKER_J)
 @ConfigItem(name = AmqpPort.HEART_BEAT_DELAY, value = WebSocketIdleTimeoutTest.IDLE_SECONDS)
+@ConfigItem(name = AmqpPort.FINAL_WRITE_TIMEOUT,
+            value = WebSocketIdleTimeoutTest.FINAL_WRITE_TIMEOUT_MILLIS)
 public class WebSocketIdleTimeoutTest extends BrokerAdminUsingTestBase
 {
     static final String IDLE_SECONDS = "1";
+    static final String FINAL_WRITE_TIMEOUT_MILLIS = "5000";
     private static final int IDLE_TIMEOUT_MILLIS = Integer.parseInt(IDLE_SECONDS) * 1000;
+    private static final long AWAIT_TIMEOUT_SECONDS = 10L;
 
     @BeforeEach
     public void setUp()
@@ -74,6 +85,40 @@ public class WebSocketIdleTimeoutTest extends BrokerAdminUsingTestBase
     }
 
     @Test
+    public void replacementConnectionOpensWhileIdleWebSocketIsClosing() throws Exception
+    {
+        final String containerId = getFullTestName();
+        try (final WebSocketFrameTransport existingTransport = new WebSocketFrameTransport(getBrokerAdmin())
+                .withholdWebSocketCloseResponse()
+                .connect())
+        {
+            final Open existingOpen = negotiateSoleConnection(existingTransport.newInteraction(), containerId);
+            assumeTrue(existingOpen.getOfferedCapabilities() != null);
+            assumeTrue(hasItemInArray(Symbols.SOLE_CONNECTION_FOR_CONTAINER)
+                               .matches(existingOpen.getOfferedCapabilities()));
+            assumeTrue(existingOpen.getProperties() != null);
+            assumeTrue(hasEntry(Symbols.SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                SoleConnectionEnforcementPolicy.CLOSE_EXISTING.getValue())
+                               .matches(existingOpen.getProperties()));
+
+            assertThat(existingTransport.awaitWebSocketCloseFrame(AWAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS), is(true));
+            assertThat(existingTransport.isChannelOutputOpen(), is(true));
+
+            try (WebSocketFrameTransport replacementTransport =
+                         new WebSocketFrameTransport(getBrokerAdmin()).connect())
+            {
+                final Open replacementOpen =
+                        negotiateSoleConnection(replacementTransport.newInteraction(), containerId);
+                assertThat(replacementOpen.getOfferedCapabilities(),
+                           hasItemInArray(Symbols.SOLE_CONNECTION_FOR_CONTAINER));
+                assertThat(replacementOpen.getProperties(),
+                           hasEntry(Symbols.SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                                    SoleConnectionEnforcementPolicy.CLOSE_EXISTING.getValue()));
+            }
+        }
+    }
+
+    @Test
     @SpecificationTest(section = "2.4.5",
             description = "A peer with nothing to send MAY send an empty frame to prevent idle timeout.")
     public void compressedWebSocketReceivesIdleFrames() throws Exception
@@ -90,12 +135,20 @@ public class WebSocketIdleTimeoutTest extends BrokerAdminUsingTestBase
                     .getLatestResponse(Open.class);
             assertThat(responseOpen.getIdleTimeOut().intValue(), is(equalTo(IDLE_TIMEOUT_MILLIS)));
 
-            interaction.consumeResponse(EmptyResponse.class)
-                       .emptyFrame();
-            interaction.consumeResponse(EmptyResponse.class)
-                       .emptyFrame();
+            interaction.consumeResponse(EmptyResponse.class).emptyFrame();
+            interaction.consumeResponse(EmptyResponse.class).emptyFrame();
 
             interaction.doCloseConnection();
         }
+    }
+
+    private Open negotiateSoleConnection(final Interaction interaction, final String containerId) throws Exception
+    {
+        return interaction.openContainerId(containerId)
+                .openDesiredCapabilities(Symbols.SOLE_CONNECTION_FOR_CONTAINER)
+                .openProperties(Map.of(Symbols.SOLE_CONNECTION_ENFORCEMENT_POLICY,
+                        SoleConnectionEnforcementPolicy.CLOSE_EXISTING))
+                .negotiateOpen()
+                .getLatestResponse(Open.class);
     }
 }

@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,6 +59,7 @@ import org.apache.qpid.server.logging.logback.LogbackLoggingSystemLauncherListen
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.ManageableMessage;
@@ -461,6 +463,29 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public boolean isConnectionManagementSupported()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isConnectionRegistered(final String clientId)
+    {
+        return findConnection(clientId) != null;
+    }
+
+    @Override
+    public CompletableFuture<Void> closeConnectionAsync(final String clientId)
+    {
+        final Connection<?> connection = findConnection(clientId);
+        if (connection == null)
+        {
+            throw new NotFoundException(String.format("Connection with client ID '%s' not found", clientId));
+        }
+        return connection.closeAsync();
+    }
+
+    @Override
     public String getValidUsername()
     {
         return "guest";
@@ -482,6 +507,19 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     public String getType()
     {
         return TYPE;
+    }
+
+    private Connection<?> findConnection(final String clientId)
+    {
+        Objects.requireNonNull(clientId, "Client ID must not be null");
+        for (final Connection<?> connection : _currentVirtualHostNode.getVirtualHost().getConnections())
+        {
+            if (clientId.equals(connection.getClientId()))
+            {
+                return connection;
+            }
+        }
+        return null;
     }
 
     private Queue<?> getQueue(final String queueName)

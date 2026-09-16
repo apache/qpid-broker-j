@@ -22,6 +22,7 @@ package org.apache.qpid.tests.protocol.v1_0.extensions.websocket;
 
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
@@ -34,14 +35,21 @@ import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.tests.protocol.SpecificationTest;
 import org.apache.qpid.tests.protocol.v1_0.FrameTransport;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
+import org.apache.qpid.tests.protocol.v1_0.Utils;
+import org.apache.qpid.tests.utils.BrokerAdmin;
 import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 
 public class WebSocketTest extends BrokerAdminUsingTestBase
 {
+    private static final int LARGE_MESSAGE_SIZE = 300 * 1024;
+
     @BeforeEach
     public void setUp()
     {
@@ -61,7 +69,26 @@ public class WebSocketTest extends BrokerAdminUsingTestBase
     }
 
     @Test
-    @SpecificationTest(section = "2.4", description = "[...] a single AMQP frame MAY be split over one or more consecutive WebSocket messages. ")
+    @SpecificationTest(section = "2.3", description = "The AMQP protocol header is one WebSocket message.")
+    public void pipelinedOpenDoesNotShareProtocolHeaderMessage() throws Exception
+    {
+        try (final WebSocketFrameTransport transport = new WebSocketFrameTransport(getBrokerAdmin()).connect())
+        {
+            final Interaction interaction = transport.newInteraction();
+            interaction.negotiateProtocol()
+                    .open()
+                    .consumeResponse(byte[].class);
+
+            assertThat(transport.getFirstBinaryWebSocketMessageSize(), is(8));
+
+            interaction.consumeResponse(Open.class);
+            interaction.doCloseConnection();
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "2.4",
+            description = "[...] a single AMQP frame MAY be split over one or more consecutive WebSocket messages. ")
     public void amqpFramesSplitOverManyWebSocketFrames() throws Exception
     {
         try (FrameTransport transport = new WebSocketFrameTransport(getBrokerAdmin()).splitAmqpFrames().connect())
@@ -98,5 +125,50 @@ public class WebSocketTest extends BrokerAdminUsingTestBase
 
             interaction.doCloseConnection();
         }
+    }
+
+    @Test
+    public void compressedWebSocketReceivesLargeMessage() throws Exception
+    {
+        final String payload = createLargeMessagePayload();
+        getBrokerAdmin().createQueue(BrokerAdmin.TEST_QUEUE_NAME);
+        Utils.putMessageOnQueue(getBrokerAdmin(), BrokerAdmin.TEST_QUEUE_NAME, payload);
+
+        try (final WebSocketFrameTransport transport = new WebSocketFrameTransport(getBrokerAdmin(), true).connect())
+        {
+            assertThat(transport.getNegotiatedExtensions(), containsString("permessage-deflate"));
+
+            final Interaction interaction = transport.newInteraction();
+            interaction.negotiateOpen()
+                    .begin().consumeResponse(Begin.class)
+                    .attachRole(Role.RECEIVER)
+                    .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                    .attach().consumeResponse(Attach.class)
+                    .flowIncomingWindow(UnsignedInteger.ONE)
+                    .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                    .flowOutgoingWindow(UnsignedInteger.ZERO)
+                    .flowNextOutgoingId(UnsignedInteger.ZERO)
+                    .flowLinkCredit(UnsignedInteger.ONE)
+                    .flowHandleFromLinkHandle()
+                    .flow()
+                    .receiveDelivery()
+                    .decodeLatestDelivery();
+
+            assertThat(interaction.getDecodedLatestDelivery(), is(payload));
+            assertThat(transport.getLargestBinaryWebSocketMessageSize(), greaterThanOrEqualTo(64 * 1024 + 1));
+            interaction.detachEndCloseUnconditionally();
+        }
+    }
+
+    private String createLargeMessagePayload()
+    {
+        final char[] payload = new char[LARGE_MESSAGE_SIZE];
+        int value = 1;
+        for (int i = 0; i < payload.length; i++)
+        {
+            value = 1_664_525 * value + 1_013_904_223;
+            payload[i] = (char) (' ' + (value >>> 26));
+        }
+        return new String(payload);
     }
 }

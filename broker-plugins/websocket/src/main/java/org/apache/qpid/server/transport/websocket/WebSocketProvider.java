@@ -20,31 +20,16 @@
  */
 package org.apache.qpid.server.transport.websocket;
 
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.security.Principal;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
 
 import jakarta.servlet.http.HttpServletResponse;
-
+import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketCreator;
 import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServlet;
@@ -57,61 +42,35 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.websocket.api.Callback;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.transport.AcceptingTransport;
-import org.apache.qpid.server.transport.ByteBufferSender;
-import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngineFactory;
-import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.transport.SchedulingDelayNotificationListener;
-import org.apache.qpid.server.transport.ServerNetworkConnection;
-import org.apache.qpid.server.transport.network.Ticker;
-import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.server.transport.websocket.connection.AmqpWebSocket;
+import org.apache.qpid.server.transport.websocket.connection.WebSocketConnectionScheduler;
+import org.apache.qpid.server.transport.websocket.connection.WebSocketSettings;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 class WebSocketProvider implements AcceptingTransport
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketProvider.class);
     private static final String AMQP_WEBSOCKET_SUBPROTOCOL = "amqp";
-    // Defensive backoff for tickers that remain overdue or fail. Normal scheduling uses the ticker's deadline.
-    private static final int IMMEDIATE_OVERDUE_TICK_RETRY_LIMIT = 1;
-    private static final long INITIAL_TICK_RETRY_BACKOFF_MILLIS = 100L;
-    private static final long MAXIMUM_TICK_RETRY_BACKOFF_MILLIS = 1_000L;
 
     private final Transport _transport;
-    private final SslContextFactory.Server _sslContextFactory;
+    private final PortSslContextFactory _sslContextFactory;
     private final AmqpPort<?> _port;
-    private final Broker<?> _broker;
     private final MultiVersionProtocolEngineFactory _factory;
-    private final LongSupplier _currentTimeSupplier;
+    private final WebSocketConnectionScheduler _connectionScheduler;
+    private final WebSocketSettings _settings;
 
     private Server _server;
-
-    private final List<ConnectionWrapper> _activeConnections = new CopyOnWriteArrayList<>();
-
-    private final WebSocketIdleTimeoutChecker _idleTimeoutChecker = new WebSocketIdleTimeoutChecker();
-    private final AtomicBoolean _closed = new AtomicBoolean();
-    private boolean _tickSubmissionFailureReported;
 
     WebSocketProvider(final Transport transport,
                       final SSLContext sslContext,
@@ -119,7 +78,8 @@ class WebSocketProvider implements AcceptingTransport
                       final Set<Protocol> supported,
                       final Protocol defaultSupportedProtocolReply)
     {
-        this(transport, sslContext, port, supported, defaultSupportedProtocolReply, System::currentTimeMillis);
+        this(transport, sslContext, port, supported, defaultSupportedProtocolReply,
+             System::currentTimeMillis, System::nanoTime);
     }
 
     WebSocketProvider(final Transport transport,
@@ -127,29 +87,60 @@ class WebSocketProvider implements AcceptingTransport
                       final AmqpPort<?> port,
                       final Set<Protocol> supported,
                       final Protocol defaultSupportedProtocolReply,
-                      final LongSupplier currentTimeSupplier)
+                      final LongSupplier currentTimeSupplier,
+                      final LongSupplier nanoTimeSupplier)
     {
         _transport = transport;
-        _sslContextFactory = transport == Transport.WSS ? createSslContextFactory(port) : null;
+        _sslContextFactory = transport == Transport.WSS ? new PortSslContextFactory(port) : null;
         _port = port;
-        _broker = ((Broker<?>) port.getParent());
-        _currentTimeSupplier = Objects.requireNonNull(currentTimeSupplier, "Current time supplier must not be null");
-
-        _factory = new MultiVersionProtocolEngineFactory(
-                _broker,
-                supported,
-                defaultSupportedProtocolReply,
-                _port,
+        final Broker<?> broker = (Broker<?>) port.getParent();
+        // This timeout already bounds final transport writes for TCP. For WebSocket it bounds both draining the final
+        // AMQP output and waiting for the peer's WebSocket CLOSE response.
+        final Long finalWriteTimeout = port.getContextValue(Long.class, AmqpPort.FINAL_WRITE_TIMEOUT);
+        final long finalWriteTimeoutMillis = finalWriteTimeout == null
+                ? AmqpPort.DEFAULT_FINAL_WRITE_TIMEOUT
+                : Math.max(0L, finalWriteTimeout);
+        final long webSocketCloseTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(finalWriteTimeoutMillis);
+        _connectionScheduler = new WebSocketConnectionScheduler("WebSocket Idle Checker: " + port,
+                currentTimeSupplier, nanoTimeSupplier, webSocketCloseTimeoutNanos);
+        _settings = new WebSocketSettings(broker.getNetworkBufferSize());
+        _factory = new MultiVersionProtocolEngineFactory(broker, supported, defaultSupportedProtocolReply, _port,
                 _transport);
     }
 
     @Override
     public void start()
     {
-        _idleTimeoutChecker.start();
+        _connectionScheduler.start();
 
-        _server = new Server(new QBBTrackingThreadPool());
+        _server = new Server(new QpidByteBufferTrackingThreadPool());
 
+        final ServerConnector connector = createConnector();
+        _server.addConnector(connector);
+
+        final ServletContextHandler servletContextHandler = createServletContext(createWebSocketCreator());
+
+        final ContextHandlerCollection handlers = new ContextHandlerCollection();
+        handlers.addHandler(servletContextHandler);
+        handlers.addHandler(createFallbackHandler());
+        _server.setHandler(handlers);
+
+        try
+        {
+            _server.start();
+        }
+        catch (final RuntimeException e)
+        {
+            throw e;
+        }
+        catch (final Exception e)
+        {
+            throw new ServerScopedRuntimeException(e);
+        }
+    }
+
+    private ServerConnector createConnector()
+    {
         final ServerConnector connector;
         final HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory();
         httpConnectionFactory.getHttpConfiguration().setSendServerVersion(false);
@@ -198,14 +189,21 @@ class WebSocketProvider implements AcceptingTransport
         }
 
         connector.setPort(_port.getPort());
-        _server.addConnector(connector);
+        return connector;
+    }
 
-        final JettyWebSocketCreator jettyWebSocketCreator = (request, response) ->
+    private JettyWebSocketCreator createWebSocketCreator()
+    {
+        return (request, response) ->
         {
             response.setAcceptedSubProtocol(AMQP_WEBSOCKET_SUBPROTOCOL);
-            return new AmqpWebSocket(request.getCertificates());
+            return new AmqpWebSocket(_factory, _server.getThreadPool(), _connectionScheduler, _settings,
+                    request.getCertificates());
         };
+    }
 
+    private ServletContextHandler createServletContext(final JettyWebSocketCreator jettyWebSocketCreator)
+    {
         final JettyWebSocketServlet websocketServlet = new JettyWebSocketServlet()
         {
             @Override
@@ -224,10 +222,12 @@ class WebSocketProvider implements AcceptingTransport
         WebSocketServerComponents.ensureWebSocketComponents(_server, servletContextHandler);
         JettyWebSocketServerContainer.ensureContainer(servletContextHandler.getServletContext())
                 .addMapping("/", jettyWebSocketCreator);
+        return servletContextHandler;
+    }
 
-        final ContextHandlerCollection handlers = new ContextHandlerCollection();
-        handlers.addHandler(servletContextHandler);
-        handlers.addHandler(new Handler.Abstract()
+    private Handler createFallbackHandler()
+    {
+        return new Handler.Abstract()
         {
             @Override
             public boolean handle(final Request request,
@@ -242,65 +242,24 @@ class WebSocketProvider implements AcceptingTransport
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 return true;
             }
-        });
-        _server.setHandler(handlers);
-
-        try
-        {
-            _server.start();
-        }
-        catch (RuntimeException e)
-        {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new ServerScopedRuntimeException(e);
-        }
-    }
-
-    private SslContextFactory.Server createSslContextFactory(final AmqpPort<?> port)
-    {
-        final SslContextFactory.Server sslContextFactory = new SslContextFactory.Server()
-        {
-            @Override
-            public void customize(final SSLEngine sslEngine)
-            {
-                super.customize(sslEngine);
-                SSLUtil.updateEnabledCipherSuites(sslEngine,
-                                                  port.getTlsCipherSuiteAllowList(),
-                                                  port.getTlsCipherSuiteDenyList());
-                SSLUtil.updateEnabledTlsProtocols(sslEngine,
-                                                  port.getTlsProtocolAllowList(),
-                                                  port.getTlsProtocolDenyList());
-
-                if (port.getTlsCipherSuiteAllowList() != null && !port.getTlsCipherSuiteAllowList().isEmpty())
-                {
-                    final SSLParameters sslParameters = sslEngine.getSSLParameters();
-                    sslParameters.setUseCipherSuitesOrder(true);
-                    sslEngine.setSSLParameters(sslParameters);
-                }
-            }
         };
-        sslContextFactory.setSslContext(port.getSSLContext());
-        sslContextFactory.setNeedClientAuth(port.getNeedClientAuth());
-        sslContextFactory.setWantClientAuth(port.getWantClientAuth());
-        return sslContextFactory;
     }
 
     @Override
     public void close()
     {
-        _closed.set(true);
-        _idleTimeoutChecker.wakeup();
         try
         {
             _server.stop();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
-            LOGGER.warn("Error closing the web socket for : " +  _port.getPort(), e);
+            LOGGER.warn("Error closing the web socket for port {}", _port.getPort(), e);
             _server = null;
+        }
+        finally
+        {
+            _connectionScheduler.shutdown();
         }
     }
 
@@ -308,7 +267,8 @@ class WebSocketProvider implements AcceptingTransport
     public int getAcceptingPort()
     {
         final Server server = _server;
-        return server == null || server.getConnectors().length == 0 || !(server.getConnectors()[0] instanceof ServerConnector) ?
+        return server == null || server.getConnectors().length == 0 ||
+                !(server.getConnectors()[0] instanceof ServerConnector) ?
                 _port.getPort() :
                 ((ServerConnector) server.getConnectors()[0]).getLocalPort();
     }
@@ -320,688 +280,14 @@ class WebSocketProvider implements AcceptingTransport
         {
             try
             {
-                _sslContextFactory.reload(sslContextFactory ->
-                {
-                    final SslContextFactory.Server server = (SslContextFactory.Server) sslContextFactory;
-                    server.setSslContext(_port.getSSLContext());
-                    server.setNeedClientAuth(_port.getNeedClientAuth());
-                    server.setWantClientAuth(_port.getWantClientAuth());
-                });
+                _sslContextFactory.reloadFromPort();
                 return true;
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 throw new IllegalConfigurationException("Unexpected exception on reload of ssl context factory", e);
             }
         }
         return false;
-    }
-
-    private static class QBBTrackingThreadPool extends QueuedThreadPool
-    {
-        private final ThreadFactory _threadFactory = QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(
-                QBBTrackingThreadPool.super::newThread);
-
-        @Override
-        public Thread newThread(final Runnable runnable)
-        {
-            return _threadFactory.newThread(runnable);
-        }
-    }
-
-    @WebSocket
-    public class AmqpWebSocket
-    {
-        final X509Certificate[] _certificates;
-        private volatile QpidByteBuffer _netInputBuffer;
-        private volatile MultiVersionProtocolEngine _protocolEngine;
-        private volatile ConnectionWrapper _connectionWrapper;
-        private volatile boolean _unexpectedByteBufferSizeReported;
-
-        AmqpWebSocket(final X509Certificate[] certificates)
-        {
-            _netInputBuffer = QpidByteBuffer.allocateDirect(_broker.getNetworkBufferSize());
-            _certificates = certificates;
-        }
-
-        @OnWebSocketOpen
-        @SuppressWarnings("unused")
-        public void onWebSocketConnect(final Session session)
-        {
-            final SocketAddress localAddress = session.getLocalSocketAddress();
-            final SocketAddress remoteAddress = session.getRemoteSocketAddress();
-            _protocolEngine = _factory.newProtocolEngine(remoteAddress);
-
-            // Let AMQP do timeout handling
-            session.setIdleTimeout(Duration.ZERO);
-
-            _connectionWrapper = new ConnectionWrapper(session, localAddress, remoteAddress, _protocolEngine, _server.getThreadPool());
-
-            if (_certificates != null && _certificates.length > 0)
-            {
-                _connectionWrapper.setPeerCertificate(_certificates[0]);
-            }
-            _protocolEngine.setNetworkConnection(_connectionWrapper);
-            _protocolEngine.setWorkListener(object -> _server.getThreadPool().execute(() -> _connectionWrapper.doWork()));
-            registerConnection(_connectionWrapper);
-        }
-
-        @OnWebSocketMessage
-        @SuppressWarnings("unused")
-        public void onWebSocketBinary(ByteBuffer payload, boolean last, Callback callback)
-        {
-            synchronized (_connectionWrapper)
-            {
-                _protocolEngine.clearWork();
-                try
-                {
-                    _protocolEngine.setIOThread(Thread.currentThread());
-                    Iterator<Runnable> iter = _protocolEngine.processPendingIterator();
-                    while (iter.hasNext())
-                    {
-                        iter.next().run();
-                    }
-
-                    byte[] bytes = new byte[payload.remaining()];
-                    payload.get(bytes);
-                    int len = bytes.length;
-                    int offset = 0;
-                    int lastRead;
-                    int remaining = len;
-                    do
-                    {
-                        int chunkLen = Math.min(remaining, _netInputBuffer.remaining());
-                        _netInputBuffer.put(bytes, offset, chunkLen);
-                        remaining -= chunkLen;
-                        offset += chunkLen;
-
-                        _netInputBuffer.flip();
-                        _protocolEngine.received(_netInputBuffer);
-                        _connectionWrapper.doWrite();
-                        restoreApplicationBufferForWrite();
-                    }
-                    while(remaining > 0);
-
-                    if (LOGGER.isDebugEnabled())
-                    {
-                        LOGGER.debug("Read {} byte(s)", len);
-                    }
-                }
-                finally
-                {
-                    _protocolEngine.setIOThread(null);
-                }
-            }
-            _idleTimeoutChecker.wakeup();
-        }
-
-        private void restoreApplicationBufferForWrite()
-        {
-            try (QpidByteBuffer oldNetInputBuffer = _netInputBuffer)
-            {
-                int unprocessedDataLength = _netInputBuffer.remaining();
-
-                _netInputBuffer.limit(_netInputBuffer.capacity());
-                _netInputBuffer = oldNetInputBuffer.slice();
-                _netInputBuffer.limit(unprocessedDataLength);
-            }
-            if (_netInputBuffer.limit() != _netInputBuffer.capacity())
-            {
-                _netInputBuffer.position(_netInputBuffer.limit());
-                _netInputBuffer.limit(_netInputBuffer.capacity());
-            }
-            else
-            {
-                try (QpidByteBuffer currentBuffer = _netInputBuffer)
-                {
-                    int newBufSize;
-
-                    if (currentBuffer.capacity() < _broker.getNetworkBufferSize())
-                    {
-                        newBufSize = _broker.getNetworkBufferSize();
-                    }
-                    else
-                    {
-                        newBufSize = currentBuffer.capacity() + _broker.getNetworkBufferSize();
-                        reportUnexpectedByteBufferSizeUsage();
-                    }
-
-                    _netInputBuffer = QpidByteBuffer.allocateDirect(newBufSize);
-                    _netInputBuffer.put(currentBuffer);
-                }
-            }
-        }
-
-        private void reportUnexpectedByteBufferSizeUsage()
-        {
-            if (!_unexpectedByteBufferSizeReported)
-            {
-                LOGGER.info("At least one frame unexpectedly does not fit into default byte buffer size ({}B) on a connection {}.",
-                            _broker.getNetworkBufferSize(), this);
-                _unexpectedByteBufferSizeReported = true;
-            }
-        }
-
-        /** AMQP frames MUST be sent as binary data payloads of WebSocket messages.*/
-        @OnWebSocketMessage @SuppressWarnings("unused")
-        public void onWebSocketText(Session sess, String text)
-        {
-            LOGGER.info("Unexpected websocket text message received, closing connection");
-            sess.close();
-        }
-
-        @OnWebSocketClose
-        @SuppressWarnings("unused")
-        public void onWebSocketClose(final int statusCode, final String reason)
-        {
-            if (_protocolEngine != null)
-            {
-                _protocolEngine.closed();
-            }
-            unregisterConnection(_connectionWrapper);
-            _netInputBuffer.dispose();
-        }
-    }
-
-    class ConnectionWrapper implements ServerNetworkConnection, ByteBufferSender
-    {
-        private final Session _connection;
-        private final SocketAddress _localAddress;
-        private final SocketAddress _remoteAddress;
-        private final ConcurrentLinkedQueue<QpidByteBuffer> _buffers = new ConcurrentLinkedQueue<>();
-        private final MultiVersionProtocolEngine _protocolEngine;
-        private final ThreadPool _threadPool;
-        private final Runnable _tickJob;
-        // Remains set while the job is queued, blocked on this wrapper's monitor, or executing.
-        private final AtomicBoolean _tickOutstanding = new AtomicBoolean();
-        private final AtomicInteger _consecutiveTickRetries = new AtomicInteger();
-
-        // Per-connection eligibility prevents unrelated checker wakeups from bypassing retry backoff.
-        private volatile long _tickNotBeforeTime;
-
-        private Certificate _certificate;
-        private long _maxWriteIdleMillis;
-        private long _maxReadIdleMillis;
-
-        public ConnectionWrapper(final Session connection,
-                                 final SocketAddress localAddress,
-                                 final SocketAddress remoteAddress,
-                                 final MultiVersionProtocolEngine protocolEngine,
-                                 final ThreadPool threadPool)
-        {
-            _connection = connection;
-            _localAddress = localAddress;
-            _remoteAddress = remoteAddress;
-            _protocolEngine = protocolEngine;
-            _threadPool = threadPool;
-            _tickJob = () ->
-            {
-                long nextTickTime = 0L;
-                boolean tickSucceeded = false;
-                try
-                {
-                    nextTickTime = processTick();
-                    tickSucceeded = true;
-                }
-                finally
-                {
-                    final long currentTime = _currentTimeSupplier.getAsLong();
-                    final long tickRetryTime = tickSucceeded
-                            ? processTickResult(nextTickTime, currentTime)
-                            : deferTick(currentTime, false);
-                    _tickOutstanding.set(false);
-                    _idleTimeoutChecker.tickCompleted(tickRetryTime);
-                }
-            };
-        }
-
-        private long processTick()
-        {
-            synchronized (this)
-            {
-                final Ticker ticker = _protocolEngine.getAggregateTicker();
-                ticker.tick(_currentTimeSupplier.getAsLong());
-                doWrite();
-
-                final long currentTime = _currentTimeSupplier.getAsLong();
-                final long timeToNextTick = ticker.getTimeToNextTick(currentTime);
-                return timeToNextTick <= 0L ? currentTime : currentTime + timeToNextTick;
-            }
-        }
-
-        private long processTickResult(final long nextTickTime, final long currentTime)
-        {
-            if (nextTickTime > currentTime)
-            {
-                resetTickRetry();
-                return nextTickTime;
-            }
-
-            return deferTick(currentTime, true);
-        }
-
-        private long deferTick(final long currentTime, final boolean immediateRetryAllowed)
-        {
-            final int retryCount = _consecutiveTickRetries.incrementAndGet();
-            final int backoffRetryCount = immediateRetryAllowed
-                    ? retryCount - IMMEDIATE_OVERDUE_TICK_RETRY_LIMIT
-                    : retryCount;
-            final long retryDelay = backoffRetryCount <= 0 ? 0L : calculateTickRetryBackoff(backoffRetryCount);
-            final long retryTime = currentTime > Long.MAX_VALUE - retryDelay
-                    ? Long.MAX_VALUE
-                    : currentTime + retryDelay;
-            _tickNotBeforeTime = retryTime;
-            return retryTime;
-        }
-
-        private long calculateTickRetryBackoff(final int retryCount)
-        {
-            long retryDelay = INITIAL_TICK_RETRY_BACKOFF_MILLIS;
-            for (int i = 1; i < retryCount && retryDelay < MAXIMUM_TICK_RETRY_BACKOFF_MILLIS; i++)
-            {
-                retryDelay = Math.min(retryDelay * 2L, MAXIMUM_TICK_RETRY_BACKOFF_MILLIS);
-            }
-            return retryDelay;
-        }
-
-        private void resetTickRetry()
-        {
-            _consecutiveTickRetries.set(0);
-            _tickNotBeforeTime = 0L;
-        }
-
-        long getTickRetryDelay(final long currentTime)
-        {
-            final long tickNotBeforeTime = _tickNotBeforeTime;
-            return tickNotBeforeTime > currentTime ? tickNotBeforeTime - currentTime : 0L;
-        }
-
-        private void tickNoLongerOverdue()
-        {
-            if (_tickNotBeforeTime != 0L)
-            {
-                resetTickRetry();
-            }
-        }
-
-        @Override
-        public ByteBufferSender getSender()
-        {
-            return this;
-        }
-
-        @Override
-        public void start()
-        {
-        }
-
-        @Override
-        public boolean isDirectBufferPreferred()
-        {
-            return false;
-        }
-
-        @Override
-        public void send(final QpidByteBuffer msg)
-        {
-            if (msg.remaining() > 0)
-            {
-                _buffers.add(msg.duplicate());
-            }
-            msg.position(msg.limit());
-        }
-
-        @Override
-        public void flush()
-        {
-
-        }
-
-        @Override
-        public void close()
-        {
-            _connection.close();
-        }
-
-        @Override
-        public SocketAddress getRemoteAddress()
-        {
-            return _remoteAddress;
-        }
-
-        @Override
-        public SocketAddress getLocalAddress()
-        {
-            return _localAddress;
-        }
-
-        @Override
-        public void setMaxWriteIdleMillis(final long millis)
-        {
-            _maxWriteIdleMillis = millis;
-        }
-
-        @Override
-        public void setMaxReadIdleMillis(final long millis)
-        {
-            _maxReadIdleMillis = millis;
-        }
-
-        @Override
-        public Principal getPeerPrincipal()
-        {
-            return _certificate instanceof X509Certificate ? ((X509Certificate)_certificate).getSubjectX500Principal() : null;
-        }
-
-        @Override
-        public Certificate getPeerCertificate()
-        {
-            return _certificate;
-        }
-
-        @Override
-        public long getMaxReadIdleMillis()
-        {
-            return _maxReadIdleMillis;
-        }
-
-        @Override
-        public long getMaxWriteIdleMillis()
-        {
-            return _maxWriteIdleMillis;
-        }
-
-        @Override
-        public void addSchedulingDelayNotificationListeners(final SchedulingDelayNotificationListener listener)
-        {
-        }
-
-        @Override
-        public void removeSchedulingDelayNotificationListeners(final SchedulingDelayNotificationListener listener)
-        {
-        }
-
-        @Override
-        public String getTransportInfo()
-        {
-            return _connection.getProtocolVersion();
-        }
-
-        @Override
-        public long getScheduledTime()
-        {
-            return 0;
-        }
-
-        @Override
-        public String getSelectedHost()
-        {
-            return null;
-        }
-
-        void setPeerCertificate(final Certificate certificate)
-        {
-            _certificate = certificate;
-        }
-
-        public synchronized void doWrite()
-        {
-            int size = 0;
-            List<QpidByteBuffer> toBeWritten = new ArrayList<>(_buffers.size());
-            QpidByteBuffer buf;
-            while((buf = _buffers.poll())!= null)
-            {
-                // TODO: For efficiency perhaps only coalesce sequential small buffers and let large buffers
-                // go alone in a binary message.  This would likely avoid the memory copies of large transfer payloads
-                size += buf.remaining();
-                toBeWritten.add(buf);
-            }
-
-            byte[] data = new byte[size];
-            int offset = 0;
-
-            for(QpidByteBuffer tmp : toBeWritten)
-            {
-                int remaining = tmp.remaining();
-                tmp.get(data, offset, remaining);
-                tmp.dispose();
-                offset += remaining;
-            }
-            if (size > 0)
-            {
-                _connection.sendBinary(ByteBuffer.wrap(data), Callback.NOOP);
-                if (LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug("Written {} byte(s)", data.length);
-                }
-            }
-        }
-
-        public synchronized void doWork()
-        {
-            _protocolEngine.clearWork();
-            try
-            {
-                _protocolEngine.setIOThread(Thread.currentThread());
-
-                Iterator<Runnable> iter = _protocolEngine.processPendingIterator();
-                while(iter.hasNext())
-                {
-                    iter.next().run();
-                }
-
-                doWrite();
-                _idleTimeoutChecker.wakeup();
-            }
-            finally
-            {
-                _protocolEngine.setIOThread(null);
-            }
-        }
-
-        boolean tryScheduleTick(final long currentTime)
-        {
-            if (getTickRetryDelay(currentTime) > 0L)
-            {
-                return false;
-            }
-
-            if (_tickOutstanding.compareAndSet(false, true))
-            {
-                boolean submissionAttempted = false;
-                boolean submitted = false;
-                try
-                {
-                    // Completion publishes its retry deadline before releasing the outstanding guard.
-                    if (getTickRetryDelay(_currentTimeSupplier.getAsLong()) > 0L)
-                    {
-                        return false;
-                    }
-
-                    submissionAttempted = true;
-                    _threadPool.execute(_tickJob);
-                    submitted = true;
-                    return true;
-                }
-                finally
-                {
-                    if (!submitted)
-                    {
-                        if (submissionAttempted)
-                        {
-                            final long tickRetryTime = deferTick(_currentTimeSupplier.getAsLong(), false);
-                            _tickOutstanding.set(false);
-                            _idleTimeoutChecker.tickCompleted(tickRetryTime);
-                        }
-                        else
-                        {
-                            _tickOutstanding.set(false);
-                        }
-                    }
-                }
-            }
-            return false;
-        }
-    }
-
-    void registerConnection(final ConnectionWrapper connection)
-    {
-        _activeConnections.add(connection);
-        _idleTimeoutChecker.wakeup();
-    }
-
-    private void unregisterConnection(final ConnectionWrapper connection)
-    {
-        _activeConnections.remove(connection);
-        _idleTimeoutChecker.wakeup();
-    }
-
-    long scheduleDueConnections(final long currentTime)
-    {
-        long timeToNextTick = Long.MAX_VALUE;
-        RejectedExecutionException submissionFailure = null;
-        boolean dueConnectionFound = false;
-        boolean tickSubmissionSucceeded = false;
-        for (final ConnectionWrapper connection : _activeConnections)
-        {
-            final ProtocolEngine engine = connection._protocolEngine;
-            final Ticker ticker = engine.getAggregateTicker();
-            final long timeToTick = ticker.getTimeToNextTick(currentTime);
-            if (timeToTick <= 0)
-            {
-                dueConnectionFound = true;
-                final long retryDelay = connection.getTickRetryDelay(currentTime);
-                if (retryDelay > 0L)
-                {
-                    timeToNextTick = Math.min(timeToNextTick, retryDelay);
-                }
-                else
-                {
-                    try
-                    {
-                        final boolean tickScheduled = connection.tryScheduleTick(currentTime);
-                        tickSubmissionSucceeded |= tickScheduled;
-                        if (!tickScheduled)
-                        {
-                            final long updatedRetryDelay = connection.getTickRetryDelay(currentTime);
-                            if (updatedRetryDelay > 0L)
-                            {
-                                timeToNextTick = Math.min(timeToNextTick, updatedRetryDelay);
-                            }
-                        }
-                    }
-                    catch (final RejectedExecutionException e)
-                    {
-                        if (submissionFailure == null)
-                        {
-                            submissionFailure = e;
-                        }
-                        final long submissionRetryDelay = connection.getTickRetryDelay(currentTime);
-                        timeToNextTick = Math.min(timeToNextTick, submissionRetryDelay);
-                    }
-                }
-            }
-            else
-            {
-                connection.tickNoLongerOverdue();
-                if (timeToTick < timeToNextTick)
-                {
-                    timeToNextTick = timeToTick;
-                }
-            }
-        }
-        if (submissionFailure == null)
-        {
-            if (tickSubmissionSucceeded || !dueConnectionFound)
-            {
-                _tickSubmissionFailureReported = false;
-            }
-        }
-        else if (!_closed.get() && !_tickSubmissionFailureReported)
-        {
-            _tickSubmissionFailureReported = true;
-            LOGGER.warn("Failed to schedule WebSocket connection idle timeout processing; " +
-                        "repeated failures will not be reported until scheduling recovers", submissionFailure);
-        }
-        return timeToNextTick;
-    }
-
-    private class WebSocketIdleTimeoutChecker extends Thread
-    {
-        // Prevents a notification between scanning the tickers and entering wait() from being lost.
-        private long _wakeupSequence;
-        // Earliest deadline reported by a tick job that completed after the current scan began.
-        private long _tickCompletionTime = Long.MAX_VALUE;
-
-        public WebSocketIdleTimeoutChecker()
-        {
-            setName("WebSocket Idle Checker: " + _port);
-        }
-
-        @Override
-        public void run()
-        {
-            while (!_closed.get())
-            {
-                final long wakeupSequence = beginScan();
-                final long timeToNextTick = scheduleDueConnections(_currentTimeSupplier.getAsLong());
-                try
-                {
-                    awaitNextTick(wakeupSequence, timeToNextTick);
-                }
-                catch (final InterruptedException e)
-                {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        }
-
-        private synchronized long beginScan()
-        {
-            _tickCompletionTime = Long.MAX_VALUE;
-            return _wakeupSequence;
-        }
-
-        private synchronized void awaitNextTick(final long wakeupSequence, final long timeToNextTick)
-                throws InterruptedException
-        {
-            final long currentTime = _currentTimeSupplier.getAsLong();
-            final long scanTime = timeToNextTick == Long.MAX_VALUE
-                    ? Long.MAX_VALUE
-                    : currentTime + Math.max(0L, timeToNextTick);
-            while (!_closed.get() && wakeupSequence == _wakeupSequence)
-            {
-                final long wakeupTime = Math.min(scanTime, _tickCompletionTime);
-                if (wakeupTime == Long.MAX_VALUE)
-                {
-                    wait();
-                }
-                else
-                {
-                    final long waitTime = wakeupTime - _currentTimeSupplier.getAsLong();
-                    if (waitTime <= 0L)
-                    {
-                        break;
-                    }
-                    wait(waitTime);
-                }
-            }
-        }
-
-        private synchronized void tickCompleted(final long nextTickTime)
-        {
-            if (nextTickTime < _tickCompletionTime)
-            {
-                _tickCompletionTime = nextTickTime;
-                notifyAll();
-            }
-        }
-
-        private synchronized void wakeup()
-        {
-            _wakeupSequence++;
-            notifyAll();
-        }
     }
 }

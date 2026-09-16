@@ -56,6 +56,32 @@ public interface BrokerAdmin extends Pluggable
     boolean isPutMessageOnQueueSupported();
     boolean isDeleteQueueSupported();
 
+    /**
+     * Indicates whether connection lookup and asynchronous close operations are available.
+     */
+    default boolean isConnectionManagementSupported()
+    {
+        return false;
+    }
+
+    /**
+     * Reports whether the current virtual host has a registered connection with the given AMQP client ID.
+     */
+    default boolean isConnectionRegistered(final String clientId)
+    {
+        throw new UnsupportedOperationException("Connection management is not supported");
+    }
+
+    /**
+     * Requests a management close of the connection with the given AMQP client ID.
+     *
+     * @return a future completed after the connection transport and model object have closed
+     */
+    default CompletableFuture<Void> closeConnectionAsync(final String clientId)
+    {
+        throw new UnsupportedOperationException("Connection management is not supported");
+    }
+
     String getValidUsername();
     String getValidPassword();
 
