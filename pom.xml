@@ -110,7 +110,7 @@
     <caffeine-version>3.2.4</caffeine-version>
     <fasterxml-jackson-version>3.2.1</fasterxml-jackson-version>
     <fasterxml-jackson-databind-version>3.2.1</fasterxml-jackson-databind-version>
-    <slf4j-version>2.0.18</slf4j-version>
+    <slf4j-version>2.0.19</slf4j-version>
     <jetty-version>12.1.11</jetty-version>
 
     <!-- dependency version numbers -->

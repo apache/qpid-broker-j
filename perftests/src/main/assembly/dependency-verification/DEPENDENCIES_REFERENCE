@@ -61,7 +61,7 @@ From: 'QOS.ch' (http://www.qos.ch)
     License: EPL-2.0  (https://www.eclipse.org/legal/epl-v20.html)
     License: LGPL-2.1-only  (https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html)
 
-  - SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:2.0.18
+  - SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:2.0.19
     License: MIT  (https://opensource.org/license/mit)
 
 
