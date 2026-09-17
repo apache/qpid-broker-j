@@ -77,7 +77,7 @@ public class CompressedMessageContentTest extends HttpTestBase
     }
 
     @Test
-    public void getCompressedMessageContent_noCompressionSupported() throws Exception
+    public void getTextContent_noCompression() throws Exception
     {
         final String messageText = sendCompressibleTextMessage();
 
@@ -99,7 +99,7 @@ public class CompressedMessageContentTest extends HttpTestBase
     }
 
     @Test
-    public void getCompressedMessageContent_compressionSupported() throws Exception
+    public void getTextContent_withCompression() throws Exception
     {
         final String messageText = sendCompressibleTextMessage();
 
@@ -121,7 +121,7 @@ public class CompressedMessageContentTest extends HttpTestBase
     }
 
     @Test
-    public void getCompressedMapMessage_noCompressionSupported() throws Exception
+    public void getMapContent_noCompression() throws Exception
     {
         final Map<String, Object> mapToSend = sendCompressibleMapMessage();
 
@@ -140,7 +140,7 @@ public class CompressedMessageContentTest extends HttpTestBase
     }
 
     @Test
-    public void getCompressedMapMessage_compressionSupported() throws Exception
+    public void getMapContent_withCompression() throws Exception
     {
         final Map<String, Object> mapToSend = sendCompressibleMapMessage();
 
