@@ -158,7 +158,7 @@
     <h2.version>2.4.240</h2.version>
     <apache-directory-version>2.0.0.AM27</apache-directory-version>
     <kerby-version>2.1.2</kerby-version>
-    <bcprov-version>1.84</bcprov-version>
+    <bcprov-version>1.85</bcprov-version>
     <bcpkix-version>1.84</bcpkix-version>
     <logback-gelf-version>6.1.2</logback-gelf-version>
     <prometheus-client-version>0.16.0</prometheus-client-version>
