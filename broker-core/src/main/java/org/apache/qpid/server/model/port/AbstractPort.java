@@ -535,7 +535,7 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     @Override
     protected void logDeleted(final Outcome outcome)
     {
-        _eventLogger.message(PortMessages.DELETE(getType(), getName()));
+        _eventLogger.message(PortMessages.DELETE(getName(), String.valueOf(outcome)));
     }
 
     @Override

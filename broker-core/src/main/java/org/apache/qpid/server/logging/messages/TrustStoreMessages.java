@@ -207,7 +207,7 @@ public class TrustStoreMessages
 
     /**
      * Log a TrustStore message of the Format:
-     * <pre>TST-1004 : Delete "{0}" : {2}</pre>
+     * <pre>TST-1004 : Delete "{0}" : {1}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *

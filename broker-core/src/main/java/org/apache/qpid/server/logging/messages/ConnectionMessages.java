@@ -436,7 +436,7 @@ public class ConnectionMessages
 
     /**
      * Log a Connection message of the Format:
-     * <pre>CHN-1011 : Idle Transaction : {0,number} ms</pre>
+     * <pre>CON-1011 : Idle Transaction : {0,number} ms</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *

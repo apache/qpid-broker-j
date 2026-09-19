@@ -39,13 +39,15 @@
     <listitem>
       <para><literal>Actor</literal> is the entity within the Broker that is
           <emphasis>performing</emphasis> the action. There are actors corresponding to the Broker
-        itself, Management, Connection, and Channels. Their format is described in the <link linkend="Java-Broker-Appendix-Operation-Logging-Actor-Format">table</link> below.</para>
+        itself, Management, Connections, Channels, and HA groups. Their format is described in the
+        <link linkend="Java-Broker-Appendix-Operation-Logging-Actor-Format">table</link> below.</para>
     </listitem>
     <listitem>
       <para><literal>Subject</literal> (optional) is the entity within the Broker that is
           <emphasis>receiving</emphasis> the action. There are subjects corresponding to the
-        Connections, Channels, Queues, Exchanges, Subscriptions, and Message Stores. Their format is
-        described in the <link linkend="Java-Broker-Appendix-Operation-Logging-Subject-Format">table</link> below.</para>
+        Connections, Channels, Queues, Exchanges, Bindings, Subscriptions, Message Stores, Ports,
+        and HA groups. Their format is described in the
+        <link linkend="Java-Broker-Appendix-Operation-Logging-Subject-Format">table</link> below.</para>
       <para>Some actions are reflexive, in these cases the Actor and Subject will be equal.</para>
     </listitem>
     <listitem>
@@ -69,9 +71,17 @@
     host. The queue subject tells use the queue's name (myqueue) and the virtualhost. The message
     itself tells us more information about the queue that is being created. </para>
 
-  <screen>[con:8(myapp1@/127.0.0.1:52851/default)/ch:0] [vh(/default)/qu(myqueue)] QUE-1001 : Create : Owner: myapp1 Transient</screen>
-  <para>The first two tables that follow describe the actor and subject entities, then the later
-    provide a complete catalogue of all supported messages.</para>
+  <screen>[con:8(myapp1@/127.0.0.1:52851/default)/ch:0] [vh(/default)/qu(myqueue)] QUE-1001 : Create : "myqueue" : SUCCESS : {name=myqueue}</screen>
+  <para>The first two tables that follow describe the actor and subject entities. These are
+    followed by an explanation of message categories without dedicated prefix formats and a
+    catalogue of all supported messages.</para>
+  <para>Message ID prefixes identify categories of events and do not map one-to-one to actor or
+    subject types. The actor is determined by the execution context, not by the message category.
+    Some categories have no dedicated subject format because their messages provide event details
+    in the message text without a separate subject prefix, or reuse an existing subject format.
+    The <link linkend="Java-Broker-Appendix-Operation-Logging-Categories-Without-Dedicated-Formats">table
+    below</link> describes these categories and how their context is represented. Their absence
+    from the actor and subject tables does not indicate missing message categories.</para>
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Actor-Format">
     <title>Actors Entities</title>
     <tgroup cols="2">
@@ -223,12 +233,83 @@
           </entry>
         </row>
         <row>
+          <entry morerows="1">Port</entry>
+          <entry>[port(<replaceable>port number</replaceable>)]</entry>
+        </row>
+        <row>
+          <entry>
+            <para>A network port exposed by the Broker.</para>
+          </entry>
+        </row>
+        <row>
           <entry morerows="1">HA Group</entry>
           <entry> [grp(/<replaceable>group name</replaceable>)]</entry>
         </row>
         <row>
           <entry>
             <para>A HA group</para>
+          </entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </table>
+  <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Categories-Without-Dedicated-Formats">
+    <title>Message Categories Without Dedicated Actor or Subject Formats</title>
+    <tgroup cols="2">
+      <colspec colnum="1" colname="category" colwidth="1*"/>
+      <colspec colnum="2" colname="context" colwidth="2*"/>
+      <thead>
+        <row>
+          <entry>Message Categories</entry>
+          <entry>Context and Reason for No Dedicated Format</entry>
+        </row>
+      </thead>
+      <tbody>
+        <row>
+          <entry>Access Control (<literal>ACL</literal>), Key Store (<literal>KST</literal>),
+            Trust Store (<literal>TST</literal>), Authentication Provider (<literal>ATH</literal>),
+            and User (<literal>USR</literal>)</entry>
+          <entry>
+            <para>These messages use the actor associated with the operation and are logged without
+              a separate subject prefix. Event details, such as the affected object's name,
+              operation, or authentication identity, are supplied in the message text as
+              appropriate to the event.</para>
+          </entry>
+        </row>
+        <row>
+          <entry>Network (<literal>NET</literal>), Sender (<literal>SND</literal>),
+            and Resource Limit (<literal>RL</literal>)</entry>
+          <entry>
+            <para>These messages use the current actor without a separate subject prefix.
+              Network endpoints, sender link and destination details, or resource-limit
+              information are represented in the message text rather than by a dedicated
+              subject format.</para>
+          </entry>
+        </row>
+        <row>
+          <entry>Virtual Host (<literal>VHT</literal>)</entry>
+          <entry>
+            <para>Lifecycle messages identify the virtual host in the message text, and operation
+              messages identify the operation, without a separate subject prefix. Filesystem
+              warnings reuse the Message Store subject to identify the affected store. There is
+              no dedicated standalone virtual host prefix format for these messages.</para>
+          </entry>
+        </row>
+        <row>
+          <entry>Configuration Store (<literal>CFG</literal>)</entry>
+          <entry>
+            <para>These messages reuse the Message Store subject format
+              <literal>[vh(/...)/ms(...)]</literal>, populated with the virtual host node name
+              and configuration store type, rather than defining a separate configuration store
+              format.</para>
+          </entry>
+        </row>
+        <row>
+          <entry>Transaction Store (<literal>TXN</literal>)</entry>
+          <entry>
+            <para>Transaction recovery messages reuse the Message Store subject format
+              <literal>[vh(/...)/ms(...)]</literal> to identify the virtual host and store
+              being recovered, rather than defining a separate transaction store format.</para>
           </entry>
         </row>
       </tbody>
@@ -310,31 +391,11 @@
             <para>Indicates the name of the configuration store in use by the Broker.</para>
           </entry>
         </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1008">
-          <entry morerows="1">BRK-1008</entry>
-          <entry><replaceable>delivered|received</replaceable> : <replaceable>size</replaceable>
-            kB/s peak : <replaceable>size</replaceable> bytes total</entry>
-        </row>
-        <row>
-          <entry>
-            <para>Statistic - bytes delivered or received by the Broker.</para>
-          </entry>
-        </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1009">
-          <entry morerows="1">BRK-1009</entry>
-          <entry><replaceable>delivered|received</replaceable> : <replaceable>size</replaceable>
-            msg/s peak : <replaceable>size</replaceable> msgs total</entry>
-        </row>
-        <row>
-          <entry>
-            <para>Statistic - messages delivered or received by the Broker.</para>
-          </entry>
-        </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1010">
           <entry morerows="1">BRK-1010</entry>
           <entry>Platform : JVM : <replaceable>vendor</replaceable> version: <replaceable>version
           </replaceable> OS : <replaceable>operating system vendor</replaceable> version:
-            <replaceable>operating system version</replaceable>} arch: <replaceable>processor
+            <replaceable>operating system version</replaceable> arch: <replaceable>processor
               architecture</replaceable> cores: <replaceable>number of CPU cores</replaceable></entry>
         </row>
         <row>
@@ -344,11 +405,12 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1011">
           <entry morerows="1">BRK-1011</entry>
-          <entry>Maximum Memory : Heap : <replaceable>size</replaceable> bytes Direct : <replaceable>
-            bytes</replaceable> size</entry></row>
+          <entry>Maximum Memory : Heap : <replaceable>size</replaceable> bytes Direct :
+            <replaceable>size</replaceable> bytes</entry>
+        </row>
         <row>
           <entry>
-            <para>Configured memory paramters for the Broker.</para>
+            <para>Configured memory parameters for the Broker.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1012">
@@ -373,7 +435,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1017">
           <entry morerows="1">BRK-1017</entry>
-          <entry>Process : PID <replaceable>process identifier</replaceable></entry>
+          <entry>Process : PID : <replaceable>process identifier</replaceable></entry>
         </row>
         <row>
           <entry>
@@ -386,7 +448,18 @@
         </row>
         <row>
           <entry>
-            <para>Indicates that the named operation has been invoked</para>
+            <para>Indicates that the named operation has been invoked.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1019">
+          <entry morerows="1">BRK-1019</entry>
+          <entry>WARNING - some services were unable to start. The following components are in the
+            ERRORed state <replaceable>components</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that one or more Broker child services failed to start and entered the
+              ERROR state.</para>
           </entry>
         </row>
       </tbody>
@@ -492,36 +565,39 @@
         <!--  Virtual host -->
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-VHT-1001">
           <entry morerows="1">VHT-1001</entry>
-          <entry>Created : <replaceable>virtualhostname</replaceable></entry>
+          <entry>Create : "<replaceable>virtual host name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that a virtualhost has been created.</para>
+            <para>Indicates that creation of a virtual host was attempted and reports the outcome
+              and configured attributes.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-VHT-1002">
           <entry morerows="1">VHT-1002</entry>
-          <entry>Closed</entry>
+          <entry>Close : "<replaceable>virtual host name</replaceable>"</entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that a virtualhost has been closed. This occurs on Broker
+            <para>Indicates that a virtual host has been closed. This occurs on Broker
               shutdown.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-VHT-1005">
           <entry morerows="1">VHT-1005</entry>
-          <entry>Unexpected fatal error</entry>
+          <entry><replaceable>virtual host name</replaceable> Unexpected fatal error</entry>
         </row>
         <row>
           <entry>
-            <para>Virtualhost has suffered an unexpected fatal error, check the logs for more
+            <para>The virtual host has suffered an unexpected fatal error. Check the logs for more
               details.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-VHT-1006">
           <entry morerows="1">VHT-1006</entry>
-          <entry>Filesystem is over <replaceable>size in %</replaceable> per cent full, enforcing flow control.</entry>
+          <entry>Filesystem is over <replaceable>percentage</replaceable> per cent full, enforcing
+            flow control.</entry>
         </row>
         <row>
           <entry>
@@ -531,7 +607,8 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-VHT-1007">
           <entry morerows="1">VHT-1007</entry>
-          <entry>Filesystem is no longer over <replaceable>size in %</replaceable> per cent full.</entry>
+          <entry>Filesystem is no longer over <replaceable>percentage</replaceable> per cent
+            full.</entry>
         </row>
         <row>
           <entry>
@@ -545,7 +622,39 @@
         </row>
         <row>
           <entry>
-            <para>Indicates that the named operation has been invoked</para>
+            <para>Indicates that the named operation has been invoked.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-VHT-1009">
+          <entry morerows="1">VHT-1009</entry>
+          <entry>Update : "<replaceable>virtual host name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an update of a virtual host was attempted and reports the outcome
+              and virtual host attributes.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-VHT-1010">
+          <entry morerows="1">VHT-1010</entry>
+          <entry>Delete : "<replaceable>virtual host name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that deletion of a virtual host was attempted and reports the
+              outcome.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-VHT-1011">
+          <entry morerows="1">VHT-1011</entry>
+          <entry>Open : "<replaceable>virtual host name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a recovered virtual host was opened and reports the outcome.</para>
           </entry>
         </row>
       </tbody>
@@ -566,30 +675,31 @@
         <!-- Queue -->
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1001">
           <entry morerows="1">QUE-1001</entry>
-          <entry>Create : Owner: <replaceable>owner</replaceable>
-            <replaceable>AutoDelete</replaceable> [<replaceable>Durable</replaceable>]
-              <replaceable>Transient</replaceable> Priority:
-              <replaceable>numberofpriorities</replaceable></entry>
+          <entry>Create : "<replaceable>queue name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that a queue has been created.</para>
+            <para>Indicates that creation of a queue was attempted and reports the outcome and
+              configured attributes.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1002">
           <entry morerows="1">QUE-1002</entry>
-          <entry>Deleted</entry>
+          <entry>Delete : "<replaceable>queue name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that a queue has been deleted.</para>
+            <para>Indicates that deletion of a queue was attempted and reports the outcome.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1003">
           <entry morerows="1">QUE-1003</entry>
           <entry>
-            Overfull : Size :  <replaceable>size in bytes</replaceable>, Capacity : <replaceable>resumesize in bytes</replaceable>,
-            Messages : <replaceable>size in messages</replaceable>, Message Capacity : <replaceable>resumesize in messages</replaceable>
+            Overfull : Size : <replaceable>size</replaceable> bytes, Capacity :
+            <replaceable>capacity</replaceable>, Messages : <replaceable>message count</replaceable>,
+            Message Capacity : <replaceable>message capacity</replaceable>
           </entry>
         </row>
         <row>
@@ -602,8 +712,10 @@
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1004">
           <entry morerows="1">QUE-1004</entry>
           <entry>
-            Underfull : Size : <replaceable>size in bytes</replaceable>, Capacity : <replaceable>resumesize in bytes</replaceable>,
-            Messages : <replaceable>size in messages</replaceable>, Message Capacity : <replaceable>resumesize in messages</replaceable>
+            Underfull : Size : <replaceable>size</replaceable> bytes, Resume Capacity :
+            <replaceable>resume capacity</replaceable>, Messages :
+            <replaceable>message count</replaceable>, Message Capacity :
+            <replaceable>message capacity</replaceable>
           </entry>
         </row>
         <row>
@@ -632,13 +744,54 @@
             </para>
           </entry>
         </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1006">
+          <entry morerows="1">QUE-1006</entry>
+          <entry>Malformed : <replaceable>message identifier</replaceable> :
+            <replaceable>action</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a malformed message was detected and reports the action taken by
+              the Broker.</para>
+          </entry>
+        </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1016">
           <entry morerows="1">QUE-1016</entry>
           <entry>Operation : <replaceable>operation name</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that the named operation has been invoked</para>
+            <para>Indicates that the named operation has been invoked.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1017">
+          <entry morerows="1">QUE-1017</entry>
+          <entry>Update : "<replaceable>queue name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an update of a queue was attempted and reports the outcome and
+              queue attributes.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1018">
+          <entry morerows="1">QUE-1018</entry>
+          <entry>Open : "<replaceable>queue name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a recovered queue was opened and reports the outcome.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1019">
+          <entry morerows="1">QUE-1019</entry>
+          <entry>Close : "<replaceable>queue name</replaceable>"</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a queue has been closed.</para>
           </entry>
         </row>
       </tbody>
@@ -659,32 +812,36 @@
         <!-- Exchange -->
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-EXH-1001">
           <entry morerows="1">EXH-1001</entry>
-          <entry>Create : [<replaceable>Durable</replaceable>] Type: <replaceable>type</replaceable>
-            Name: <replaceable>exchange name</replaceable></entry>
+          <entry>Create : "<replaceable>exchange name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that an exchange has been created.</para>
+            <para>Indicates that creation of an exchange was attempted and reports the outcome and
+              configured attributes.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-EXH-1002">
           <entry morerows="1">EXH-1002</entry>
-          <entry>Deleted</entry>
+          <entry>Delete : "<replaceable>exchange name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that an exchange has been deleted.</para>
+            <para>Indicates that deletion of an exchange was attempted and reports the
+              outcome.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-EXH-1003">
           <entry morerows="1">EXH-1003</entry>
-          <entry>Discarded Message : Name: <replaceable>exchange name</replaceable> Routing Key:
-              <replaceable>routing key</replaceable></entry>
+          <entry>Discarded Message : Name: "<replaceable>exchange name</replaceable>" Routing Key:
+            "<replaceable>routing key</replaceable>"</entry>
         </row>
         <row>
           <entry>
             <para>Indicates that an exchange received a message that could not be routed to at least
-              one queue. queue has exceeded its permitted capacity. See <xref linkend="Java-Broker-Concepts-Exchanges-UnroutableMessage"/> for details.</para>
+              one queue. See <xref linkend="Java-Broker-Concepts-Exchanges-UnroutableMessage"/> for
+              details.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-EXH-1004">
@@ -693,7 +850,37 @@
         </row>
         <row>
           <entry>
-            <para>Indicates that the named operation has been invoked</para>
+            <para>Indicates that the named operation has been invoked.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-EXH-1005">
+          <entry morerows="1">EXH-1005</entry>
+          <entry>Update : "<replaceable>exchange name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an update of an exchange was attempted and reports the outcome and
+              exchange attributes.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-EXH-1006">
+          <entry morerows="1">EXH-1006</entry>
+          <entry>Open : "<replaceable>exchange name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a recovered exchange was opened and reports the outcome.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-EXH-1007">
+          <entry morerows="1">EXH-1007</entry>
+          <entry>Close : "<replaceable>exchange name</replaceable>"</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an exchange has been closed.</para>
           </entry>
         </row>
       </tbody>
@@ -714,7 +901,7 @@
       <tbody>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BND-1001">
           <entry morerows="1">BND-1001</entry>
-          <entry>Create : Arguments : <replaceable>arguments</replaceable></entry>
+          <entry>Create : <replaceable>arguments</replaceable></entry>
         </row>
         <row>
           <entry>
@@ -723,11 +910,20 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BND-1002">
           <entry morerows="1">BND-1002</entry>
-          <entry>Deleted</entry>
+          <entry>Deleted : <replaceable>arguments</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that a binding has been deleted</para>
+            <para>Indicates that a binding has been deleted.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-BND-1003">
+          <entry morerows="1">BND-1003</entry>
+          <entry>Operation : <replaceable>operation name</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the named binding operation has been invoked.</para>
           </entry>
         </row>
 
@@ -749,8 +945,8 @@
       <tbody>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-NET-1001">
           <entry morerows="1">NET-1001</entry>
-          <entry>Open : Destination : <replaceable>target host and port</replaceable> : Source
-            <replaceable>source host and port</replaceable></entry>
+          <entry>Open : Destination : <replaceable>destination name</replaceable>(<replaceable>local
+            address</replaceable>) : Source <replaceable>remote address</replaceable></entry>
         </row>
         <row>
           <entry>
@@ -761,7 +957,8 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-NET-1002">
           <entry morerows="1">NET-1002</entry>
-          <entry>Close</entry>
+          <entry>Close : Destination : <replaceable>destination name</replaceable>(<replaceable>local
+            address</replaceable>) : Source <replaceable>remote address</replaceable></entry>
         </row>
         <row>
           <entry>
@@ -788,10 +985,11 @@
       <tbody>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CON-1001">
           <entry morerows="1">CON-1001</entry>
-          <entry>Open : Destination : <replaceable>target port</replaceable> : Protocol Version :
-            <replaceable>protocol version</replaceable> : Client ID : <replaceable>clientid</replaceable> :
-            Client Version : <replaceable>client version</replaceable> :
-            Client Product : <replaceable>client product</replaceable></entry>
+          <entry>Open : Destination : <replaceable>port name</replaceable>(<replaceable>local
+            address</replaceable>) : Protocol Version : <replaceable>protocol version</replaceable>[
+            : SSL][ : Client ID : <replaceable>client identifier</replaceable>][ : Client Version :
+            <replaceable>client version</replaceable>][ : Client Product : <replaceable>client
+            product</replaceable>]</entry>
         </row>
         <row>
           <entry>
@@ -801,7 +999,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CON-1002">
           <entry morerows="1">CON-1002</entry>
-          <entry>Close</entry>
+          <entry>Close[ : <replaceable>reason</replaceable>]</entry>
         </row>
         <row>
           <entry>
@@ -812,7 +1010,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CON-1003">
           <entry morerows="1">CON-1003</entry>
-          <entry>Closed due to inactivity</entry>
+          <entry>Closed due to inactivity [: <replaceable>reason</replaceable>]</entry>
         </row>
         <row>
           <entry>
@@ -833,7 +1031,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CON-1005">
           <entry morerows="1">CON-1005</entry>
-          <entry>Client version <replaceable>version</replaceable> logged by validation</entry>
+          <entry>Client version "<replaceable>version</replaceable>" logged by validation</entry>
         </row>
         <row>
           <entry>
@@ -843,7 +1041,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CON-1006">
           <entry morerows="1">CON-1006</entry>
-          <entry>Client version <replaceable>version</replaceable> rejected by validation</entry>
+          <entry>Client version "<replaceable>version</replaceable>" rejected by validation</entry>
         </row>
         <row>
           <entry>
@@ -858,7 +1056,16 @@
         <row>
           <entry>
             <para>Indicates that a connection has been closed by the actions of an
-            Operator using manangement.</para>
+            operator using management.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CON-1008">
+          <entry morerows="1">CON-1008</entry>
+          <entry>Operation : <replaceable>operation name</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the named connection operation has been invoked.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CON-1009">
@@ -929,20 +1136,22 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1002">
           <entry morerows="1">CHN-1002</entry>
-          <entry>Flow Started</entry>
+          <entry>Flow <replaceable>state</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>Indicates message flow to a session has begun.</para>
+            <para>Indicates whether message flow to a session has started or stopped.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1003">
           <entry morerows="1">CHN-1003</entry>
-          <entry>Close</entry>
+          <entry>Close[ : <replaceable>error code</replaceable> -
+            <replaceable>reason</replaceable>]</entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that a channel has been closed.</para>
+            <para>Indicates that a channel has been closed. A forced close includes the error code
+              and reason.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1004">
@@ -980,26 +1189,31 @@
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1009">
           <entry morerows="1">CHN-1009</entry>
           <entry>Discarded message : <replaceable>message number</replaceable> as no alternate
-            exchange configured for queue : <replaceable>queue name</replaceable>{1} routing key :
-              <replaceable>routing key</replaceable></entry>
+            binding configured for queue : <replaceable>queue name</replaceable> routing key :
+            <replaceable>routing key</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that a channel has discarded a message as the maximum delivery count has
-              been exceeded but the queue defines no alternate exchange. See <xref linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages-Maximum-Delivery-Count"/> for more details. Note that <replaceable>message number</replaceable> is an
-              internal message reference.</para>
+            <para>Indicates that a channel has discarded a message as the maximum delivery count
+              has been exceeded but the queue has no alternate binding configured. See
+              <xref linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages-Maximum-Delivery-Count"/>
+              for more details. Note that <replaceable>message number</replaceable> is an internal
+              message reference.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1010">
           <entry morerows="1">CHN-1010</entry>
-          <entry>Discarded message : <replaceable>message number</replaceable> as no binding on
-            alternate exchange : <replaceable>exchange name</replaceable></entry>
+          <entry>Discarded message : <replaceable>message number</replaceable> as alternate binding
+            yields no routes : <replaceable>destination name</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that a channel has discarded a message as the maximum delivery count has
-              been exceeded but the queue's alternate exchange has no binding to a queue. See <xref linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages-Maximum-Delivery-Count"/> for more details. Note that <replaceable>message number</replaceable> is an
-              internal message reference.</para>
+            <para>Indicates that a channel has discarded a message as the maximum delivery count
+              has been exceeded but the queue's alternate binding destination yielded no routes.
+              See
+              <xref linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages-Maximum-Delivery-Count"/>
+              for more details. Note that <replaceable>message number</replaceable> is an internal
+              message reference.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CHN-1011">
@@ -1035,6 +1249,44 @@
       </tbody>
     </tgroup>
   </table>
+  <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-Sender">
+    <title>Sender Log Messages</title>
+    <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
+      <thead>
+        <row>
+          <entry>Message Id</entry>
+          <entry>Message Text / Purpose</entry>
+        </row>
+      </thead>
+      <tbody>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-SND-1001">
+          <entry morerows="1">SND-1001</entry>
+          <entry>Create : <replaceable>sender name</replaceable> :
+            <replaceable>destination or delivery type</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a sender link has been created and reports its destination or
+              delivery type.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-SND-1002">
+          <entry morerows="1">SND-1002</entry>
+          <entry>Close : <replaceable>sender name</replaceable> :
+            <replaceable>destination or delivery type</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a sender link has been closed and reports its destination or
+              delivery type.</para>
+          </entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </table>
+
   <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-Subscription">
     <title>Subscription Log Messages</title>
     <tgroup cols="2">
@@ -1049,8 +1301,7 @@
       <tbody>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-SUB-1001">
           <entry morerows="1">SUB-1001</entry>
-          <entry>Create : [<replaceable>Durable</replaceable>] Arguments :
-              <replaceable>arguments</replaceable></entry>
+          <entry>Create[ : Durable][ : Arguments : <replaceable>arguments</replaceable>]</entry>
         </row>
         <row>
           <entry>
@@ -1069,7 +1320,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-SUB-1003">
           <entry morerows="1">SUB-1003</entry>
-          <entry>SUB-1003 : Suspended for <replaceable>time</replaceable> ms</entry>
+          <entry>Suspended for <replaceable>time</replaceable> ms</entry>
         </row>
         <row>
           <entry>
@@ -1147,7 +1398,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-MST-1005">
           <entry morerows="1">MST-1005</entry>
-          <entry>Recovered <replaceable>number of messages</replaceable> messages.</entry>
+          <entry>Recovered <replaceable>number</replaceable> messages</entry>
         </row>
         <row>
           <entry>
@@ -1157,22 +1408,11 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-MST-1006">
           <entry morerows="1">MST-1006</entry>
-          <entry>Recovered Complete</entry>
+          <entry>Recovery Complete</entry>
         </row>
         <row>
           <entry>
             <para>Indicates that the message recovery is concluded.</para>
-          </entry>
-        </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-MST-1007">
-          <entry morerows="1">MST-1007</entry>
-          <entry>Store Passivated</entry>
-        </row>
-        <row>
-          <entry>
-            <para>The store is entering a passive state where is it unavailable for normal
-              operations. Currently this message is used by HA when the node is in replica
-              state.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-MST-1008">
@@ -1181,7 +1421,7 @@
         </row>
         <row>
           <entry>
-            <para>The store has breached is maximum configured size.
+            <para>The store has breached its maximum configured size.
               See <xref linkend="Java-Broker-Runtime-Disk-Space-Management-Producer-Flow-Control"/> for details.</para>
           </entry>
         </row>
@@ -1244,17 +1484,17 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-TXN-1004">
           <entry morerows="1">TXN-1004</entry>
-          <entry>Recovery Start</entry>
+          <entry>Recovery Start[ : <replaceable>queue name</replaceable>]</entry>
         </row>
         <row>
           <entry>
             <para>Indicates that transaction recovery has begun.</para>
           </entry>
         </row>
-        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-MST-TXN">
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-TXN-1005">
           <entry morerows="1">TXN-1005</entry>
           <entry>Recovered <replaceable>number</replaceable> messages for queue
-              <replaceable>name</replaceable>.</entry>
+            <replaceable>name</replaceable></entry>
         </row>
         <row>
           <entry>
@@ -1264,11 +1504,35 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-TXN-1006">
           <entry morerows="1">TXN-1006</entry>
-          <entry>Recovered Complete</entry>
+          <entry>Recovery Complete[ : <replaceable>queue name</replaceable>]</entry>
         </row>
         <row>
           <entry>
             <para>Indicates that the message recovery is concluded.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-TXN-1007">
+          <entry morerows="1">TXN-1007</entry>
+          <entry>XA transaction recover for xid <replaceable>xid</replaceable> incomplete as it
+            references a queue <replaceable>queue name</replaceable> which was not durably
+            retained</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an XA transaction could not be fully recovered because a referenced
+              queue was not durably retained.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-TXN-1008">
+          <entry morerows="1">TXN-1008</entry>
+          <entry>XA transaction recover for xid <replaceable>xid</replaceable> incomplete as it
+            references a message <replaceable>message identifier</replaceable> which was not
+            durably retained</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an XA transaction could not be fully recovered because a referenced
+              message was not durably retained.</para>
           </entry>
         </row>
       </tbody>
@@ -1328,7 +1592,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-CFG-1005">
           <entry morerows="1">CFG-1005</entry>
-          <entry>Recovered Complete</entry>
+          <entry>Recovery Complete</entry>
         </row>
         <row>
           <entry>
@@ -1353,20 +1617,23 @@
       <tbody>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-HA-1001">
           <entry morerows="1">HA-1001</entry>
-          <entry>Created</entry>
+          <entry>Create : "<replaceable>node name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>This HA node has been created.</para>
+            <para>Indicates that creation of an HA node was attempted and reports the outcome and
+              configured attributes.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-HA-1002">
           <entry morerows="1">HA-1002</entry>
-          <entry>Deleted</entry>
+          <entry>Delete : "<replaceable>node name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>This HA node has been deleted</para>
+            <para>Indicates that deletion of an HA node was attempted and reports the outcome.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-HA-1003">
@@ -1414,7 +1681,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-HA-1007">
           <entry morerows="1">HA-1007</entry>
-          <entry>HA-1007 : Master transfer requested : to '<replaceable>name</replaceable>'
+          <entry>Master transfer requested : to '<replaceable>name</replaceable>'
               (<replaceable>host:port</replaceable>)</entry>
         </row>
         <row>
@@ -1424,7 +1691,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-HA-1008">
           <entry morerows="1">HA-1008</entry>
-          <entry>HA-1008 : Intruder detected : Node '<replaceable>name</replaceable>'
+          <entry>Intruder detected : Node '<replaceable>name</replaceable>'
               (<replaceable>host:port</replaceable>)</entry>
         </row>
         <row>
@@ -1435,7 +1702,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-HA-1009">
           <entry morerows="1">HA-1009</entry>
-          <entry>HA-1009 : Insufficient replicas contactable</entry>
+          <entry>Insufficient replicas contactable</entry>
         </row>
         <row>
           <entry>
@@ -1445,9 +1712,9 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-HA-1010">
           <entry morerows="1">HA-1010</entry>
-          <entry>HA-1010 : Role change reported: Node : '<replaceable>name</replaceable>'
-              (<replaceable>host:port</replaceable>) : from <replaceable>role</replaceable> to
-              <replaceable>role</replaceable></entry>
+          <entry>Role change reported: Node : '<replaceable>name</replaceable>'
+            (<replaceable>host:port</replaceable>) : from '<replaceable>role</replaceable>' to
+            '<replaceable>role</replaceable>'</entry>
         </row>
         <row>
           <entry>
@@ -1456,7 +1723,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-HA-1011">
           <entry morerows="1">HA-1011</entry>
-          <entry>HA-1011 : Minimum group size : <replaceable>new group size</replaceable></entry>
+          <entry>Minimum group size : <replaceable>new group size</replaceable></entry>
         </row>
         <row>
           <entry>
@@ -1466,7 +1733,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-HA-1012">
           <entry morerows="1">HA-1012</entry>
-          <entry>HA-1012 : Priority : <replaceable>priority</replaceable></entry>
+          <entry>Priority : <replaceable>priority</replaceable></entry>
         </row>
         <row>
           <entry>
@@ -1476,7 +1743,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-HA-1013">
           <entry morerows="1">HA-1013</entry>
-          <entry>HA-1013 : Designated primary : <replaceable>true|false</replaceable></entry>
+          <entry>Designated primary : <replaceable>true|false</replaceable></entry>
         </row>
         <row>
           <entry>
@@ -1486,7 +1753,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-HA-1014">
           <entry morerows="1">HA-1014</entry>
-          <entry>HA-1014 : Diverged transactions discarded</entry>
+          <entry>Diverged transactions discarded</entry>
         </row>
         <row>
           <entry>
@@ -1496,12 +1763,22 @@
               allowed to rejoin the group. This situation can only usually occur as a result of use
               of the weak durability options. These allow the group to operate with fewer than
               quorum nodes and therefore allow the inconsistencies to develop. </para>
-            <para>On encountering this condition, it is <emphasis>strongly</emphasis> recommendend
-              to run an application level reconcilation to determine the data that has been
+            <para>On encountering this condition, it is <emphasis>strongly</emphasis> recommended
+              to run an application-level reconciliation to determine the data that has been
               lost.</para>
           </entry>
         </row>
-
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-HA-1015">
+          <entry morerows="1">HA-1015</entry>
+          <entry>Update : "<replaceable>node name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an update of an HA node was attempted and reports the outcome and
+              HA node attributes.</para>
+          </entry>
+        </row>
       </tbody>
     </tgroup>
   </table>
@@ -1520,29 +1797,32 @@
       <tbody>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1001">
           <entry morerows="1">PRT-1001</entry>
-          <entry>Create</entry>
+          <entry>Create : "<replaceable>port name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>Port has been created.</para>
+            <para>Indicates that creation of a port was attempted and reports the outcome and
+              configured attributes.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1002">
           <entry morerows="1">PRT-1002</entry>
-          <entry>Open</entry>
+          <entry>Open : "<replaceable>port name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>Port has been open</para>
+            <para>Indicates that a recovered port was opened and reports the outcome.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1003">
           <entry morerows="1">PRT-1003</entry>
-          <entry>Close</entry>
+          <entry>Close : "<replaceable>port name</replaceable>"</entry>
         </row>
         <row>
           <entry>
-            <para>Port has been closed</para>
+            <para>Indicates that a port has been closed.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1004">
@@ -1552,7 +1832,8 @@
         </row>
         <row>
           <entry>
-            <para>Warns that number of open connections approaches maximum allowed limit</para>
+            <para>Warns that the number of open connections is approaching the configured
+              maximum.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1005">
@@ -1561,7 +1842,18 @@
         </row>
         <row>
           <entry>
-            <para>Connection from given host is rejected because of reaching the maximum allowed limit</para>
+            <para>Indicates that a connection from the given host was rejected because the maximum
+              number of connections was reached.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1006">
+          <entry morerows="1">PRT-1006</entry>
+          <entry>Delete "<replaceable>port name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that deletion of a port was attempted and reports the outcome.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1007">
@@ -1570,23 +1862,24 @@
         </row>
         <row>
           <entry>
-            <para>Ususualy indicates an attempt to make an non-AMQP connection on an AMQP port, for instance,
-             with a web browser.</para>
+            <para>Usually indicates an attempt to make a non-AMQP connection on an AMQP port, for
+              instance with a web browser.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1008">
           <entry morerows="1">PRT-1008</entry>
-          <entry>Connection from <replaceable>address</replaceable> rejected</entry>
+          <entry>Connection from <replaceable>address</replaceable> rejected. Port closed.</entry>
         </row>
         <row>
           <entry>
-            <para>Incoming connection is rejected because the port's connection limits are
-              already reached.</para>
+            <para>Indicates that an incoming connection was rejected because the port was
+              closed.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1009">
           <entry morerows="1">PRT-1009</entry>
-          <entry>FAILED to bind <replaceable>name</replaceable> service to <replaceable>port number</replaceable></entry>
+          <entry>FAILED to bind <replaceable>name</replaceable> service to
+            <replaceable>port number</replaceable> - port in use</entry>
         </row>
         <row>
           <entry>
@@ -1599,7 +1892,392 @@
         </row>
         <row>
           <entry>
-            <para>Indicates that the named operation has been invoked</para>
+            <para>Indicates that the named operation has been invoked.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1011">
+          <entry morerows="1">PRT-1011</entry>
+          <entry>Update : "<replaceable>port name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an update of a port was attempted and reports the outcome and
+              port attributes.</para>
+          </entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </table>
+
+  <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-AuthenticationProvider">
+    <title>Authentication Provider Log Messages</title>
+    <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
+      <thead>
+        <row>
+          <entry>Message Id</entry>
+          <entry>Message Text / Purpose</entry>
+        </row>
+      </thead>
+      <tbody>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ATH-1001">
+          <entry morerows="1">ATH-1001</entry>
+          <entry>Create : "<replaceable>authentication provider name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that creation of an authentication provider was attempted and reports
+              the outcome and configured attributes.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ATH-1002">
+          <entry morerows="1">ATH-1002</entry>
+          <entry>Open : "<replaceable>authentication provider name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a recovered authentication provider was opened and reports the
+              outcome.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ATH-1003">
+          <entry morerows="1">ATH-1003</entry>
+          <entry>Close : "<replaceable>authentication provider name</replaceable>"</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an authentication provider has been closed.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ATH-1004">
+          <entry morerows="1">ATH-1004</entry>
+          <entry>Delete "<replaceable>authentication provider name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that deletion of an authentication provider was attempted and reports
+              the outcome.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ATH-1005">
+          <entry morerows="1">ATH-1005</entry>
+          <entry>Operation : <replaceable>operation name</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the named authentication-provider operation has been
+              invoked.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ATH-1010">
+          <entry morerows="1">ATH-1010</entry>
+          <entry>Authentication Failed[ : "<replaceable>authentication identifier</replaceable>"]</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an authentication attempt failed. The attempted authentication
+              identifier is included when available.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ATH-1011">
+          <entry morerows="1">ATH-1011</entry>
+          <entry>Update : "<replaceable>authentication provider name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an update of an authentication provider was attempted and reports
+              the outcome and authentication provider attributes.</para>
+          </entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </table>
+
+  <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-AccessControl">
+    <title>Access Control Log Messages</title>
+    <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
+      <thead>
+        <row>
+          <entry>Message Id</entry>
+          <entry>Message Text / Purpose</entry>
+        </row>
+      </thead>
+      <tbody>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ACL-1001">
+          <entry morerows="1">ACL-1001</entry>
+          <entry>Allowed : <replaceable>operation</replaceable> <replaceable>object
+            type</replaceable> <replaceable>object properties</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an access control rule configured with logging allowed an
+              operation.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ACL-1002">
+          <entry morerows="1">ACL-1002</entry>
+          <entry>Denied : <replaceable>operation</replaceable> <replaceable>object
+            type</replaceable> <replaceable>object properties</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an access control rule configured with logging denied an
+              operation.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ACL-1011">
+          <entry morerows="1">ACL-1011</entry>
+          <entry>Create "<replaceable>access control provider name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that creation of an access control provider was attempted and reports
+              the outcome and configured attributes.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ACL-1012">
+          <entry morerows="1">ACL-1012</entry>
+          <entry>Open : "<replaceable>access control provider name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a recovered access control provider was opened and reports the
+              outcome.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ACL-1013">
+          <entry morerows="1">ACL-1013</entry>
+          <entry>Close : "<replaceable>access control provider name</replaceable>"</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an access control provider has been closed.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ACL-1014">
+          <entry morerows="1">ACL-1014</entry>
+          <entry>Delete "<replaceable>access control provider name</replaceable>":
+            <replaceable>outcome</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that deletion of an access control provider was attempted and reports
+              the outcome.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ACL-1015">
+          <entry morerows="1">ACL-1015</entry>
+          <entry>Rules loaded : Source "<replaceable>source</replaceable>"</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that access control rules were loaded from the specified source.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ACL-1016">
+          <entry morerows="1">ACL-1016</entry>
+          <entry>Operation : <replaceable>operation name</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the named access control operation has been invoked.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-ACL-1017">
+          <entry morerows="1">ACL-1017</entry>
+          <entry>Update : "<replaceable>access control provider name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an update of an access control provider was attempted and reports
+              the outcome and access control provider attributes.</para>
+          </entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </table>
+
+  <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-KeyStore">
+    <title>Key Store Log Messages</title>
+    <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
+      <thead>
+        <row>
+          <entry>Message Id</entry>
+          <entry>Message Text / Purpose</entry>
+        </row>
+      </thead>
+      <tbody>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-KST-1001">
+          <entry morerows="1">KST-1001</entry>
+          <entry>Create : "<replaceable>key store name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that creation of a key store was attempted and reports the outcome and
+              configured attributes.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-KST-1002">
+          <entry morerows="1">KST-1002</entry>
+          <entry>Open : "<replaceable>key store name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a recovered key store was opened and reports the outcome.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-KST-1003">
+          <entry morerows="1">KST-1003</entry>
+          <entry>Close : "<replaceable>key store name</replaceable>"</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a key store has been closed.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-KST-1004">
+          <entry morerows="1">KST-1004</entry>
+          <entry>Delete "<replaceable>key store name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that deletion of a key store was attempted and reports the
+              outcome.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-KST-1005">
+          <entry morerows="1">KST-1005</entry>
+          <entry>KeyStore <replaceable>key store name</replaceable> Certificate expires in
+            <replaceable>days</replaceable> days : <replaceable>certificate subject</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Warns that a certificate in the key store will expire in the reported number of
+              days.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-KST-1006">
+          <entry morerows="1">KST-1006</entry>
+          <entry>Operation : <replaceable>operation name</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the named key-store operation has been invoked.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-KST-1007">
+          <entry morerows="1">KST-1007</entry>
+          <entry>Update : "<replaceable>key store name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an update of a key store was attempted and reports the outcome and
+              key store attributes.</para>
+          </entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </table>
+
+  <table pgwide="1" xml:id="Java-Broker-Appendix-Operation-Logging-Message-List-TrustStore">
+    <title>Trust Store Log Messages</title>
+    <tgroup cols="2">
+      <colspec colnum="1" colname="messageId" colwidth="1*"/>
+      <colspec colnum="2" colname="messageText" colwidth="1*"/>
+      <thead>
+        <row>
+          <entry>Message Id</entry>
+          <entry>Message Text / Purpose</entry>
+        </row>
+      </thead>
+      <tbody>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-TST-1001">
+          <entry morerows="1">TST-1001</entry>
+          <entry>Create : "<replaceable>trust store name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that creation of a trust store was attempted and reports the outcome
+              and configured attributes.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-TST-1002">
+          <entry morerows="1">TST-1002</entry>
+          <entry>Open : "<replaceable>trust store name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a recovered trust store was opened and reports the outcome.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-TST-1003">
+          <entry morerows="1">TST-1003</entry>
+          <entry>Close : "<replaceable>trust store name</replaceable>"</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a trust store has been closed.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-TST-1004">
+          <entry morerows="1">TST-1004</entry>
+          <entry>Delete "<replaceable>trust store name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that deletion of a trust store was attempted and reports the
+              outcome.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-TST-1005">
+          <entry morerows="1">TST-1005</entry>
+          <entry>TrustStore <replaceable>trust store name</replaceable> Certificate expires in
+            <replaceable>days</replaceable> days : <replaceable>certificate subject</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Warns that a certificate in the trust store will expire in the reported number of
+              days.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-TST-1006">
+          <entry morerows="1">TST-1006</entry>
+          <entry>Operation : <replaceable>operation name</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the named trust-store operation has been invoked.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-TST-1007">
+          <entry morerows="1">TST-1007</entry>
+          <entry>Update : "<replaceable>trust store name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that an update of a trust store was attempted and reports the outcome
+              and trust store attributes.</para>
           </entry>
         </row>
       </tbody>
@@ -1620,7 +2298,8 @@
       <tbody>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-RL-1001">
           <entry morerows="1">RL-1001</entry>
-          <entry>Accept</entry>
+          <entry>Accepted : <replaceable>operation</replaceable> <replaceable>resource</replaceable>
+            by <replaceable>principal</replaceable> : <replaceable>details</replaceable></entry>
         </row>
         <row>
           <entry>
@@ -1629,7 +2308,8 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-RL-1002">
           <entry morerows="1">RL-1002</entry>
-          <entry>Reject</entry>
+          <entry>Rejected : <replaceable>operation</replaceable> <replaceable>resource</replaceable>
+            by <replaceable>principal</replaceable> : <replaceable>details</replaceable></entry>
         </row>
         <row>
           <entry>
@@ -1638,7 +2318,7 @@
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-RL-1003">
           <entry morerows="1">RL-1003</entry>
-          <entry>Info</entry>
+          <entry>Info : <replaceable>event</replaceable> : <replaceable>details</replaceable></entry>
         </row>
         <row>
           <entry>
@@ -1663,29 +2343,34 @@
       <tbody>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-USR-1001">
           <entry morerows="1">USR-1001</entry>
-          <entry>Create</entry>
+          <entry>Create : "<replaceable>user name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>User has been created.</para>
+            <para>Indicates that creation of a user was attempted and reports the outcome and
+              configured attributes.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-USR-1002">
           <entry morerows="1">USR-1002</entry>
-          <entry>Update</entry>
+          <entry>Update : "<replaceable>user name</replaceable>" :
+            <replaceable>outcome</replaceable> : <replaceable>attributes</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>User has been updated.</para>
+            <para>Indicates that an update of a user was attempted and reports the outcome and
+              user attributes.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-USR-1003">
           <entry morerows="1">USR-1003</entry>
-          <entry>Delete</entry>
+          <entry>Delete : "<replaceable>user name</replaceable>" :
+            <replaceable>outcome</replaceable></entry>
         </row>
         <row>
           <entry>
-            <para>User has been deleted.</para>
+            <para>Indicates that deletion of a user was attempted and reports the outcome.</para>
           </entry>
         </row>
       </tbody>

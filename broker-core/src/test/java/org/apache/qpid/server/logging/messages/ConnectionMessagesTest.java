@@ -109,4 +109,16 @@ public class ConnectionMessagesTest extends AbstractTestMessages
 
         validateLogMessage(log, "CON-1002", expected);
     }
+
+    @Test
+    public void testIdleTransaction()
+    {
+        final long idleTime = 1234L;
+        _logMessage = ConnectionMessages.IDLE_TXN(idleTime);
+        final List<Object> log = performLog();
+
+        final String[] expected = {"Idle Transaction : ", " ms"};
+
+        validateLogMessage(log, "CON-1011", expected);
+    }
 }

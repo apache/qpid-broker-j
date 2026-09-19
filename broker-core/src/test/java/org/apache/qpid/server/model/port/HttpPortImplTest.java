@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
@@ -38,6 +40,8 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.Outcome;
+import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerImpl;
@@ -165,6 +169,8 @@ class HttpPortImplTest extends UnitTestBase
                 HttpPort.KEY_STORE, mock(KeyStore.class),
                 HttpPort.TRUST_STORES, List.of(mock(TrustStore.class)));
 
+        final EventLogger eventLogger = mock(EventLogger.class);
+        when(_broker.getEventLogger()).thenReturn(eventLogger);
         final HttpPortImpl port = new HttpPortImpl(attributes, _broker);
 
         assertEquals(State.UNINITIALIZED, port.getState());
@@ -173,9 +179,11 @@ class HttpPortImplTest extends UnitTestBase
 
         assertEquals(State.QUIESCED, port.getState());
 
+        reset(eventLogger);
         port.delete();
 
         assertEquals(State.DELETED, port.getState());
+        verify(eventLogger).message(PortMessages.DELETE(getTestName(), String.valueOf(Outcome.SUCCESS)));
     }
 
     /** Checks the deletion of an invalid port */
