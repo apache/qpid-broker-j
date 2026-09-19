@@ -22,8 +22,10 @@ package org.apache.qpid.server.transport;
 
 import java.io.IOException;
 import java.nio.channels.ServerSocketChannel;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -102,14 +104,14 @@ public class NetworkConnectionScheduler
             final int corePoolSize = _poolSize;
             final int maximumPoolSize = _poolSize;
             final long keepAliveTime = _threadKeepAliveTimeout;
-            final java.util.concurrent.BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
+            final BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
             final ThreadFactory factory = _factory;
-            _executor = new ThreadPoolExecutor(corePoolSize,
-                                               maximumPoolSize,
-                                               keepAliveTime,
-                                               TimeUnit.MINUTES,
-                                               workQueue,
-                                               QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(factory));
+            _executor = new SelectorThreadPoolExecutor(corePoolSize,
+                                                       maximumPoolSize,
+                                                       keepAliveTime,
+                                                       workQueue,
+                                                       QpidByteBuffer.createQpidByteBufferTrackingThreadFactory(
+                                                               factory));
             _executor.prestartAllCoreThreads();
             _executor.allowCoreThreadTimeOut(true);
             for(int i = 0 ; i < _poolSize; i++)
@@ -233,5 +235,45 @@ public class NetworkConnectionScheduler
     public void schedule(final NonBlockingConnection connection)
     {
         _selectorThread.addToWork(connection);
+    }
+
+    private final class SelectorThreadPoolExecutor extends ThreadPoolExecutor
+    {
+        private SelectorThreadPoolExecutor(final int corePoolSize,
+                                           final int maximumPoolSize,
+                                           final long keepAliveTime,
+                                           final BlockingQueue<Runnable> workQueue,
+                                           final ThreadFactory threadFactory)
+        {
+            super(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit.MINUTES, workQueue, threadFactory);
+        }
+
+        @Override
+        protected void afterExecute(final Runnable task, final Throwable failure)
+        {
+            super.afterExecute(task, failure);
+
+            if (task == _selectorThread && !_selectorThread.isClosed() && !isShutdown())
+            {
+                // executor replaces an abruptly terminated Java worker, but not its long-lived selector task
+                restoreSelectorTask(task);
+            }
+        }
+
+        private void restoreSelectorTask(final Runnable task)
+        {
+            try
+            {
+                execute(task);
+                LOGGER.warn("Selector processing task stopped unexpectedly; restored configured capacity");
+            }
+            catch (RejectedExecutionException e)
+            {
+                if (!_selectorThread.isClosed() && !isShutdown())
+                {
+                    LOGGER.error("Failed to restore selector processing capacity", e);
+                }
+            }
+        }
     }
 }

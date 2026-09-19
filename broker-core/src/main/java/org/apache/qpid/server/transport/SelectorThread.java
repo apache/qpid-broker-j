@@ -659,6 +659,11 @@ class SelectorThread extends Thread
 
     }
 
+    boolean isClosed()
+    {
+        return _closed.get();
+    }
+
      public void addToWork(final NonBlockingConnection connection)
      {
          if (_closed.get())
