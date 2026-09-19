@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.exception.QueryEvaluationException;
@@ -222,32 +224,37 @@ public class EqualExpressionTest
         }
     }
 
-    @Test()
-    public void comparingNulls()
+    @ParameterizedTest
+    @CsvSource(value =
     {
-        String query = "select 1 = null as result from queue";
-        try
-        {
-            _queryEvaluator.execute(query);
-            fail("Expected exception not thrown");
-        }
-        catch (Exception e)
-        {
-            assertEquals(QueryEvaluationException.class, e.getClass());
-            assertEquals("Objects of types 'Integer' and 'null' can not be compared", e.getMessage());
-        }
+        "1 = null, false",
+        "null = 1, false",
+        "'test' = null, false",
+        "null = 'test', false",
+        "(null + 1) = 1, false",
+        "1 = (null + 1), false",
+        "null = (select name from queue where 1 = 0), false",
+        "null = null, true"
+    }, quoteCharacter = '"')
+    public void comparingNulls(final String expression, final boolean expected)
+    {
+        final List<Map<String, Object>> result = _queryEvaluator.execute("select " + expression + " as result").getResults();
+        assertEquals(1, result.size(), expression);
+        assertEquals(expected, result.get(0).get("result"), expression);
+    }
 
-        query = "select null = 'test' as result from queue";
-        try
-        {
-            _queryEvaluator.execute(query);
-            fail("Expected exception not thrown");
-        }
-        catch (Exception e)
-        {
-            assertEquals(QueryEvaluationException.class, e.getClass());
-            assertEquals("Objects of types 'null' and 'String' can not be compared", e.getMessage());
-        }
+    @ParameterizedTest
+    @CsvSource(value =
+    {
+        "description = 'test description 2', 10",
+        "'test description 2' = description, 10",
+        "description = 'missing', 0"
+    }, quoteCharacter = '"')
+    public void filteringNullableFields(final String predicate, final int expected)
+    {
+        final List<Map<String, Object>> result = _queryEvaluator.execute("select count(*) as cnt from queue where " + predicate).getResults();
+        assertEquals(1, result.size(), predicate);
+        assertEquals(expected, result.get(0).get("cnt"), predicate);
     }
 
     @Test()

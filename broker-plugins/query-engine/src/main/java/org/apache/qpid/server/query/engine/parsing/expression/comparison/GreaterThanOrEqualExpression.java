@@ -79,7 +79,7 @@ public class GreaterThanOrEqualExpression<T, R> extends AbstractComparisonExpres
         final R left = evaluateChild(0, value);
         final R right = evaluateChild(1, value);
 
-        if (right instanceof EmptySetExpression)
+        if (right instanceof EmptySetExpression || hasNullOperand(left, right))
         {
             return Boolean.FALSE;
         }

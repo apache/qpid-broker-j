@@ -84,6 +84,11 @@ public class EqualExpression<T, R> extends AbstractComparisonExpression<T, Boole
             return Boolean.FALSE;
         }
 
+        if (hasNullOperand(left, right))
+        {
+            return left == right;
+        }
+
         if (!_typeValidator.test(left) || !_typeValidator.test(right))
         {
             throw QueryEvaluationException.of(
@@ -91,11 +96,6 @@ public class EqualExpression<T, R> extends AbstractComparisonExpression<T, Boole
                 StringUtils.getClassName(left),
                 StringUtils.getClassName(right)
             );
-        }
-
-        if ((left == null) ^ (right == null))
-        {
-            return Boolean.FALSE;
         }
 
         if ((left == right) || Objects.equals(left, right))
