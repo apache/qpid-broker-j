@@ -87,7 +87,7 @@ import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 public class AuthenticationTest extends JmsTestBase
 {
     private static final String DN_CA = "CN=MyRootCA,O=ACME,ST=Ontario,C=CA";
-    private static final String DN_BROKER = "CN=localhost,OU=Unknown,O=Unknown,L=Unknown,ST=Unknown,C=Unknown";
+    private static final String DN_BROKER = "CN=localhost,OU=Unknown,O=Unknown,L=Unknown,ST=Unknown,C=CA";
     private static final String DN_INTERMEDIATE = "CN=intermediate_ca@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA";
     private static final String DN_CLIENT_APP1 = "CN=app1@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA";
     private static final String DN_CLIENT_APP2 = "CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA";
