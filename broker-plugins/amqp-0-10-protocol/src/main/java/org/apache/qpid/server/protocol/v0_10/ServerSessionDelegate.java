@@ -469,8 +469,9 @@ public class ServerSessionDelegate extends MethodDelegate<ServerSession> impleme
 
                 final MessageStore store = virtualHost.getMessageStore();
                 final StoredMessage<MessageMetaData_0_10> storeMessage = createStoreMessage(xfr, messageMetaData, store);
-                final MessageTransferMessage message =
-                        new MessageTransferMessage(storeMessage, ssn.getReference());
+                final MessageTransferMessage message = new MessageTransferMessage(storeMessage, ssn.getReference(),
+                        ssn.getAMQPConnection().getMaxZeroWidthArrayElements(),
+                        ssn.getAMQPConnection().getMaxNestedObjects());
                 MessageReference<MessageTransferMessage> reference = message.newReference();
 
                 try

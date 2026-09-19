@@ -23,8 +23,10 @@ package org.apache.qpid.server.protocol.v0_10;
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.ContextProvider;
 import org.apache.qpid.server.model.DerivedAttribute;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -35,7 +37,22 @@ public interface AMQPConnection_0_10<C extends AMQPConnection_0_10<C>> extends A
                                                                              ProtocolEngine,
                                                                              EventLoggerProvider
 {
+    String CODEC_MAX_NESTED_OBJECTS = Connection.AMQP_0_X_CODEC_MAX_NESTED_OBJECTS;
+    int DEFAULT_CODEC_MAX_NESTED_OBJECTS = Connection.DEFAULT_AMQP_0_X_CODEC_MAX_NESTED_OBJECTS;
+
     // 0-10's current implementation (ServerConnection etc) means we have to break the encapsulation
+
+    String CONNECTION_MAX_UNASSEMBLED_SEGMENT_BYTES = "connection.maxUnassembledSegmentBytes";
+    @ManagedContextDefault(name = CONNECTION_MAX_UNASSEMBLED_SEGMENT_BYTES,
+            description = "Maximum aggregate bytes retained by a connection while reassembling fragmented " +
+                    "segments. The effective limit is also constrained by qpid.max_message_size.")
+    int DEFAULT_MAX_UNASSEMBLED_SEGMENT_BYTES = Connection.DEFAULT_MAX_MESSAGE_SIZE;
+
+    String CONNECTION_MAX_UNASSEMBLED_SEGMENT_FRAMES = "connection.maxUnassembledSegmentFrames";
+    @ManagedContextDefault(name = CONNECTION_MAX_UNASSEMBLED_SEGMENT_FRAMES,
+            description = "Maximum aggregate frames retained by a connection while reassembling fragmented " +
+                    "segments.")
+    int DEFAULT_MAX_UNASSEMBLED_SEGMENT_FRAMES = 256 * 1024;
 
     void initialiseHeartbeating(long writerIdle, long readerIdle);
 
@@ -58,4 +75,7 @@ public interface AMQPConnection_0_10<C extends AMQPConnection_0_10<C>> extends A
     @DerivedAttribute(description = "The actual negotiated value of heartbeat delay.")
     int getHeartbeatDelay();
 
+    int getMaxNestedObjects();
+
+    int getMaxZeroWidthArrayElements();
 }

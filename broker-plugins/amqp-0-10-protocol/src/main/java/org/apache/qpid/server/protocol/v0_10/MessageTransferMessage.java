@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v0_10;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
+import org.apache.qpid.server.protocol.v0_10.transport.AbstractDecoder;
 import org.apache.qpid.server.protocol.v0_10.transport.Header;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -31,12 +32,37 @@ import org.apache.qpid.server.store.TransactionLogResource;
 public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTransferMessage, MessageMetaData_0_10>
 {
 
-    private final static MessageMetaData_0_10 DELETED_MESSAGE_METADATA = new MessageMetaData_0_10(null, 0, 0);
+    private static final MessageMetaData_0_10 DELETED_MESSAGE_METADATA = new MessageMetaData_0_10(null, 0, 0);
     private static final String AMQP_0_10 = "AMQP 0-10";
 
-    public MessageTransferMessage(StoredMessage<MessageMetaData_0_10> storeMessage, Object connectionRef)
+    private final int _maxNestedObjects;
+    private final int _maxZeroWidthArrayElements;
+
+    public MessageTransferMessage(final StoredMessage<MessageMetaData_0_10> storeMessage,
+                                  final Object connectionRef)
+    {
+        this(storeMessage,
+             connectionRef,
+             AbstractDecoder.DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS,
+             AbstractDecoder.DEFAULT_MAX_NESTED_OBJECTS);
+    }
+
+    public MessageTransferMessage(final StoredMessage<MessageMetaData_0_10> storeMessage,
+                                  final Object connectionRef,
+                                  final int maxZeroWidthArrayElements,
+                                  final int maxNestedObjects)
     {
         super(storeMessage, connectionRef);
+        if (maxZeroWidthArrayElements < 0)
+        {
+            throw new IllegalArgumentException("Maximum zero-width array element count must not be negative");
+        }
+        if (maxNestedObjects < 0)
+        {
+            throw new IllegalArgumentException("Maximum nested objects must not be negative: " + maxNestedObjects);
+        }
+        _maxZeroWidthArrayElements = maxZeroWidthArrayElements;
+        _maxNestedObjects = maxNestedObjects;
     }
 
     private MessageMetaData_0_10 getMetaData()
@@ -81,6 +107,16 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
     public String getMessageType()
     {
         return AMQP_0_10;
+    }
+
+    public int getMaxNestedObjects()
+    {
+        return _maxNestedObjects;
+    }
+
+    public int getMaxZeroWidthArrayElements()
+    {
+        return _maxZeroWidthArrayElements;
     }
 
     @Override

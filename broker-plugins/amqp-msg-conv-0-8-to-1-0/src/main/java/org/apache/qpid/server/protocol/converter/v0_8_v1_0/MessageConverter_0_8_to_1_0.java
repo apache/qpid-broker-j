@@ -28,6 +28,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.qpid.server.message.mimecontentconverter.AmqpCompoundMimeContentToObjectConverter;
+import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
@@ -53,6 +55,14 @@ import org.apache.qpid.server.util.GZIPUtils;
 @PluggableService
 public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMessage>
 {
+    @Override
+    protected Object convertMimeContent(final AMQMessage serverMessage,
+                                        final MimeContentToObjectConverter<?> converter,
+                                        final byte[] data)
+    {
+        return AmqpCompoundMimeContentToObjectConverter.toObject( converter, data, serverMessage.getMaxNestedObjects());
+    }
+
     @Override
     public Class<AMQMessage> getInputClass()
     {

@@ -63,6 +63,16 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     @ManagedContextDefault(name = MAX_MESSAGE_SIZE)
     int DEFAULT_MAX_MESSAGE_SIZE = 100 * 1024 * 1024;
 
+    String AMQP_0_X_CODEC_MAX_NESTED_OBJECTS = "amqp0x.codec.maxNestedObjects";
+    @ManagedContextDefault(name = AMQP_0_X_CODEC_MAX_NESTED_OBJECTS,
+            description = "Maximum nesting depth of AMQP 0-x compound values")
+    int DEFAULT_AMQP_0_X_CODEC_MAX_NESTED_OBJECTS = 50;
+
+    String CODEC_MAX_ZERO_WIDTH_ARRAY_ELEMENTS = "codec.maxZeroWidthArrayElements";
+    @ManagedContextDefault(name = CODEC_MAX_ZERO_WIDTH_ARRAY_ELEMENTS,
+            description = "Maximum number of values accepted in an array whose element type consumes no bytes")
+    int DEFAULT_CODEC_MAX_ZERO_WIDTH_ARRAY_ELEMENTS = 0;
+
     @DerivedAttribute
     String getClientId();
 

@@ -33,10 +33,20 @@ public final class BBDecoder extends AbstractDecoder
 {
     private ByteBuffer in;
 
-    public void init(ByteBuffer in)
+    public BBDecoder()
+    {
+    }
+
+    public BBDecoder(final int maxZeroWidthArrayElements, final int maxNestedObjects)
+    {
+        super(maxZeroWidthArrayElements, maxNestedObjects);
+    }
+
+    public void init(final ByteBuffer in)
     {
         this.in = in;
         this.in.order(ByteOrder.BIG_ENDIAN);
+        resetDecoderState();
     }
 
     public void releaseBuffer()
@@ -51,19 +61,27 @@ public final class BBDecoder extends AbstractDecoder
     }
 
     @Override
-    protected void doGet(byte[] bytes)
+    protected void doGet(final byte[] bytes)
     {
         in.get(bytes);
     }
 
     @Override
-    protected Binary get(int size)
+    protected int underlyingRemaining()
+    {
+        return in.remaining();
+    }
+
+    @Override
+    protected Binary get(final int size)
     {
         if (in.hasArray())
         {
-            byte[] bytes = in.array();
-            Binary bin = new Binary(bytes, in.arrayOffset() + in.position(), size);
+            checkAvailable(size);
+            final byte[] bytes = in.array();
+            final Binary bin = new Binary(bytes, in.arrayOffset() + in.position(), size);
             in.position(in.position() + size);
+            recordBytesRead(size);
             return bin;
         }
         else
@@ -75,90 +93,118 @@ public final class BBDecoder extends AbstractDecoder
     @Override
     public boolean hasRemaining()
     {
-        return in.hasRemaining();
+        return remaining() != 0;
     }
 
     @Override
     public short readUint8()
     {
-        return (short) (0xFF & in.get());
+        checkAvailable(Byte.BYTES);
+        final short value = (short) (0xFF & in.get());
+        recordBytesRead(Byte.BYTES);
+        return value;
     }
 
     @Override
     public int readUint16()
     {
-        return 0xFFFF & in.getShort();
+        checkAvailable(Short.BYTES);
+        final int value = 0xFFFF & in.getShort();
+        recordBytesRead(Short.BYTES);
+        return value;
     }
 
     @Override
     public long readUint32()
     {
-        return 0xFFFFFFFFL & in.getInt();
+        checkAvailable(Integer.BYTES);
+        final long value = 0xFFFFFFFFL & in.getInt();
+        recordBytesRead(Integer.BYTES);
+        return value;
     }
 
     @Override
     public long readUint64()
     {
-        return in.getLong();
+        checkAvailable(Long.BYTES);
+        final long value = in.getLong();
+        recordBytesRead(Long.BYTES);
+        return value;
     }
 
-	@Override
+    @Override
     public byte[] readBin128()
-	{
-		byte[] result = new byte[16];
-		get(result);
-		return result;
-	}
-	
-	@Override
-    public byte[] readBytes(int howManyBytes)
-	{
-		byte[] result = new byte[howManyBytes];
-		get(result);
-		return result;
-	}
-	
-	@Override
-    public double readDouble()
-	{
-		return in.getDouble();
-	}
-
-	@Override
-    public float readFloat()
-	{
-		return in.getFloat();
-	}
-
-	@Override
-    public short readInt16()
-	{
-		return in.getShort();
-	}
-
-	@Override
-    public int readInt32()
-	{
-		return in.getInt();
-	}
-
-	@Override
-    public byte readInt8()
-	{
-		return in.get();
-	}
-
-	@Override
-    public byte[] readRemainingBytes()
-	{
-        byte[] result = new byte[in.limit() - in.position()];
+    {
+        final byte[] result = new byte[16];
         get(result);
         return result;
-	}
+    }
 
-	@Override
+    @Override
+    public byte[] readBytes(final int howManyBytes)
+    {
+        return readByteArray(howManyBytes);
+    }
+
+    @Override
+    public double readDouble()
+    {
+        checkAvailable(Double.BYTES);
+        final double value = in.getDouble();
+        recordBytesRead(Double.BYTES);
+        return value;
+    }
+
+    @Override
+    public float readFloat()
+    {
+        checkAvailable(Float.BYTES);
+        final float value = in.getFloat();
+        recordBytesRead(Float.BYTES);
+        return value;
+    }
+
+    @Override
+    public short readInt16()
+    {
+        checkAvailable(Short.BYTES);
+        final short value = in.getShort();
+        recordBytesRead(Short.BYTES);
+        return value;
+    }
+
+    @Override
+    public int readInt32()
+    {
+        checkAvailable(Integer.BYTES);
+        final int value = in.getInt();
+        recordBytesRead(Integer.BYTES);
+        return value;
+    }
+
+    @Override
+    public byte readInt8()
+    {
+        checkAvailable(Byte.BYTES);
+        final byte value = in.get();
+        recordBytesRead(Byte.BYTES);
+        return value;
+    }
+
+    @Override
+    public byte[] readRemainingBytes()
+    {
+        final byte[] result = new byte[remaining()];
+        get(result);
+        return result;
+    }
+
+    @Override
     public long readInt64()
-	{
-		return in.getLong();
-	}
+    {
+        checkAvailable(Long.BYTES);
+        final long value = in.getLong();
+        recordBytesRead(Long.BYTES);
+        return value;
+    }
 }

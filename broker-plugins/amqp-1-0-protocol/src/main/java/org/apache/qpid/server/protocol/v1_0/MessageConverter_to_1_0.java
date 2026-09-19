@@ -262,16 +262,18 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                                                            SectionEncoder sectionEncoder);
 
 
-    private static NonEncodingRetainingSection<?> convertMessageBody(String mimeType, byte[] data)
+    private NonEncodingRetainingSection<?> convertMessageBody(final M serverMessage,
+                                                              final String mimeType,
+                                                              final byte[] data)
     {
         if (data != null && data.length != 0)
         {
 
-            MimeContentToObjectConverter converter =
+            final MimeContentToObjectConverter<?> converter =
                     MimeContentConverterRegistry.getMimeContentToObjectConverter(mimeType);
             if (converter != null)
             {
-                Object bodyObject = converter.toObject(data);
+                final Object bodyObject = convertMimeContent(serverMessage, converter, data);
 
                 if (bodyObject instanceof String)
                 {
@@ -312,6 +314,13 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
             return AMQP_VALUE_EMPTY_LIST;
         }
         return new Data(new Binary(data));
+    }
+
+    protected Object convertMimeContent(final M serverMessage,
+                                        final MimeContentToObjectConverter<?> converter,
+                                        final byte[] data)
+    {
+        return converter.toObject(data);
     }
 
     static Map<String, Object> fixMapValues(Map<String, Object> map)
@@ -382,7 +391,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
             data = uncompressed;
         }
 
-        return convertMessageBody(mimeType, data).createEncodingRetainingSection();
+        return convertMessageBody(serverMessage, mimeType, data).createEncodingRetainingSection();
     }
 
     private static byte[] getObjectBytes(final Object object)

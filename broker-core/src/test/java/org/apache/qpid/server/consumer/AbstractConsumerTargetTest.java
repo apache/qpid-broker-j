@@ -35,6 +35,8 @@ import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.mockito.InOrder;
 
@@ -43,7 +45,9 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.MessageSource.MessageConversionExceptionHandlingPolicy;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.message.mimecontentconverter.AmqpCompoundMimeContentToObjectConverter;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.session.AMQPSession;
@@ -64,6 +68,7 @@ public class AbstractConsumerTargetTest extends UnitTestBase
     private Consumer<?, ?> _consumer;
     private MessageSource _messageSource;
     private MessageInstance _messageInstance;
+    private MessageReference<?> _messageReference;
 
     @BeforeEach
     public void setUp() throws Exception
@@ -76,7 +81,8 @@ public class AbstractConsumerTargetTest extends UnitTestBase
                 .thenReturn(MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE);
         _messageInstance = mock(MessageInstance.class);
         when(_messageInstance.getOwningResource()).thenReturn(_messageSource);
-        final MessageContainer messageContainer = new MessageContainer(_messageInstance, mock(MessageReference.class));
+        _messageReference = mock(MessageReference.class);
+        final MessageContainer messageContainer = new MessageContainer(_messageInstance, _messageReference);
         when(_consumer.pullMessage()).thenReturn(messageContainer);
         _consumerTarget = new TestAbstractConsumerTarget();
         _consumerTarget.consumerAdded(_consumer);
@@ -126,11 +132,12 @@ public class AbstractConsumerTargetTest extends UnitTestBase
         verifyNoMoreInteractions(_consumer);
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
     @SuppressWarnings("unchecked")
-    public void testConversionExceptionPolicyClose()
+    public void testConversionExceptionPolicyClose(final boolean compoundDecoderRejection)
     {
-        configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE);
+        configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE, compoundDecoderRejection);
 
         final ConnectionScopedRuntimeException thrown = assertThrows(ConnectionScopedRuntimeException.class,
                 () -> _consumerTarget.sendNextMessage(), "Exception not thrown");
@@ -139,70 +146,83 @@ public class AbstractConsumerTargetTest extends UnitTestBase
                                             thrown.getCause().getClass().getSimpleName()));
 
         assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
+        verify(_messageReference).release();
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
     }
 
-    @Test
-    @SuppressWarnings("unchecked")
-    public void testConversionExceptionPolicyCloseForNonAcquiringConsumer()
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testConversionExceptionPolicyCloseForNonAcquiringConsumer(final boolean compoundDecoderRejection)
     {
-        configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE);
+        configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.CLOSE,
+                compoundDecoderRejection);
 
         final ConnectionScopedRuntimeException thrown = assertThrows(ConnectionScopedRuntimeException.class,
                 () -> _consumerTarget.sendNextMessage(), "Exception not thrown");
         final boolean condition = thrown.getCause() instanceof MessageConversionException;
         assertTrue(condition, String.format("ConnectionScopedRuntimeException has unexpected cause '%s'",
-                                            thrown.getCause().getClass().getSimpleName()));
+                thrown.getCause().getClass().getSimpleName()));
         assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
+        verify(_messageReference).release();
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
     }
 
-    @Test
-    public void testConversionExceptionPolicyReroute()
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testConversionExceptionPolicyReroute(final boolean compoundDecoderRejection)
     {
-        configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.ROUTE_TO_ALTERNATE);
+        configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.ROUTE_TO_ALTERNATE,
+                compoundDecoderRejection);
 
         _consumerTarget.sendNextMessage();
         assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
+        verify(_messageReference).release();
         verify(_messageInstance).routeToAlternate(null, null, null);
     }
 
-    @Test
-    @SuppressWarnings("unchecked")
-    public void testConversionExceptionPolicyRerouteForNonAcquiringConsumer()
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testConversionExceptionPolicyRerouteForNonAcquiringConsumer(final boolean compoundDecoderRejection)
     {
-        configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.ROUTE_TO_ALTERNATE);
+        configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.ROUTE_TO_ALTERNATE,
+                compoundDecoderRejection);
 
         _consumerTarget.sendNextMessage();
         assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
+        verify(_messageReference).release();
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
     }
 
-    @Test
-    public void testConversionExceptionPolicyReject()
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testConversionExceptionPolicyReject(final boolean compoundDecoderRejection)
     {
-        configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.REJECT);
+        configureBehaviour(true, MessageSource.MessageConversionExceptionHandlingPolicy.REJECT,
+                compoundDecoderRejection);
 
         _consumerTarget.sendNextMessage();
 
         assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
+        verify(_messageReference).release();
+        verify(_messageInstance).reject(_consumer);
+        verify(_messageInstance).release(_consumer);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testConversionExceptionPolicyRejectForNonAcquiringConsumer(final boolean compoundDecoderRejection)
+    {
+        configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.REJECT,
+                compoundDecoderRejection);
+
+        _consumerTarget.sendNextMessage();
+        assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
+        verify(_messageReference).release();
         verify(_messageInstance).reject(_consumer);
         verify(_messageInstance).release(_consumer);
     }
 
     @Test
-    public void testConversionExceptionPolicyRejectForNonAcquiringConsumer()
-    {
-        configureBehaviour(false, MessageSource.MessageConversionExceptionHandlingPolicy.REJECT);
-
-        _consumerTarget.sendNextMessage();
-        assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
-        verify(_messageInstance).reject(_consumer);
-        verify(_messageInstance).release(_consumer);
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
     public void testConversionExceptionPolicyWhenOwningResourceIsNotMessageSource()
     {
         final TransactionLogResource owningResource = mock(TransactionLogResource.class);
@@ -214,19 +234,34 @@ public class AbstractConsumerTargetTest extends UnitTestBase
         assertTrue(condition, String.format("ConnectionScopedRuntimeException has unexpected cause '%s'",
                                             thrown.getCause().getClass().getSimpleName()));
         assertTrue(_consumerTarget.isCreditRestored(), "message credit was not restored");
+        verify(_messageReference).release();
         verify(_messageInstance, never()).routeToAlternate(any(Action.class), any(ServerTransaction.class), any());
     }
 
     private void configureBehaviour(final boolean acquires,
-                                    final MessageSource.MessageConversionExceptionHandlingPolicy exceptionHandlingPolicy)
+                                    final MessageConversionExceptionHandlingPolicy exceptionHandlingPolicy,
+                                    final boolean compoundDecoderRejection)
     {
         when(_consumer.acquires()).thenReturn(acquires);
         when(_messageSource.getMessageConversionExceptionHandlingPolicy()).thenReturn(exceptionHandlingPolicy);
+        if (compoundDecoderRejection)
+        {
+            final AmqpCompoundMimeContentToObjectConverter<?> converter =
+                    mock(AmqpCompoundMimeContentToObjectConverter.class);
+            final byte[] content = new byte[0];
+            when(converter.toObject(content, 0, 1)).thenThrow(new IllegalArgumentException("Compound limit exceeded"));
+            _consumerTarget._sendAction = () ->
+                    AmqpCompoundMimeContentToObjectConverter.toObject(converter, content, 0, 1);
+        }
     }
 
     @SuppressWarnings("rawtypes")
     private class TestAbstractConsumerTarget extends AbstractConsumerTarget<TestAbstractConsumerTarget>
     {
+        private Runnable _sendAction = () ->
+        {
+            throw new MessageConversionException("testException");
+        };
         private boolean _creditRestored;
 
         TestAbstractConsumerTarget()
@@ -237,7 +272,7 @@ public class AbstractConsumerTargetTest extends UnitTestBase
         @Override
         protected void doSend(final MessageInstanceConsumer consumer, final MessageInstance entry, final boolean batch)
         {
-            throw new MessageConversionException("testException");
+            _sendAction.run();
         }
 
         @Override

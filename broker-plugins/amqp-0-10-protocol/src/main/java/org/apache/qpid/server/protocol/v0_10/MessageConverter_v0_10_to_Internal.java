@@ -37,6 +37,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.message.internal.InternalMessageHeader;
+import org.apache.qpid.server.message.mimecontentconverter.AmqpCompoundMimeContentToObjectConverter;
 import org.apache.qpid.server.message.mimecontentconverter.ConversionUtils;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
@@ -81,7 +82,7 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
             encoding =  null;
         }
 
-        Object body = convertMessageBody(mimeType, data);
+        final Object body = convertMessageBody(serverMessage, mimeType, data);
         final AMQMessageHeader convertedHeader = convertHeader(serverMessage, addressSpace, body, encoding);
         return InternalMessage.convert(serverMessage, convertedHeader, body);
     }
@@ -265,14 +266,18 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
         }
     }
 
-    private static Object convertMessageBody(String mimeType, byte[] data)
+    private static Object convertMessageBody(final MessageTransferMessage serverMessage,
+                                             final String mimeType,
+                                             final byte[] data)
     {
-        MimeContentToObjectConverter converter = MimeContentConverterRegistry.getMimeContentToObjectConverter(mimeType);
+        final MimeContentToObjectConverter<?> converter = MimeContentConverterRegistry
+                .getMimeContentToObjectConverter(mimeType);
         if (data != null && data.length != 0)
         {
             if (converter != null)
             {
-                return converter.toObject(data);
+                return AmqpCompoundMimeContentToObjectConverter.toObject(converter, data,
+                        serverMessage.getMaxZeroWidthArrayElements(), serverMessage.getMaxNestedObjects());
             }
             else if (mimeType != null && TEXT_CONTENT_TYPES.matcher(mimeType).matches())
             {

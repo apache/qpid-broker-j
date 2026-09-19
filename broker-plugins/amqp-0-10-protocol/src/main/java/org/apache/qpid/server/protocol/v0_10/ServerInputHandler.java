@@ -20,8 +20,10 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
+import static org.apache.qpid.server.protocol.v0_10.ServerInputHandler.State.ERROR;
+import static org.apache.qpid.server.protocol.v0_10.ServerInputHandler.State.FRAME_HDR;
+import static org.apache.qpid.server.protocol.v0_10.ServerInputHandler.State.PROTO_HDR;
 import static org.apache.qpid.server.transport.util.Functions.str;
-import static org.apache.qpid.server.protocol.v0_10.ServerInputHandler.State.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,13 +55,13 @@ public class ServerInputHandler implements FrameSizeObserver
 
     private State _state = PROTO_HDR;
 
-    private byte flags;
-    private SegmentType type;
-    private byte track;
-    private int channel;
+    private byte _flags;
+    private SegmentType _type;
+    private byte _track;
+    private int _channel;
 
 
-    public ServerInputHandler(ServerAssembler serverAssembler)
+    public ServerInputHandler(final ServerAssembler serverAssembler)
     {
         _serverAssembler = serverAssembler;
         _state = PROTO_HDR;
@@ -71,120 +73,158 @@ public class ServerInputHandler implements FrameSizeObserver
         _maxFrameSize = maxFrameSize;
     }
 
-    private void error(String fmt, Object ... args)
+    private void error(final String format, final Object... arguments)
     {
-        _serverAssembler.error(new ProtocolError(ServerFrame.L1, fmt, args));
+        _serverAssembler.error(new ProtocolError(ServerFrame.L1, format, arguments));
     }
 
-    public void received(QpidByteBuffer buf)
+    public void received(final QpidByteBuffer buf)
     {
         int position = buf.position();
 
-        List<ServerFrame> frames = new ArrayList<>();
+        final List<ServerFrame> frames = new ArrayList<>();
 
-        while(buf.hasRemaining() && _state != ERROR)
+        boolean parsed = false;
+        try
         {
-            buf.mark();
-            switch (_state) {
-                case PROTO_HDR:
-                    if(buf.remaining() < 8)
-                    {
-                        break;
-                    }
-                    if (buf.get() != 'A' ||
-                        buf.get() != 'M' ||
-                        buf.get() != 'Q' ||
-                        buf.get() != 'P')
-                    {
-                        buf.reset();
-                        error("bad protocol header: %s", str(buf));
-                        _state = ERROR;
-                    }
-                    else
-                    {
-                        byte protoClass = buf.get();
-                        byte instance = buf.get();
-                        byte major = buf.get();
-                        byte minor = buf.get();
-
-                        _serverAssembler.init(new ProtocolHeader(protoClass, instance, major, minor));
-                        _state = FRAME_HDR;
-                    }
-                    break;
-                case FRAME_HDR:
-                    if(buf.remaining() < ServerFrame.HEADER_SIZE)
-                    {
-                        buf.reset();
-                    }
-                    else
-                    {
-                        flags = buf.get();
-                        type = SegmentType.get(buf.get());
-                        int size = (0xFFFF & buf.getShort());
-
-                        size -= ServerFrame.HEADER_SIZE;
-                        if (size < 0 || size > (_maxFrameSize - ServerFrame.HEADER_SIZE))
+            while (buf.hasRemaining() && _state != ERROR)
+            {
+                buf.mark();
+                switch (_state)
+                {
+                    case PROTO_HDR:
+                        if (buf.remaining() < 8)
                         {
-                            error("bad frame size: %d", size);
+                            break;
+                        }
+                        if (buf.get() != 'A' ||
+                            buf.get() != 'M' ||
+                            buf.get() != 'Q' ||
+                            buf.get() != 'P')
+                        {
+                            buf.reset();
                             _state = ERROR;
+                            error("bad protocol header: %s", str(buf));
                         }
                         else
                         {
-                            buf.get(); // skip unused byte
-                            byte b = buf.get();
-                            if ((b & 0xF0) != 0)
+                            final byte protoClass = buf.get();
+                            final byte instance = buf.get();
+                            final byte major = buf.get();
+                            final byte minor = buf.get();
+
+                            _serverAssembler.init(new ProtocolHeader(protoClass, instance, major, minor));
+                            _state = FRAME_HDR;
+                        }
+                        break;
+                    case FRAME_HDR:
+                        if (buf.remaining() < ServerFrame.HEADER_SIZE)
+                        {
+                            buf.reset();
+                        }
+                        else
+                        {
+                            _flags = buf.get();
+                            if ((_flags & 0xF0) != 0)
                             {
-                                error("non-zero reserved bits in upper nibble of " +
-                                      "frame header byte 5: '%x'", b);
                                 _state = ERROR;
+                                error("non-zero reserved bits in upper nibble of frame flags: '%x'", _flags & 0xFF);
+                                break;
+                            }
+
+                            final short typeValue = (short) (buf.get() & 0xFF);
+                            try
+                            {
+                                _type = SegmentType.get(typeValue);
+                            }
+                            catch (IllegalArgumentException ignore)
+                            {
+                                // Convert the invalid type into a protocol error.
+                                _state = ERROR;
+                                error("bad segment type: %d", typeValue);
+                                break;
+                            }
+
+                            final int size = (0xFFFF & buf.getShort()) - ServerFrame.HEADER_SIZE;
+                            if (size < 0 || size > (_maxFrameSize - ServerFrame.HEADER_SIZE))
+                            {
+                                _state = ERROR;
+                                error("bad frame size: %d", size);
                             }
                             else
                             {
-                                track = (byte) (b & 0xF);
-
-                                channel = (0xFFFF & buf.getShort());
-                                buf.position(buf.position() + 4);
-                                if (size == 0)
+                                buf.get(); // skip unused byte
+                                final byte b = buf.get();
+                                if ((b & 0xF0) != 0)
                                 {
-                                    ServerFrame frame = new ServerFrame(flags, type, track, channel, EMPTY_BYTE_BUFFER.duplicate());
-                                    frames.add(frame);
-
-                                }
-                                else if (buf.remaining() < size)
-                                {
-                                    buf.reset();
+                                    _state = ERROR;
+                                    error("non-zero reserved bits in upper nibble of " +
+                                          "frame header byte 5: '%x'", b);
                                 }
                                 else
                                 {
-                                    final QpidByteBuffer body = buf.slice();
-                                    body.limit(size);
-                                    ServerFrame frame = new ServerFrame(flags, type, track, channel, body);
-                                    frames.add(frame);
-                                    buf.position(buf.position() + size);
+                                    _track = (byte) (b & 0xF);
+
+                                    _channel = (0xFFFF & buf.getShort());
+                                    buf.position(buf.position() + 4);
+                                    if (size == 0)
+                                    {
+                                        final ServerFrame frame = new ServerFrame(
+                                                _flags, _type, _track, _channel, EMPTY_BYTE_BUFFER.duplicate());
+                                        frames.add(frame);
+
+                                    }
+                                    else if (buf.remaining() < size)
+                                    {
+                                        buf.reset();
+                                    }
+                                    else
+                                    {
+                                        final QpidByteBuffer body = buf.slice();
+                                        body.limit(size);
+                                        final ServerFrame frame =
+                                                new ServerFrame(_flags, _type, _track, _channel, body);
+                                        frames.add(frame);
+                                        buf.position(buf.position() + size);
+                                    }
                                 }
                             }
                         }
-                    }
-                    break;
-                default:
-                    throw new IllegalStateException();
-            }
+                        break;
+                    default:
+                        throw new IllegalStateException();
+                }
 
-            int newPosition = buf.position();
-            if(position == newPosition)
-            {
-                break;
+                final int newPosition = buf.position();
+                if (position == newPosition)
+                {
+                    break;
+                }
+                else
+                {
+                    position = newPosition;
+                }
             }
-            else
+            parsed = _state != ERROR;
+        }
+        finally
+        {
+            if (!parsed)
             {
-                position = newPosition;
+                for (final ServerFrame frame : frames)
+                {
+                    frame.getBody().dispose();
+                }
             }
         }
 
-        _serverAssembler.received(frames);
+        if (parsed)
+        {
+            _serverAssembler.received(frames);
+        }
     }
 
-    public void exception(Throwable t)
+    public void exception(final Throwable t)
     {
         _serverAssembler.exception(t);
     }

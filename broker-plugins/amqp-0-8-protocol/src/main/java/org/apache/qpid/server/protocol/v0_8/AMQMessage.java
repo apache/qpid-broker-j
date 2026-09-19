@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
-import org.apache.qpid.server.message.AMQMessageHeader;
-import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 
@@ -56,6 +56,11 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
     public ContentHeaderBody getContentHeaderBody()
     {
         return getMessageMetaData().getContentHeaderBody();
+    }
+
+    public int getMaxNestedObjects()
+    {
+        return getContentHeaderBody().getProperties().getMaxNestedObjects();
     }
 
     @Override

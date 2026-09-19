@@ -257,6 +257,12 @@ public final class ConnectionStartOk extends Method {
     }
 
     @Override
+    protected boolean isSensitiveField(final String fieldName)
+    {
+        return "response".equals(fieldName);
+    }
+
+    @Override
     public Map<String,Object> getFields()
     {
         Map<String,Object> result = new LinkedHashMap<>();

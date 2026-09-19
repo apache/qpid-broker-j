@@ -82,7 +82,7 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     static final int BASE64_LIMIT = 64;
 
     private final AmqpPort<?> _port;
-    private final List<Object> _mechanisms;
+    private final List<Object> _advertisedSaslMechanisms;
     private final Broker<?> _broker;
     private final int _maxNoOfChannels;
     private final SubjectCreator _subjectCreator;
@@ -106,11 +106,12 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     private volatile ConnectionState _state = ConnectionState.INIT;
     private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
 
-    public ServerConnectionDelegate(AmqpPort<?> port, boolean secure, final String selectedHost)
+    public ServerConnectionDelegate(final AmqpPort<?> port, final boolean secure, final String selectedHost)
     {
         _port = port;
         _broker = (Broker<?>) port.getParent();
-        _mechanisms = new ArrayList<>(port.getAuthenticationProvider().getAvailableMechanisms(secure));
+        _advertisedSaslMechanisms =
+                new ArrayList<>(port.getAuthenticationProvider().getAvailableMechanisms(secure));
 
         _maxNoOfChannels = port.getSessionCountLimit();
         _subjectCreator = port.getSubjectCreator(secure, selectedHost);
@@ -130,9 +131,10 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     }
 
     @Override
-    public void error(ServerConnection conn, ProtocolError error)
+    public void error(final ServerConnection conn, final ProtocolError error)
     {
         conn.exception(new ConnectionException(error.getMessage()));
+        conn.closeAndIgnoreFutureInput();
     }
 
     @Override
@@ -194,7 +196,8 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
         {
             props = enricher.addConnectionProperties(serverConnection.getAmqpConnection(), props);
         }
-        serverConnection.sendConnectionStart(props, _mechanisms, Collections.singletonList((Object)"en_US"));
+        serverConnection.sendConnectionStart(props, _advertisedSaslMechanisms,
+                                             Collections.singletonList((Object) "en_US"));
         _state = ConnectionState.AWAIT_START_OK;
     }
 
@@ -527,20 +530,36 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
     }
 
     @Override
-    public void connectionStartOk(ServerConnection serverConnection, ConnectionStartOk ok)
+    public void connectionStartOk(final ServerConnection serverConnection, final ConnectionStartOk ok)
     {
         assertState(serverConnection, ConnectionState.AWAIT_START_OK);
-        _clientProperties = ok.getClientProperties();
-        if(_clientProperties != null)
+        final String mechanism = ok.getMechanism();
+
+        if (mechanism == null || mechanism.isEmpty())
         {
-            Object compressionSupported =
+            serverConnection.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED,
+                    "No Sasl mechanism was specified");
+            return;
+        }
+
+        if (!_advertisedSaslMechanisms.contains(mechanism))
+        {
+            serverConnection.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED,
+                    "Sasl mechanism was not advertised");
+            return;
+        }
+
+        _clientProperties = ok.getClientProperties();
+        if (_clientProperties != null)
+        {
+            final Object compressionSupported =
                     _clientProperties.get(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED);
             if (compressionSupported != null)
             {
                 _compressionSupported = Boolean.parseBoolean(String.valueOf(compressionSupported));
 
             }
-            final AMQPConnection_0_10 protocolEngine = serverConnection.getAmqpConnection();
+            final AMQPConnection_0_10<?> protocolEngine = serverConnection.getAmqpConnection();
             protocolEngine.setClientId(getStringClientProperty(ConnectionStartProperties.CLIENT_ID_0_10));
             protocolEngine.setClientProduct(getStringClientProperty(ConnectionStartProperties.PRODUCT));
             protocolEngine.setClientVersion(getStringClientProperty(ConnectionStartProperties.VERSION_0_10));
@@ -549,14 +568,6 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
 
 
         serverConnection.setLocale(ok.getLocale());
-        String mechanism = ok.getMechanism();
-
-        if (mechanism == null || mechanism.length() == 0)
-        {
-            serverConnection.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED,
-                                                 "No Sasl mechanism was specified");
-            return;
-        }
 
         _saslNegotiator = _subjectCreator.createSaslNegotiator(mechanism,
                                                                (SaslSettings) serverConnection.getAmqpConnection());

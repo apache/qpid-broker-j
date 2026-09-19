@@ -23,7 +23,9 @@ package org.apache.qpid.server.protocol.v0_10.transport;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.ByteBuffer;
 
@@ -31,11 +33,15 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.qpid.test.utils.UnitTestBase;
 
 class BBDecoderTest extends UnitTestBase
 {
+    private static final int OVERSIZED_LENGTH = 1_000_000;
+
     @Test
     void str8Caching()
     {
@@ -65,5 +71,69 @@ class BBDecoderTest extends UnitTestBase
             cache.cleanUp();
             BBDecoder.setStringCache(original);
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {OVERSIZED_LENGTH, -1})
+    void vbin32RejectsLengthGreaterThanRemaining(final int encodedLength)
+    {
+        final ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
+        buffer.putInt(encodedLength);
+        final BBDecoder decoder = createDecoder(buffer);
+
+        assertThrows(IllegalArgumentException.class, decoder::readVbin32);
+    }
+
+    @Test
+    void vbin32ReadsValidValue()
+    {
+        final byte[] value = {1, 2, 3};
+        final ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES + value.length);
+        buffer.putInt(value.length);
+        buffer.put(value);
+        final BBDecoder decoder = createDecoder(buffer);
+
+        assertArrayEquals(value, decoder.readVbin32());
+    }
+
+    @Test
+    void vbin32ReadsEmptyValue()
+    {
+        final ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
+        buffer.putInt(0);
+        final BBDecoder decoder = createDecoder(buffer);
+
+        assertThat(decoder.readVbin32().length, is(equalTo(0)));
+    }
+
+    @Test
+    void str16RejectsLengthGreaterThanRemaining()
+    {
+        final ByteBuffer buffer = ByteBuffer.allocate(Short.BYTES);
+        buffer.putShort((short) 64);
+        final BBDecoder decoder = createDecoder(buffer);
+
+        assertThrows(IllegalArgumentException.class, decoder::readStr16);
+    }
+
+    @Test
+    void listRejectsNestedVbin32LengthGreaterThanRemaining()
+    {
+        final ByteBuffer buffer = ByteBuffer.allocate(3 * Integer.BYTES + 1);
+        buffer.putInt(2 * Integer.BYTES + 1);
+        buffer.putInt(1);
+        buffer.put(Type.VBIN32.getCode());
+        buffer.putInt(OVERSIZED_LENGTH);
+        final BBDecoder decoder = createDecoder(buffer);
+
+        assertThrows(IllegalArgumentException.class, decoder::readList);
+    }
+
+    private BBDecoder createDecoder(final ByteBuffer buffer)
+    {
+        buffer.flip();
+        final BBDecoder decoder = new BBDecoder();
+        decoder.init(buffer);
+        return decoder;
     }
 }

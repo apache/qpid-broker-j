@@ -131,6 +131,7 @@ public class MessageTransferMessageMutator implements ServerMessageMutator<Messa
         {
             addedMessage.addContent(content);
         }
-        return new MessageTransferMessage(addedMessage.allContentAdded(), _message.getConnectionReference());
+        return new MessageTransferMessage(addedMessage.allContentAdded(), _message.getConnectionReference(),
+                _message.getMaxZeroWidthArrayElements(), _message.getMaxNestedObjects());
     }
 }

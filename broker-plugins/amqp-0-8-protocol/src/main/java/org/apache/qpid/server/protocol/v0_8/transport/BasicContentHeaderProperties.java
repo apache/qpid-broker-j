@@ -132,6 +132,11 @@ public class BasicContentHeaderProperties
         _maxNestedObjects = AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS;
     }
 
+    public int getMaxNestedObjects()
+    {
+        return _maxNestedObjects;
+    }
+
     public synchronized int getPropertyListSize()
     {
         if(useEncodedForm())

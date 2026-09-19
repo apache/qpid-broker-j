@@ -23,9 +23,11 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.Method;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolError;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolEvent;
 import org.apache.qpid.server.protocol.v0_10.transport.ProtocolHeader;
+import org.apache.qpid.server.protocol.v0_10.transport.SegmentType;
 import org.apache.qpid.server.protocol.v0_10.transport.Struct;
 import org.apache.qpid.server.util.PeekingIterator;
 import org.apache.qpid.server.util.PeekingIteratorImpl;
@@ -46,24 +49,35 @@ import org.apache.qpid.server.util.PeekingIteratorImpl;
 public class ServerAssembler
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerAssembler.class);
-
-
-    private final ServerConnection _connection;
-
-
-
     // Use a small array to store incomplete Methods for low-value channels, instead of allocating a huge
     // array or always boxing the channelId and looking it up in the map. This value must be of the form 2^X - 1.
     private static final int ARRAY_SIZE = 0xFF;
+    private static final int SEGMENT_FLAG_MASK = ServerFrame.FIRST_SEG | ServerFrame.LAST_SEG;
+
+    private final ServerConnection _connection;
     private final Method[] _incompleteMethodArray = new Method[ARRAY_SIZE + 1];
     private final Map<Integer, Method> _incompleteMethodMap = new HashMap<>();
+    private final Map<Integer, SegmentAccumulator> _segments = new HashMap<>();
 
-    private final Map<Integer,List<ServerFrame>> _segments;
+    private boolean _segmentLimitsInitialized;
+    private long _maxUnassembledSegmentBytes;
+    private int _maxUnassembledSegmentFrames;
+    private long _unassembledSegmentBytes;
+    private int _unassembledSegmentFrames;
 
-    public ServerAssembler(ServerConnection connection)
+    public ServerAssembler(final ServerConnection connection)
     {
-        _connection = connection;
-        _segments = new HashMap<>();
+        _connection = Objects.requireNonNull(connection, "connection");
+    }
+
+    ServerAssembler(final ServerConnection connection,
+                    final long maxUnassembledSegmentBytes,
+                    final int maxUnassembledSegmentFrames)
+    {
+        _connection = Objects.requireNonNull(connection, "connection");
+        _maxUnassembledSegmentBytes = Math.max(1L, maxUnassembledSegmentBytes);
+        _maxUnassembledSegmentFrames = Math.max(1, maxUnassembledSegmentFrames);
+        _segmentLimitsInitialized = true;
     }
 
     public final void received(final List<ServerFrame> frames)
@@ -110,13 +124,10 @@ public class ServerAssembler
             {
                 if (!cleanExit)
                 {
-                    while (itr.hasNext())
+                    disposeRetainedState();
+                    for (final ServerFrame frame : frames)
                     {
-                        final QpidByteBuffer body = itr.next().getBody();
-                        if (body != null)
-                        {
-                            body.dispose();
-                        }
+                        dispose(frame.getBody());
                     }
                 }
             }
@@ -131,130 +142,231 @@ public class ServerAssembler
         }
         else
         {
-            LOGGER.debug("Ignored network event " + event + " as connection is ignoring further input ");
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("Ignored network event [channel={}, size={}, track={}, type={}, flags={}] as " +
+                        "connection is ignoring further input", event.getChannel(), event.getSize(),
+                        event.getTrack(), event.getType(), event.getFlags());
+            }
+            dispose(event.getBody());
         }
     }
 
-    protected ByteBuffer allocateByteBuffer(int size)
+    protected ByteBuffer allocateByteBuffer(final int size)
     {
         return ByteBuffer.allocateDirect(size);
     }
 
 
-    private int segmentKey(ServerFrame frame)
+    private void initializeSegmentLimits()
     {
-        return (frame.getTrack() + 1) * frame.getChannel();
-    }
-
-    private List<ServerFrame> getSegment(ServerFrame frame)
-    {
-        return _segments.get(segmentKey(frame));
-    }
-
-    private void setSegment(ServerFrame frame, List<ServerFrame> segment)
-    {
-        int key = segmentKey(frame);
-        if (_segments.containsKey(key))
+        if (!_segmentLimitsInitialized)
         {
-            error(new ProtocolError(Frame.L2, "segment in progress: %s",
-                                    frame));
+            final AMQPConnection_0_10<?> amqpConnection = _connection.getAmqpConnection();
+            final Integer configuredMaxBytes = amqpConnection.getContextValue(
+                    Integer.class, AMQPConnection_0_10.CONNECTION_MAX_UNASSEMBLED_SEGMENT_BYTES);
+            _maxUnassembledSegmentBytes = Math.max(1L, configuredMaxBytes == null
+                    ? AMQPConnection_0_10.DEFAULT_MAX_UNASSEMBLED_SEGMENT_BYTES
+                    : configuredMaxBytes);
+
+            final Integer configuredMaxFrames = amqpConnection.getContextValue(
+                    Integer.class, AMQPConnection_0_10.CONNECTION_MAX_UNASSEMBLED_SEGMENT_FRAMES);
+            _maxUnassembledSegmentFrames = Math.max(1, configuredMaxFrames == null
+                    ? AMQPConnection_0_10.DEFAULT_MAX_UNASSEMBLED_SEGMENT_FRAMES
+                    : configuredMaxFrames);
+            _segmentLimitsInitialized = true;
         }
-        _segments.put(segmentKey(frame), segment);
     }
 
-    private void clearSegment(ServerFrame frame)
+    private int segmentKey(final ServerFrame frame)
     {
-        _segments.remove(segmentKey(frame));
+        return (frame.getChannel() << 4) | (frame.getTrack() & 0x0F);
     }
 
-    private void emit(int channel, ProtocolEvent event)
+    private void emit(final int channel, final ProtocolEvent event)
     {
         event.setChannel(channel);
         _connection.received(event);
     }
 
-    public void exception(Throwable t)
+    public void exception(final Throwable t)
     {
+        disposeRetainedState();
         _connection.exception(t);
     }
 
     public void closed()
     {
+        disposeRetainedState();
         _connection.closed();
     }
 
-    public void init(ProtocolHeader header)
+    public void init(final ProtocolHeader header)
     {
         emit(0, header);
     }
 
-    public void error(ProtocolError error)
+    public void error(final ProtocolError error)
     {
+        disposeRetainedState();
         emit(0, error);
     }
 
-    public void frame(ServerFrame frame)
+    public void frame(final ServerFrame frame)
     {
-        if (frame.isFirstFrame() && frame.isLastFrame())
+        Objects.requireNonNull(frame, "frame");
+        if (frame.getBody() == null)
+        {
+            throw reject(frame, "frame has no body on channel %d, track %d", frame.getChannel(), frame.getTrack());
+        }
+        if (frame.getType() == null)
+        {
+            throw reject(frame, "frame has no segment type on channel %d, track %d", frame.getChannel(),
+                    frame.getTrack());
+        }
+
+        if (frame.isFirstFrame() && frame.isLastFrame() && _segments.isEmpty())
         {
             assemble(frame, frame.getBody());
+            return;
         }
-        else
-        {
-            List<ServerFrame> frames;
-            if (frame.isFirstFrame())
-            {
-                frames = new ArrayList<>();
-                setSegment(frame, frames);
-            }
-            else
-            {
-                frames = getSegment(frame);
-            }
 
-            frames.add(frame);
+        final int key = segmentKey(frame);
+        final SegmentAccumulator segment = _segments.get(key);
+
+        if (frame.isFirstFrame())
+        {
+            if (segment != null)
+            {
+                throw reject(frame, "segment already in progress on channel %d, track %d", frame.getChannel(),
+                        frame.getTrack());
+            }
 
             if (frame.isLastFrame())
             {
-                clearSegment(frame);
-                List<QpidByteBuffer> frameBuffers = new ArrayList<>(frames.size());
-                for (ServerFrame f : frames)
-                {
-                    frameBuffers.add(f.getBody());
-                }
-                QpidByteBuffer combined = QpidByteBuffer.concatenate(frameBuffers);
-                for (QpidByteBuffer buffer : frameBuffers)
-                {
-                    buffer.dispose();
-                }
+                assemble(frame, frame.getBody());
+            }
+            else
+            {
+                final SegmentAccumulator newSegment = new SegmentAccumulator(frame);
+                retain(frame, newSegment);
+                _segments.put(key, newSegment);
+            }
+        }
+        else
+        {
+            if (segment == null)
+            {
+                throw reject(frame, "segment continuation without a first frame on channel %d, track %d",
+                        frame.getChannel(), frame.getTrack());
+            }
+            if (!segment.matches(frame))
+            {
+                throw reject(frame, "segment continuation does not match the first frame on channel %d, track %d",
+                        frame.getChannel(), frame.getTrack());
+            }
+
+            retain(frame, segment);
+            if (frame.isLastFrame())
+            {
+                _segments.remove(key);
+                release(segment);
+                final QpidByteBuffer combined = segment.concatenate();
                 assemble(frame, combined);
             }
         }
-
     }
 
-    private void assemble(ServerFrame frame, QpidByteBuffer frameBuffer)
+    private void retain(final ServerFrame frame, final SegmentAccumulator segment)
+    {
+        initializeSegmentLimits();
+
+        if (_unassembledSegmentFrames >= _maxUnassembledSegmentFrames)
+        {
+            throw reject(frame, "unassembled segment frame limit (%d) exceeded on channel %d, track %d",
+                    _maxUnassembledSegmentFrames, frame.getChannel(), frame.getTrack());
+        }
+
+        final int frameSize = frame.getBody().remaining();
+        final long maxBytes = Math.min(_maxUnassembledSegmentBytes, Math.max(1L, _connection.getMaxMessageSize()));
+        if (frameSize > maxBytes - _unassembledSegmentBytes)
+        {
+            throw reject(frame, "unassembled segment byte limit (%d) exceeded on channel %d, track %d",
+                    maxBytes, frame.getChannel(), frame.getTrack());
+        }
+
+        segment.add(frame.getBody(), frameSize);
+        _unassembledSegmentFrames++;
+        _unassembledSegmentBytes += frameSize;
+    }
+
+    private void release(final SegmentAccumulator segment)
+    {
+        _unassembledSegmentFrames -= segment.getFrameCount();
+        _unassembledSegmentBytes -= segment.getByteCount();
+    }
+
+    private IllegalArgumentException reject(final ServerFrame frame,
+                                            final String format,
+                                            final Object... arguments)
+    {
+        dispose(frame.getBody());
+        final ProtocolError protocolError = new ProtocolError(Frame.L2, format, arguments);
+        error(protocolError);
+        return new IllegalArgumentException(protocolError.getMessage());
+    }
+
+    private void disposeRetainedState()
+    {
+        for (final SegmentAccumulator segment : _segments.values())
+        {
+            segment.dispose();
+        }
+        _segments.clear();
+        _unassembledSegmentBytes = 0L;
+        _unassembledSegmentFrames = 0;
+
+        Arrays.fill(_incompleteMethodArray, null);
+        _incompleteMethodMap.clear();
+    }
+
+    private static void dispose(final QpidByteBuffer buffer)
+    {
+        if (buffer != null)
+        {
+            buffer.dispose();
+        }
+    }
+
+    private void assemble(final ServerFrame frame, final QpidByteBuffer frameBuffer)
     {
         try
         {
-            ServerDecoder dec = new ServerDecoder(frameBuffer);
+            final AMQPConnection_0_10<?> amqpConnection = _connection.getAmqpConnection();
+            final ServerDecoder dec =
+                    new ServerDecoder(frameBuffer, amqpConnection.getMaxZeroWidthArrayElements(),
+                                      amqpConnection.getMaxNestedObjects());
 
-            int channel = frame.getChannel();
-            Method command;
+            final int channel = frame.getChannel();
 
             switch (frame.getType())
             {
                 case CONTROL:
-                    int controlType = dec.readUint16();
-                    Method control = Method.create(controlType);
+                    final int controlType = dec.readUint16();
+                    final Method control = Method.create(controlType);
                     control.read(dec);
                     emit(channel, control);
                     break;
                 case COMMAND:
-                    int commandType = dec.readUint16();
+                    if (getIncompleteCommand(channel) != null)
+                    {
+                        throw new IllegalStateException("command received before previous command was complete " +
+                                "on channel " + channel);
+                    }
+                    final int commandType = dec.readUint16();
                     // read in the session header, right now we don't use it
-                    int hdr = dec.readUint16();
-                    command = Method.create(commandType);
+                    final int hdr = dec.readUint16();
+                    final Method command = Method.create(commandType);
                     command.setSync((0x0001 & hdr) != 0);
                     command.read(dec);
                     if (command.hasPayload() && !frame.isLastSegment())
@@ -267,7 +379,12 @@ public class ServerAssembler
                     }
                     break;
                 case HEADER:
-                    command = getIncompleteCommand(channel);
+                    final Method headerCommand = getIncompleteCommand(channel);
+                    if (headerCommand == null)
+                    {
+                        throw new IllegalStateException("header received without an incomplete command on channel " +
+                                channel);
+                    }
                     List<Struct> structs = null;
                     DeliveryProperties deliveryProps = null;
                     MessageProperties messageProps = null;
@@ -292,20 +409,24 @@ public class ServerAssembler
                             structs.add(struct);
                         }
                     }
-                    command.setHeader(new Header(deliveryProps, messageProps, structs));
+                    headerCommand.setHeader(new Header(deliveryProps, messageProps, structs));
 
                     if (frame.isLastSegment())
                     {
                         setIncompleteCommand(channel, null);
-                        emit(channel, command);
+                        emit(channel, headerCommand);
                     }
                     break;
                 case BODY:
-                    command = getIncompleteCommand(channel);
-                    command.setBody(frameBuffer);
+                    final Method bodyCommand = getIncompleteCommand(channel);
+                    if (bodyCommand == null)
+                    {
+                        throw new IllegalStateException("body received without an incomplete command on channel " +
+                                channel);
+                    }
+                    bodyCommand.setBody(frameBuffer);
                     setIncompleteCommand(channel, null);
-                    emit(channel, command);
-
+                    emit(channel, bodyCommand);
                     break;
                 default:
                     throw new IllegalStateException("unknown frame type: " + frame.getType());
@@ -317,7 +438,7 @@ public class ServerAssembler
         }
     }
 
-    private void setIncompleteCommand(int channelId, Method incomplete)
+    private void setIncompleteCommand(final int channelId, final Method incomplete)
     {
         if ((channelId & ARRAY_SIZE) == channelId)
         {
@@ -336,7 +457,7 @@ public class ServerAssembler
         }
     }
 
-    private Method getIncompleteCommand(int channelId)
+    private Method getIncompleteCommand(final int channelId)
     {
         if ((channelId & ARRAY_SIZE) == channelId)
         {
@@ -345,6 +466,73 @@ public class ServerAssembler
         else
         {
             return _incompleteMethodMap.get(channelId);
+        }
+    }
+
+    private static final class SegmentAccumulator
+    {
+        private static final int INITIAL_CAPACITY = 4;
+
+        private final int _channel;
+        private final byte _track;
+        private final SegmentType _type;
+        private final int _segmentFlags;
+        private final List<QpidByteBuffer> _buffers = new ArrayList<>(INITIAL_CAPACITY);
+
+        private long _byteCount;
+
+        private SegmentAccumulator(final ServerFrame frame)
+        {
+            _channel = frame.getChannel();
+            _track = frame.getTrack();
+            _type = frame.getType();
+            _segmentFlags = frame.getFlags() & SEGMENT_FLAG_MASK;
+        }
+
+        private boolean matches(final ServerFrame frame)
+        {
+            return _channel == frame.getChannel() &&
+                    _track == frame.getTrack() &&
+                    _type == frame.getType() &&
+                    _segmentFlags == (frame.getFlags() & SEGMENT_FLAG_MASK);
+        }
+
+        private void add(final QpidByteBuffer buffer, final int size)
+        {
+            _buffers.add(buffer);
+            _byteCount += size;
+        }
+
+        private int getFrameCount()
+        {
+            return _buffers.size();
+        }
+
+        private long getByteCount()
+        {
+            return _byteCount;
+        }
+
+        private QpidByteBuffer concatenate()
+        {
+            try
+            {
+                return QpidByteBuffer.concatenate(_buffers);
+            }
+            finally
+            {
+                dispose();
+            }
+        }
+
+        private void dispose()
+        {
+            for (final QpidByteBuffer buffer : _buffers)
+            {
+                buffer.dispose();
+            }
+            _buffers.clear();
+            _byteCount = 0L;
         }
     }
 }

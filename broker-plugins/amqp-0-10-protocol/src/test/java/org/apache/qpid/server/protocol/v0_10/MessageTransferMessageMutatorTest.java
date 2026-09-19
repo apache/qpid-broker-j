@@ -48,6 +48,8 @@ class MessageTransferMessageMutatorTest extends UnitTestBase
     private static final String TEST_HEADER_VALUE = "bar";
     private static final String TEST_CONTENT_TYPE = "text/plain";
     private static final String TEST_CONTENT = "testContent";
+    private static final int TEST_MAX_NESTED_OBJECTS = 51;
+    private static final int TEST_MAX_ZERO_WIDTH_ARRAY_ELEMENTS = 2;
 
     private MessageStore _messageStore;
     private MessageTransferMessageMutator _messageMutator;
@@ -89,6 +91,8 @@ class MessageTransferMessageMutatorTest extends UnitTestBase
         assertThat(newMessage.getMessageHeader().getPriority(), is(equalTo((byte) (TEST_PRIORITY + 1))));
         assertThat(newMessage.getMessageHeader().getMimeType(), is(equalTo(TEST_CONTENT_TYPE)));
         assertThat(newMessage.getMessageHeader().getHeader(TEST_HEADER_NAME), is(equalTo(TEST_HEADER_VALUE)));
+        assertThat(newMessage.getMaxNestedObjects(), is(equalTo(TEST_MAX_NESTED_OBJECTS)));
+        assertThat(newMessage.getMaxZeroWidthArrayElements(), is(equalTo(TEST_MAX_ZERO_WIDTH_ARRAY_ELEMENTS)));
 
         final QpidByteBuffer content = newMessage.getContent();
 
@@ -112,6 +116,7 @@ class MessageTransferMessageMutatorTest extends UnitTestBase
                 new MessageMetaData_0_10(header, content.remaining(), System.currentTimeMillis());
         final MessageHandle<MessageMetaData_0_10> addedMessage = _messageStore.addMessage(messageMetaData);
         addedMessage.addContent(content);
-        return new MessageTransferMessage(addedMessage.allContentAdded(), null);
+        return new MessageTransferMessage(addedMessage.allContentAdded(), null,
+                TEST_MAX_ZERO_WIDTH_ARRAY_ELEMENTS, TEST_MAX_NESTED_OBJECTS);
     }
 }

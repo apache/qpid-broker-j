@@ -50,6 +50,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.apache.qpid</groupId>
+            <artifactId>protocol-tests-amqp-1-0</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.apache.maven.resolver</groupId>
             <artifactId>maven-resolver-supplier-mvn3</artifactId>
         </dependency>

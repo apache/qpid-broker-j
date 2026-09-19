@@ -26,7 +26,6 @@ import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
-import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
@@ -55,10 +54,6 @@ public interface AMQPConnection_1_0<C extends AMQPConnection_1_0<C>> extends AMQ
     String CODEC_MAX_NESTED_OBJECTS = "codec.maxNestedObjects";
     @ManagedContextDefault(name = CODEC_MAX_NESTED_OBJECTS, description = "Maximal number of AMQP nested objects (recursion depth)")
     int DEFAULT_CODEC_MAX_NESTED_OBJECTS = 50;
-
-    String CODEC_MAX_ZERO_WIDTH_ARRAY_ELEMENTS = "codec.maxZeroWidthArrayElements";
-    @ManagedContextDefault(name = CODEC_MAX_ZERO_WIDTH_ARRAY_ELEMENTS)
-    int DEFAULT_CODEC_MAX_ZERO_WIDTH_ARRAY_ELEMENTS = ValueHandler.DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS;
 
     String CONNECTION_MAX_TRANSFERS_PER_DELIVERY = "connection.maxTransfersPerDelivery";
     @ManagedContextDefault(name = CONNECTION_MAX_TRANSFERS_PER_DELIVERY,

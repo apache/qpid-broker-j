@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -498,8 +499,11 @@ public abstract class AbstractEncoder implements Encoder
         case BIN64:
         case UINT64:
         case INT64:
-        case DATETIME:
             writeUint64(coerce(Long.class, value));
+            break;
+
+        case DATETIME:
+            writeDatetime(coerce(Date.class, value).getTime());
             break;
 
         case DOUBLE:

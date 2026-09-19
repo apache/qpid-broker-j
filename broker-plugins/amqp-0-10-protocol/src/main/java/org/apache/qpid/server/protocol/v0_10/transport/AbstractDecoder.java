@@ -44,29 +44,113 @@ import org.apache.qpid.server.virtualhost.NullCache;
 
 public abstract class AbstractDecoder implements Decoder
 {
+    public static final int DEFAULT_MAX_NESTED_OBJECTS = 50;
+    public static final int DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS = 0;
+
+    private static final int NO_COMPOUND = -1;
     private static final NullCache<Binary, String> NULL_CACHE = new NullCache<>();
     private static final ThreadLocal<Cache<Binary, String>> CACHE =
             ThreadLocal.withInitial(() -> CacheFactory.getCache("str8Cache", NULL_CACHE));
 
+    private final int _maxNestedObjects;
+    private final int _maxZeroWidthArrayElements;
+
+    private int _compoundRemaining = NO_COMPOUND;
+    private int _nestedObjectDepth;
+
+    protected AbstractDecoder()
+    {
+        this(DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS, DEFAULT_MAX_NESTED_OBJECTS);
+    }
+
+    protected AbstractDecoder(final int maxZeroWidthArrayElements, final int maxNestedObjects)
+    {
+        if (maxZeroWidthArrayElements < 0)
+        {
+            throw new IllegalArgumentException("Maximum zero-width array element count must not be negative");
+        }
+        if (maxNestedObjects < 0)
+        {
+            throw new IllegalArgumentException("Maximum nested objects must not be negative: " + maxNestedObjects);
+        }
+        _maxNestedObjects = maxNestedObjects;
+        _maxZeroWidthArrayElements = maxZeroWidthArrayElements;
+    }
+
     protected abstract byte doGet();
 
-    protected abstract void doGet(byte[] bytes);
+    protected abstract void doGet(final byte[] bytes);
+
+    protected abstract int underlyingRemaining();
+
+    protected final int remaining()
+    {
+        final int underlyingRemaining = underlyingRemaining();
+        return _compoundRemaining == NO_COMPOUND
+                ? underlyingRemaining
+                : Math.min(underlyingRemaining, _compoundRemaining);
+    }
+
+    protected final void resetDecoderState()
+    {
+        _compoundRemaining = NO_COMPOUND;
+    }
+
+    protected final void checkAvailable(final int length)
+    {
+        if (length < 0 || (_compoundRemaining != NO_COMPOUND && length > _compoundRemaining))
+        {
+            throw new IllegalArgumentException("Cannot read " + length +
+                    " byte(s) beyond the declared compound boundary");
+        }
+    }
+
+    protected final void recordBytesRead(final int length)
+    {
+        if (_compoundRemaining != NO_COMPOUND)
+        {
+            _compoundRemaining -= length;
+        }
+    }
 
     protected byte get()
     {
-        return doGet();
+        checkAvailable(1);
+        final byte value = doGet();
+        recordBytesRead(1);
+        return value;
     }
 
-    protected void get(byte[] bytes)
+    protected void get(final byte[] bytes)
     {
+        checkAvailable(bytes.length);
         doGet(bytes);
+        recordBytesRead(bytes.length);
     }
 
-    protected Binary get(int size)
+    protected Binary get(final int size)
     {
-        byte[] bytes = new byte[size];
+        final byte[] bytes = new byte[size];
         get(bytes);
         return new Binary(bytes);
+    }
+
+    protected final int validateLength(final long length)
+    {
+        final int remaining = remaining();
+        if (length < 0 || length > remaining)
+        {
+            throw new IllegalArgumentException("Declared field length " + length + " is invalid; decoder has " +
+                    remaining + " byte(s) remaining");
+        }
+        return (int) length;
+    }
+
+    protected final byte[] readByteArray(final long length)
+    {
+        final byte[] bytes = new byte[validateLength(length)];
+        get(bytes);
+        return bytes;
     }
 
     protected short uget()
@@ -91,11 +175,10 @@ public abstract class AbstractDecoder implements Decoder
     @Override
     public long readUint32()
     {
-        long l = uget() << 24;
-        l |= uget() << 16;
-        l |= uget() << 8;
-        l |= uget();
-        return l;
+        return ((long) uget() << 24) |
+                ((long) uget() << 16) |
+                ((long) uget() << 8) |
+                uget();
     }
 
     @Override
@@ -124,14 +207,14 @@ public abstract class AbstractDecoder implements Decoder
     @Override
     public String readStr8()
     {
-        short size = readUint8();
+        final int size = validateLength(readUint8());
         Binary bin = get(size);
         String str = getStringCache().getIfPresent(bin);
 
         if (str == null)
         {
             str = new String(bin.array(), bin.offset(), bin.size(), StandardCharsets.UTF_8);
-            if(bin.hasExcessCapacity())
+            if (bin.hasExcessCapacity())
             {
                 bin = bin.copy();
             }
@@ -143,37 +226,25 @@ public abstract class AbstractDecoder implements Decoder
     @Override
     public String readStr16()
     {
-        int size = readUint16();
-        byte[] bytes = new byte[size];
-        get(bytes);
-        return new String(bytes, StandardCharsets.UTF_8);
+        return new String(readByteArray(readUint16()), StandardCharsets.UTF_8);
     }
 
     @Override
     public byte[] readVbin8()
     {
-        int size = readUint8();
-        byte[] bytes = new byte[size];
-        get(bytes);
-        return bytes;
+        return readByteArray(readUint8());
     }
 
     @Override
     public byte[] readVbin16()
     {
-        int size = readUint16();
-        byte[] bytes = new byte[size];
-        get(bytes);
-        return bytes;
+        return readByteArray(readUint16());
     }
 
     @Override
     public byte[] readVbin32()
     {
-        int size = (int) readUint32();
-        byte[] bytes = new byte[size];
-        get(bytes);
-        return bytes;
+        return readByteArray(readUint32());
     }
 
     @Override
@@ -211,133 +282,308 @@ public abstract class AbstractDecoder implements Decoder
     }
 
     @Override
-    public Struct readStruct(int type)
+    public Struct readStruct(final int type)
     {
-        Struct st = Struct.create(type);
-        int width = st.getSizeWidth();
+        final Struct st = Struct.create(type);
+        final int width = st.getSizeWidth();
         if (width > 0)
         {
-            long size = readSize(width);
+            final long size = readSize(width);
             if (size == 0)
             {
                 return null;
             }
+
+            enterNestedObject();
+            try
+            {
+                final int originalCompoundRemaining = beginCompound(size, type > 0 ? 2 : 0, "struct");
+                try
+                {
+                    if (type > 0)
+                    {
+                        final int code = readUint16();
+                        assert code == type;
+                    }
+                    st.read(this);
+                    validateCompoundConsumed("struct");
+                    return st;
+                }
+                finally
+                {
+                    restoreCompound(originalCompoundRemaining, (int) size);
+                }
+            }
+            finally
+            {
+                exitNestedObject();
+            }
         }
-        if (type > 0)
+
+        enterNestedObject();
+        try
         {
-            int code = readUint16();
-            assert code == type;
+            if (type > 0)
+            {
+                final int code = readUint16();
+                assert code == type;
+            }
+            st.read(this);
+            return st;
         }
-        st.read(this);
-        return st;
+        finally
+        {
+            exitNestedObject();
+        }
     }
 
     @Override
     public Struct readStruct32()
     {
-        long size = readUint32();
+        final long size = readUint32();
         if (size == 0)
         {
             return null;
         }
-        else
+
+        enterNestedObject();
+        try
         {
-            int type = readUint16();
-            Struct result = Struct.create(type);
-            result.read(this);
-            return result;
+            final int originalCompoundRemaining = beginCompound(size, 2, "struct32");
+            try
+            {
+                final int type = readUint16();
+                final Struct result = Struct.create(type);
+                result.read(this);
+                validateCompoundConsumed("struct32");
+                return result;
+            }
+            finally
+            {
+                restoreCompound(originalCompoundRemaining, (int) size);
+            }
+        }
+        finally
+        {
+            exitNestedObject();
         }
     }
 
     @Override
-    public Map<String,Object> readMap()
+    public Map<String, Object> readMap()
     {
-        long size = readUint32();
+        final long size = readUint32();
 
         if (size == 0)
         {
             return null;
         }
 
-        long count = readUint32();
-
-        if (count == 0)
+        enterNestedObject();
+        try
         {
-            return Collections.emptyMap();
-        }
+            final int originalCompoundRemaining = beginCompound(size, 4, "map");
+            try
+            {
+                final int count = validateCount(readUint32(), remaining() / 2, "map entry");
+                final Map<String, Object> result;
 
-        Map<String,Object> result = new LinkedHashMap<>();
-        for (int i = 0; i < count; i++)
+                if (count == 0)
+                {
+                    result = Collections.emptyMap();
+                }
+                else
+                {
+                    result = new LinkedHashMap<>();
+                    for (int i = 0; i < count; i++)
+                    {
+                        final String key = readStr8();
+                        final byte code = get();
+                        final Type t = getType(code);
+                        final Object value = read(t);
+                        result.put(key, value);
+                    }
+                }
+
+                validateCompoundConsumed("map");
+                return result;
+            }
+            finally
+            {
+                restoreCompound(originalCompoundRemaining, (int) size);
+            }
+        }
+        finally
         {
-            String key = readStr8();
-            byte code = get();
-            Type t = getType(code);
-            Object value = read(t);
-            result.put(key, value);
+            exitNestedObject();
         }
-
-        return result;
     }
 
     @Override
     public List<Object> readList()
     {
-        long size = readUint32();
+        final long size = readUint32();
 
         if (size == 0)
         {
             return null;
         }
 
-        long count = readUint32();
-
-        if (count == 0)
+        enterNestedObject();
+        try
         {
-            return Collections.emptyList();
-        }
+            final int originalCompoundRemaining = beginCompound(size, 4, "list");
+            try
+            {
+                final int count = validateCount(readUint32(), remaining(), "list item");
+                final List<Object> result;
 
-        List<Object> result = new ArrayList<>();
-        for (int i = 0; i < count; i++)
-        {
-            byte code = get();
-            Type t = getType(code);
-            Object value = read(t);
-            result.add(value);
+                if (count == 0)
+                {
+                    result = Collections.emptyList();
+                }
+                else
+                {
+                    result = new ArrayList<>();
+                    for (int i = 0; i < count; i++)
+                    {
+                        final byte code = get();
+                        final Type t = getType(code);
+                        final Object value = read(t);
+                        result.add(value);
+                    }
+                }
+
+                validateCompoundConsumed("list");
+                return result;
+            }
+            finally
+            {
+                restoreCompound(originalCompoundRemaining, (int) size);
+            }
         }
-        return result;
+        finally
+        {
+            exitNestedObject();
+        }
     }
 
     @Override
     public List<Object> readArray()
     {
-        long size = readUint32();
+        final long size = readUint32();
 
         if (size == 0)
         {
             return null;
         }
 
-        byte code = get();
-        Type t = getType(code);
-        long count = readUint32();
-
-        if (count == 0)
+        enterNestedObject();
+        try
         {
-            return Collections.emptyList();
-        }
+            final int originalCompoundRemaining = beginCompound(size, 5, "array");
+            try
+            {
+                final byte code = get();
+                final Type t = getType(code);
+                final long encodedCount = readUint32();
+                final int elementWidth = t.getWidth();
+                final int maximumCount = elementWidth == 0
+                        ? _maxZeroWidthArrayElements
+                        : remaining() / elementWidth;
+                final int count = validateCount(encodedCount, maximumCount, "array element");
+                final List<Object> result;
 
-        List<Object> result = new ArrayList<>();
-        for (int i = 0; i < count; i++)
-        {
-            Object value = read(t);
-            result.add(value);
+                if (count == 0)
+                {
+                    result = Collections.emptyList();
+                }
+                else
+                {
+                    result = new ArrayList<>();
+                    for (int i = 0; i < count; i++)
+                    {
+                        result.add(read(t));
+                    }
+                }
+
+                validateCompoundConsumed("array");
+                return result;
+            }
+            finally
+            {
+                restoreCompound(originalCompoundRemaining, (int) size);
+            }
         }
-        return result;
+        finally
+        {
+            exitNestedObject();
+        }
     }
 
-    private Type getType(byte code)
+    private void enterNestedObject()
     {
-        Type type = Type.get(code);
+        if (_nestedObjectDepth >= _maxNestedObjects)
+        {
+            throw new IllegalArgumentException("Maximum type nesting depth (" + _maxNestedObjects + ") exceeded");
+        }
+        _nestedObjectDepth++;
+    }
+
+    private void exitNestedObject()
+    {
+        _nestedObjectDepth--;
+    }
+
+    private int beginCompound(final long size, final int minimumSize, final String type)
+    {
+        final int available = remaining();
+        if (size < minimumSize || size > available)
+        {
+            throw new IllegalArgumentException("Declared " + type + " size " + size +
+                    " is invalid; decoder has " + available + " byte(s) remaining");
+        }
+
+        final int originalCompoundRemaining = _compoundRemaining;
+        _compoundRemaining = (int) size;
+        return originalCompoundRemaining;
+    }
+
+    private void restoreCompound(final int originalCompoundRemaining, final int declaredSize)
+    {
+        if (originalCompoundRemaining == NO_COMPOUND)
+        {
+            _compoundRemaining = NO_COMPOUND;
+        }
+        else
+        {
+            final int consumed = declaredSize - _compoundRemaining;
+            _compoundRemaining = originalCompoundRemaining - consumed;
+        }
+    }
+
+    private int validateCount(final long count, final int maximumCount, final String valueDescription)
+    {
+        if (count < 0 || count > maximumCount)
+        {
+            throw new IllegalArgumentException("Declared " + valueDescription + " count " + count +
+                    " exceeds maximum " + maximumCount);
+        }
+        return (int) count;
+    }
+
+    private void validateCompoundConsumed(final String type)
+    {
+        if (_compoundRemaining != 0)
+        {
+            throw new IllegalArgumentException("Declared " + type + " has " + _compoundRemaining +
+                    " unconsumed byte(s)");
+        }
+    }
+
+    private Type getType(final byte code)
+    {
+        final Type type = Type.get(code);
         if (type == null)
         {
             throw new IllegalArgumentException("unknown code: " + code);
@@ -348,7 +594,7 @@ public abstract class AbstractDecoder implements Decoder
         }
     }
 
-    private long readSize(Type t)
+    private long readSize(final Type t)
     {
         if (t.isFixed())
         {
@@ -360,7 +606,7 @@ public abstract class AbstractDecoder implements Decoder
         }
     }
 
-    private long readSize(int width)
+    private long readSize(final int width)
     {
         switch (width)
         {
@@ -375,15 +621,12 @@ public abstract class AbstractDecoder implements Decoder
         }
     }
 
-    private byte[] readBytes(Type t)
+    private byte[] readBytes(final Type t)
     {
-        long size = readSize(t);
-        byte[] result = new byte[(int) size];
-        get(result);
-        return result;
+        return readByteArray(readSize(t));
     }
 
-    private Object read(Type t)
+    private Object read(final Type t)
     {
         switch (t)
         {

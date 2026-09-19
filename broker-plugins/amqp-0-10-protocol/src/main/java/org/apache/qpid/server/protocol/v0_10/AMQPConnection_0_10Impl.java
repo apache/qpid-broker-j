@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import java.nio.BufferUnderflowException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,6 +49,7 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnection_0_10Impl, ServerConnection>
         implements
@@ -61,6 +61,8 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     private final ServerConnection _connection;
 
     private volatile boolean _transportBlockedForWriting;
+    private volatile int _maxNestedObjects = DEFAULT_CODEC_MAX_NESTED_OBJECTS;
+    private volatile int _maxZeroWidthArrayElements = DEFAULT_CODEC_MAX_ZERO_WIDTH_ARRAY_ELEMENTS;
 
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
@@ -80,7 +82,8 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
 
         _connection = new ServerConnection(id, broker, port, transport, this);
 
-        ServerConnectionDelegate connDelegate = new ServerConnectionDelegate(port, transport.isSecure(), network.getSelectedHost());
+        final ServerConnectionDelegate connDelegate =
+                new ServerConnectionDelegate(port, transport.isSecure(), network.getSelectedHost());
 
         _connection.setConnectionDelegate(connDelegate);
         _connection.setRemoteAddress(network.getRemoteAddress());
@@ -96,6 +99,22 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
             _connection.addFrameSizeObserver(_disassembler);
             return null;
         });
+    }
+
+    @Override
+    protected void onOpen()
+    {
+        super.onOpen();
+        final Integer configuredMaxNestedObjects = getContextValue(Integer.class, CODEC_MAX_NESTED_OBJECTS);
+        final int maxNestedObjects = configuredMaxNestedObjects == null
+                ? DEFAULT_CODEC_MAX_NESTED_OBJECTS
+                : configuredMaxNestedObjects;
+        if (maxNestedObjects < 0)
+        {
+            throw new IllegalArgumentException("Maximum nested objects must not be negative: " + maxNestedObjects);
+        }
+        _maxNestedObjects = maxNestedObjects;
+        _maxZeroWidthArrayElements = getContextValue(Integer.class, CODEC_MAX_ZERO_WIDTH_ARRAY_ELEMENTS);
     }
 
     private ByteBufferSender wrapSender(final ByteBufferSender sender)
@@ -138,7 +157,11 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
             _inputHandler.received(buf);
             _connection.receivedComplete();
         }
-        catch (IllegalArgumentException | IllegalStateException | BufferUnderflowException e)
+        catch (final ConnectionScopedRuntimeException | ServerScopedRuntimeException e)
+        {
+            throw e;
+        }
+        catch (final RuntimeException e)
         {
             LOGGER.warn("Unexpected exception", e);
             throw new ConnectionScopedRuntimeException(e);
@@ -161,7 +184,8 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     {
         runAsSubject(() ->
         {
-            _connection.getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " + _connection.getConnectionDelegate().getState(), true));
+            _connection.getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " +
+                    _connection.getConnectionDelegate().getState(), true));
             getNetwork().close();
             return null;
         });
@@ -210,6 +234,18 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     public int getHeartbeatDelay()
     {
         return _connection.getHeartBeatDelay();
+    }
+
+    @Override
+    public int getMaxNestedObjects()
+    {
+        return _maxNestedObjects;
+    }
+
+    @Override
+    public int getMaxZeroWidthArrayElements()
+    {
+        return _maxZeroWidthArrayElements;
     }
 
     @Override

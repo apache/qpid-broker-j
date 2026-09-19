@@ -143,6 +143,12 @@ public final class ConnectionSecure extends Method {
     }
 
     @Override
+    protected boolean isSensitiveField(final String fieldName)
+    {
+        return "challenge".equals(fieldName);
+    }
+
+    @Override
     public Map<String,Object> getFields()
     {
         Map<String,Object> result = new LinkedHashMap<>();

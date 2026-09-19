@@ -23,7 +23,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.getContentType;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -37,14 +40,18 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_10.MessageMetaData_0_10;
 import org.apache.qpid.server.protocol.v0_10.MessageTransferMessage;
+import org.apache.qpid.server.protocol.v0_10.transport.AbstractDecoder;
 import org.apache.qpid.server.protocol.v0_10.transport.Header;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.mimecontentconverter.ListToAmqpListConverter;
@@ -222,6 +229,34 @@ class MessageConverter_0_10_to_1_0Test extends UnitTestBase
         doTestStreamMessage(messageBytes, mimeType, expected, JmsMessageTypeAnnotation.STREAM_MESSAGE.getType());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"amqp/list", "amqp/map"})
+    void testCompoundLimitRejectionUsesMessageConversionException(final String mimeType)
+    {
+        final List<Object> nested = List.of(List.of("value"));
+        final byte[] content = "amqp/list".equals(mimeType) ?
+                new ListToAmqpListConverter().toMimeContent(nested) :
+                new MapToAmqpMapConverter().toMimeContent(Map.of("key", nested));
+        final MessageTransferMessage sourceMessage = getAmqMessage(content, mimeType, 0, 1);
+        assertTrue(sourceMessage.checkValid());
+
+        final MessageConversionException exception = assertThrows(MessageConversionException.class, () ->
+                _converter.convert(sourceMessage, mock(NamedAddressSpace.class)));
+
+        assertInstanceOf(IllegalArgumentException.class, exception.getCause());
+    }
+
+    @Test
+    void configuredLimitAcceptsDeeplyNestedAmqpListMessageBody() throws Exception
+    {
+        final int maxNestedObjects = AbstractDecoder.DEFAULT_MAX_NESTED_OBJECTS + 1;
+        final List<Object> nested = createNestedList(maxNestedObjects);
+        final byte[] messageBytes = new ListToAmqpListConverter().toMimeContent(nested);
+
+        doTest(messageBytes, "amqp/list", AmqpSequenceSection.class, nested, null, null,
+               AbstractDecoder.DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS, maxNestedObjects);
+    }
+
     @Test
     void convertAmqpListMessageBodyWithNonJmsContent() throws Exception
     {
@@ -345,21 +380,36 @@ class MessageConverter_0_10_to_1_0Test extends UnitTestBase
         return expected;
     }
 
+    private List<Object> createNestedList(final int depth)
+    {
+        List<Object> nested = List.of("leaf");
+        for (int i = 1; i < depth; i++)
+        {
+            nested = List.of(nested);
+        }
+        return nested;
+    }
+
     private List<EncodingRetainingSection<?>> getEncodingRetainingSections(final QpidByteBuffer content,
-                                                                           final int expectedNumberOfSections)
+                                                                           final int expectedNumberOfSections,
+                                                                           final int maxNestedObjects)
             throws Exception
     {
-        final SectionDecoder sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
+        final SectionDecoder sectionDecoder =
+                new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry(), maxNestedObjects);
         final List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(content);
         assertEquals(expectedNumberOfSections, (long) sections.size(), "Unexpected number of sections");
         return sections;
     }
 
-    private MessageTransferMessage getAmqMessage(final byte[] expected, final String mimeType)
+    private MessageTransferMessage getAmqMessage(final byte[] expected,
+                                                 final String mimeType,
+                                                 final int maxZeroWidthArrayElements,
+                                                 final int maxNestedObjects)
     {
         configureMessageContent(expected);
         configureMessageHeader(mimeType);
-        return new MessageTransferMessage(_handle, new Object());
+        return new MessageTransferMessage(_handle, new Object(), maxZeroWidthArrayElements, maxNestedObjects);
     }
 
     private void configureMessageHeader(final String mimeType)
@@ -458,11 +508,32 @@ class MessageConverter_0_10_to_1_0Test extends UnitTestBase
                         final Symbol expectedContentType,
                         final Byte expectedJmsTypeAnnotation) throws Exception
     {
-        final MessageTransferMessage sourceMessage = getAmqMessage(messageBytes, mimeType);
+        doTest(messageBytes,
+               mimeType,
+               expectedBodySection,
+               expectedContent,
+               expectedContentType,
+               expectedJmsTypeAnnotation,
+               AbstractDecoder.DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS,
+               AbstractDecoder.DEFAULT_MAX_NESTED_OBJECTS);
+    }
+
+    private void doTest(final byte[] messageBytes,
+                        final String mimeType,
+                        final Class<? extends EncodingRetainingSection<?>> expectedBodySection,
+                        final Object expectedContent,
+                        final Symbol expectedContentType,
+                        final Byte expectedJmsTypeAnnotation,
+                        final int maxZeroWidthArrayElements,
+                        final int maxNestedObjects) throws Exception
+    {
+        final MessageTransferMessage sourceMessage =
+                getAmqMessage(messageBytes, mimeType, maxZeroWidthArrayElements, maxNestedObjects);
         final Message_1_0 convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
         final QpidByteBuffer content = convertedMessage.getContent(0, (int) convertedMessage.getSize());
 
-        final List<EncodingRetainingSection<?>> sections = getEncodingRetainingSections(content, 1);
+        final List<EncodingRetainingSection<?>> sections =
+                getEncodingRetainingSections(content, 1, maxNestedObjects);
         final EncodingRetainingSection<?> encodingRetainingSection = sections.get(0);
         assertEquals(expectedBodySection, encodingRetainingSection.getClass(), "Unexpected section type");
 

@@ -30,10 +30,8 @@ import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.apache.qpid.server.protocol.v0_10.transport.ExecutionErrorCode;
-import org.apache.qpid.server.protocol.v0_10.transport.ExecutionException;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
-import org.apache.qpid.server.protocol.v0_10.transport.SessionCommandPoint;
+import org.apache.qpid.tests.protocol.ChannelClosedResponse;
 import org.apache.qpid.tests.protocol.v0_10.FrameTransport;
 import org.apache.qpid.tests.protocol.v0_10.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -66,23 +64,18 @@ public class MaximumMessageSizeTest extends BrokerAdminUsingTestBase
             MessageProperties messageProperties = new MessageProperties();
             messageProperties.setContentLength(messageContent.length);
 
-            ExecutionException executionException = interaction.negotiateOpen()
-                                                               .channelId(1)
-                                                               .attachSession(sessionName)
-                                                               .message()
-                                                               .transferDestination(BrokerAdmin.TEST_QUEUE_NAME)
-                                                               .transferId(0)
-                                                               .transferBody(messageContent)
-                                                               .transferHeader(null, messageProperties)
-                                                               .transfer()
-                                                               .session()
-                                                               .flushCompleted()
-                                                               .flush()
-                                                               .consumeResponse(SessionCommandPoint.class)
-                                                               .consumeResponse()
-                                                               .getLatestResponse(ExecutionException.class);
+            interaction.negotiateOpen()
+                    .channelId(1)
+                    .attachSession(sessionName)
+                    .message()
+                    .transferDestination(BrokerAdmin.TEST_QUEUE_NAME)
+                    .transferId(0)
+                    .transferBody(messageContent)
+                    .transferHeader(null, messageProperties)
+                    .transfer()
+                    .consumeResponse(ChannelClosedResponse.class);
 
-            assertThat(executionException.getErrorCode(), IsEqual.equalTo(ExecutionErrorCode.RESOURCE_LIMIT_EXCEEDED));
+            assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), IsEqual.equalTo(0));
         }
     }
 }

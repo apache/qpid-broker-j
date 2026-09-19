@@ -20,10 +20,10 @@
  */
 package org.apache.qpid.server.protocol.v0_10.transport;
 
-import org.apache.qpid.server.transport.util.Functions;
-
 import java.util.Arrays;
 import java.util.Map;
+
+import org.apache.qpid.server.transport.util.Functions;
 
 
 /**
@@ -34,6 +34,7 @@ import java.util.Map;
 
 public abstract class Struct implements Encodable
 {
+    private static final String REDACTED = "********";
 
     public static Struct create(int type)
     {
@@ -118,12 +119,12 @@ public abstract class Struct implements Encodable
     @Override
     public String toString()
     {
-        StringBuilder str = new StringBuilder();
+        final StringBuilder str = new StringBuilder();
         str.append(getClass().getSimpleName());
 
         str.append("(");
         boolean first = true;
-        for (Map.Entry<String,Object> me : getFields().entrySet())
+        for (final Map.Entry<String,Object> field : getFields().entrySet())
         {
             if (first)
             {
@@ -133,16 +134,21 @@ public abstract class Struct implements Encodable
             {
                 str.append(", ");
             }
-            str.append(me.getKey());
+            str.append(field.getKey());
             str.append("=");
-            str.append(formatValue(me.getValue()));
+            str.append(isSensitiveField(field.getKey()) ? REDACTED : formatValue(field.getValue()));
         }
         str.append(")");
 
         return str.toString();
     }
 
-    private Object formatValue(Object value)
+    protected boolean isSensitiveField(final String fieldName)
+    {
+        return false;
+    }
+
+    private Object formatValue(final Object value)
     {
         if(value instanceof byte[])
         {

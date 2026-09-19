@@ -35,6 +35,7 @@ import static org.mockito.Mockito.when;
 import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -58,6 +59,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
@@ -125,6 +127,67 @@ class PropertyConverter_1_0_to_0_10Test extends UnitTestBase
         final Map<String, Object> headers = messageProperties.getApplicationHeaders();
 
         assertEquals(properties, new HashMap<>(headers), "Unexpected headers");
+    }
+
+    @Test
+    void applicationPropertyScalarTypesConversion()
+    {
+        final Date timestamp = new Date(1_700_000_000_123L);
+        final UUID uuid = UUID.fromString("12345678-1234-5678-9abc-def012345678");
+        final byte[] binary = new byte[]{1, 2, 3};
+        final Map<String, Object> properties = new LinkedHashMap<>();
+        properties.put("null", null);
+        properties.put("boolean", true);
+        properties.put("byte", (byte) -1);
+        properties.put("short", (short) -2);
+        properties.put("int", -3);
+        properties.put("long", -4L);
+        properties.put("float", 1.25F);
+        properties.put("double", 2.5D);
+        properties.put("char", 'Q');
+        properties.put("string", "value");
+        properties.put("uuid", uuid);
+        properties.put("timestamp", timestamp);
+        properties.put("binary", new Binary(binary));
+        properties.put("symbol", Symbol.valueOf("symbol"));
+        properties.put("ubyte", UnsignedByte.valueOf((byte) 0xFF));
+        properties.put("ushort", UnsignedShort.valueOf(65_535));
+        properties.put("uint", UnsignedInteger.valueOf(4_294_967_295L));
+        properties.put("ulong", UnsignedLong.valueOf(Long.MAX_VALUE));
+
+        final Message_1_0 message = createTestMessage(new ApplicationProperties(properties));
+        final MessageTransferMessage convertedMessage = _messageConverter.convert(message, _namedAddressSpace);
+        final Map<String, Object> headers = convertedMessage.getStoredMessage().getMetaData()
+                .getMessageProperties().getApplicationHeaders();
+
+        assertNull(headers.get("null"), "Unexpected null");
+        assertEquals(Boolean.TRUE, headers.get("boolean"), "Unexpected boolean");
+        assertEquals((byte) -1, headers.get("byte"), "Unexpected byte");
+        assertEquals((short) -2, headers.get("short"), "Unexpected short");
+        assertEquals(-3, headers.get("int"), "Unexpected int");
+        assertEquals(-4L, headers.get("long"), "Unexpected long");
+        assertEquals(1.25F, headers.get("float"), "Unexpected float");
+        assertEquals(2.5D, headers.get("double"), "Unexpected double");
+        assertEquals('Q', headers.get("char"), "Unexpected char");
+        assertEquals("value", headers.get("string"), "Unexpected string");
+        assertEquals(uuid, headers.get("uuid"), "Unexpected UUID");
+        assertEquals(timestamp, headers.get("timestamp"), "Unexpected timestamp");
+        assertArrayEquals(binary, (byte[]) headers.get("binary"), "Unexpected binary");
+        assertEquals("symbol", headers.get("symbol"), "Unexpected symbol");
+        assertEquals((short) 255, headers.get("ubyte"), "Unexpected ubyte");
+        assertEquals(65_535, headers.get("ushort"), "Unexpected ushort");
+        assertEquals(4_294_967_295L, headers.get("uint"), "Unexpected uint");
+        assertEquals(Long.MAX_VALUE, headers.get("ulong"), "Unexpected ulong");
+    }
+
+    @Test
+    void oversizedApplicationPropertyStringFailsAsMessageConversionException()
+    {
+        final Map<String, Object> properties = Map.of("oversized", "x".repeat(0x10000));
+        final Message_1_0 message = createTestMessage(new ApplicationProperties(properties));
+
+        assertThrows(MessageConversionException.class, () -> _messageConverter.convert(message, _namedAddressSpace),
+                "Expected conversion exception");
     }
 
     @Test

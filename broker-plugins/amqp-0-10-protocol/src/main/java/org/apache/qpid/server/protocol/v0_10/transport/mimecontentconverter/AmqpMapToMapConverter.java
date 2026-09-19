@@ -24,12 +24,13 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
 
-import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
+import org.apache.qpid.server.message.mimecontentconverter.AmqpCompoundMimeContentToObjectConverter;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.protocol.v0_10.transport.AbstractDecoder;
 import org.apache.qpid.server.protocol.v0_10.transport.BBDecoder;
 
 @PluggableService
-public class AmqpMapToMapConverter implements MimeContentToObjectConverter<Map>
+public class AmqpMapToMapConverter implements AmqpCompoundMimeContentToObjectConverter<Map>
 {
     @Override
     public String getType()
@@ -52,12 +53,20 @@ public class AmqpMapToMapConverter implements MimeContentToObjectConverter<Map>
     @Override
     public Map toObject(final byte[] data)
     {
+        return toObject(data, DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS, AbstractDecoder.DEFAULT_MAX_NESTED_OBJECTS);
+    }
+
+    @Override
+    public Map toObject(final byte[] data,
+                        final int maxZeroWidthArrayElements,
+                        final int maxNestedObjects)
+    {
         if (data == null || data.length == 0)
         {
             return Collections.emptyMap();
         }
 
-        BBDecoder decoder = new BBDecoder();
+        final BBDecoder decoder = new BBDecoder(maxZeroWidthArrayElements, maxNestedObjects);
         decoder.init(ByteBuffer.wrap(data));
         return decoder.readMap();
     }

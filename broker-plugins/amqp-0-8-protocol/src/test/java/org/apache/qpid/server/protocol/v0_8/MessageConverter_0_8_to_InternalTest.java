@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v0_8;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -45,6 +46,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_10.transport.mimecontentconverter.ListToAmqpListConverter;
 import org.apache.qpid.server.protocol.v0_10.transport.mimecontentconverter.MapToAmqpMapConverter;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
@@ -206,6 +208,28 @@ class MessageConverter_0_8_to_InternalTest extends UnitTestBase
     }
 
     @Test
+    void configuredLimitAcceptsDeeplyNestedAmqpListMessageBody()
+    {
+        final int maxNestedObjects = AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS + 1;
+        final List<Object> nested = createNestedList(maxNestedObjects);
+        final byte[] messageBytes = new ListToAmqpListConverter().toMimeContent(nested);
+
+        doTest(messageBytes, "amqp/list", nested, null, maxNestedObjects);
+    }
+
+    @Test
+    void configuredLimitRejectsOverLimitAmqpListMessageBody()
+    {
+        final int maxNestedObjects = 1;
+        final List<Object> nested = createNestedList(maxNestedObjects + 1);
+        final byte[] messageBytes = new ListToAmqpListConverter().toMimeContent(nested);
+        final AMQMessage sourceMessage = getAmqMessage(messageBytes, "amqp/list", maxNestedObjects);
+
+        assertThrows(MessageConversionException.class, () ->
+                _converter.convert(sourceMessage, mock(NamedAddressSpace.class)));
+    }
+
+    @Test
     void convertEmptyAmqpListMessageBody()
     {
         final List<Object> expected = List.of();
@@ -234,6 +258,28 @@ class MessageConverter_0_8_to_InternalTest extends UnitTestBase
         final byte[] messageBytes = new MapToAmqpMapConverter().toMimeContent(expected);
 
         doTestMapMessage(messageBytes, "amqp/map", expected);
+    }
+
+    @Test
+    void configuredLimitAcceptsDeeplyNestedAmqpMapMessageBody()
+    {
+        final int maxNestedObjects = AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS + 1;
+        final Map<String, Object> nested = createNestedMap(maxNestedObjects);
+        final byte[] messageBytes = new MapToAmqpMapConverter().toMimeContent(nested);
+
+        doTest(messageBytes, "amqp/map", nested, null, maxNestedObjects);
+    }
+
+    @Test
+    void configuredLimitRejectsOverLimitAmqpMapMessageBody()
+    {
+        final int maxNestedObjects = 1;
+        final Map<String, Object> nested = createNestedMap(maxNestedObjects + 1);
+        final byte[] messageBytes = new MapToAmqpMapConverter().toMimeContent(nested);
+        final AMQMessage sourceMessage = getAmqMessage(messageBytes, "amqp/map", maxNestedObjects);
+
+        assertThrows(MessageConversionException.class, () ->
+                _converter.convert(sourceMessage, mock(NamedAddressSpace.class)));
     }
 
     @Test
@@ -321,10 +367,38 @@ class MessageConverter_0_8_to_InternalTest extends UnitTestBase
         return expected;
     }
 
+    private List<Object> createNestedList(final int depth)
+    {
+        List<Object> nested = List.of("leaf");
+        for (int i = 1; i < depth; i++)
+        {
+            nested = List.of(nested);
+        }
+        return nested;
+    }
+
+    private Map<String, Object> createNestedMap(final int depth)
+    {
+        Map<String, Object> nested = Map.of("key", "leaf");
+        for (int i = 1; i < depth; i++)
+        {
+            nested = Map.of("key", nested);
+        }
+        return nested;
+    }
+
     protected AMQMessage getAmqMessage(final byte[] expected, final String mimeType)
+    {
+        return getAmqMessage(expected, mimeType, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    private AMQMessage getAmqMessage(final byte[] expected,
+                                     final String mimeType,
+                                     final int maxNestedObjects)
     {
         configureMessageContent(expected);
         configureMessageHeader(mimeType);
+        when(_basicContentHeaderProperties.getMaxNestedObjects()).thenReturn(maxNestedObjects);
 
         return new AMQMessage(_handle);
     }
@@ -399,7 +473,17 @@ class MessageConverter_0_8_to_InternalTest extends UnitTestBase
                         final Object expectedContent,
                         final String expectedMimeType)
     {
-        final AMQMessage sourceMessage = getAmqMessage(messageBytes, mimeType);
+        doTest(messageBytes, mimeType, expectedContent, expectedMimeType,
+                AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    private void doTest(final byte[] messageBytes,
+                        final String mimeType,
+                        final Object expectedContent,
+                        final String expectedMimeType,
+                        final int maxNestedObjects)
+    {
+        final AMQMessage sourceMessage = getAmqMessage(messageBytes, mimeType, maxNestedObjects);
         final InternalMessage convertedMessage = _converter.convert(sourceMessage, mock(NamedAddressSpace.class));
         
         if (expectedContent instanceof byte[])

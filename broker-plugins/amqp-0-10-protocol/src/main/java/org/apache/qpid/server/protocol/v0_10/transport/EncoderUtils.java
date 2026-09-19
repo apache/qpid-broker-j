@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v0_10.transport;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,7 @@ public class EncoderUtils
         ENCODINGS.put(Float.class, Type.FLOAT);
         ENCODINGS.put(Double.class, Type.DOUBLE);
         ENCODINGS.put(Character.class, Type.CHAR);
+        ENCODINGS.put(Date.class, Type.DATETIME);
         ENCODINGS.put(byte[].class, Type.VBIN32);
         ENCODINGS.put(UUID.class, Type.UUID);
         ENCODINGS.put(Xid.class, Type.STRUCT32);

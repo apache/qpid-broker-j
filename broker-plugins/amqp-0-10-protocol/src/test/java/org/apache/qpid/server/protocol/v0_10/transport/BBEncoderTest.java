@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.ByteBuffer;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -114,6 +115,28 @@ class BBEncoderTest extends UnitTestBase
         assertArrayEquals(messageProperties.getUserId(), decoded.getUserId(), "Unexpected user id");
         assertArrayEquals(messageProperties.getAppId(), decoded.getAppId(), "Unexpected application id");
         assertEquals(messageProperties.getApplicationHeaders(), decoded.getApplicationHeaders(), "Unexpected application headers");
+    }
+
+    @Test
+    void datetimeMapEntryUsesDatetimeEncoding()
+    {
+        final String key = "timestamp";
+        final Date timestamp = new Date(1_700_000_000_123L);
+        final Map<String, Object> applicationHeaders = Map.of(key, timestamp);
+        final BBEncoder encoder = new BBEncoder(32);
+
+        encoder.writeMap(applicationHeaders);
+
+        final ByteBuffer buffer = encoder.buffer();
+        final int typeOffset = 2 * Integer.BYTES + Byte.BYTES + key.getBytes(UTF_8).length;
+        assertEquals(EncoderUtils.getMapLength(applicationHeaders), (long) buffer.remaining(), "Unexpected size");
+        assertEquals(Type.DATETIME.getCode(), buffer.get(typeOffset), "Unexpected AMQP type");
+
+        final BBDecoder decoder = new BBDecoder();
+        decoder.init(buffer);
+        final Map<String, Object> decoded = decoder.readMap();
+
+        assertEquals(timestamp.getTime(), ((Long) decoded.get(key)).longValue(), "Unexpected timestamp");
     }
 
     @Test

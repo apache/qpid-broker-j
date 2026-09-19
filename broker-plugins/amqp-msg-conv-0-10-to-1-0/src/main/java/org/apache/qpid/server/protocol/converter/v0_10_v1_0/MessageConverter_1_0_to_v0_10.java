@@ -102,13 +102,23 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
     private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final Message_1_0 serverMsg,
                                                                        final NamedAddressSpace addressSpace)
     {
-        final ConvertedContentAndMimeType convertedContentAndMimeType = getAmqp0xConvertedContentAndMimeType(serverMsg);
-        final byte[] convertedContent = convertedContentAndMimeType.getContent();
-        final MessageMetaData_0_10 messageMetaData_0_10 = convertMetaData(serverMsg,
-                                                                          addressSpace,
-                                                                          convertedContentAndMimeType.getMimeType(),
-                                                                          convertedContent.length);
-        final int metadataSize = messageMetaData_0_10.getStorableSize();
+        final byte[] convertedContent;
+        final MessageMetaData_0_10 messageMetaData_0_10;
+        final int metadataSize;
+        try
+        {
+            final ConvertedContentAndMimeType convertedContentAndMimeType =
+                    getAmqp0xConvertedContentAndMimeType(serverMsg);
+            convertedContent = convertedContentAndMimeType.getContent();
+            messageMetaData_0_10 = convertMetaData(serverMsg, addressSpace, convertedContentAndMimeType.getMimeType(),
+                    convertedContent.length);
+            metadataSize = messageMetaData_0_10.getStorableSize();
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new MessageConversionException("Could not convert message from 1.0 to 0-10 because target " +
+                    "encoding failed.", e);
+        }
 
         return new StoredMessage<>()
         {

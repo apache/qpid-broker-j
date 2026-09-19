@@ -24,12 +24,13 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
+import org.apache.qpid.server.message.mimecontentconverter.AmqpCompoundMimeContentToObjectConverter;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.protocol.v0_10.transport.AbstractDecoder;
 import org.apache.qpid.server.protocol.v0_10.transport.BBDecoder;
 
 @PluggableService
-public class AmqpListToListConverter implements MimeContentToObjectConverter<List>
+public class AmqpListToListConverter implements AmqpCompoundMimeContentToObjectConverter<List>
 {
     @Override
     public String getType()
@@ -52,12 +53,20 @@ public class AmqpListToListConverter implements MimeContentToObjectConverter<Lis
     @Override
     public List toObject(final byte[] data)
     {
+        return toObject(data, DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS, AbstractDecoder.DEFAULT_MAX_NESTED_OBJECTS);
+    }
+
+    @Override
+    public List toObject(final byte[] data,
+                         final int maxZeroWidthArrayElements,
+                         final int maxNestedObjects)
+    {
         if (data == null || data.length == 0)
         {
             return Collections.emptyList();
         }
 
-        BBDecoder decoder = new BBDecoder();
+        final BBDecoder decoder = new BBDecoder(maxZeroWidthArrayElements, maxNestedObjects);
         decoder.init(ByteBuffer.wrap(data));
         return decoder.readList();
     }

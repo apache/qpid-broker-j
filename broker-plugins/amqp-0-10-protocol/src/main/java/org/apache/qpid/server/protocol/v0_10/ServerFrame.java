@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import static org.apache.qpid.server.transport.util.Functions.str;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +30,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.SegmentType;
 public final class ServerFrame
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerFrame.class);
+    private static final String REDACTED = "********";
 
     public static final int HEADER_SIZE = 12;
 
@@ -128,7 +127,7 @@ public final class ServerFrame
                     isFirstSegment() ? 1 : 0, isLastSegment() ? 1 : 0,
                     isFirstFrame() ? 1 : 0, isLastFrame() ? 1 : 0));
 
-        str.append(str(body));
+        str.append(REDACTED);
 
         return str.toString();
     }

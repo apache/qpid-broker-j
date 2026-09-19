@@ -20,14 +20,15 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.server.model.DerivedAttribute;
-import org.apache.qpid.server.protocol.v0_8.transport.AMQDataBlock;
-import org.apache.qpid.server.protocol.v0_8.transport.MethodRegistry;
-import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.ContextProvider;
+import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.protocol.ProtocolVersion;
+import org.apache.qpid.server.protocol.v0_8.transport.AMQDataBlock;
+import org.apache.qpid.server.protocol.v0_8.transport.MethodRegistry;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 
@@ -56,10 +57,8 @@ public interface AMQPConnection_0_8<C extends AMQPConnection_0_8<C>> extends AMQ
     @ManagedContextDefault(name= FORCE_MESSAGE_VALIDATION)
     boolean DEFAULT_FORCE_MESSAGE_VALIDATION = false;
 
-    String CODEC_MAX_NESTED_OBJECTS = "amqp0x.codec.maxNestedObjects";
-    @ManagedContextDefault(name = CODEC_MAX_NESTED_OBJECTS,
-            description = "Maximum nesting depth of AMQP 0-x field tables and arrays")
-    int DEFAULT_CODEC_MAX_NESTED_OBJECTS = 50;
+    String CODEC_MAX_NESTED_OBJECTS = Connection.AMQP_0_X_CODEC_MAX_NESTED_OBJECTS;
+    int DEFAULT_CODEC_MAX_NESTED_OBJECTS = Connection.DEFAULT_AMQP_0_X_CODEC_MAX_NESTED_OBJECTS;
 
     String CONNECTION_MAX_CONTENT_BODY_FRAMES_PER_MESSAGE = "connection.maxContentBodyFramesPerMessage";
     @ManagedContextDefault(name = CONNECTION_MAX_CONTENT_BODY_FRAMES_PER_MESSAGE,
