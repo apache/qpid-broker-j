@@ -49,7 +49,10 @@ import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee11.servlet.FilterHolder;
+import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.servlet.ServletHandler;
+import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Connection;
@@ -66,10 +69,6 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.ee11.servlet.FilterHolder;
-import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -348,21 +347,18 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             lastPort = port.getPort();
         }
 
-        final ContextHandlerCollection contextCollection = new ContextHandlerCollection();
-
         final RewriteHandler rewriteHandler = new RewriteHandler();
-        rewriteHandler.setHandler(contextCollection);
         rewriteHandler.addRule(new CompactPathRule());
 
         final CrossOriginHandler corsHandler = new CrossOriginHandler();
-        corsHandler.setHandler(rewriteHandler);
         corsHandler.setAllowedOriginPatterns(getCorsAllowOrigins());
         corsHandler.setAllowedMethods(getCorsAllowMethods());
         corsHandler.setAllowedHeaders(getCorsAllowHeaders());
         corsHandler.setAllowCredentials(getCorsAllowCredentials());
 
         final ServletContextHandler root = new ServletContextHandler("/",  ServletContextHandler.SESSIONS);
-        root.setHandler(corsHandler);
+        root.insertHandler(rewriteHandler);
+        root.insertHandler(corsHandler);
         server.setHandler(root);
 
         final ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler()
