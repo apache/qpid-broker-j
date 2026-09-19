@@ -152,18 +152,25 @@ public class HttpManagementUtil
         SubjectExecutionContext.withSubject(subject, () -> broker.authorise(MANAGE_ACTION));
     }
 
-    public static void saveAuthorisedSubject(HttpServletRequest request, Subject subject)
+    public static void saveAuthorisedSubject(final HttpServletRequest request, final Subject original)
     {
-        HttpSession session = request.getSession();
-        Broker<?> broker = getBroker(session.getServletContext());
-        HttpPort<?> port =  HttpManagementUtil.getPort(request);
-        setSessionAttribute(ATTR_SUBJECT, subject, session, request);
-        setSessionAttribute(ATTR_LOGIN_LOGOUT_REPORTER,
-                            new LoginLogoutReporter(subject, broker),
-                            session,
-                            request);
+        final HttpSession session = request.getSession();
+        try
+        {
+            request.changeSessionId();
+        }
+        catch (final IllegalStateException e)
+        {
+            throw new SessionInvalidatedException();
+        }
 
-        long absoluteSessionTimeout = port.getAbsoluteSessionTimeout();
+        final Subject subject = createServletConnectionSubject(request, original);
+        final Broker<?> broker = getBroker(session.getServletContext());
+        final HttpPort<?> port = HttpManagementUtil.getPort(request);
+        setSessionAttribute(ATTR_SUBJECT, subject, session, request);
+        setSessionAttribute(ATTR_LOGIN_LOGOUT_REPORTER, new LoginLogoutReporter(subject, broker), session, request);
+
+        final long absoluteSessionTimeout = port.getAbsoluteSessionTimeout();
         if (absoluteSessionTimeout > 0)
         {
             scheduleAbsoluteSessionTimeout(request, session, broker, absoluteSessionTimeout);
@@ -358,6 +365,6 @@ public class HttpManagementUtil
     {
         final Subject subject = createServletConnectionSubject(request, original);
         assertManagementAccess(broker, subject);
-        saveAuthorisedSubject(request, subject);
+        saveAuthorisedSubject(request, original);
     }
 }

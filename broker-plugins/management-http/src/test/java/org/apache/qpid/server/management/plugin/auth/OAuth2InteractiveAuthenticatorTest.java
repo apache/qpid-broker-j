@@ -29,7 +29,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.matches;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -57,6 +59,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
@@ -168,6 +171,9 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
         ArgumentCaptor<String> argument = ArgumentCaptor.forClass(String.class);
         verify(mockResponse).sendRedirect(argument.capture());
 
+        final InOrder order = inOrder(mockRequest, mockResponse);
+        order.verify(mockRequest).changeSessionId();
+        order.verify(mockResponse).sendRedirect(TEST_REQUEST);
         assertEquals(TEST_REQUEST, argument.getValue(), "Wrong redirect");
         String attrSubject = HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SUBJECT, mockRequest);
         assertNotNull(sessionAttributes.get(attrSubject), "No subject on session");
@@ -284,6 +290,7 @@ public class OAuth2InteractiveAuthenticatorTest extends UnitTestBase
         HttpServletResponse mockResponse = mock(HttpServletResponse.class);
         authenticationHandler.handleAuthentication(mockResponse);
         verify(mockResponse).sendError(eq(403), any(String.class));
+        verify(mockRequest, never()).changeSessionId();
     }
 
     private Map<String, String> getRedirectParameters(final String redirectLocation)

@@ -23,15 +23,21 @@ package org.apache.qpid.tests.http.authentication;
 import static jakarta.servlet.http.HttpServletResponse.SC_CREATED;
 import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.net.HttpCookie;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.security.KeyStore;
@@ -134,6 +140,76 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
     }
 
     @Test
+    public void clientAuthenticationRenewsSession() throws Exception
+    {
+        final HttpTestHelper helper = configForClientAuth("CN=localhost");
+        helper.setUserName(null);
+        final String initialCookie = prepareSession(helper);
+
+        final HttpURLConnection login = helper.openManagementConnection(HttpManagement.DEFAULT_LOGIN_URL, "GET");
+        final String renewedCookie;
+        try
+        {
+            login.setInstanceFollowRedirects(false);
+            login.setRequestProperty("Cookie", initialCookie);
+            assertEquals(HttpURLConnection.HTTP_MOVED_TEMP, login.getResponseCode());
+            final String header = login.getHeaderField("Set-Cookie");
+            assertNotNull(header);
+            final HttpCookie cookie = HttpCookie.parse(header).get(0);
+            assertTrue(cookie.getSecure(), "HTTPS session cookies must remain secure");
+            assertTrue(cookie.isHttpOnly(), "Session cookies must remain HttpOnly");
+            renewedCookie = cookie.getName() + "=" + cookie.getValue();
+        }
+        finally
+        {
+            login.disconnect();
+        }
+
+        assertNotEquals(initialCookie, renewedCookie, "Authentication must renew the session cookie");
+        assertEquals("localhost", getSessionUser(helper, renewedCookie));
+        assertNull(getSessionUser(helper, initialCookie));
+
+        final HttpURLConnection logout = helper.openManagementConnection("/logout", "GET");
+        try
+        {
+            logout.setInstanceFollowRedirects(false);
+            logout.setRequestProperty("Cookie", renewedCookie);
+            assertEquals(HttpURLConnection.HTTP_MOVED_TEMP, logout.getResponseCode());
+        }
+        finally
+        {
+            logout.disconnect();
+        }
+        assertNull(getSessionUser(helper, renewedCookie));
+    }
+
+    @Test
+    public void anonymousAuthenticationRenewsSession() throws Exception
+    {
+        final HttpTestHelper helper = configForAnonymous();
+        helper.setUserName(null);
+        final String initialCookie = prepareSession(helper);
+        final HttpURLConnection login = helper.openManagementConnection(HttpManagement.DEFAULT_LOGIN_URL, "GET");
+        final String renewedCookie;
+        try
+        {
+            login.setInstanceFollowRedirects(false);
+            login.setRequestProperty("Cookie", initialCookie);
+            assertEquals(SC_OK, login.getResponseCode());
+            final String cookie = login.getHeaderField("Set-Cookie");
+            assertNotNull(cookie);
+            renewedCookie = cookie.split(";", 2)[0];
+        }
+        finally
+        {
+            login.disconnect();
+        }
+        assertNotEquals(initialCookie, renewedCookie);
+        assertEquals("ANONYMOUS", getSessionUser(helper, renewedCookie));
+        assertNull(getSessionUser(helper, initialCookie));
+    }
+
+    @Test
     public void clientAuthUnrecognisedCert() throws Exception
     {
         HttpTestHelper helper = configForClientAuth("CN=foo");
@@ -193,6 +269,38 @@ public class PreemptiveAuthenticationTest extends HttpTestBase
         final HttpURLConnection conn = getHelper().openManagementConnection("broker", "GET");
         assertThat("Unexpected server response", conn.getResponseCode(), is(equalTo(SC_OK)));
         assertThat("Unexpected cookie", conn.getHeaderFields(), not(hasKey("Set-Cookie")));
+    }
+
+    private String prepareSession(final HttpTestHelper helper) throws IOException
+    {
+        final HttpURLConnection connection = helper.openManagementConnection("/service/sasl", "GET");
+        try
+        {
+            assertEquals(SC_OK, connection.getResponseCode());
+            assertNull(helper.readJsonResponseAsMap(connection).get("user"));
+            final String cookie = connection.getHeaderField("Set-Cookie");
+            assertNotNull(cookie);
+            return cookie.split(";", 2)[0];
+        }
+        finally
+        {
+            connection.disconnect();
+        }
+    }
+
+    private Object getSessionUser(final HttpTestHelper helper, final String cookie) throws IOException
+    {
+        final HttpURLConnection connection = helper.openManagementConnection("/service/sasl", "GET");
+        try
+        {
+            connection.setRequestProperty("Cookie", cookie);
+            assertEquals(SC_OK, connection.getResponseCode());
+            return helper.readJsonResponseAsMap(connection).get("user");
+        }
+        finally
+        {
+            connection.disconnect();
+        }
     }
 
     private void verifyGetBroker(int expectedResponseCode) throws Exception

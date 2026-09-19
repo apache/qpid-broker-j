@@ -32,7 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -104,9 +107,10 @@ public class SaslTest extends HttpTestBase
         try
         {
             assertEquals(SC_OK, connection.getResponseCode(), "Unexpected response");
-            handleChallengeAndSendResponse(connection, _userName, _userPassword, PlainNegotiator.MECHANISM, SC_OK);
+            final List<String> cookies = handleChallengeAndSendResponse(connection, _userName, _userPassword,
+                    PlainNegotiator.MECHANISM, SC_OK);
 
-            assertAuthenticatedUser(_userName, connection.getHeaderFields().get(SET_COOKIE_HEADER));
+            assertAuthenticatedUser(_userName, cookies);
         }
         finally
         {
@@ -265,8 +269,8 @@ public class SaslTest extends HttpTestBase
     }
 
     private List<String> plainSASLAuthenticationWithInitialResponse(final String userName,
-                                                                    final String userPassword,
-                                                                    final int expectedResponseCode) throws Exception
+                                                                   final String userPassword,
+                                                                   final int expectedResponseCode) throws Exception
     {
         byte[] responseBytes = generatePlainClientResponse(userName, userPassword);
         String responseData = Base64.getEncoder().encodeToString(responseBytes);
@@ -299,8 +303,7 @@ public class SaslTest extends HttpTestBase
         HttpURLConnection connection = requestSASLAuthentication(mechanism);
         try
         {
-            handleChallengeAndSendResponse(connection, userName, userPassword, mechanism, expectedResponseCode);
-            return connection.getHeaderFields().get(SET_COOKIE_HEADER);
+            return handleChallengeAndSendResponse(connection, userName, userPassword, mechanism, expectedResponseCode);
         }
         finally
         {
@@ -309,41 +312,47 @@ public class SaslTest extends HttpTestBase
     }
 
 
-    private void handleChallengeAndSendResponse(HttpURLConnection requestChallengeConnection,
-                                                String userName,
-                                                String userPassword,
-                                                String mechanism,
-                                                final int expectedResponseCode)
+    private List<String> handleChallengeAndSendResponse(final HttpURLConnection requestChallengeConnection,
+                                                        final String userName,
+                                                        final String userPassword,
+                                                        final String mechanism,
+                                                        final int expectedResponseCode)
             throws Exception
     {
-        Map<String, Object> response = getHelper().readJsonResponseAsMap(requestChallengeConnection);
-        String challenge = (String) response.get("challenge");
+        final Map<String, Object> response = getHelper().readJsonResponseAsMap(requestChallengeConnection);
+        final String challenge = (String) response.get("challenge");
         assertNotNull(challenge, "Challenge is not found");
 
-        byte[] challengeBytes = Base64.getDecoder().decode(challenge);
-        byte[] responseBytes = generateClientResponse(mechanism, userName, userPassword, challengeBytes);
-        String responseData = Base64.getEncoder().encodeToString(responseBytes);
-        String requestParameters = (String.format("id=%s&response=%s", response.get("id"), responseData));
+        final byte[] challengeBytes = Base64.getDecoder().decode(challenge);
+        final byte[] responseBytes = generateClientResponse(mechanism, userName, userPassword, challengeBytes);
+        final String responseData = Base64.getEncoder().encodeToString(responseBytes);
+        final String requestParameters = (String.format("id=%s&response=%s", response.get("id"), responseData));
 
-        postResponse(requestChallengeConnection.getHeaderFields().get(SET_COOKIE_HEADER),
-                     requestParameters,
-                     expectedResponseCode);
+        return postResponse(requestChallengeConnection.getHeaderFields().get(SET_COOKIE_HEADER),
+                requestParameters, expectedResponseCode);
     }
 
-    private void postResponse(final List<String> cookies,
-                              final String requestParameters,
-                              final int expectedResponseCode) throws IOException
+    private List<String> postResponse(final List<String> cookies,
+                                      final String requestParameters,
+                                      final int expectedResponseCode) throws IOException
     {
-        HttpURLConnection authenticateConnection = getHelper().openManagementConnection(SASL_SERVICE, "POST");
+        final HttpURLConnection authenticateConnection = getHelper().openManagementConnection(SASL_SERVICE, "POST");
         try
         {
             applyCookiesToConnection(cookies, authenticateConnection);
-            try (OutputStream os = authenticateConnection.getOutputStream())
+            try (final OutputStream os = authenticateConnection.getOutputStream())
             {
                 os.write(requestParameters.getBytes());
                 os.flush();
-                assertEquals(expectedResponseCode, authenticateConnection.getResponseCode(), "Unexpected response code");
+                assertEquals(expectedResponseCode, authenticateConnection.getResponseCode(),
+                        "Unexpected response code");
             }
+            final CookieManager cookieManager = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
+            final URI uri = URI.create(authenticateConnection.getURL().toExternalForm());
+            cookieManager.put(uri, Map.of(SET_COOKIE_HEADER, cookies));
+            cookieManager.put(uri, authenticateConnection.getHeaderFields());
+            return cookieManager.getCookieStore().getCookies().stream()
+                    .map(cookie -> cookie.getName() + "=" + cookie.getValue()).toList();
         }
         finally
         {

@@ -46,6 +46,7 @@ import javax.net.ssl.SSLSessionContext;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.ee11.servlet.ErrorPageErrorHandler;
@@ -357,6 +358,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         corsHandler.setAllowCredentials(getCorsAllowCredentials());
 
         final ServletContextHandler root = new ServletContextHandler("/",  ServletContextHandler.SESSIONS);
+        root.getSessionHandler().setSessionTrackingModes(Set.of(SessionTrackingMode.COOKIE));
         root.insertHandler(rewriteHandler);
         root.insertHandler(corsHandler);
         server.setHandler(root);
