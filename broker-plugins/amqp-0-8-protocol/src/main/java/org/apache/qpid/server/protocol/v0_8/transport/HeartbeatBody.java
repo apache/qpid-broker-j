@@ -25,6 +25,8 @@ import java.io.IOException;
 
 import org.apache.qpid.server.QpidException;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
 import org.apache.qpid.server.transport.ByteBufferSender;
 
@@ -87,14 +89,30 @@ public class HeartbeatBody implements AMQBody
     }
 
     public static void process(final int channel,
-                            final QpidByteBuffer in,
-                            final MethodProcessor processor,
-                            final long bodySize)
+                               final QpidByteBuffer in,
+                               final MethodProcessor<?> processor,
+                               final long bodySize)
+            throws AMQFrameDecodingException
     {
-
-        if(bodySize > 0)
+        if (channel != 0)
         {
-            in.position(in.position()+(int)bodySize);
+            // AMQP 0-8 and 0-9 define this as a framing error. AMQP 0-9-1's specific
+            // heartbeat-channel rule requires command-invalid
+            final int errorCode = ProtocolVersion.v0_91.equals(processor.getProtocolVersion())
+                    ? ErrorCodes.COMMAND_INVALID
+                    : ErrorCodes.FRAME_ERROR;
+            throw new AMQFrameDecodingException(errorCode, "Heartbeat frame must use channel 0, received channel " +
+                    channel, null);
+        }
+        if (bodySize > 0)
+        {
+            if (ProtocolVersion.v0_91.equals(processor.getProtocolVersion()))
+            {
+                throw new AMQFrameDecodingException("AMQP 0-9-1 heartbeat frame must have an empty payload, " +
+                        "received " + bodySize + " bytes");
+            }
+            // AMQP 0-8 and 0-9 did not define an empty-payload requirement
+            in.position(in.position() + (int) bodySize);
         }
         processor.receiveHeartbeat();
     }

@@ -45,13 +45,14 @@ import org.apache.qpid.server.protocol.v0_8.transport.ProtocolInitiation;
  * TODO If protocol initiation decoder not needed, then don't create it. Probably not a big deal, but it adds to the
  *       per-session overhead.
  */
-public abstract class AMQDecoder<T extends MethodProcessor>
+public abstract class AMQDecoder<T extends MethodProcessor<?>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQDecoder.class);
     public static final int FRAME_HEADER_SIZE = 7;
     public static final int FRAME_MIN_SIZE = 4096;
 
     private final T _methodProcessor;
+    private final int _maxNestedObjects;
 
     /** Holds the protocol initiation decoder. */
     private final ProtocolInitiation.Decoder _piDecoder = new ProtocolInitiation.Decoder();
@@ -62,16 +63,29 @@ public abstract class AMQDecoder<T extends MethodProcessor>
     private boolean _firstRead = true;
 
     private int _maxFrameSize = FRAME_MIN_SIZE;
+    private long _frameBytesToDiscard;
 
     /**
      * Creates a new AMQP decoder.
      * @param expectProtocolInitiation <code>true</code> if this decoder needs to handle protocol initiation.
      * @param methodProcessor method processor
      */
-    protected AMQDecoder(boolean expectProtocolInitiation, T methodProcessor)
+    protected AMQDecoder(final boolean expectProtocolInitiation, final T methodProcessor)
     {
+        this(expectProtocolInitiation, methodProcessor, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    protected AMQDecoder(final boolean expectProtocolInitiation,
+                         final T methodProcessor,
+                         final int maxNestedObjects)
+    {
+        if (maxNestedObjects < 0)
+        {
+            throw new IllegalArgumentException("Maximum nested objects must not be negative: " + maxNestedObjects);
+        }
         _expectProtocolInitiation = expectProtocolInitiation;
         _methodProcessor = methodProcessor;
+        _maxNestedObjects = maxNestedObjects;
     }
 
 
@@ -95,6 +109,11 @@ public abstract class AMQDecoder<T extends MethodProcessor>
     public T getMethodProcessor()
     {
         return _methodProcessor;
+    }
+
+    protected final int getMaxNestedObjects()
+    {
+        return _maxNestedObjects;
     }
 
     protected final int decode(final QpidByteBuffer buf) throws AMQFrameDecodingException
@@ -142,6 +161,11 @@ public abstract class AMQDecoder<T extends MethodProcessor>
 
     protected int decodable(final QpidByteBuffer in) throws AMQFrameDecodingException
     {
+        if (_frameBytesToDiscard != 0 && !discardFrame(in))
+        {
+            return 1;
+        }
+
         final int remainingAfterAttributes = in.remaining() - FRAME_HEADER_SIZE;
         // type, channel, body length and end byte
         if (remainingAfterAttributes < 0)
@@ -154,6 +178,8 @@ public abstract class AMQDecoder<T extends MethodProcessor>
         final long bodySize = ((long)in.getInt(in.position()+3)) & 0xffffffffL;
         if (bodySize > _maxFrameSize)
         {
+            _frameBytesToDiscard = bodySize + 1;
+            in.position(in.position() + FRAME_HEADER_SIZE);
             throw new AMQFrameDecodingException(
                     "Incoming frame size of "
                                                 + bodySize
@@ -164,6 +190,18 @@ public abstract class AMQDecoder<T extends MethodProcessor>
         long required = (1L+bodySize)-remainingAfterAttributes;
         return required > 0 ? (int) required : 0;
 
+    }
+
+    private boolean discardFrame(final QpidByteBuffer in) throws AMQFatalFrameDecodingException
+    {
+        final int discarded = (int) Math.min(_frameBytesToDiscard, in.remaining());
+        in.position(in.position() + discarded);
+        _frameBytesToDiscard -= discarded;
+        if (_frameBytesToDiscard == 0 && (in.get(in.position() - 1) & 0xFF) != 0xCE)
+        {
+            throw new AMQFatalFrameDecodingException("End of frame marker not found after discarded frame");
+        }
+        return _frameBytesToDiscard == 0;
     }
 
     protected void processInput(final QpidByteBuffer in)
@@ -182,16 +220,28 @@ public abstract class AMQDecoder<T extends MethodProcessor>
                                                 + " bodySize = " + bodySize);
         }
 
-        processFrame(channel, type, bodySize, in);
-
-        byte marker = in.get();
+        final int frameEnd = in.position() + (int) bodySize + 1;
+        final byte marker = in.get(frameEnd - 1);
         if ((marker & 0xFF) != 0xCE)
         {
-            throw new AMQFrameDecodingException(
+            throw new AMQFatalFrameDecodingException(
                     "End of frame marker not found. Read " + marker + " length=" + bodySize
                                                 + " type=" + type);
         }
 
+        try (final QpidByteBuffer frameBody = in.view(0, (int) bodySize))
+        {
+            processFrame(channel, type, bodySize, frameBody);
+            if (frameBody.hasRemaining())
+            {
+                throw new AMQFrameDecodingException("Frame body was not fully consumed: type=" + type +
+                        ", channel=" + channel + ", bodySize=" + bodySize + ", remaining=" + frameBody.remaining());
+            }
+        }
+        finally
+        {
+            in.position(frameEnd);
+        }
     }
 
     protected void processFrame(final int channel, final byte type, final long bodySize, final QpidByteBuffer in)
@@ -203,7 +253,7 @@ public abstract class AMQDecoder<T extends MethodProcessor>
                 processMethod(channel, in);
                 break;
             case 2:
-                ContentHeaderBody.process(in, _methodProcessor.getChannelMethodProcessor(channel), bodySize);
+                ContentHeaderBody.process(in, _methodProcessor, channel, bodySize, _maxNestedObjects);
                 break;
             case 3:
                 ContentBody.process(in, _methodProcessor.getChannelMethodProcessor(channel), bodySize);
@@ -212,7 +262,7 @@ public abstract class AMQDecoder<T extends MethodProcessor>
                 HeartbeatBody.process(channel, in, _methodProcessor, bodySize);
                 break;
             default:
-                throw new AMQFrameDecodingException("Unsupported frame type: " + type);
+                throw new AMQFatalFrameDecodingException("Unsupported frame type: " + type);
         }
     }
 

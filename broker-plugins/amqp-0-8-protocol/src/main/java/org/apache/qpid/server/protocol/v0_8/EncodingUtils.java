@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
 
 import org.slf4j.Logger;
@@ -33,6 +35,16 @@ public class EncodingUtils
 
     private EncodingUtils()
     {
+    }
+
+    static int checkLength(final long length, final QpidByteBuffer buffer)
+    {
+        if (length > buffer.remaining())
+        {
+            throw new IllegalArgumentException("Declared field length " + length +
+                    " is invalid; buffer has " + buffer.remaining() + " byte(s) remaining");
+        }
+        return (int) length;
     }
 
     public static int encodedShortStringLength(String s)
@@ -206,14 +218,38 @@ public class EncodingUtils
 
     public static FieldTable readFieldTable(QpidByteBuffer input)
     {
-        long length = input.getUnsignedInt();
+        return readFieldTable(input, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    public static FieldTable readFieldTable(final QpidByteBuffer input, final int maxNestedObjects)
+    {
+        FieldValueNestingValidator.validateMaximum(maxNestedObjects);
+        final FieldTable fieldTable = readFieldTableValue(input, maxNestedObjects);
+        if (fieldTable != null)
+        {
+            try
+            {
+                fieldTable.validate(maxNestedObjects);
+            }
+            catch (RuntimeException e)
+            {
+                fieldTable.dispose();
+                throw e;
+            }
+        }
+        return fieldTable;
+    }
+
+    static FieldTable readFieldTableValue(final QpidByteBuffer input, final int maxNestedObjects)
+    {
+        final long length = input.getUnsignedInt();
         if (length == 0)
         {
             return null;
         }
         else
         {
-            return FieldTableFactory.createFieldTable(input, (int) length);
+            return FieldTableFactory.createFieldTable(input, checkLength(length, input), maxNestedObjects);
         }
     }
 
@@ -222,24 +258,31 @@ public class EncodingUtils
         long length = buffer.getUnsignedInt();
         if (length > 0)
         {
-            buffer.position(buffer.position() + (int)length);
+            buffer.position(buffer.position() + checkLength(length, buffer));
         }
     }
 
 
-    public static String readLongString(QpidByteBuffer buffer)
+    public static String readLongString(final QpidByteBuffer buffer)
     {
-        long length = ((long)(buffer.getInt())) & 0xFFFFFFFFL;
+        final long length = ((long)(buffer.getInt())) & 0xFFFFFFFFL;
         if (length == 0)
         {
             return "";
         }
         else
         {
-            byte[] stringBytes = new byte[(int) length];
-            buffer.get(stringBytes, 0, (int) length);
+            final byte[] stringBytes = new byte[checkLength(length, buffer)];
+            buffer.get(stringBytes, 0, stringBytes.length);
 
-            return new String(stringBytes, StandardCharsets.UTF_8);
+            try
+            {
+                return StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(stringBytes)).toString();
+            }
+            catch (CharacterCodingException e)
+            {
+                throw new IllegalArgumentException("Cannot decode long string as UTF-8", e);
+            }
         }
     }
 
@@ -249,7 +292,7 @@ public class EncodingUtils
         long length = buffer.getUnsignedInt();
         if (length > 0)
         {
-            buffer.position(buffer.position() + (int)length);
+            buffer.position(buffer.position() + checkLength(length, buffer));
         }
     }
 
@@ -262,7 +305,7 @@ public class EncodingUtils
         }
         else
         {
-            byte[] result = new byte[(int) length];
+            final byte[] result = new byte[checkLength(length, buffer)];
             buffer.get(result);
 
             return result;
@@ -322,7 +365,7 @@ public class EncodingUtils
         }
         else
         {
-            byte[] dataBytes = new byte[(int)length];
+            final byte[] dataBytes = new byte[checkLength(length, buffer)];
             buffer.get(dataBytes);
 
             return dataBytes;

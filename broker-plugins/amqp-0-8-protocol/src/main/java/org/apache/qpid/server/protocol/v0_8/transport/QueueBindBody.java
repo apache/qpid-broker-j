@@ -30,6 +30,7 @@ package org.apache.qpid.server.protocol.v0_8.transport;
 import org.apache.qpid.server.QpidException;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
+import org.apache.qpid.server.protocol.v0_8.AMQPConnection_0_8;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.EncodingUtils;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
@@ -164,20 +165,35 @@ public class QueueBindBody extends AMQMethodBodyImpl implements EncodableAMQData
     public static void process(final QpidByteBuffer buffer,
                                final ServerChannelMethodProcessor dispatcher) throws AMQFrameDecodingException
     {
+        process(buffer, dispatcher, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    public static void process(final QpidByteBuffer buffer,
+                               final ServerChannelMethodProcessor dispatcher,
+                               final int maxNestedObjects)
+            throws AMQFrameDecodingException
+    {
 
         int ticket = buffer.getUnsignedShort();
         AMQShortString queue = AMQShortString.readAMQShortString(buffer);
         AMQShortString exchange = AMQShortString.readAMQShortString(buffer);
         AMQShortString bindingKey = AMQShortString.readAMQShortString(buffer);
         boolean nowait = (buffer.get() & 0x01) == 0x01;
-        FieldTable arguments = EncodingUtils.readFieldTable(buffer);
-        if(!dispatcher.ignoreAllButCloseOk())
+        final FieldTable arguments = EncodingUtils.readFieldTable(buffer, maxNestedObjects);
+        try
         {
-            dispatcher.receiveQueueBind(queue, exchange, bindingKey, nowait, FieldTable.convertToDecodedFieldTable(arguments));
+            if (!dispatcher.ignoreAllButCloseOk())
+            {
+                final FieldTable decoded = FieldTable.convertToDecodedFieldTable(arguments);
+                dispatcher.receiveQueueBind(queue, exchange, bindingKey, nowait, decoded);
+            }
         }
-        if (arguments != null)
+        finally
         {
-            arguments.dispose();
+            if (arguments != null)
+            {
+                arguments.dispose();
+            }
         }
     }
 }

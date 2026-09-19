@@ -56,6 +56,17 @@ public interface AMQPConnection_0_8<C extends AMQPConnection_0_8<C>> extends AMQ
     @ManagedContextDefault(name= FORCE_MESSAGE_VALIDATION)
     boolean DEFAULT_FORCE_MESSAGE_VALIDATION = false;
 
+    String CODEC_MAX_NESTED_OBJECTS = "amqp0x.codec.maxNestedObjects";
+    @ManagedContextDefault(name = CODEC_MAX_NESTED_OBJECTS,
+            description = "Maximum nesting depth of AMQP 0-x field tables and arrays")
+    int DEFAULT_CODEC_MAX_NESTED_OBJECTS = 50;
+
+    String CONNECTION_MAX_CONTENT_BODY_FRAMES_PER_MESSAGE = "connection.maxContentBodyFramesPerMessage";
+    @ManagedContextDefault(name = CONNECTION_MAX_CONTENT_BODY_FRAMES_PER_MESSAGE,
+            description = "Maximum number of content body frames accepted for one message. The default preserves " +
+                    "the default maximum message size for peers using the AMQP minimum frame size.")
+    int DEFAULT_MAX_CONTENT_BODY_FRAMES_PER_MESSAGE = 256 * 1024;
+
     @DerivedAttribute(description = "The actual negotiated value of heartbeat delay.")
     int getHeartbeatDelay();
 

@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v0_8.transport;
 
 import org.apache.qpid.server.protocol.ProtocolVersion;
+import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 
 public interface MethodProcessor<T extends ChannelMethodProcessor>
@@ -28,6 +29,13 @@ public interface MethodProcessor<T extends ChannelMethodProcessor>
     ProtocolVersion getProtocolVersion();
 
     T getChannelMethodProcessor(int channelId);
+
+    default void receiveOversizedMessageHeader(final int channelId, final long bodySize)
+            throws AMQFrameDecodingException
+    {
+        throw new AMQFrameDecodingException("Content body size " + Long.toUnsignedString(bodySize) +
+                " exceeds the supported range", null);
+    }
 
     void receiveConnectionClose(int replyCode, AMQShortString replyText, int classId, int methodId);
 

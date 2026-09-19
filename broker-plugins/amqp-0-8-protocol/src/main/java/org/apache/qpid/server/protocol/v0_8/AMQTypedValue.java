@@ -64,10 +64,12 @@ public abstract class AMQTypedValue
             _value = type.toNativeValue(value);
         }
 
-        private GenericTypedValue(AMQType type, QpidByteBuffer buffer)
+        private GenericTypedValue(final AMQType type,
+                                  final QpidByteBuffer buffer,
+                                  final int maxNestedObjects)
         {
             _type = type;
-            _value = type.readValueFromBuffer(buffer);
+            _value = type.readValueFromBuffer(buffer, maxNestedObjects);
         }
 
 
@@ -211,21 +213,26 @@ public abstract class AMQTypedValue
     }
 
 
-    public static AMQTypedValue readFromBuffer(QpidByteBuffer buffer)
+    public static AMQTypedValue readFromBuffer(final QpidByteBuffer buffer)
     {
-        AMQType type = AMQTypeMap.getType(buffer.get());
+        return readFromBuffer(buffer, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
 
-        switch(type)
+    static AMQTypedValue readFromBuffer(final QpidByteBuffer buffer, final int maxNestedObjects)
+    {
+        final AMQType type = AMQTypeMap.getType(buffer.get());
+
+        switch (type)
         {
             case LONG:
                 return new LongTypedValue(buffer);
 
             case INT:
-                int value = buffer.getInt();
+                final int value = buffer.getInt();
                 return createAMQTypedValue(value);
 
             default:
-                return new GenericTypedValue(type, buffer);
+                return new GenericTypedValue(type, buffer, maxNestedObjects);
         }
 
     }

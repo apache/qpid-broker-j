@@ -155,6 +155,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     private final CachedFrame _txCommitOkFrame;
 
     private final long _blockingTimeout;
+    private final int _maxContentBodyFramesPerMessage;
 
     /**
      * The delivery tag is unique per channel. This is pre-incremented before putting into the deliver frame so that
@@ -222,6 +223,11 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
         _forceMessageValidation = connection.getContextValue(Boolean.class, AMQPConnection_0_8.FORCE_MESSAGE_VALIDATION);
 
+        final Integer maxContentBodyFramesPerMessage = connection.getContextValue(
+                Integer.class, AMQPConnection_0_8.CONNECTION_MAX_CONTENT_BODY_FRAMES_PER_MESSAGE);
+        _maxContentBodyFramesPerMessage = Math.max(1, maxContentBodyFramesPerMessage == null
+                ? AMQPConnection_0_8.DEFAULT_MAX_CONTENT_BODY_FRAMES_PER_MESSAGE
+                : maxContentBodyFramesPerMessage);
     }
 
     private void message(final LogMessage message)
@@ -288,6 +294,41 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         _currentMessage.setMessageDestination(e);
     }
 
+    private void rejectIncompleteMessage(final String message)
+    {
+        final int errorCode = ProtocolVersion.v0_91.equals(_connection.getProtocolVersion())
+                ? ErrorCodes.UNEXPECTED_FRAME
+                : ErrorCodes.FRAME_ERROR;
+        disposeCurrentMessageAndCloseConnection(errorCode, message);
+    }
+
+    @Override
+    public boolean rejectMethodFrameIfContentIncomplete()
+    {
+        if (hasCurrentMessage())
+        {
+            rejectIncompleteMessage("Method frame received before completing the previous message");
+            return true;
+        }
+        return false;
+    }
+
+    private void disposeCurrentMessageAndCloseConnection(final int errorCode, final String message)
+    {
+        disposeCurrentMessage();
+        _connection.sendConnectionClose(errorCode, message, _channelId);
+    }
+
+    private void disposeCurrentMessage()
+    {
+        final IncomingMessage currentMessage = _currentMessage;
+        _currentMessage = null;
+        if (currentMessage != null)
+        {
+            currentMessage.dispose();
+        }
+    }
+
     private void publishContentHeader(ContentHeaderBody contentHeaderBody)
     {
         if (LOGGER.isDebugEnabled())
@@ -333,13 +374,13 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                                 getConnection().getLastReadTime());
 
                     final MessageHandle<MessageMetaData> handle = _messageStore.addMessage(messageMetaData);
-                    int bodyCount = _currentMessage.getBodyCount();
-                    if (bodyCount > 0)
+                    final int contentChunkCount = _currentMessage.getContentChunkCount();
+                    if (contentChunkCount > 0)
                     {
-                        for (int i = 0; i < bodyCount; i++)
+                        for (int i = 0; i < contentChunkCount; i++)
                         {
-                            ContentBody contentChunk = _currentMessage.getContentChunk(i);
-                            handle.addContent(contentChunk.getPayload());
+                            final QpidByteBuffer contentChunk = _currentMessage.getContentChunk(i);
+                            handle.addContent(contentChunk);
                             contentChunk.dispose();
                         }
                     }
@@ -487,21 +528,26 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     }
 
-    private void publishContentBody(ContentBody contentBody)
+    private void publishContentBody(final QpidByteBuffer contentBody)
     {
         if (LOGGER.isDebugEnabled())
         {
             LOGGER.debug(debugIdentity() + " content body received on channel " + _channelId);
         }
 
+        if (_currentMessage.getContentBodyFrameCount() >= _maxContentBodyFramesPerMessage)
+        {
+            disposeCurrentMessageAndCloseConnection(ErrorCodes.RESOURCE_ERROR,"Message exceeds maximum number of " +
+                    "content body frames (" + _maxContentBodyFramesPerMessage + ")");
+            return;
+        }
+
         try
         {
-            long currentSize = _currentMessage.addContentBodyFrame(contentBody);
-            if(currentSize > _currentMessage.getSize())
+            if (!_currentMessage.addContentBodyFrame(contentBody))
             {
-                _connection.sendConnectionClose(ErrorCodes.FRAME_ERROR,
-                                                "More message data received than content header defined",
-                                                _channelId);
+                disposeCurrentMessageAndCloseConnection(ErrorCodes.FRAME_ERROR, "More message data received than " +
+                        "content header defined");
             }
             else
             {
@@ -512,7 +558,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         {
             // we want to make sure we don't keep a reference to the message in the
             // event of an error
-            _currentMessage = null;
+            disposeCurrentMessage();
             throw e;
         }
     }
@@ -1928,9 +1974,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                           " immediate: " + immediate + " ]");
         }
 
-
-
-        NamedAddressSpace vHost = _connection.getAddressSpace();
+        final NamedAddressSpace vHost = _connection.getAddressSpace();
 
         if(blockingTimeoutExceeded())
         {
@@ -1940,7 +1984,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         }
         else
         {
-            MessageDestination destination;
+            final MessageDestination destination;
 
             if (isDefaultExchange(exchangeName))
             {
@@ -1959,10 +2003,10 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             else
             {
 
-                MessagePublishInfo info = new MessagePublishInfo(exchangeName,
-                                                                 immediate,
-                                                                 mandatory,
-                                                                 routingKey);
+                final MessagePublishInfo info = new MessagePublishInfo(exchangeName,
+                                                                       immediate,
+                                                                       mandatory,
+                                                                       routingKey);
 
                 try
                 {
@@ -2153,13 +2197,19 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
         if(hasCurrentMessage())
         {
-            publishContentBody(new ContentBody(data));
+            if (_currentMessage.getContentHeader() == null)
+            {
+                rejectIncompleteMessage("Attempt to send a content body before sending a content header");
+            }
+            else
+            {
+                publishContentBody(data);
+            }
         }
         else
         {
-            _connection.sendConnectionClose(ErrorCodes.COMMAND_INVALID,
-                                            "Attempt to send a content header without first sending a publish frame",
-                                            _channelId);
+            _connection.sendConnectionClose(ErrorCodes.COMMAND_INVALID, "Attempt to send a content body without " +
+                    "first sending a publish frame", _channelId);
         }
     }
 
@@ -2173,7 +2223,12 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
         if(hasCurrentMessage())
         {
-            if(bodySize > _connection.getMaxMessageSize())
+            if (_currentMessage.getContentHeader() != null)
+            {
+                properties.dispose();
+                rejectIncompleteMessage("Attempt to send a duplicate content header");
+            }
+            else if (bodySize > _connection.getMaxMessageSize())
             {
                 properties.dispose();
                 closeChannel(ErrorCodes.MESSAGE_TOO_LARGE,
@@ -2200,6 +2255,27 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
             _connection.sendConnectionClose(ErrorCodes.COMMAND_INVALID,
                                             "Attempt to send a content header without first sending a publish frame",
                                             _channelId);
+        }
+    }
+
+    void receiveOversizedMessageHeader(final long bodySize)
+    {
+        if (hasCurrentMessage())
+        {
+            if (_currentMessage.getContentHeader() != null)
+            {
+                rejectIncompleteMessage("Attempt to send a duplicate content header");
+            }
+            else
+            {
+                closeChannel(ErrorCodes.MESSAGE_TOO_LARGE, "Content body size " + Long.toUnsignedString(bodySize) +
+                        " exceeds the supported range");
+            }
+        }
+        else
+        {
+            _connection.sendConnectionClose(ErrorCodes.COMMAND_INVALID, "Attempt to send a content header without " +
+                    "first sending a publish frame", _channelId);
         }
     }
 
@@ -3517,24 +3593,6 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
     public void dispose()
     {
         _txCommitOkFrame.dispose();
-        final IncomingMessage currentMessage = _currentMessage;
-        if (currentMessage != null)
-        {
-            _currentMessage = null;
-            final ContentHeaderBody contentHeader = currentMessage.getContentHeader();
-            if (contentHeader != null)
-            {
-                contentHeader.dispose();
-            }
-
-            int bodyCount = currentMessage.getBodyCount();
-            if (bodyCount > 0)
-            {
-                for (int i = 0; i < bodyCount; i++)
-                {
-                    currentMessage.getContentChunk(i).dispose();
-                }
-            }
-        }
+        disposeCurrentMessage();
     }
 }

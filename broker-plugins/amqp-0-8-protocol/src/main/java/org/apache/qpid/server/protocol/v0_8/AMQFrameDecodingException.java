@@ -23,26 +23,73 @@ package org.apache.qpid.server.protocol.v0_8;
 import org.apache.qpid.server.AMQException;
 import org.apache.qpid.server.protocol.ErrorCodes;
 
+import java.io.Serial;
+
 /**
  * AMQFrameDecodingException indicates that an AMQP frame cannot be decoded because it does not have the correct
  * format as defined by the protocol.
  */
 public class AMQFrameDecodingException extends AMQException
 {
-    public AMQFrameDecodingException(String message, Throwable cause)
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    private final int _classId;
+    private final int _methodId;
+
+    public AMQFrameDecodingException(final String message, final Throwable cause)
     {
-        super(ErrorCodes.FRAME_ERROR, message, cause);
+        this(ErrorCodes.FRAME_ERROR, message, 0, 0, cause);
     }
 
-    public AMQFrameDecodingException(String message)
+    public AMQFrameDecodingException(final String message)
     {
-        super(ErrorCodes.FRAME_ERROR, message, null);
+        this(ErrorCodes.FRAME_ERROR, message, 0, 0, null);
     }
 
 
-    public AMQFrameDecodingException(int errorCode, String message, final Throwable cause)
+    public AMQFrameDecodingException(final int errorCode, final String message, final Throwable cause)
+    {
+        this(errorCode, message, 0, 0, cause);
+    }
+
+    AMQFrameDecodingException(final int errorCode,
+                              final String message,
+                              final int classId,
+                              final int methodId,
+                              final Throwable cause)
     {
         super(errorCode, message, cause);
+        _classId = classId;
+        _methodId = methodId;
     }
 
+    public static AMQFrameDecodingException forDecodingFailure(final String context,
+                                                               final RuntimeException cause)
+    {
+        return forDecodingFailure(context, 0, 0, cause);
+    }
+
+    static AMQFrameDecodingException forDecodingFailure(final String context,
+                                                        final int classId,
+                                                        final int methodId,
+                                                        final RuntimeException cause)
+    {
+        final int errorCode = cause instanceof AMQValueNestingException
+                ? ErrorCodes.RESOURCE_ERROR
+                : ErrorCodes.FRAME_ERROR;
+        final String detail = cause.getMessage();
+        final String message = detail == null || detail.isEmpty() ? context : context + ": " + detail;
+        return new AMQFrameDecodingException(errorCode, message, classId, methodId, cause);
+    }
+
+    int getClassId()
+    {
+        return _classId;
+    }
+
+    int getMethodId()
+    {
+        return _methodId;
+    }
 }

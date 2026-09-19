@@ -23,19 +23,20 @@ package org.apache.qpid.server.protocol.v0_8;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.qpid.server.protocol.v0_8.transport.ContentBody;
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
-import org.apache.qpid.server.message.MessageDestination;
 
 public class IncomingMessage
 {
 
     private final MessagePublishInfo _messagePublishInfo;
-    private final List<ContentBody> _contentChunks = new ArrayList<>();
+    private final List<QpidByteBuffer> _contentChunks = new ArrayList<>();
 
     private ContentHeaderBody _contentHeaderBody;
     private MessageDestination _messageDestination;
+    private int _contentBodyFrameCount;
 
     /**
      * Keeps a track of how many bytes we have received in body frames
@@ -57,11 +58,21 @@ public class IncomingMessage
         return _messagePublishInfo;
     }
 
-    public long addContentBodyFrame(final ContentBody contentChunk)
+    public boolean addContentBodyFrame(final QpidByteBuffer contentChunk)
     {
-        _bodyLengthReceived += contentChunk.getSize();
-        _contentChunks.add(contentChunk);
-        return _bodyLengthReceived;
+        final int contentSize = contentChunk.remaining();
+        if (contentSize > getSize() - _bodyLengthReceived)
+        {
+            return false;
+        }
+
+        if (contentSize > 0)
+        {
+            _contentChunks.add(contentChunk.duplicate());
+        }
+        _bodyLengthReceived += contentSize;
+        _contentBodyFrameCount++;
+        return true;
     }
 
     public boolean allContentReceived()
@@ -94,14 +105,35 @@ public class IncomingMessage
         _messageDestination = e;
     }
 
-    public int getBodyCount()
+    public int getContentBodyFrameCount()
+    {
+        return _contentBodyFrameCount;
+    }
+
+    public int getContentChunkCount()
     {
         return _contentChunks.size();
     }
 
-    public ContentBody getContentChunk(int index)
+    public QpidByteBuffer getContentChunk(final int index)
     {
         return _contentChunks.get(index);
+    }
+
+    public void dispose()
+    {
+        final ContentHeaderBody contentHeaderBody = _contentHeaderBody;
+        _contentHeaderBody = null;
+        if (contentHeaderBody != null)
+        {
+            contentHeaderBody.dispose();
+        }
+
+        for (final QpidByteBuffer contentChunk : _contentChunks)
+        {
+            contentChunk.dispose();
+        }
+        _contentChunks.clear();
     }
 
 }

@@ -20,9 +20,14 @@
  */
 package org.apache.qpid.server.protocol.v0_8.transport;
 
+import java.nio.BufferUnderflowException;
+
 import org.apache.qpid.server.QpidException;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
+import org.apache.qpid.server.protocol.v0_8.AMQPConnection_0_8;
 import org.apache.qpid.server.transport.ByteBufferSender;
 
 public class ContentHeaderBody implements AMQBody
@@ -165,29 +170,94 @@ public class ContentHeaderBody implements AMQBody
     }
 
     public static void process(final QpidByteBuffer buffer,
-                               final ChannelMethodProcessor methodProcessor, final long size)
+                               final MethodProcessor<? extends ChannelMethodProcessor> methodProcessor,
+                               final int channelId,
+                               final long size)
             throws AMQFrameDecodingException
     {
-        int classId = buffer.getUnsignedShort();
-        buffer.getUnsignedShort();
-        long bodySize = buffer.getLong();
-        int propertyFlags = buffer.getUnsignedShort();
+        process(buffer, methodProcessor, channelId, size, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
 
-        BasicContentHeaderProperties properties;
-
+    public static void process(final QpidByteBuffer buffer,
+                               final MethodProcessor<? extends ChannelMethodProcessor> methodProcessor,
+                               final int channelId,
+                               final long size,
+                               final int maxNestedObjects)
+            throws AMQFrameDecodingException
+    {
+        final int classId;
+        final int weight;
+        final long bodySize;
+        final int propertyFlags;
+        try
+        {
+            classId = buffer.getUnsignedShort();
+            weight = buffer.getUnsignedShort();
+            bodySize = buffer.getLong();
+            propertyFlags = buffer.getUnsignedShort();
+        }
+        catch (BufferUnderflowException | IllegalArgumentException | IllegalStateException e)
+        {
+            throw AMQFrameDecodingException.forDecodingFailure("Could not decode content header", e);
+        }
         if (classId != CLASS_ID)
         {
             throw new AMQFrameDecodingException("Unsupported content header class id: " + classId, null);
         }
-        properties = new BasicContentHeaderProperties(buffer, propertyFlags, (int)(size-14));
 
-        if(!methodProcessor.ignoreAllButCloseOk())
+        validateWeight(weight, methodProcessor);
+
+        if (bodySize < 0)
         {
-            methodProcessor.receiveMessageHeader(properties, bodySize);
+            buffer.position(buffer.limit());
+            methodProcessor.receiveOversizedMessageHeader(channelId, bodySize);
+            return;
         }
-        else
+
+        final BasicContentHeaderProperties properties;
+        try
         {
-            properties.dispose();
+            properties = new BasicContentHeaderProperties(buffer, propertyFlags, (int) (size - HEADER_SIZE),
+                    maxNestedObjects);
+        }
+        catch (BufferUnderflowException | IllegalArgumentException | IllegalStateException e)
+        {
+            throw AMQFrameDecodingException.forDecodingFailure("Could not decode content header properties", e);
+        }
+        boolean propertiesTransferred = false;
+        try
+        {
+            final ChannelMethodProcessor channelMethodProcessor = methodProcessor.getChannelMethodProcessor(channelId);
+
+            if (!channelMethodProcessor.ignoreAllButCloseOk())
+            {
+                propertiesTransferred = true;
+                channelMethodProcessor.receiveMessageHeader(properties, bodySize);
+            }
+        }
+        finally
+        {
+            if (!propertiesTransferred)
+            {
+                properties.dispose();
+            }
+        }
+    }
+
+    private static void validateWeight(final int weight,
+                                       final MethodProcessor<? extends ChannelMethodProcessor> methodProcessor)
+            throws AMQFrameDecodingException
+    {
+        if (weight != 0)
+        {
+            // AMQP 0-8 uses weight for structured content; later versions require the field to be zero
+            final ProtocolVersion protocolVersion = methodProcessor.getProtocolVersion();
+            final boolean structuredContent = ProtocolVersion.v0_8.equals(protocolVersion);
+            final int errorCode = structuredContent ? ErrorCodes.NOT_IMPLEMENTED : ErrorCodes.FRAME_ERROR;
+            final String message = structuredContent
+                    ? "AMQP 0-8 structured content is not supported (content weight " + weight + ")"
+                    : "Content weight must be zero for AMQP " + protocolVersion + " (received " + weight + ")";
+            throw new AMQFrameDecodingException(errorCode, message, null);
         }
     }
 

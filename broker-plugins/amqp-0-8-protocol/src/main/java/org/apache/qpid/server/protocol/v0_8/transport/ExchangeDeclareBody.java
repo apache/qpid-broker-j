@@ -30,6 +30,7 @@ package org.apache.qpid.server.protocol.v0_8.transport;
 import org.apache.qpid.server.QpidException;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
+import org.apache.qpid.server.protocol.v0_8.AMQPConnection_0_8;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.EncodingUtils;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
@@ -204,6 +205,14 @@ public class ExchangeDeclareBody extends AMQMethodBodyImpl implements EncodableA
     public static void process(final QpidByteBuffer buffer,
                                final ServerChannelMethodProcessor dispatcher) throws AMQFrameDecodingException
     {
+        process(buffer, dispatcher, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    public static void process(final QpidByteBuffer buffer,
+                               final ServerChannelMethodProcessor dispatcher,
+                               final int maxNestedObjects)
+            throws AMQFrameDecodingException
+    {
 
         int ticket = buffer.getUnsignedShort();
         AMQShortString exchange = AMQShortString.readAMQShortString(buffer);
@@ -214,21 +223,21 @@ public class ExchangeDeclareBody extends AMQMethodBodyImpl implements EncodableA
         boolean autoDelete = (bitfield & 0x4) == 0x4;
         boolean internal = (bitfield & 0x8) == 0x8;
         boolean nowait = (bitfield & 0x10) == 0x10;
-        FieldTable arguments = EncodingUtils.readFieldTable(buffer);
-        if(!dispatcher.ignoreAllButCloseOk())
+        final FieldTable arguments = EncodingUtils.readFieldTable(buffer, maxNestedObjects);
+        try
         {
-            dispatcher.receiveExchangeDeclare(exchange,
-                                              type,
-                                              passive,
-                                              durable,
-                                              autoDelete,
-                                              internal,
-                                              nowait,
-                                              FieldTable.convertToDecodedFieldTable(arguments));
+            if (!dispatcher.ignoreAllButCloseOk())
+            {
+                dispatcher.receiveExchangeDeclare(exchange, type, passive, durable, autoDelete, internal, nowait,
+                        FieldTable.convertToDecodedFieldTable(arguments));
+            }
         }
-        if (arguments != null)
+        finally
         {
-            arguments.dispose();
+            if (arguments != null)
+            {
+                arguments.dispose();
+            }
         }
     }
 }

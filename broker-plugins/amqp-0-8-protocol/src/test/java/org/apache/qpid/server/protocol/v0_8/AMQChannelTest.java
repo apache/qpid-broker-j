@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -46,6 +48,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
@@ -119,6 +122,7 @@ class AMQChannelTest extends UnitTestBase
         when(_amqConnection.getSubject()).thenReturn(authenticatedSubject);
         when(_amqConnection.getAuthorizedPrincipal()).thenReturn(authenticatedPrincipal);
         when(_amqConnection.getAddressSpace()).thenReturn(_virtualHost);
+        when(_amqConnection.getProtocolVersion()).thenReturn(ProtocolVersion.v0_9);
         when(_amqConnection.getProtocolOutputConverter()).thenReturn(protocolOutputConverter);
         when(_amqConnection.getBroker()).thenReturn(broker);
         when(_amqConnection.getMethodRegistry()).thenReturn(new MethodRegistry(ProtocolVersion.v0_9));
@@ -127,6 +131,8 @@ class AMQChannelTest extends UnitTestBase
         when(_amqConnection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
         when(_amqConnection.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE)).thenReturn(Connection.DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE);
         when(_amqConnection.getContextValue(Boolean.class, AMQPConnection_0_8.FORCE_MESSAGE_VALIDATION)).thenReturn(true);
+        when(_amqConnection.getContextValue(Integer.class, AMQPConnection_0_8.CONNECTION_MAX_CONTENT_BODY_FRAMES_PER_MESSAGE))
+                .thenReturn(AMQPConnection_0_8.DEFAULT_MAX_CONTENT_BODY_FRAMES_PER_MESSAGE);
         when(_amqConnection.getTaskExecutor()).thenReturn(taskExecutor);
         when(_amqConnection.getChildExecutor()).thenReturn(taskExecutor);
         when(_amqConnection.getModel()).thenReturn(BrokerModel.getInstance());
@@ -207,6 +213,192 @@ class AMQChannelTest extends UnitTestBase
                                                          ErrorCodes.MESSAGE_TOO_LARGE,
                                                          "Message size of 1025 greater than allowed maximum of 1024");
 
+    }
+
+    @Test
+    void unsignedOversizedMessageClosesChannel()
+    {
+        when(_virtualHost.getDefaultDestination()).thenReturn(_messageDestination);
+
+        final AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
+        channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, AMQShortString.EMPTY_STRING, false, false);
+
+        channel.receiveOversizedMessageHeader(Long.MIN_VALUE);
+
+        verify(_amqConnection).closeChannelAndWriteFrame(channel, ErrorCodes.MESSAGE_TOO_LARGE,
+                "Content body size 9223372036854775808 exceeds the supported range");
+    }
+
+    @Test
+    void unsignedOversizedMessageWithoutPublishClosesConnection()
+    {
+        final int channelId = 1;
+        final AMQChannel channel = new AMQChannel(_amqConnection, channelId, _messageStore);
+
+        channel.receiveOversizedMessageHeader(Long.MIN_VALUE);
+
+        verify(_amqConnection).sendConnectionClose(ErrorCodes.COMMAND_INVALID,
+                "Attempt to send a content header without first sending a publish frame", channelId);
+    }
+
+    @Test
+    void unsignedOversizedDuplicateHeaderUsesContentSequenceError()
+    {
+        when(_amqConnection.getProtocolVersion()).thenReturn(ProtocolVersion.v0_91);
+        when(_amqConnection.getMaxMessageSize()).thenReturn(1L);
+        when(_virtualHost.getDefaultDestination()).thenReturn(_messageDestination);
+        final BasicContentHeaderProperties properties = mock(BasicContentHeaderProperties.class);
+        when(properties.checkValid()).thenReturn(true);
+
+        final int channelId = 1;
+        final AMQChannel channel = new AMQChannel(_amqConnection, channelId, _messageStore);
+        channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, ROUTING_KEY, false, false);
+        channel.receiveMessageHeader(properties, 1L);
+
+        channel.receiveOversizedMessageHeader(Long.MIN_VALUE);
+
+        verify(properties).dispose();
+        verify(_amqConnection).sendConnectionClose(ErrorCodes.UNEXPECTED_FRAME,
+                "Attempt to send a duplicate content header", channelId);
+    }
+
+    @Test
+    void contentBodyFrameLimitDisposesIncompleteMessageAndClosesConnection()
+    {
+        final int maximumContentBodyFrames = 2;
+        when(_amqConnection.getContextValue(Integer.class,
+                AMQPConnection_0_8.CONNECTION_MAX_CONTENT_BODY_FRAMES_PER_MESSAGE))
+                .thenReturn(maximumContentBodyFrames);
+        when(_amqConnection.getMaxMessageSize()).thenReturn(3L);
+        when(_virtualHost.getDefaultDestination()).thenReturn(_messageDestination);
+
+        final BasicContentHeaderProperties properties = mock(BasicContentHeaderProperties.class);
+        when(properties.checkValid()).thenReturn(true);
+        final QpidByteBuffer content = mock(QpidByteBuffer.class);
+        final QpidByteBuffer firstRetainedContent = mock(QpidByteBuffer.class);
+        final QpidByteBuffer secondRetainedContent = mock(QpidByteBuffer.class);
+        when(content.remaining()).thenReturn(1);
+        when(content.duplicate()).thenReturn(firstRetainedContent, secondRetainedContent);
+
+        final int channelId = 1;
+        final AMQChannel channel = new AMQChannel(_amqConnection, channelId, _messageStore);
+        channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, ROUTING_KEY, false, false);
+        channel.receiveMessageHeader(properties, 3L);
+
+        channel.receiveMessageContent(content);
+        channel.receiveMessageContent(content);
+        channel.receiveMessageContent(content);
+
+        verify(properties).dispose();
+        verify(firstRetainedContent).dispose();
+        verify(secondRetainedContent).dispose();
+        verify(_amqConnection).sendConnectionClose(ErrorCodes.RESOURCE_ERROR,
+                "Message exceeds maximum number of content body frames (" + maximumContentBodyFrames + ")", channelId);
+        channel.dispose();
+    }
+
+    @Test
+    void excessiveContentBodyDisposesIncompleteMessageAndClosesConnection()
+    {
+        when(_amqConnection.getMaxMessageSize()).thenReturn(2L);
+        when(_virtualHost.getDefaultDestination()).thenReturn(_messageDestination);
+
+        final BasicContentHeaderProperties properties = mock(BasicContentHeaderProperties.class);
+        when(properties.checkValid()).thenReturn(true);
+        final QpidByteBuffer content = mock(QpidByteBuffer.class);
+        final QpidByteBuffer retainedContent = mock(QpidByteBuffer.class);
+        when(content.remaining()).thenReturn(1);
+        when(content.duplicate()).thenReturn(retainedContent);
+        final QpidByteBuffer excessiveContent = mock(QpidByteBuffer.class);
+        when(excessiveContent.remaining()).thenReturn(2);
+
+        final int channelId = 1;
+        final AMQChannel channel = new AMQChannel(_amqConnection, channelId, _messageStore);
+        channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, ROUTING_KEY, false, false);
+        channel.receiveMessageHeader(properties, 2L);
+        channel.receiveMessageContent(content);
+
+        channel.receiveMessageContent(excessiveContent);
+
+        verify(properties).dispose();
+        verify(retainedContent).dispose();
+        verify(excessiveContent, never()).duplicate();
+        verify(_amqConnection).sendConnectionClose(ErrorCodes.FRAME_ERROR,
+                "More message data received than content header defined", channelId);
+        channel.dispose();
+    }
+
+    @Test
+    void contentBodyBeforeHeaderClosesConnection()
+    {
+        when(_virtualHost.getDefaultDestination()).thenReturn(_messageDestination);
+
+        final int channelId = 1;
+        final AMQChannel channel = new AMQChannel(_amqConnection, channelId, _messageStore);
+        channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, ROUTING_KEY, false, false);
+
+        try (final QpidByteBuffer emptyContent = QpidByteBuffer.wrap(new byte[0]))
+        {
+            channel.receiveMessageContent(emptyContent);
+        }
+
+        verify(_amqConnection).sendConnectionClose(ErrorCodes.FRAME_ERROR,
+                "Attempt to send a content body before sending a content header", channelId);
+        channel.dispose();
+    }
+
+    @Test
+    void methodFrameRejectionDisposesIncompleteMessageAndClosesConnection()
+    {
+        when(_amqConnection.getMaxMessageSize()).thenReturn(2L);
+        when(_virtualHost.getDefaultDestination()).thenReturn(_messageDestination);
+
+        final BasicContentHeaderProperties properties = mock(BasicContentHeaderProperties.class);
+        when(properties.checkValid()).thenReturn(true);
+        final QpidByteBuffer content = mock(QpidByteBuffer.class);
+        final QpidByteBuffer retainedContent = mock(QpidByteBuffer.class);
+        when(content.remaining()).thenReturn(1);
+        when(content.duplicate()).thenReturn(retainedContent);
+
+        final int channelId = 1;
+        final AMQChannel channel = new AMQChannel(_amqConnection, channelId, _messageStore);
+        assertFalse(channel.rejectMethodFrameIfContentIncomplete());
+        channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, ROUTING_KEY, false, false);
+        channel.receiveMessageHeader(properties, 2L);
+        channel.receiveMessageContent(content);
+
+        assertTrue(channel.rejectMethodFrameIfContentIncomplete());
+
+        verify(properties).dispose();
+        verify(retainedContent).dispose();
+        verify(_amqConnection).sendConnectionClose(ErrorCodes.FRAME_ERROR,
+                "Method frame received before completing the previous message", channelId);
+        channel.dispose();
+    }
+
+    @Test
+    void duplicateContentHeaderDisposesBothHeadersAndClosesConnection()
+    {
+        when(_amqConnection.getProtocolVersion()).thenReturn(ProtocolVersion.v0_91);
+        when(_amqConnection.getMaxMessageSize()).thenReturn(1L);
+        when(_virtualHost.getDefaultDestination()).thenReturn(_messageDestination);
+
+        final BasicContentHeaderProperties firstProperties = mock(BasicContentHeaderProperties.class);
+        when(firstProperties.checkValid()).thenReturn(true);
+        final BasicContentHeaderProperties secondProperties = mock(BasicContentHeaderProperties.class);
+
+        final int channelId = 1;
+        final AMQChannel channel = new AMQChannel(_amqConnection, channelId, _messageStore);
+        channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, ROUTING_KEY, false, false);
+        channel.receiveMessageHeader(firstProperties, 1L);
+
+        channel.receiveMessageHeader(secondProperties, 1L);
+
+        verify(firstProperties).dispose();
+        verify(secondProperties).dispose();
+        verify(_amqConnection).sendConnectionClose(ErrorCodes.UNEXPECTED_FRAME,
+                "Attempt to send a duplicate content header", channelId);
+        channel.dispose();
     }
 
     @Test

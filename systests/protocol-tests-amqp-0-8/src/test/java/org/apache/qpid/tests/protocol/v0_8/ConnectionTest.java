@@ -33,14 +33,18 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
 
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.ErrorCodes;
+import org.apache.qpid.server.protocol.ProtocolVersion;
+import org.apache.qpid.server.protocol.v0_8.AMQDecoder;
+import org.apache.qpid.server.protocol.v0_8.transport.AMQDataBlock;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicQosBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseOkBody;
@@ -49,6 +53,7 @@ import org.apache.qpid.server.protocol.v0_8.transport.ConnectionSecureBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionStartBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ConnectionTuneBody;
 import org.apache.qpid.server.protocol.v0_8.transport.HeartbeatBody;
+import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.tests.protocol.ChannelClosedResponse;
 import org.apache.qpid.tests.protocol.Response;
 import org.apache.qpid.tests.protocol.SpecificationTest;
@@ -60,6 +65,9 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
     private static final String ANONYMOUS = "ANONYMOUS";
     private static final String PLAIN = "PLAIN";
     private static final String CRAM_MD5 = "CRAM-MD5";
+    private static final byte FRAME_END = (byte) 0xCE;
+    private static final int CONNECTION_CLOSE_METHOD_ID_0_8 = 60;
+    private static final int CONNECTION_CLOSE_METHOD_ID_0_9 = 50;
 
     @Test
     @SpecificationTest(section = "1.4.2.1", description = "start connection negotiation")
@@ -104,10 +112,8 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
                        .connection().startOkMechanism("NOT-A-MECHANISM")
                                     .startOk();
 
-            final ConnectionCloseBody res = interaction.consumeResponse()
-                                                       .getLatestResponse(ConnectionCloseBody.class);
-            assertThat(res.getReplyCode(), is(equalTo(ErrorCodes.CONNECTION_FORCED)));
-
+            interaction.sync();
+            transport.assertNoMoreResponsesAndChannelClosed();
         }
     }
 
@@ -301,39 +307,64 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             final int overlyLargeFrameBodySize = (int) (frameMax + 1);  // Should be frameMax - 8 + 1.
             final byte[] bodyBytes = new byte[overlyLargeFrameBodySize];
 
-            interaction.connection()
-                       .tuneOkChannelMax(response.getChannelMax())
-                       .tuneOkFrameMax(frameMax)
-                       .tuneOkHeartbeat(response.getHeartbeat())
-                       .tuneOk()
-                       .connection().open()
-                       .consumeResponse(ConnectionOpenOkBody.class)
-                       .channel().open()
-                       .consumeResponse(ChannelOpenOkBody.class)
-                       .basic().publish()
-                       .basic().contentHeader(bodyBytes.length)
-                       .basic().contentBody(bodyBytes);
+            final ConnectionCloseBody close = interaction.connection()
+                    .tuneOkChannelMax(response.getChannelMax())
+                    .tuneOkFrameMax(frameMax)
+                    .tuneOkHeartbeat(response.getHeartbeat())
+                    .tuneOk()
+                    .connection().open()
+                    .consumeResponse(ConnectionOpenOkBody.class)
+                    .channel().open()
+                    .consumeResponse(ChannelOpenOkBody.class)
+                    .basic().publish()
+                    .basic().contentHeader(bodyBytes.length)
+                    .basic().contentBody(bodyBytes)
+                    .consumeResponse()
+                    .getLatestResponse(ConnectionCloseBody.class);
 
-            // Spec requires:
-            //assertThat(res.getReplyCode(), CoreMatchers.is(CoreMatchers.equalTo(ErrorCodes.COMMAND_INVALID)));
+            assertThat(close.getReplyCode(), is(equalTo(ErrorCodes.FRAME_ERROR)));
+        }
+    }
 
-            // Server actually abruptly closes the connection.  We might see a graceful TCP/IP close or a broken pipe.
-            try
-            {
-                interaction.consumeResponse().getLatestResponse(ChannelClosedResponse.class);
-            }
-            catch (ExecutionException e)
-            {
-                Throwable original = e.getCause();
-                if (original instanceof IOException)
-                {
-                    // PASS
-                }
-                else
-                {
-                    throw new RuntimeException(original);
-                }
-            }
+    @Test
+    @SpecificationTest(section = "4.2.3",
+            description = "A Connection-class method on a non-zero channel must produce reply code 503.")
+    public void connectionMethodOnNonZeroChannelSignalsConnectionException() throws Exception
+    {
+        try (final FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
+        {
+            final ConnectionCloseBody close = transport.newInteraction()
+                    .negotiateOpen()
+                    .channelId(1)
+                    .connection().close()
+                    .consumeResponse()
+                    .getLatestResponse(ConnectionCloseBody.class);
+
+            assertThat(close.getReplyCode(), is(equalTo(ErrorCodes.COMMAND_INVALID)));
+            assertThat(close.getClassId(), is(equalTo(ConnectionCloseBody.CLASS_ID)));
+            final int expectedMethodId = ProtocolVersion.v0_8.equals(transport.getProtocolVersion())
+                    ? CONNECTION_CLOSE_METHOD_ID_0_8
+                    : CONNECTION_CLOSE_METHOD_ID_0_9;
+            assertThat(close.getMethodId(), is(equalTo(expectedMethodId)));
+        }
+    }
+
+    @Test
+    @SpecificationTest(section = "4.2.3",
+            description = "A malformed method frame must produce reply code 501 and identify the failing method.")
+    public void truncatedMethodSignalsConnectionExceptionWithMethodIdentifiers() throws Exception
+    {
+        try (final FrameTransport transport = new FrameTransport(getBrokerAdmin()).connect())
+        {
+            final ConnectionCloseBody close = transport.newInteraction()
+                    .negotiateOpen()
+                    .sendPerformative(truncatedBasicQosFrame())
+                    .consumeResponse()
+                    .getLatestResponse(ConnectionCloseBody.class);
+
+            assertThat(close.getReplyCode(), is(equalTo(ErrorCodes.FRAME_ERROR)));
+            assertThat(close.getClassId(), is(equalTo(BasicQosBody.CLASS_ID)));
+            assertThat(close.getMethodId(), is(equalTo(BasicQosBody.METHOD_ID)));
         }
     }
 
@@ -516,5 +547,35 @@ public class ConnectionTest extends BrokerAdminUsingTestBase
             assertThat(close.getReplyCode(), is(anyOf(equalTo(ErrorCodes.NOT_FOUND), equalTo(ErrorCodes.INVALID_PATH))));
             assertThat(String.valueOf(close.getReplyText()).toLowerCase(), containsString("unknown virtual host"));
         }
+    }
+
+    private static AMQDataBlock truncatedBasicQosFrame()
+    {
+        final ByteBuffer buffer = ByteBuffer.allocate(AMQDecoder.FRAME_HEADER_SIZE + Integer.BYTES + 1);
+        buffer.put((byte) 1);
+        buffer.putShort((short) 1);
+        buffer.putInt(Integer.BYTES);
+        buffer.putInt((BasicQosBody.CLASS_ID << 16) | BasicQosBody.METHOD_ID);
+        buffer.put(FRAME_END);
+        return rawFrame(buffer.array());
+    }
+
+    private static AMQDataBlock rawFrame(final byte[] bytes)
+    {
+        return new AMQDataBlock()
+        {
+            @Override
+            public long getSize()
+            {
+                return bytes.length;
+            }
+
+            @Override
+            public long writePayload(final ByteBufferSender sender)
+            {
+                sender.send(QpidByteBuffer.wrap(bytes));
+                return bytes.length;
+            }
+        };
     }
 }

@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -35,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -414,8 +417,7 @@ class FieldTableTest extends UnitTestBase
     void checkPropertyNameIsNull()
     {
         final Map<String, Object> map = Collections.singletonMap(null, "String");
-        assertThrows(IllegalArgumentException.class,
-                () -> FieldTableFactory.createFieldTable(map),
+        assertThrows(IllegalArgumentException.class, () -> FieldTableFactory.createFieldTable(map),
                 "Null property name is not allowed");
     }
 
@@ -426,8 +428,7 @@ class FieldTableTest extends UnitTestBase
     void checkPropertyNameIsEmptyString()
     {
         final Map<String, Object> map =Map.of("", "String");
-        assertThrows(IllegalArgumentException.class,
-                () -> FieldTableFactory.createFieldTable(map),
+        assertThrows(IllegalArgumentException.class, () -> FieldTableFactory.createFieldTable(map),
                 "Empty property name is not allowed");
 
     }
@@ -441,9 +442,8 @@ class FieldTableTest extends UnitTestBase
         final boolean strictAMQP = FieldTable._strictAMQP;
         final Map<String, Object> map = Map.of("x".repeat(129), "String");
         FieldTable._strictAMQP = true;
-        assertThrows(IllegalArgumentException.class,
-                     () -> new FieldTable(map),
-                     "property name must be < 128 characters");
+        assertThrows(IllegalArgumentException.class, () -> new FieldTable(map),
+                "property name must be < 128 characters");
         FieldTable._strictAMQP = strictAMQP;
     }
 
@@ -458,9 +458,8 @@ class FieldTableTest extends UnitTestBase
         // Try a name that starts with a number
         FieldTable._strictAMQP = true;
         final Map<String, Object> map = Map.of("1", "String");
-        assertThrows(IllegalArgumentException.class,
-                     () -> new FieldTable(map),
-                     "property name must start with a letter");
+        assertThrows(IllegalArgumentException.class, () -> new FieldTable(map),
+                "property name must start with a letter");
         FieldTable._strictAMQP = strictAMQP;
     }
 
@@ -499,6 +498,356 @@ class FieldTableTest extends UnitTestBase
         assertEquals(1, fieldTable.size());
         fieldTable.validate();
         assertTrue(fieldTable.containsKey("testKey"), "Expected key is not found");
+    }
+
+    @Test
+    void malformedLongStringInNestedTableIsRejectedDuringRead()
+    {
+        final byte[] malformedNestedTable = tableEntryWithLongStringLength(0x80000000);
+        final byte[] outerTable = tableEntryWithCompoundValue(AMQType.FIELD_TABLE, malformedNestedTable);
+
+        assertThrows(IllegalArgumentException.class, () -> readFieldTable(outerTable));
+    }
+
+    @Test
+    void malformedLongStringInTableNestedInArrayIsRejectedDuringRead()
+    {
+        final byte[] malformedNestedTable = tableEntryWithLongStringLength(0x80000000);
+        final byte[] array = compoundValue(AMQType.FIELD_TABLE, malformedNestedTable);
+        final byte[] outerTable = tableEntryWithCompoundValue(AMQType.FIELD_ARRAY, array);
+
+        assertThrows(IllegalArgumentException.class, () -> readFieldTable(outerTable));
+    }
+
+    @Test
+    void maximumNestingDepthCanBeDetachedAndTraversed()
+    {
+        final FieldTable encoded =
+                readFieldTable(buildNestedTable(AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS));
+        final FieldTable decoded = FieldTable.convertToDecodedFieldTable(encoded);
+        try
+        {
+            FieldTable current = decoded;
+            for (int i = 1; i < AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS; i++)
+            {
+                current = (FieldTable) current.get("n");
+            }
+            assertEquals(42, current.get("v"));
+        }
+        finally
+        {
+            encoded.dispose();
+            decoded.dispose();
+        }
+    }
+
+    @Test
+    void maximumNestingDepthCanBeConverted()
+    {
+        final FieldTable fieldTable =
+                readFieldTable(buildNestedTable(AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS));
+        try
+        {
+            assertDoesNotThrow(() -> FieldTable.convertToMap(fieldTable));
+        }
+        finally
+        {
+            fieldTable.dispose();
+        }
+    }
+
+    @Test
+    void excessiveNestingIsRejectedDuringReadWithoutStackOverflow()
+    {
+        assertThrows(AMQValueNestingException.class, () -> readFieldTable(buildNestedTable(
+                AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS + 1)));
+        assertThrows(AMQValueNestingException.class, () -> readFieldTable(buildNestedTable(10_000)));
+    }
+
+    @Test
+    void excessiveProgrammaticNestingIsRejectedDuringConversionWithoutStackOverflow()
+    {
+        final FieldTable fieldTable = buildProgrammaticNestedTable(10_000);
+
+        assertThrows(AMQValueNestingException.class, () -> FieldTable.convertToMap(fieldTable));
+    }
+
+    @Test
+    void maximumArrayNestingDepthCanBeDecoded()
+    {
+        final int arrayDepth = AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS - 1;
+        final FieldTable fieldTable = readFieldTable(buildNestedArrayTable(arrayDepth));
+        try
+        {
+            Object current = fieldTable.get("n");
+            for (int i = 1; i < arrayDepth; i++)
+            {
+                current = ((Collection<?>) current).iterator().next();
+            }
+            assertEquals(42, ((Collection<?>) current).iterator().next());
+        }
+        finally
+        {
+            fieldTable.dispose();
+        }
+    }
+
+    @Test
+    void excessiveArrayNestingIsRejectedDuringReadWithoutStackOverflow()
+    {
+        assertThrows(AMQValueNestingException.class, () -> readFieldTable(buildNestedArrayTable(
+                AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS)));
+        assertThrows(AMQValueNestingException.class, () -> readFieldTable(buildNestedArrayTable(10_000)));
+    }
+
+    @Test
+    void configuredNestingDepthAppliesToTablesAndArrays()
+    {
+        final int configuredLimit = 2;
+        FieldTable table = null;
+        FieldTable array = null;
+        try
+        {
+            table = readFieldTable(buildNestedTable(configuredLimit), configuredLimit);
+            array = readFieldTable(buildNestedArrayTable(configuredLimit - 1), configuredLimit);
+            assertNotNull(table);
+            assertNotNull(array);
+        }
+        finally
+        {
+            if (table != null)
+            {
+                table.dispose();
+            }
+            if (array != null)
+            {
+                array.dispose();
+            }
+        }
+
+        assertThrows(AMQValueNestingException.class, () ->
+                readFieldTable(buildNestedTable(configuredLimit + 1), configuredLimit));
+        assertThrows(AMQValueNestingException.class, () ->
+                readFieldTable(buildNestedArrayTable(configuredLimit), configuredLimit));
+    }
+
+    @Test
+    void configuredLimitAboveDefaultIsPreservedDuringConversion()
+    {
+        final int configuredLimit = AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS + 10;
+        final FieldTable encoded = readFieldTable(buildNestedTable(configuredLimit), configuredLimit);
+        final FieldTable decoded = FieldTable.convertToDecodedFieldTable(encoded);
+        try
+        {
+            assertDoesNotThrow(() -> encoded.validate());
+            assertDoesNotThrow(() -> FieldTable.convertToMap(decoded));
+            final FieldTable nested = (FieldTable) decoded.get("n");
+            try
+            {
+                assertThrows(AMQValueNestingException.class, () ->
+                        FieldTable.convertToMap(nested, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS));
+                assertDoesNotThrow(() -> FieldTable.convertToMap(nested));
+            }
+            finally
+            {
+                nested.dispose();
+            }
+        }
+        finally
+        {
+            decoded.dispose();
+            encoded.dispose();
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void configuredLimitAboveDefaultIsPreservedByLazyNestedTable(final boolean direct)
+    {
+        final int configuredLimit = AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS + 10;
+        final FieldTable fieldTable = readFieldTable(buildNestedTable(configuredLimit), configuredLimit, direct);
+        try
+        {
+            final FieldTable nested = (FieldTable) fieldTable.get("n");
+            try
+            {
+                assertThrows(AMQValueNestingException.class, () ->
+                        FieldTable.convertToMap(nested, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS));
+                assertDoesNotThrow(() -> FieldTable.convertToMap(nested));
+            }
+            finally
+            {
+                nested.dispose();
+            }
+        }
+        finally
+        {
+            fieldTable.dispose();
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void configuredLimitAboveDefaultIsPreservedByTableNestedInArray(final boolean direct)
+    {
+        final int configuredLimit = AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS + 10;
+        final byte[] payload = buildNestedTableInArray(configuredLimit - 2);
+        final FieldTable fieldTable = readFieldTable(payload, configuredLimit, direct);
+        try
+        {
+            final Collection<?> array = (Collection<?>) fieldTable.get("n");
+            final FieldTable nested = (FieldTable) array.iterator().next();
+            try
+            {
+                assertThrows(AMQValueNestingException.class, () ->
+                        FieldTable.convertToMap(nested, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS));
+                assertDoesNotThrow(() -> FieldTable.convertToMap(nested));
+            }
+            finally
+            {
+                nested.dispose();
+            }
+        }
+        finally
+        {
+            fieldTable.dispose();
+        }
+    }
+
+    @Test
+    void stricterValidationIsAppliedAfterSuccessfulRead()
+    {
+        final FieldTable fieldTable = readFieldTable(buildNestedTable(3), 3);
+        try
+        {
+            assertThrows(AMQValueNestingException.class, () -> fieldTable.validate(2));
+        }
+        finally
+        {
+            fieldTable.dispose();
+        }
+    }
+
+    @Test
+    void malformedLongValueLengthIsRejectedDuringNestingValidation()
+    {
+        for (final AMQType type : List.of(AMQType.LONG_STRING, AMQType.BINARY, AMQType.ASCII_STRING, AMQType.WIDE_STRING))
+        {
+            final ByteBuffer buffer = ByteBuffer.allocate(7);
+            buffer.put((byte) 1);
+            buffer.put((byte) 'v');
+            buffer.put(type.identifier());
+            buffer.putInt(-1);
+
+            assertThrows(IllegalArgumentException.class, () -> readFieldTable(buffer.array(), 1), type.name());
+        }
+    }
+
+    private static FieldTable readFieldTable(final byte[] payload)
+    {
+        return readFieldTable(payload, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    private static FieldTable readFieldTable(final byte[] payload, final int maxNestedObjects)
+    {
+        return readFieldTable(payload, maxNestedObjects, false);
+    }
+
+    private static FieldTable readFieldTable(final byte[] payload,
+                                             final int maxNestedObjects,
+                                             final boolean direct)
+    {
+        try (final QpidByteBuffer buffer = QpidByteBuffer.allocate(direct, Integer.BYTES + payload.length))
+        {
+            buffer.putUnsignedInt(payload.length);
+            buffer.put(payload);
+            buffer.flip();
+            return EncodingUtils.readFieldTable(buffer, maxNestedObjects);
+        }
+    }
+
+    private static byte[] buildNestedTable(final int depth)
+    {
+        final ByteBuffer buffer = ByteBuffer.allocate(7 * depth);
+        for (int remainingDepth = depth; remainingDepth > 1; remainingDepth--)
+        {
+            buffer.put((byte) 1);
+            buffer.put((byte) 'n');
+            buffer.put(AMQType.FIELD_TABLE.identifier());
+            buffer.putInt(7 * (remainingDepth - 1));
+        }
+        buffer.put((byte) 1);
+        buffer.put((byte) 'v');
+        buffer.put(AMQType.INT.identifier());
+        buffer.putInt(42);
+        return buffer.array();
+    }
+
+    private static byte[] buildNestedArrayTable(final int arrayDepth)
+    {
+        final ByteBuffer buffer = ByteBuffer.allocate(7 + 5 * arrayDepth);
+        buffer.put((byte) 1);
+        buffer.put((byte) 'n');
+        buffer.put(AMQType.FIELD_ARRAY.identifier());
+        buffer.putInt(5 * arrayDepth);
+        for (int remainingDepth = arrayDepth; remainingDepth > 1; remainingDepth--)
+        {
+            buffer.put(AMQType.FIELD_ARRAY.identifier());
+            buffer.putInt(5 * (remainingDepth - 1));
+        }
+        buffer.put(AMQType.INT.identifier());
+        buffer.putInt(42);
+        return buffer.array();
+    }
+
+    private static byte[] buildNestedTableInArray(final int tableDepth)
+    {
+        final byte[] nestedTable = buildNestedTable(tableDepth);
+        final ByteBuffer array = ByteBuffer.allocate(Byte.BYTES + Integer.BYTES + nestedTable.length);
+        array.put(AMQType.FIELD_TABLE.identifier());
+        array.putInt(nestedTable.length);
+        array.put(nestedTable);
+        return tableEntryWithCompoundValue(AMQType.FIELD_ARRAY, array.array());
+    }
+
+    private static byte[] tableEntryWithLongStringLength(final int length)
+    {
+        return ByteBuffer.allocate(7)
+                .put((byte) 1)
+                .put((byte) 's')
+                .put(AMQType.LONG_STRING.identifier())
+                .putInt(length)
+                .array();
+    }
+
+    private static byte[] tableEntryWithCompoundValue(final AMQType type, final byte[] value)
+    {
+        return ByteBuffer.allocate(7 + value.length)
+                .put((byte) 1)
+                .put((byte) 'n')
+                .put(type.identifier())
+                .putInt(value.length)
+                .put(value)
+                .array();
+    }
+
+    private static byte[] compoundValue(final AMQType type, final byte[] value)
+    {
+        return ByteBuffer.allocate(5 + value.length)
+                .put(type.identifier())
+                .putInt(value.length)
+                .put(value)
+                .array();
+    }
+
+    private static FieldTable buildProgrammaticNestedTable(final int depth)
+    {
+        FieldTable fieldTable = FieldTableFactory.createFieldTable(Map.of("v", 42));
+        for (int currentDepth = 1; currentDepth < depth; currentDepth++)
+        {
+            fieldTable = FieldTableFactory.createFieldTable(Map.of("n", fieldTable));
+        }
+        return fieldTable;
     }
 
     private FieldTable buildMalformedFieldTable()

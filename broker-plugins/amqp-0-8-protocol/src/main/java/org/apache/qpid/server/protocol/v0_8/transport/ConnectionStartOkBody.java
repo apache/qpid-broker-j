@@ -30,6 +30,7 @@ package org.apache.qpid.server.protocol.v0_8.transport;
 import org.apache.qpid.server.QpidException;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
+import org.apache.qpid.server.protocol.v0_8.AMQPConnection_0_8;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.EncodingUtils;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
@@ -136,21 +137,33 @@ public class ConnectionStartOkBody extends AMQMethodBodyImpl implements Encodabl
     public static void process(final QpidByteBuffer in, final ServerMethodProcessor dispatcher)
             throws AMQFrameDecodingException
     {
+        process(in, dispatcher, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
 
-        FieldTable clientProperties = EncodingUtils.readFieldTable(in);
-        AMQShortString mechanism = AMQShortString.readAMQShortString(in);
-        byte[] response = EncodingUtils.readBytes(in);
-        AMQShortString locale = AMQShortString.readAMQShortString(in);
-        if (!dispatcher.ignoreAllButCloseOk())
+    public static void process(final QpidByteBuffer in,
+                               final ServerMethodProcessor dispatcher,
+                               final int maxNestedObjects)
+            throws AMQFrameDecodingException
+    {
+
+        final FieldTable clientProperties = EncodingUtils.readFieldTable(in, maxNestedObjects);
+        try
         {
-            dispatcher.receiveConnectionStartOk(FieldTable.convertToDecodedFieldTable(clientProperties),
-                                                mechanism,
-                                                response,
-                                                locale);
+            final AMQShortString mechanism = AMQShortString.readAMQShortString(in);
+            final byte[] response = EncodingUtils.readBytes(in);
+            final AMQShortString locale = AMQShortString.readAMQShortString(in);
+            if (!dispatcher.ignoreAllButCloseOk())
+            {
+                dispatcher.receiveConnectionStartOk(FieldTable.convertToDecodedFieldTable(clientProperties),
+                        mechanism, response, locale);
+            }
         }
-        if (clientProperties != null)
+        finally
         {
-            clientProperties.dispose();
+            if (clientProperties != null)
+            {
+                clientProperties.dispose();
+            }
         }
     }
 }

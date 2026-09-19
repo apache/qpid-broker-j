@@ -106,6 +106,11 @@ public interface ErrorCodes
     int CHANNEL_ERROR = 504;
 
     /**
+     * The peer sent a frame that was not expected, usually because content frames were sent out of sequence.
+     */
+    int UNEXPECTED_FRAME = 505;
+
+    /**
      * The server could not complete the method because it lacked sufficient resources. This may be due to the client
      * creating too many of some type of entity.
      */

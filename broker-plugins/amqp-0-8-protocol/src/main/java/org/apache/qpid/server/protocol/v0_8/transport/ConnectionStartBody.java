@@ -147,20 +147,23 @@ public class ConnectionStartBody extends AMQMethodBodyImpl implements EncodableA
         short versionMajor = in.getUnsignedByte();
         short versionMinor = in.getUnsignedByte();
         FieldTable serverProperties = EncodingUtils.readFieldTable(in);
-        byte[] mechanisms = EncodingUtils.readBytes(in);
-        byte[] locales = EncodingUtils.readBytes(in);
+        try
+        {
+            final byte[] mechanisms = EncodingUtils.readBytes(in);
+            final byte[] locales = EncodingUtils.readBytes(in);
 
-        if(!dispatcher.ignoreAllButCloseOk())
-        {
-            dispatcher.receiveConnectionStart(versionMajor,
-                                              versionMinor,
-                                              FieldTable.convertToDecodedFieldTable(serverProperties),
-                                              mechanisms,
-                                              locales);
+            if (!dispatcher.ignoreAllButCloseOk())
+            {
+                dispatcher.receiveConnectionStart(versionMajor, versionMinor,
+                        FieldTable.convertToDecodedFieldTable(serverProperties), mechanisms, locales);
+            }
         }
-        if (serverProperties != null)
+        finally
         {
-            serverProperties.dispose();
+            if (serverProperties != null)
+            {
+                serverProperties.dispose();
+            }
         }
     }
 }

@@ -47,20 +47,29 @@ public class FieldTable
     static boolean _strictAMQP = Boolean.valueOf(System.getProperty(STRICT_AMQP_NAME, "false"));
 
     private final FieldTableSupport _fieldTableSupport;
+    private final int _maxNestedObjects;
 
-    FieldTable(QpidByteBuffer input, int len)
+    FieldTable(final QpidByteBuffer input, final int len)
     {
+        this(input, len, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    FieldTable(final QpidByteBuffer input, final int len, final int maxNestedObjects)
+    {
+        FieldValueNestingValidator.validateMaximum(maxNestedObjects);
         final QpidByteBuffer encodedForm = input.view(0, len);
         input.position(input.position() + len);
         _fieldTableSupport = new ByteBufferFieldTableSupport(encodedForm);
+        _maxNestedObjects = maxNestedObjects;
     }
 
-    FieldTable(QpidByteBuffer buffer)
+    FieldTable(final QpidByteBuffer buffer)
     {
+        _maxNestedObjects = AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS;
         _fieldTableSupport = new ByteBufferFieldTableSupport(buffer.duplicate());
     }
 
-    FieldTable(Map<String, Object> properties)
+    FieldTable(final Map<String, Object> properties)
     {
         final Map<String, AMQTypedValue> m;
         if (properties != null && !properties.isEmpty())
@@ -79,11 +88,19 @@ public class FieldTable
         }
 
         _fieldTableSupport = new MapFieldTableSupport(m);
+        _maxNestedObjects = AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS;
     }
 
-    FieldTable(FieldTableSupport fieldTableSupport)
+    FieldTable(final FieldTableSupport fieldTableSupport)
     {
-        _fieldTableSupport = new MapFieldTableSupport(fieldTableSupport.getAsMap());
+        this(fieldTableSupport, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    FieldTable(final FieldTableSupport fieldTableSupport, final int maxNestedObjects)
+    {
+        FieldValueNestingValidator.validateMaximum(maxNestedObjects);
+        _fieldTableSupport = new MapFieldTableSupport(fieldTableSupport.getAsMap(maxNestedObjects));
+        _maxNestedObjects = maxNestedObjects;
     }
 
     private static AMQTypedValue getAMQTypeValue(final Object object) throws AMQPInvalidClassException
@@ -179,10 +196,10 @@ public class FieldTable
     @Override
     public String toString()
     {
-        return _fieldTableSupport.toString();
+        return getProperties().toString();
     }
 
-    private static void checkPropertyName(String propertyName)
+    static void checkPropertyName(final String propertyName)
     {
         if (propertyName == null)
         {
@@ -267,13 +284,42 @@ public class FieldTable
 
     public static Map<String, Object> convertToMap(final FieldTable fieldTable)
     {
+        final int maxNestedObjects = fieldTable == null
+                ? AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS
+                : fieldTable._maxNestedObjects;
+        return convertToMap(fieldTable, maxNestedObjects);
+    }
+
+    public static Map<String, Object> convertToMap(final FieldTable fieldTable, final int maxNestedObjects)
+    {
+        if (maxNestedObjects < 0)
+        {
+            throw new IllegalArgumentException("Maximum nested objects must not be negative: " + maxNestedObjects);
+        }
         if (fieldTable != null)
         {
+            fieldTable.validateNesting(maxNestedObjects);
+        }
+        return convertToMap(fieldTable, 1, maxNestedObjects);
+    }
+
+    private static Map<String, Object> convertToMap(final FieldTable fieldTable,
+                                                    final int depth,
+                                                    final int maxNestedObjects)
+    {
+        if (fieldTable != null)
+        {
+            if (depth > maxNestedObjects)
+            {
+                throw new AMQValueNestingException("Maximum field-value nesting depth (" +
+                        maxNestedObjects + ") exceeded");
+            }
+
             final Map<String, Object> map = new LinkedHashMap<>();
-            Map<String, AMQTypedValue> properties = fieldTable.getProperties();
+            final Map<String, AMQTypedValue> properties = fieldTable.getProperties();
             if (properties != null)
             {
-                for (Map.Entry<String, AMQTypedValue> e : properties.entrySet())
+                for (final Map.Entry<String, AMQTypedValue> e : properties.entrySet())
                 {
                     Object val = e.getValue().getValue();
                     if (val instanceof AMQShortString)
@@ -282,7 +328,12 @@ public class FieldTable
                     }
                     else if (val instanceof FieldTable)
                     {
-                        val = FieldTable.convertToMap((FieldTable) val);
+                        if (depth >= maxNestedObjects)
+                        {
+                            throw new AMQValueNestingException("Maximum field-value nesting depth (" +
+                                    maxNestedObjects + ") exceeded");
+                        }
+                        val = convertToMap((FieldTable) val, depth + 1, maxNestedObjects);
                     }
                     map.put(e.getKey(), val);
                 }
@@ -307,9 +358,9 @@ public class FieldTable
         return getEncodedSize() > 0;
     }
 
-    public boolean containsKey(String key)
+    public boolean containsKey(final String key)
     {
-        return _fieldTableSupport.containsKey(key);
+        return _fieldTableSupport.containsKey(key, _maxNestedObjects);
     }
 
     public Set<String> keys()
@@ -317,10 +368,10 @@ public class FieldTable
         return new LinkedHashSet<>(getProperties().keySet());
     }
 
-    public Object get(String key)
+    public Object get(final String key)
     {
         checkPropertyName(key);
-        return _fieldTableSupport.get(key);
+        return _fieldTableSupport.get(key, _maxNestedObjects);
     }
 
     @Override
@@ -348,7 +399,7 @@ public class FieldTable
 
     private Map<String, AMQTypedValue> getProperties()
     {
-        return _fieldTableSupport.getAsMap();
+        return _fieldTableSupport.getAsMap(_maxNestedObjects);
     }
 
     public static FieldTable convertToFieldTable(Map<String, Object> map)
@@ -370,31 +421,88 @@ public class FieldTable
             return null;
         }
 
-        return new FieldTable(fieldTable._fieldTableSupport);
+        fieldTable.validate();
+        if (fieldTable.isDirect())
+        {
+            try (final QpidByteBuffer encodedForm = QpidByteBuffer.wrap(fieldTable.getDataAsBytes()))
+            {
+                final FieldTable detachedTable = new FieldTable(encodedForm, encodedForm.remaining(),
+                        fieldTable._maxNestedObjects);
+                try
+                {
+                    detachedTable._fieldTableSupport.markValidated(fieldTable._maxNestedObjects);
+                    return new FieldTable(detachedTable._fieldTableSupport, fieldTable._maxNestedObjects);
+                }
+                finally
+                {
+                    detachedTable.dispose();
+                }
+            }
+        }
+
+        return new FieldTable(fieldTable._fieldTableSupport, fieldTable._maxNestedObjects);
+    }
+
+    boolean isDirect()
+    {
+        return _fieldTableSupport.isDirect();
+    }
+
+    private static void markValueValidated(final Object value, final int maxNestedObjects)
+    {
+        if (value instanceof FieldTable)
+        {
+            ((FieldTable) value)._fieldTableSupport.markValidated(maxNestedObjects);
+        }
+        else if (value instanceof Collection)
+        {
+            for (final Object element : (Collection<?>) value)
+            {
+                markValueValidated(element, maxNestedObjects);
+            }
+        }
     }
 
     public void validate()
     {
-        _fieldTableSupport.validate();
+        validate(_maxNestedObjects);
+    }
+
+    public void validate(final int maxNestedObjects)
+    {
+        FieldValueNestingValidator.validateMaximum(maxNestedObjects);
+        _fieldTableSupport.validate(maxNestedObjects);
+    }
+
+    void validateNesting(final int maxNestedObjects)
+    {
+        FieldValueNestingValidator.validateMaximum(maxNestedObjects);
+        _fieldTableSupport.validateNesting(maxNestedObjects);
     }
 
     interface FieldTableSupport
     {
-        Object get(String key);
+        Object get(final String key, final int maxNestedObjects);
 
-        boolean containsKey(String key);
+        boolean containsKey(final String key, final int maxNestedObjects);
 
         long getEncodedSize();
 
-        void writeToBuffer(QpidByteBuffer buffer);
+        void writeToBuffer(final QpidByteBuffer buffer);
 
         byte[] getAsBytes();
 
-        Map<String, AMQTypedValue> getAsMap();
+        Map<String, AMQTypedValue> getAsMap(final int maxNestedObjects);
 
         void dispose();
 
-        void validate();
+        void validate(final int maxNestedObjects);
+
+        boolean isDirect();
+
+        void markValidated(final int maxNestedObjects);
+
+        void validateNesting(final int maxNestedObjects);
     }
 
     static class ByteBufferFieldTableSupport implements FieldTableSupport
@@ -403,6 +511,7 @@ public class FieldTable
 
         private final QpidByteBuffer _encodedForm;
         private volatile SoftReference<Map<String, AMQTypedValue>> _cache;
+        private volatile int _validatedMaxNestedObjects = -1;
 
         ByteBufferFieldTableSupport(final QpidByteBuffer encodedForm)
         {
@@ -417,9 +526,10 @@ public class FieldTable
         }
 
         @Override
-        public synchronized Object get(final String key)
+        public synchronized Object get(final String key, final int maxNestedObjects)
         {
-            final AMQTypedValue value = getValue(key);
+            validateEncodedForm(maxNestedObjects);
+            final AMQTypedValue value = getValue(key, maxNestedObjects);
             if (value != null && value != NOT_PRESENT)
             {
                 return value.getValue();
@@ -431,9 +541,10 @@ public class FieldTable
         }
 
         @Override
-        public boolean containsKey(final String key)
+        public boolean containsKey(final String key, final int maxNestedObjects)
         {
-            final AMQTypedValue value = getValue(key);
+            validateEncodedForm(maxNestedObjects);
+            final AMQTypedValue value = getValue(key, maxNestedObjects);
             return value != null && value != NOT_PRESENT;
         }
 
@@ -454,9 +565,9 @@ public class FieldTable
         }
 
         @Override
-        public Map<String, AMQTypedValue> getAsMap()
+        public Map<String, AMQTypedValue> getAsMap(final int maxNestedObjects)
         {
-            return decode();
+            return decode(maxNestedObjects);
         }
 
         @Override
@@ -470,9 +581,36 @@ public class FieldTable
         }
 
         @Override
-        public void validate()
+        public void validate(final int maxNestedObjects)
         {
-            decode();
+            validateEncodedForm(maxNestedObjects);
+        }
+
+        @Override
+        public boolean isDirect()
+        {
+            return _encodedForm.isDirect();
+        }
+
+        @Override
+        public synchronized void markValidated(final int maxNestedObjects)
+        {
+            FieldValueNestingValidator.validateMaximum(maxNestedObjects);
+            _validatedMaxNestedObjects = _validatedMaxNestedObjects < 0
+                    ? maxNestedObjects
+                    : Math.min(_validatedMaxNestedObjects, maxNestedObjects);
+        }
+
+        @Override
+        public synchronized void validateNesting(final int maxNestedObjects)
+        {
+            if (_validatedMaxNestedObjects < 0 || maxNestedObjects < _validatedMaxNestedObjects)
+            {
+                if (FieldValueNestingValidator.mayExceedMaximumDepth(_encodedForm.remaining(), maxNestedObjects))
+                {
+                    validateEncodedForm(maxNestedObjects);
+                }
+            }
         }
 
         @Override
@@ -498,14 +636,7 @@ public class FieldTable
             return _encodedForm.hashCode();
         }
 
-        @Override
-        public String toString()
-        {
-            return getAsMap().toString();
-        }
-
-
-        private synchronized AMQTypedValue getValue(final String key)
+        private synchronized AMQTypedValue getValue(final String key, final int maxNestedObjects)
         {
             AMQTypedValue value = null;
             Map<String, AMQTypedValue> properties = _cache.get();
@@ -520,7 +651,7 @@ public class FieldTable
             }
             if (value == null)
             {
-                value = findValueForKey(key);
+                value = findValueForKey(key, maxNestedObjects);
                 if (value == null)
                 {
                     value = NOT_PRESENT;
@@ -533,9 +664,9 @@ public class FieldTable
             return value;
         }
 
-        private AMQTypedValue findValueForKey(String key)
+        private AMQTypedValue findValueForKey(final String key, final int maxNestedObjects)
         {
-            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+            final byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
             _encodedForm.mark();
             try
             {
@@ -544,11 +675,13 @@ public class FieldTable
                     final byte[] bytes = AMQShortString.readAMQShortStringAsBytes(_encodedForm);
                     if (Arrays.equals(keyBytes, bytes))
                     {
-                        return AMQTypedValue.readFromBuffer(_encodedForm);
+                        final AMQTypedValue value = AMQTypedValue.readFromBuffer(_encodedForm, maxNestedObjects);
+                        markValueValidated(value.getValue(), _validatedMaxNestedObjects);
+                        return value;
                     }
                     else
                     {
-                        AMQType type = AMQTypeMap.getType(_encodedForm.get());
+                        final AMQType type = AMQTypeMap.getType(_encodedForm.get());
                         type.skip(_encodedForm);
                     }
                 }
@@ -560,8 +693,9 @@ public class FieldTable
             return null;
         }
 
-        private synchronized Map<String, AMQTypedValue> decode()
+        private synchronized Map<String, AMQTypedValue> decode(final int maxNestedObjects)
         {
+            validateEncodedForm(maxNestedObjects);
             final Map<String, AMQTypedValue> properties = new HashMap<>();
             final long encodedSize = getEncodedSize();
             if (encodedSize > 0)
@@ -574,7 +708,8 @@ public class FieldTable
                         final String key = AMQShortString.readAMQShortStringAsString(_encodedForm);
 
                         checkPropertyName(key);
-                        AMQTypedValue value = AMQTypedValue.readFromBuffer(_encodedForm);
+                        final AMQTypedValue value = AMQTypedValue.readFromBuffer(_encodedForm, maxNestedObjects);
+                        markValueValidated(value.getValue(), _validatedMaxNestedObjects);
                         properties.put(key, value);
                     }
                     while (_encodedForm.hasRemaining());
@@ -594,6 +729,15 @@ public class FieldTable
                 }
             }
             return properties;
+        }
+
+        private synchronized void validateEncodedForm(final int maxNestedObjects)
+        {
+            if (_validatedMaxNestedObjects < 0 || maxNestedObjects < _validatedMaxNestedObjects)
+            {
+                FieldValueNestingValidator.validateTable(_encodedForm, maxNestedObjects);
+                markValidated(maxNestedObjects);
+            }
         }
     }
 
@@ -615,7 +759,7 @@ public class FieldTable
         }
 
         @Override
-        public Object get(final String key)
+        public Object get(final String key, final int maxNestedObjects)
         {
             final AMQTypedValue value = _properties.get(key);
             if (value == null)
@@ -626,7 +770,7 @@ public class FieldTable
         }
 
         @Override
-        public boolean containsKey(final String key)
+        public boolean containsKey(final String key, final int maxNestedObjects)
         {
             return _properties.containsKey(key);
         }
@@ -651,7 +795,7 @@ public class FieldTable
         }
 
         @Override
-        public Map<String, AMQTypedValue> getAsMap()
+        public Map<String, AMQTypedValue> getAsMap(final int maxNestedObjects)
         {
             return _properties;
         }
@@ -663,7 +807,25 @@ public class FieldTable
         }
 
         @Override
-        public void validate()
+        public void validate(final int maxNestedObjects)
+        {
+            // noop
+        }
+
+        @Override
+        public boolean isDirect()
+        {
+            return false;
+        }
+
+        @Override
+        public void markValidated(final int maxNestedObjects)
+        {
+            // noop
+        }
+
+        @Override
+        public void validateNesting(final int maxNestedObjects)
         {
             // noop
         }

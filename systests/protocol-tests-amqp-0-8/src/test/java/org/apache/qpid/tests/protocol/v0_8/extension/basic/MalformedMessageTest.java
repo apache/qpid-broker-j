@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.exchange.ExchangeDefaults;
 import org.apache.qpid.server.filter.AMQPFilterTypes;
+import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.AMQType;
 import org.apache.qpid.server.protocol.v0_8.EncodingUtils;
@@ -50,11 +51,11 @@ import org.apache.qpid.server.protocol.v0_8.transport.BasicQosOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelCloseOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelFlowOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ChannelOpenOkBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ConnectionCloseBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentBody;
 import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.QueueBindOkBody;
 import org.apache.qpid.server.protocol.v0_8.transport.TxSelectOkBody;
-import org.apache.qpid.tests.protocol.ChannelClosedResponse;
 import org.apache.qpid.tests.protocol.v0_8.FrameTransport;
 import org.apache.qpid.tests.protocol.v0_8.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdmin;
@@ -119,9 +120,8 @@ public class MalformedMessageTest extends BrokerAdminUsingTestBase
                                .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
                                .contentHeaderPropertiesHeaders(malformedHeader)
                                .content(contentBytes)
-                               .publishMessage()
-                       .consumeResponse()
-                       .getLatestResponse(ChannelClosedResponse.class);
+                               .publishMessage();
+            assertConnectionRejected(transport, interaction);
 
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
         }
@@ -150,20 +150,20 @@ public class MalformedMessageTest extends BrokerAdminUsingTestBase
                        .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
                        .contentHeaderPropertiesHeaders(malformedHeader)
                        .content(contentBytes)
-                       .publishMessage()
-                       .tx().commit()
-                       .consumeResponse()
-                       .getLatestResponse(ChannelClosedResponse.class);
+                       .publishMessage();
+            assertConnectionRejected(transport, interaction);
 
             assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
         }
     }
 
     @Test
-    public void consumeMalformedMessage() throws Exception
+    public void consumeValidMessageAfterMalformedMessageRejected() throws Exception
     {
         final FieldTable malformedHeader = createHeadersWithMalformedLongString();
         final byte[] contentBytes = CONTENT_TEXT.getBytes(StandardCharsets.UTF_8);
+        publishMalformedMessage(malformedHeader, contentBytes);
+        assertThat(getBrokerAdmin().getQueueDepthMessages(BrokerAdmin.TEST_QUEUE_NAME), is(equalTo(0)));
 
         final String content2 = "message2";
         final byte[] content2Bytes = content2.getBytes(StandardCharsets.UTF_8);
@@ -184,12 +184,6 @@ public class MalformedMessageTest extends BrokerAdminUsingTestBase
                        .consumeResponse(BasicConsumeOkBody.class)
                        .channel().flow(true)
                        .consumeResponse(ChannelFlowOkBody.class)
-
-                       .basic().publishExchange("")
-                       .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
-                       .contentHeaderPropertiesHeaders(malformedHeader)
-                       .content(contentBytes)
-                       .publishMessage()
 
                        .basic().publishExchange("")
                        .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
@@ -236,10 +230,18 @@ public class MalformedMessageTest extends BrokerAdminUsingTestBase
                                .publishRoutingKey(BrokerAdmin.TEST_QUEUE_NAME)
                                .contentHeaderPropertiesHeaders(malformedHeader)
                                .content(contentBytes)
-                               .publishMessage()
-                       .channel().close()
-                       .consumeResponse(ChannelCloseOkBody.class);
+                               .publishMessage();
+            assertConnectionRejected(transport, interaction);
         }
+    }
+
+    private void assertConnectionRejected(final FrameTransport transport, final Interaction interaction) throws Exception
+    {
+        final ConnectionCloseBody close = interaction.consumeResponse(ConnectionCloseBody.class)
+                .getLatestResponse(ConnectionCloseBody.class);
+        assertThat(close.getReplyCode(), is(equalTo(ErrorCodes.FRAME_ERROR)));
+        interaction.connection().closeOk();
+        transport.assertNoMoreResponsesAndChannelClosed();
     }
 
     private static FieldTable createMalformedHeaders()

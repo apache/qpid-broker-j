@@ -302,9 +302,36 @@ public enum AMQType
          * @return An instance of the type.
          */
         @Override
-        public Object readValueFromBuffer(QpidByteBuffer buffer)
+        public Object readValueFromBuffer(final QpidByteBuffer buffer)
         {
-            return EncodingUtils.readFieldTable(buffer);
+            return readValueFromBuffer(buffer, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+        }
+
+        @Override
+        public Object readValueFromBuffer(final QpidByteBuffer buffer, final int maxNestedObjects)
+        {
+            final FieldTable fieldTable = EncodingUtils.readFieldTableValue(buffer, maxNestedObjects);
+            if (fieldTable == null)
+            {
+                return null;
+            }
+
+            if (!fieldTable.isDirect())
+            {
+                return fieldTable;
+            }
+
+            try
+            {
+                try (final QpidByteBuffer encodedForm = QpidByteBuffer.wrap(fieldTable.getDataAsBytes()))
+                {
+                    return FieldTableFactory.createFieldTable(encodedForm, encodedForm.remaining(), maxNestedObjects);
+                }
+            }
+            finally
+            {
+                fieldTable.dispose();
+            }
         }
 
         @Override
@@ -367,11 +394,16 @@ public enum AMQType
                  * @return An instance of the type.
                  */
                 @Override
-                public Object readValueFromBuffer(QpidByteBuffer buffer)
+                public Object readValueFromBuffer(final QpidByteBuffer buffer)
                 {
-                    // Read size of field table then all name/value pairs.
-                    return FieldArray.readFromBuffer(buffer);
+                    return readValueFromBuffer(buffer, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+                }
 
+                @Override
+                public Object readValueFromBuffer(final QpidByteBuffer buffer, final int maxNestedObjects)
+                {
+                    // read size of field array then all values
+                    return FieldArray.readFromBuffer(buffer, maxNestedObjects);
                 }
 
                 @Override
@@ -1104,6 +1136,11 @@ public enum AMQType
      * @return An instance of the type.
      */
     abstract Object readValueFromBuffer(QpidByteBuffer buffer);
+
+    Object readValueFromBuffer(final QpidByteBuffer buffer, final int maxNestedObjects)
+    {
+        return readValueFromBuffer(buffer);
+    }
 
     abstract void skip(QpidByteBuffer buffer);
 }

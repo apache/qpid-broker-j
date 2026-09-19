@@ -30,6 +30,7 @@ package org.apache.qpid.server.protocol.v0_8.transport;
 import org.apache.qpid.server.QpidException;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
+import org.apache.qpid.server.protocol.v0_8.AMQPConnection_0_8;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.EncodingUtils;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
@@ -192,6 +193,14 @@ public class QueueDeclareBody extends AMQMethodBodyImpl implements EncodableAMQD
     public static void process(final QpidByteBuffer buffer,
                                final ServerChannelMethodProcessor dispatcher) throws AMQFrameDecodingException
     {
+        process(buffer, dispatcher, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    public static void process(final QpidByteBuffer buffer,
+                               final ServerChannelMethodProcessor dispatcher,
+                               final int maxNestedObjects)
+            throws AMQFrameDecodingException
+    {
 
         int ticket = buffer.getUnsignedShort();
         AMQShortString queue = AMQShortString.readAMQShortString(buffer);
@@ -202,14 +211,21 @@ public class QueueDeclareBody extends AMQMethodBodyImpl implements EncodableAMQD
         boolean exclusive = (bitfield & 0x04 ) == 0x04;
         boolean autoDelete = (bitfield & 0x08 ) == 0x08;
         boolean nowait = (bitfield & 0x010 ) == 0x010;
-        FieldTable arguments = EncodingUtils.readFieldTable(buffer);
-        if(!dispatcher.ignoreAllButCloseOk())
+        final FieldTable arguments = EncodingUtils.readFieldTable(buffer, maxNestedObjects);
+        try
         {
-            dispatcher.receiveQueueDeclare(queue, passive, durable, exclusive, autoDelete, nowait, FieldTable.convertToDecodedFieldTable(arguments));
+            if (!dispatcher.ignoreAllButCloseOk())
+            {
+                final FieldTable decoded = FieldTable.convertToDecodedFieldTable(arguments);
+                dispatcher.receiveQueueDeclare(queue, passive, durable, exclusive, autoDelete, nowait, decoded);
+            }
         }
-        if (arguments != null)
+        finally
         {
-            arguments.dispose();
+            if (arguments != null)
+            {
+                arguments.dispose();
+            }
         }
     }
 }

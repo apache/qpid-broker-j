@@ -38,8 +38,15 @@ public class BrokerDecoder extends ServerDecoder
      */
     public BrokerDecoder(final AMQPConnection_0_8Impl connection)
     {
-        super(connection);
+        super(connection, getMaxNestedObjects(connection));
         _connection = connection;
+    }
+
+    private static int getMaxNestedObjects(final AMQPConnection_0_8Impl connection)
+    {
+        final Integer configured = connection.getContextValue(Integer.class,
+                AMQPConnection_0_8.CODEC_MAX_NESTED_OBJECTS);
+        return configured == null ? AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS : configured;
     }
 
     @Override

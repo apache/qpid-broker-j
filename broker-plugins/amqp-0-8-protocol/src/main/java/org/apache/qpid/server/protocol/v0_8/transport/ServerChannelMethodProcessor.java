@@ -25,6 +25,16 @@ import org.apache.qpid.server.protocol.v0_8.FieldTable;
 
 public interface ServerChannelMethodProcessor extends ChannelMethodProcessor
 {
+    /**
+     * Rejects the current method frame if a content sequence is awaiting its remaining content frames
+     *
+     * @return true when the method frame was rejected and must not be dispatched, false otherwise
+     */
+    default boolean rejectMethodFrameIfContentIncomplete()
+    {
+        return false;
+    }
+
     void receiveAccessRequest(AMQShortString realm,
                               boolean exclusive,
                               boolean passive,

@@ -24,10 +24,10 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;
-import java.nio.BufferUnderflowException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
-import org.apache.qpid.server.security.limit.ConnectionLimitException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +78,7 @@ import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.limit.ConnectionLimitException;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
@@ -90,6 +90,7 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
 public class AMQPConnection_0_8Impl
@@ -129,6 +130,7 @@ public class AMQPConnection_0_8Impl
 
     private final ServerDecoder _decoder;
 
+    private List<String> _advertisedSaslMechanisms = Collections.emptyList();
     private volatile SaslNegotiator _saslNegotiator;
 
     private volatile int _maxNoOfChannels;
@@ -168,6 +170,7 @@ public class AMQPConnection_0_8Impl
     private volatile int _currentMethodId;
     private final int _binaryDataLimit;
     private volatile boolean _transportBlockedForWriting;
+    private volatile boolean _inputClosed;
     private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
 
     private final Set<AMQPSession<?,?>> _sessionsWithWork =
@@ -255,16 +258,88 @@ public class AMQPConnection_0_8Impl
     @Override
     protected void onReceive(final QpidByteBuffer msg)
     {
-        try
+        if (_inputClosed)
         {
-            _decoder.decodeBuffer(msg);
-            receivedCompleteAllChannels();
+            msg.position(msg.limit());
+            return;
         }
-        catch (AMQFrameDecodingException | IOException | AMQPInvalidClassException
-                | IllegalArgumentException | IllegalStateException | BufferUnderflowException e)
+
+        while (true)
         {
-            LOGGER.warn("Unexpected exception", e);
-            throw new ConnectionScopedRuntimeException(e);
+            final int position = msg.position();
+            try
+            {
+                _decoder.decodeBuffer(msg);
+                receivedCompleteAllChannels();
+                if (_inputClosed)
+                {
+                    msg.position(msg.limit());
+                }
+                return;
+            }
+            catch (final AMQValueNestingException e)
+            {
+                LOGGER.debug("Field-value nesting limit exceeded", e);
+                handleProtocolError(ErrorCodes.RESOURCE_ERROR, e.getMessage());
+            }
+            catch (final AMQFatalFrameDecodingException e)
+            {
+                LOGGER.warn("Fatal frame decoding error", e);
+                msg.position(msg.limit());
+                closeNetworkConnection();
+                return;
+            }
+            catch (final AMQFrameDecodingException e)
+            {
+                LOGGER.debug("Frame decoding error", e);
+                handleProtocolError(e.getErrorCode(), e.getMessage(), e.getClassId(), e.getMethodId());
+            }
+            catch (final ConnectionScopedRuntimeException | ServerScopedRuntimeException e)
+            {
+                throw e;
+            }
+            catch (final IOException | RuntimeException e)
+            {
+                LOGGER.warn("Unexpected exception", e);
+                _inputClosed = true;
+                msg.position(msg.limit());
+                throw new ConnectionScopedRuntimeException(e);
+            }
+
+            if (_inputClosed || msg.position() <= position)
+            {
+                msg.position(msg.limit());
+                if (!_inputClosed)
+                {
+                    closeNetworkConnection();
+                }
+                return;
+            }
+
+            if (!isClosing() || !msg.hasRemaining())
+            {
+                return;
+            }
+        }
+    }
+
+    private void handleProtocolError(final int errorCode, final String message)
+    {
+        handleProtocolError(errorCode, message, 0, 0);
+    }
+
+    private void handleProtocolError(final int errorCode,
+                                     final String message,
+                                     final int classId,
+                                     final int methodId)
+    {
+        if (_state == ConnectionState.OPEN)
+        {
+            sendConnectionClose(errorCode, message, 0, classId, methodId);
+        }
+        else
+        {
+            closeNetworkConnection();
         }
     }
 
@@ -303,27 +378,21 @@ public class AMQPConnection_0_8Impl
         _channelsForCurrentMessage.add(amqChannel);
     }
 
-    private synchronized void protocolInitiationReceived(ProtocolInitiation pi)
+    private synchronized void protocolInitiationReceived(final ProtocolInitiation pi)
     {
         // this ensures the codec never checks for a PI message again
         _decoder.setExpectProtocolInitiation(false);
         try
         {
-            ProtocolVersion pv = pi.checkVersion(); // Fails if not correct
+            final ProtocolVersion pv = pi.checkVersion(); // Fails if not correct
             setProtocolVersion(pv);
 
-            StringBuilder mechanismBuilder = new StringBuilder();
-            for(String mechanismName : getPort().getAuthenticationProvider().getAvailableMechanisms(getTransport().isSecure()))
-            {
-                if(mechanismBuilder.length() != 0)
-                {
-                    mechanismBuilder.append(' ');
-                }
-                mechanismBuilder.append(mechanismName);
-            }
-            String mechanisms = mechanismBuilder.toString();
+            final List<String> advertisedSaslMechanisms = List.copyOf(getPort().getAuthenticationProvider()
+                    .getAvailableMechanisms(getTransport().isSecure()));
+            _advertisedSaslMechanisms = advertisedSaslMechanisms;
+            final String mechanisms = String.join(" ", advertisedSaslMechanisms);
 
-            String locales = "en_US";
+            final String locales = "en_US";
 
             Map<String,Object> props = Map.of();
             for(ConnectionPropertyEnricher enricher : getPort().getConnectionPropertyEnrichers())
@@ -517,13 +586,23 @@ public class AMQPConnection_0_8Impl
     }
 
     @Override
-    public void sendConnectionClose(int errorCode,
-                                    String message, int channelId)
+    public void sendConnectionClose(final int errorCode, final String message, final int channelId)
     {
-        sendConnectionClose(channelId, new AMQFrame(0, new ConnectionCloseBody(getProtocolVersion(), errorCode, AMQShortString.validValueOf(message), _currentClassId, _currentMethodId)));
+        sendConnectionClose(errorCode, message, channelId, _currentClassId, _currentMethodId);
     }
 
-    private void sendConnectionClose(int channelId, AMQFrame frame)
+    protected void sendConnectionClose(final int errorCode,
+                                       final String message,
+                                       final int channelId,
+                                       final int classId,
+                                       final int methodId)
+    {
+        final ConnectionCloseBody connectionCloseBody = new ConnectionCloseBody(getProtocolVersion(), errorCode,
+                AMQShortString.validValueOf(message), classId, methodId);
+        sendConnectionClose(channelId, new AMQFrame(0, connectionCloseBody));
+    }
+
+    private void sendConnectionClose(final int channelId, final AMQFrame frame)
     {
         if (_orderlyClose.compareAndSet(false, true))
         {
@@ -553,6 +632,7 @@ public class AMQPConnection_0_8Impl
 
     public void closeNetworkConnection()
     {
+        _inputClosed = true;
         getNetwork().close();
     }
 
@@ -653,6 +733,7 @@ public class AMQPConnection_0_8Impl
     @Override
     public void closed()
     {
+        _inputClosed = true;
         try
         {
             try
@@ -1092,14 +1173,24 @@ public class AMQPConnection_0_8Impl
 
         LOGGER.debug("SASL Mechanism selected: {} Locale : {}", mechanism, locale);
 
+        final List<String> advertisedSaslMechanisms = _advertisedSaslMechanisms;
+        _advertisedSaslMechanisms = Collections.emptyList();
+
         if (mechanism == null || mechanism.length() == 0)
         {
-            sendConnectionClose(ErrorCodes.CONNECTION_FORCED, "No Sasl mechanism was specified", 0);
+            closeNetworkConnection();
             return;
         }
 
-        SubjectCreator subjectCreator = getSubjectCreator();
-        _saslNegotiator = subjectCreator.createSaslNegotiator(String.valueOf(mechanism), this);
+        final String mechanismName = mechanism.toString();
+        if (!advertisedSaslMechanisms.contains(mechanismName))
+        {
+            closeNetworkConnection();
+            return;
+        }
+
+        final SubjectCreator subjectCreator = getSubjectCreator();
+        _saslNegotiator = subjectCreator.createSaslNegotiator(mechanismName, this);
         if (_saslNegotiator == null)
         {
             sendConnectionClose(ErrorCodes.CONNECTION_FORCED, "No SaslServer could be created for mechanism: " + mechanism, 0);
@@ -1308,10 +1399,35 @@ public class AMQPConnection_0_8Impl
                         {
                             return channelAwaitingClosure(channelId);
                         }
+                        else if (method.getName().equals("rejectMethodFrameIfContentIncomplete"))
+                        {
+                            return false;
+                        }
                         return null;
                     });
         }
         return channelMethodProcessor;
+    }
+
+    @Override
+    public void receiveOversizedMessageHeader(final int channelId, final long bodySize)
+            throws AMQFrameDecodingException
+    {
+        if (_state != ConnectionState.OPEN)
+        {
+            throw new AMQFrameDecodingException("Content body size " + Long.toUnsignedString(bodySize) +
+                    " exceeds the supported range", null);
+        }
+
+        final AMQChannel channel = getChannel(channelId);
+        if (channel != null)
+        {
+            channel.receiveOversizedMessageHeader(bodySize);
+        }
+        else if (!channelAwaitingClosure(channelId))
+        {
+            sendConnectionClose(ErrorCodes.CHANNEL_ERROR, "Unknown channel id: " + channelId, channelId);
+        }
     }
 
     @Override

@@ -91,11 +91,15 @@ class BasicContentHeaderPropertiesTest extends UnitTestBase
     }
 
     @Test
-    void populatePropertiesFromBuffer() throws Exception
+    void populateEmptyPropertiesFromBuffer() throws Exception
     {
-        final QpidByteBuffer buf = QpidByteBuffer.wrap(new byte[300]);
-        _testProperties.dispose();
-        _testProperties = new BasicContentHeaderProperties(buf, 99, 99);
+        try (final QpidByteBuffer buf = QpidByteBuffer.wrap(new byte[0]))
+        {
+            _testProperties.dispose();
+            _testProperties = new BasicContentHeaderProperties(buf, 0, 0);
+            assertEquals(0, _testProperties.getPropertyFlags());
+            _testProperties.dispose();
+        }
     }
 
     @Test
@@ -238,16 +242,23 @@ class BasicContentHeaderPropertiesTest extends UnitTestBase
                     propertiesBuffer.flip();
 
                     final BasicContentHeaderProperties testProperties = new BasicContentHeaderProperties(propertiesBuffer, flags, propertyListSize);
-                    final Map<String, Object> headersBeforeReallocation = testProperties.getHeadersAsMap();
-                    assertEquals(headers, headersBeforeReallocation, "Unexpected headers");
+                    try
+                    {
+                        final Map<String, Object> headersBeforeReallocation = testProperties.getHeadersAsMap();
+                        assertEquals(headers, headersBeforeReallocation, "Unexpected headers");
 
-                    buffer.dispose();
+                        buffer.dispose();
 
-                    assertTrue(propertiesBuffer.isSparse(), "Properties buffer should be sparse");
-                    testProperties.reallocate();
+                        assertTrue(propertiesBuffer.isSparse(), "Properties buffer should be sparse");
+                        testProperties.reallocate();
 
-                    final Map<String, Object> headersAfterReallocation = testProperties.getHeadersAsMap();
-                    assertEquals(headers, headersAfterReallocation, "Unexpected headers after re-allocation");
+                        final Map<String, Object> headersAfterReallocation = testProperties.getHeadersAsMap();
+                        assertEquals(headers, headersAfterReallocation, "Unexpected headers after re-allocation");
+                    }
+                    finally
+                    {
+                        testProperties.dispose();
+                    }
                 }
             }
         }

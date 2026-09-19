@@ -40,6 +40,13 @@ public class FieldTableFactory
         return new FieldTable(qpidByteBuffer, length);
     }
 
+    static FieldTable createFieldTable(final QpidByteBuffer qpidByteBuffer,
+                                       final int length,
+                                       final int maxNestedObjects)
+    {
+        return new FieldTable(qpidByteBuffer, length, maxNestedObjects);
+    }
+
     public static FieldTable createFieldTable(final Map<String, Object> map)
     {
         return new FieldTable(map);

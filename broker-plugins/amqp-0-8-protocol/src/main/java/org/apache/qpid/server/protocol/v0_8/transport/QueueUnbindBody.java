@@ -30,6 +30,7 @@ package org.apache.qpid.server.protocol.v0_8.transport;
 import org.apache.qpid.server.QpidException;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
+import org.apache.qpid.server.protocol.v0_8.AMQPConnection_0_8;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.EncodingUtils;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
@@ -147,19 +148,34 @@ public class QueueUnbindBody extends AMQMethodBodyImpl implements EncodableAMQDa
     public static void process(final QpidByteBuffer buffer,
                                final ServerChannelMethodProcessor dispatcher) throws AMQFrameDecodingException
     {
+        process(buffer, dispatcher, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    public static void process(final QpidByteBuffer buffer,
+                               final ServerChannelMethodProcessor dispatcher,
+                               final int maxNestedObjects)
+            throws AMQFrameDecodingException
+    {
 
         int ticket = buffer.getUnsignedShort();
         AMQShortString queue = AMQShortString.readAMQShortString(buffer);
         AMQShortString exchange = AMQShortString.readAMQShortString(buffer);
         AMQShortString routingKey = AMQShortString.readAMQShortString(buffer);
-        FieldTable arguments = EncodingUtils.readFieldTable(buffer);
-        if(!dispatcher.ignoreAllButCloseOk())
+        final FieldTable arguments = EncodingUtils.readFieldTable(buffer, maxNestedObjects);
+        try
         {
-            dispatcher.receiveQueueUnbind(queue, exchange, routingKey, FieldTable.convertToDecodedFieldTable(arguments));
+            if (!dispatcher.ignoreAllButCloseOk())
+            {
+                final FieldTable decoded = FieldTable.convertToDecodedFieldTable(arguments);
+                dispatcher.receiveQueueUnbind(queue, exchange, routingKey, decoded);
+            }
         }
-        if (arguments != null)
+        finally
         {
-            arguments.dispose();
+            if (arguments != null)
+            {
+                arguments.dispose();
+            }
         }
 
     }

@@ -115,14 +115,19 @@ public class FieldArray<T> extends AbstractCollection<T>
 
     public static FieldArray<?> readFromBuffer(final QpidByteBuffer buffer)
     {
-        ArrayList<Object> result = new ArrayList<>();
-        int size = buffer.getInt();
+        return readFromBuffer(buffer, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    static FieldArray<?> readFromBuffer(final QpidByteBuffer buffer, final int maxNestedObjects)
+    {
+        final ArrayList<Object> result = new ArrayList<>();
+        final int size = EncodingUtils.checkLength(buffer.getUnsignedInt(), buffer);
         try (QpidByteBuffer slicedBuffer = buffer.view(0, size))
         {
             buffer.position(buffer.position() + size);
             while (slicedBuffer.hasRemaining())
             {
-                result.add(AMQTypedValue.readFromBuffer(slicedBuffer).getValue());
+                result.add(AMQTypedValue.readFromBuffer(slicedBuffer, maxNestedObjects).getValue());
             }
         }
         return new FieldArray<>(result);
@@ -130,7 +135,7 @@ public class FieldArray<T> extends AbstractCollection<T>
 
     public static void skipFieldArray(final QpidByteBuffer buffer)
     {
-        int size = buffer.getInt();
+        final int size = EncodingUtils.checkLength(buffer.getUnsignedInt(), buffer);
         if (size > 0)
         {
             buffer.position(buffer.position() + size);

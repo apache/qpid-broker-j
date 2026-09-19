@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v0_8.AMQFrameDecodingException;
+import org.apache.qpid.server.protocol.v0_8.AMQPConnection_0_8;
 import org.apache.qpid.server.protocol.v0_8.AMQShortString;
 import org.apache.qpid.server.protocol.v0_8.EncodingUtils;
 import org.apache.qpid.server.protocol.v0_8.FieldTable;
@@ -75,12 +76,10 @@ public class BasicContentHeaderProperties
     private int _propertyFlags = 0;
     private static final int CONTENT_TYPE_MASK = 1 << 15;
     private static final int ENCODING_MASK = 1 << 14;
-    private static final int HEADERS_MASK = 1 << 13;
     private static final int DELIVERY_MODE_MASK = 1 << 12;
     private static final int PRIORITY_MASK = 1 << 11;
     private static final int CORRELATION_ID_MASK = 1 << 10;
     private static final int REPLY_TO_MASK = 1 << 9;
-    private static final int EXPIRATION_MASK = 1 << 8;
     private static final int MESSAGE_ID_MASK = 1 << 7;
     private static final int TIMESTAMP_MASK = 1 << 6;
     private static final int TYPE_MASK = 1 << 5;
@@ -88,11 +87,15 @@ public class BasicContentHeaderProperties
     private static final int APPLICATION_ID_MASK = 1 << 3;
     private static final int CLUSTER_ID_MASK = 1 << 2;
 
+    private final int _maxNestedObjects;
     private volatile QpidByteBuffer _encodedForm;
 
+    static final int HEADERS_MASK = 1 << 13;
+    static final int EXPIRATION_MASK = 1 << 8;
 
-    public BasicContentHeaderProperties(BasicContentHeaderProperties other)
+    public BasicContentHeaderProperties(final BasicContentHeaderProperties other)
     {
+        _maxNestedObjects = other._maxNestedObjects;
         _headers = FieldTableFactory.createFieldTable(other.getHeadersAsMap());
 
         _contentType = other._contentType;
@@ -125,7 +128,8 @@ public class BasicContentHeaderProperties
     }
 
     public BasicContentHeaderProperties()
-    { 
+    {
+        _maxNestedObjects = AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS;
     }
 
     public synchronized int getPropertyListSize()
@@ -346,9 +350,35 @@ public class BasicContentHeaderProperties
 
     }
 
-    public BasicContentHeaderProperties(QpidByteBuffer buffer, int propertyFlags, int size) throws AMQFrameDecodingException
+    public BasicContentHeaderProperties(final QpidByteBuffer buffer,
+                                        final int propertyFlags,
+                                        final int size)
+            throws AMQFrameDecodingException
     {
+        this(buffer, propertyFlags, size, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
+    }
+
+    BasicContentHeaderProperties(final QpidByteBuffer buffer,
+                                 final int propertyFlags,
+                                 final int size,
+                                 final int maxNestedObjects)
+            throws AMQFrameDecodingException
+    {
+        if (maxNestedObjects < 0)
+        {
+            throw new IllegalArgumentException("Maximum nested objects must not be negative: " + maxNestedObjects);
+        }
+        _maxNestedObjects = maxNestedObjects;
         _propertyFlags = propertyFlags;
+
+        final int supportedPropertyFlags = CONTENT_TYPE_MASK | ENCODING_MASK | HEADERS_MASK | DELIVERY_MODE_MASK |
+                PRIORITY_MASK | CORRELATION_ID_MASK | REPLY_TO_MASK | EXPIRATION_MASK | MESSAGE_ID_MASK |
+                TIMESTAMP_MASK | TYPE_MASK | USER_ID_MASK | APPLICATION_ID_MASK | CLUSTER_ID_MASK;
+        if ((_propertyFlags & ~supportedPropertyFlags) != 0)
+        {
+            throw new AMQFrameDecodingException("Unsupported content header property flags: 0x" +
+                    Integer.toHexString(_propertyFlags));
+        }
 
         if (LOGGER.isDebugEnabled())
         {
@@ -359,6 +389,16 @@ public class BasicContentHeaderProperties
         try (QpidByteBuffer byteBuffer = _encodedForm.slice())
         {
             decode(byteBuffer);
+            if (byteBuffer.hasRemaining())
+            {
+                throw new AMQFrameDecodingException("Content header property list was not fully consumed: remaining=" +
+                        byteBuffer.remaining());
+            }
+        }
+        catch (AMQFrameDecodingException | RuntimeException e)
+        {
+            dispose();
+            throw e;
         }
         buffer.position(buffer.position()+size);
 
@@ -378,7 +418,7 @@ public class BasicContentHeaderProperties
 
         if ((_propertyFlags & HEADERS_MASK) != 0)
         {
-            _headers = EncodingUtils.readFieldTable(buffer);
+            _headers = EncodingUtils.readFieldTable(buffer, _maxNestedObjects);
         }
 
         if ((_propertyFlags & DELIVERY_MODE_MASK) != 0)
@@ -516,7 +556,7 @@ public class BasicContentHeaderProperties
 
     public synchronized Map<String, Object> getHeadersAsMap()
     {
-        return FieldTable.convertToMap(_headers);
+        return FieldTable.convertToMap(_headers, _maxNestedObjects);
     }
 
     public synchronized void setHeaders(FieldTable headers)
@@ -880,7 +920,7 @@ public class BasicContentHeaderProperties
 
             if ((_propertyFlags & HEADERS_MASK) != 0)
             {
-                _headers = EncodingUtils.readFieldTable(byteBuffer);
+                _headers = EncodingUtils.readFieldTable(byteBuffer, _maxNestedObjects);
             }
         }
     }
@@ -889,7 +929,7 @@ public class BasicContentHeaderProperties
     {
         if (_headers != null)
         {
-            _headers.validate();
+            _headers.validate(_maxNestedObjects);
         }
     }
 
