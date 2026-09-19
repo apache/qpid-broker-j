@@ -29,6 +29,8 @@ import org.apache.qpid.server.QpidException;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageContentSource;
+import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQBody;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQDataBlock;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQFrame;
@@ -40,6 +42,7 @@ import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
 import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.util.GZIPUtils;
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 
 public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 {
@@ -138,13 +141,20 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
     }
 
 
-    private DisposableMessageContentSource inflateIfPossible(MessageContentSource source)
+    private DisposableMessageContentSource inflateIfPossible(final MessageContentSource source)
     {
-        try (QpidByteBuffer contentBuffers = source.getContent())
+        final int maximumOutputSize = _connection.getMaxMessageDecompressionSize();
+        try (final QpidByteBuffer contentBuffers = source.getContent())
         {
-            return new ModifiedContentSource(QpidByteBuffer.inflate(contentBuffers));
+            return new ModifiedContentSource(QpidByteBuffer.inflate(contentBuffers, maximumOutputSize));
         }
-        catch (IOException e)
+        catch (final GZIPInflationLimitException e)
+        {
+            throw new MessageConversionException(String.format("Message decompression exceeds the effective %d byte " +
+                    "limit controlled by '%s' and '%s'", maximumOutputSize, Connection.MAX_MESSAGE_DECOMPRESSION_SIZE,
+                    Connection.MAX_MESSAGE_SIZE), e);
+        }
+        catch (final IOException e)
         {
             LOGGER.warn("Unable to decompress message payload for consumer with gzip, message will be sent as is", e);
             return null;

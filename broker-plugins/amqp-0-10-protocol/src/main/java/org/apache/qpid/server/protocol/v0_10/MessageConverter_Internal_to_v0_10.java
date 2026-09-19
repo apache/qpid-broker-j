@@ -71,6 +71,15 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
     }
 
     @Override
+    public MessageTransferMessage convert(final InternalMessage serverMsg,
+                                          final NamedAddressSpace addressSpace,
+                                          final int maximumMessageDecompressionSize)
+    {
+        // converter does not inflate gzip content
+        return convert(serverMsg, addressSpace);
+    }
+
+    @Override
     public void dispose(final MessageTransferMessage message)
     {
 

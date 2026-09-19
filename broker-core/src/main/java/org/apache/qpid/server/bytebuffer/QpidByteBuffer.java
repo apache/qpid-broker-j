@@ -33,6 +33,8 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 
+import org.apache.qpid.server.model.Connection;
+
 public interface QpidByteBuffer extends AutoCloseable
 {
     static QpidByteBuffer allocate(boolean direct, int size)
@@ -68,9 +70,20 @@ public interface QpidByteBuffer extends AutoCloseable
         return QpidByteBufferFactory.decryptSSL(engine, src, dst);
     }
 
-    static QpidByteBuffer inflate(QpidByteBuffer compressedBuffer) throws IOException
+    /**
+     * @deprecated use {@link #inflate(QpidByteBuffer, int)} to provide the effective connection limit.
+     * planned for removal in version 12.0.0
+     */
+    @Deprecated
+    static QpidByteBuffer inflate(final QpidByteBuffer compressedBuffer) throws IOException
     {
-        return QpidByteBufferFactory.inflate(compressedBuffer);
+        return inflate(compressedBuffer, Connection.DEFAULT_MAX_MESSAGE_DECOMPRESSION_SIZE);
+    }
+
+    static QpidByteBuffer inflate(final QpidByteBuffer compressedBuffer, final int maximumOutputSize)
+            throws IOException
+    {
+        return QpidByteBufferFactory.inflate(compressedBuffer, maximumOutputSize);
     }
 
     static QpidByteBuffer deflate(QpidByteBuffer uncompressedBuffer) throws IOException

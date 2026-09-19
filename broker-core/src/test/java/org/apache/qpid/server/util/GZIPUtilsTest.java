@@ -21,9 +21,14 @@
 package org.apache.qpid.server.util;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -31,31 +36,35 @@ import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.ContextProvider;
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class GZIPUtilsTest extends UnitTestBase
 {
     @Test
-    public void testCompressUncompress()
+    public void testCompressUncompress() throws Exception
     {
         final byte[] data = new byte[1024];
         Arrays.fill(data, (byte)'a');
         final byte[] compressed = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(data));
         assertTrue(compressed.length < data.length, "Compression didn't compress");
-        final byte[] uncompressed = GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(compressed));
+        final byte[] uncompressed = GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(compressed), data.length);
         assertArrayEquals(data, uncompressed, "Compression not reversible");
     }
 
     @Test
-    public void testUncompressNonZipReturnsNull()
+    public void testUncompressNonZipReturnsNull() throws Exception
     {
         final byte[] data = new byte[1024];
         Arrays.fill(data, (byte)'a');
-        assertNull(GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data)), "Non zipped data should not uncompress");
+        assertNull(GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data), data.length),
+                   "Non zipped data should not uncompress");
     }
 
     @Test
-    public void testUncompressStreamWithErrorReturnsNull()
+    public void testUncompressStreamWithErrorReturnsNull() throws Exception
     {
         final InputStream is = new InputStream()
         {
@@ -65,19 +74,19 @@ public class GZIPUtilsTest extends UnitTestBase
                 throw new IOException();
             }
         };
-        assertNull(GZIPUtils.uncompressStreamToArray(is), "Stream error should return null");
+        assertNull(GZIPUtils.uncompressStreamToArray(is, 1024), "Stream error should return null");
     }
 
     @Test
-    public void testUncompressNullStreamReturnsNull()
+    public void testUncompressNullStreamReturnsNull() throws Exception
     {
-        assertNull(GZIPUtils.uncompressStreamToArray(null), "Null Stream should return null");
+        assertNull(GZIPUtils.uncompressStreamToArray(null, 1024), "Null Stream should return null");
     }
 
     @Test
-    public void testUncompressNullBufferReturnsNull()
+    public void testUncompressNullBufferReturnsNull() throws Exception
     {
-        assertNull(GZIPUtils.uncompressBufferToArray(null), "Null buffer should return null");
+        assertNull(GZIPUtils.uncompressBufferToArray(null, 1024), "Null buffer should return null");
     }
 
     @Test
@@ -87,7 +96,7 @@ public class GZIPUtilsTest extends UnitTestBase
     }
 
     @Test
-    public void testNonHeapBuffers()
+    public void testNonHeapBuffers() throws Exception
     {
         final byte[] data = new byte[1024];
         Arrays.fill(data, (byte)'a');
@@ -105,8 +114,74 @@ public class GZIPUtilsTest extends UnitTestBase
         directBuffer.put(compressed);
         directBuffer.flip();
 
-        final byte[] uncompressed = GZIPUtils.uncompressBufferToArray(directBuffer);
+        final byte[] uncompressed = GZIPUtils.uncompressBufferToArray(directBuffer, data.length);
 
         assertArrayEquals(data, uncompressed, "Compression not reversible");
+    }
+
+    @Test
+    public void testUncompressRejectsOutputLargerThanLimit()
+    {
+        final byte[] data = new byte[8192];
+        Arrays.fill(data, (byte) 'a');
+        final byte[] compressed = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(data));
+
+        assertThrows(GZIPInflationLimitException.class, () ->
+                GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(compressed), data.length - 1));
+    }
+
+    @Test
+    public void testUncompressAcceptsOutputEqualToLimit() throws Exception
+    {
+        final byte[] data = new byte[8192];
+        Arrays.fill(data, (byte) 'a');
+        final byte[] compressed = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(data));
+
+        assertArrayEquals(data, GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(compressed), data.length));
+    }
+
+    @Test
+    public void testLegacyUncompressOverloads()
+    {
+        final byte[] data = new byte[8192];
+        Arrays.fill(data, (byte) 'a');
+        final byte[] compressed = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(data));
+
+        assertArrayEquals(data, GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(compressed)));
+        assertArrayEquals(data, GZIPUtils.uncompressStreamToArray(new ByteArrayInputStream(compressed)));
+    }
+
+    @Test
+    public void testUncompressRejectsNegativeLimit()
+    {
+        assertThrows(IllegalArgumentException.class, () -> GZIPUtils.uncompressStreamToArray(null, -1));
+    }
+
+    @Test
+    public void testValidateDecompressedSizeRejectsContentExceedingLimit()
+    {
+        final byte[] data = new byte[8192];
+        final byte[] compressed = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(data));
+
+        assertThrows(GZIPInflationLimitException.class, () ->
+                GZIPUtils.validateDecompressedSize(new ByteArrayInputStream(compressed), 1024));
+    }
+
+    @Test
+    public void testMaximumMessageDecompressionSizeUsesSmallestApplicableLimit()
+    {
+        final ContextProvider contextProvider = mock(ContextProvider.class);
+        when(contextProvider.getContextValue(Integer.class, Connection.MAX_MESSAGE_DECOMPRESSION_SIZE))
+                .thenReturn(4096);
+        when(contextProvider.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(2048);
+
+        assertEquals(1024, GZIPUtils.getMaximumMessageDecompressionSize(contextProvider, 1024));
+    }
+
+    @Test
+    public void testMaximumMessageDecompressionSizeUsesDefaultWithoutContextProvider()
+    {
+        assertEquals(Connection.DEFAULT_MAX_MESSAGE_DECOMPRESSION_SIZE,
+                GZIPUtils.getMaximumMessageDecompressionSize((ContextProvider) null));
     }
 }

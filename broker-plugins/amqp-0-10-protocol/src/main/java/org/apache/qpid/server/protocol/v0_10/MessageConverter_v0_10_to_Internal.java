@@ -41,12 +41,15 @@ import org.apache.qpid.server.message.mimecontentconverter.AmqpCompoundMimeConte
 import org.apache.qpid.server.message.mimecontentconverter.ConversionUtils;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_10.transport.MessageProperties;
 import org.apache.qpid.server.protocol.v0_10.transport.ReplyTo;
 import org.apache.qpid.server.util.GZIPUtils;
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 
 @PluggableService
 public class MessageConverter_v0_10_to_Internal implements MessageConverter<MessageTransferMessage, InternalMessage>
@@ -64,22 +67,53 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
     }
 
     @Override
-    public InternalMessage convert(MessageTransferMessage serverMessage, NamedAddressSpace addressSpace)
+    public InternalMessage convert(final MessageTransferMessage serverMessage, final NamedAddressSpace addressSpace)
+    {
+        return convert(serverMessage, addressSpace, 0, false);
+    }
+
+    @Override
+    public InternalMessage convert(final MessageTransferMessage serverMessage,
+                                   final NamedAddressSpace addressSpace,
+                                   final int maximumMessageDecompressionSize)
+    {
+        return convert(serverMessage, addressSpace, maximumMessageDecompressionSize, true);
+    }
+
+    private InternalMessage convert(final MessageTransferMessage serverMessage,
+                                    final NamedAddressSpace addressSpace,
+                                    final int maximumMessageDecompressionSize,
+                                    final boolean useExplicitDecompressionLimit)
     {
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];
-        try (QpidByteBuffer content = serverMessage.getContent())
+        try (final QpidByteBuffer content = serverMessage.getContent())
         {
             content.get(data);
         }
 
         String encoding = serverMessage.getMessageHeader().getEncoding();
-        byte[] uncompressed;
-        if (GZIPUtils.GZIP_CONTENT_ENCODING.equals(encoding)
-            && (uncompressed = GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data))) != null)
+        if (GZIPUtils.GZIP_CONTENT_ENCODING.equals(encoding))
         {
-            data = uncompressed;
-            encoding =  null;
+            final int maximumOutputSize = useExplicitDecompressionLimit
+                    ? maximumMessageDecompressionSize
+                    : GZIPUtils.getMaximumMessageDecompressionSizeForAddressSpace(addressSpace);
+            try
+            {
+                final byte[] uncompressed =
+                        GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data), maximumOutputSize);
+                if (uncompressed != null)
+                {
+                    data = uncompressed;
+                    encoding = null;
+                }
+            }
+            catch (final GZIPInflationLimitException e)
+            {
+                throw new MessageConversionException(String.format("Message decompression exceeds the effective %d " +
+                        "byte limit controlled by '%s' and '%s'", maximumOutputSize,
+                        Connection.MAX_MESSAGE_DECOMPRESSION_SIZE, Connection.MAX_MESSAGE_SIZE), e);
+            }
         }
 
         final Object body = convertMessageBody(serverMessage, mimeType, data);

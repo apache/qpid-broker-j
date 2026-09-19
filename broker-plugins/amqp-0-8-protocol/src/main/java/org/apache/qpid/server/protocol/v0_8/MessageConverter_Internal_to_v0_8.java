@@ -65,6 +65,15 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
     }
 
     @Override
+    public AMQMessage convert(final InternalMessage serverMsg,
+                              final NamedAddressSpace addressSpace,
+                              final int maximumMessageDecompressionSize)
+    {
+        // converter does not inflate gzip content
+        return convert(serverMsg, addressSpace);
+    }
+
+    @Override
     public void dispose(final AMQMessage message)
     {
 

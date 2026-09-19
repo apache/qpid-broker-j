@@ -155,7 +155,8 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                         serverMessage.getClass(),
                         Message_1_0.class));
             }
-            message = converter.convert(serverMessage, _linkEndpoint.getAddressSpace());
+            message = converter.convert(serverMessage, _linkEndpoint.getAddressSpace(),
+                    _linkEndpoint.getSession().getAMQPConnection().getMaxMessageDecompressionSize());
         }
 
         Transfer transfer = new Transfer();

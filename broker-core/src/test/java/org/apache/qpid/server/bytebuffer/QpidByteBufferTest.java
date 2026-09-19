@@ -53,6 +53,7 @@ import org.junit.jupiter.api.Test;
 
 import org.mockito.internal.util.Primitives;
 
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class QpidByteBufferTest extends UnitTestBase
@@ -808,17 +809,52 @@ public class QpidByteBufferTest extends UnitTestBase
     }
 
     @Test
+    public void testLegacyInflateOverload() throws Exception
+    {
+        final byte[] input = new byte[BUFFER_SIZE * 2];
+        Arrays.fill(input, (byte) 1);
+        try (final QpidByteBuffer original = QpidByteBuffer.wrap(input);
+             final QpidByteBuffer deflated = QpidByteBuffer.deflate(original);
+             final QpidByteBuffer inflated = QpidByteBuffer.inflate(deflated))
+        {
+            final byte[] actual = new byte[inflated.remaining()];
+            inflated.get(actual);
+            assertArrayEquals(input, actual);
+        }
+    }
+
+    @Test
     public void testInflatingUncompressedBytes_ThrowsZipException() throws Exception
     {
         final byte[] input = "not_a_compressed_stream".getBytes();
         try (final QpidByteBuffer original = QpidByteBuffer.wrap(input))
         {
-            QpidByteBuffer.inflate(original);
+            QpidByteBuffer.inflate(original, input.length);
             fail("Exception not thrown");
         }
         catch(java.util.zip.ZipException ze)
         {
             // PASS
+        }
+    }
+
+    @Test
+    public void testInflateRejectsOutputLargerThanLimitAndDisposesPartialOutput() throws Exception
+    {
+        final byte[] input = new byte[BUFFER_SIZE * 2];
+        Arrays.fill(input, (byte) 'a');
+        try (final QpidByteBuffer original = QpidByteBuffer.allocateDirect(input.length))
+        {
+            original.put(input);
+            original.flip();
+            try (final QpidByteBuffer deflated = QpidByteBuffer.deflate(original))
+            {
+                final long allocatedBefore = QpidByteBuffer.getAllocatedDirectMemorySize();
+                assertThrows(GZIPInflationLimitException.class, () ->
+                        QpidByteBuffer.inflate(deflated, input.length - 1));
+                assertEquals(allocatedBefore, QpidByteBuffer.getAllocatedDirectMemorySize(),
+                        "Partial inflated output was not disposed");
+            }
         }
     }
 
@@ -1039,7 +1075,7 @@ public class QpidByteBufferTest extends UnitTestBase
         {
             assertNotNull(deflatedBuf);
 
-            try (final QpidByteBuffer inflatedBuf = QpidByteBuffer.inflate(deflatedBuf))
+            try (final QpidByteBuffer inflatedBuf = QpidByteBuffer.inflate(deflatedBuf, input.length))
             {
                 assertNotNull(inflatedBuf);
 

@@ -56,6 +56,15 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
     }
 
     @Override
+    public MessageTransferMessage convert(final ServerMessage serverMsg,
+                                          final NamedAddressSpace addressSpace,
+                                          final int maximumMessageDecompressionSize)
+    {
+        // converter does not inflate gzip content
+        return convert(serverMsg, addressSpace);
+    }
+
+    @Override
     public void dispose(final MessageTransferMessage message)
     {
 

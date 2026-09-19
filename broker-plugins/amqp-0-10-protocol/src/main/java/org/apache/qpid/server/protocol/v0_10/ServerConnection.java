@@ -216,6 +216,7 @@ public class ServerConnection extends ConnectionInvoker
                 cause = ErrorCodes.CONNECTION_FORCED;
                 break;
             case TRANSACTION_TIMEOUT:
+            case RESOURCE_LIMIT:
                 cause = ErrorCodes.RESOURCE_ERROR;
                 break;
             default:
@@ -464,6 +465,11 @@ public class ServerConnection extends ConnectionInvoker
     public int getMaxMessageSize()
     {
         return (int)Math.min(_amqpConnection.getMaxMessageSize(), (long)Integer.MAX_VALUE);
+    }
+
+    public int getMaxMessageDecompressionSize()
+    {
+        return _amqpConnection.getMaxMessageDecompressionSize();
     }
 
     public void transportStateChanged()
@@ -852,6 +858,7 @@ public class ServerConnection extends ConnectionInvoker
                 cause = ErrorCodes.CONNECTION_FORCED;
                 break;
             case TRANSACTION_TIMEOUT:
+            case RESOURCE_LIMIT:
                 cause = ErrorCodes.RESOURCE_ERROR;
                 break;
             default:

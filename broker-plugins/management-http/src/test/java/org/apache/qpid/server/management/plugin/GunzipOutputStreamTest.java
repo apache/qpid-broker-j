@@ -22,14 +22,19 @@ package org.apache.qpid.server.management.plugin;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Base64;
 
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.util.GZIPUtils;
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class GunzipOutputStreamTest extends UnitTestBase
@@ -91,6 +96,24 @@ public class GunzipOutputStreamTest extends UnitTestBase
         assertEquals(expected.toString(), new String(outputStream.toByteArray()), "Unexpected content");
     }
 
+    @Test
+    public void testRejectsContentExceedingMaximumOutputSize()
+    {
+        final byte[] originalUncompressedInput = generateTestBytes();
+        final byte[] compressedBytes = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(originalUncompressedInput));
+        final CloseTrackingOutputStream outputStream = new CloseTrackingOutputStream();
+
+        assertThrows(GZIPInflationLimitException.class, () ->
+        {
+            try (final GunzipOutputStream gunzipOutputStream = new GunzipOutputStream(outputStream, 1024))
+            {
+                gunzipOutputStream.write(compressedBytes);
+            }
+        });
+        assertTrue(outputStream.size() <= 1024);
+        assertFalse(outputStream.isClosed());
+    }
+
     private byte[] generateTestBytes()
     {
         StringBuilder sb = new StringBuilder();
@@ -108,5 +131,22 @@ public class GunzipOutputStreamTest extends UnitTestBase
             sb.append(" ").append(i++);
         }
         return sb.toString().getBytes();
+    }
+
+    private static final class CloseTrackingOutputStream extends ByteArrayOutputStream
+    {
+        private boolean _closed;
+
+        @Override
+        public void close() throws IOException
+        {
+            _closed = true;
+            super.close();
+        }
+
+        private boolean isClosed()
+        {
+            return _closed;
+        }
     }
 }

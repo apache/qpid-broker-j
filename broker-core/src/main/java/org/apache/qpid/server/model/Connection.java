@@ -54,6 +54,9 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
                           + " after breaching the limit.")
     long DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE = 10L * 1024L * 1024L;
 
+    String MAX_MESSAGE_DECOMPRESSION_SIZE = "qpid.max_message_decompression_size";
+    @ManagedContextDefault(name = MAX_MESSAGE_DECOMPRESSION_SIZE)
+    int DEFAULT_MAX_MESSAGE_DECOMPRESSION_SIZE = 100 * 1024 * 1024;
 
     String CLOSE_RESPONSE_TIMEOUT = "connection.closeResponseTimeout";
     @ManagedContextDefault(name = CLOSE_RESPONSE_TIMEOUT)

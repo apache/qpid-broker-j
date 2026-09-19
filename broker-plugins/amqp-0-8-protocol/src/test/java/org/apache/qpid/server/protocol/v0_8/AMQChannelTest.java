@@ -23,10 +23,12 @@ package org.apache.qpid.server.protocol.v0_8;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -34,6 +36,8 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -65,6 +69,7 @@ import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.ProtocolVersion;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
 import org.apache.qpid.server.protocol.v0_8.transport.MethodRegistry;
 import org.apache.qpid.server.security.AccessDeniedException;
@@ -76,6 +81,9 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.NullMessageStore;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMemoryMessage;
+import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.txn.LocalTransaction;
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -130,6 +138,8 @@ class AMQChannelTest extends UnitTestBase
         when(_amqConnection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
         when(_amqConnection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
         when(_amqConnection.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE)).thenReturn(Connection.DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+        when(_amqConnection.getContextValue(Long.class, Session.TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD))
+                .thenReturn(Session.TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD_DEFAULT);
         when(_amqConnection.getContextValue(Boolean.class, AMQPConnection_0_8.FORCE_MESSAGE_VALIDATION)).thenReturn(true);
         when(_amqConnection.getContextValue(Integer.class, AMQPConnection_0_8.CONNECTION_MAX_CONTENT_BODY_FRAMES_PER_MESSAGE))
                 .thenReturn(AMQPConnection_0_8.DEFAULT_MAX_CONTENT_BODY_FRAMES_PER_MESSAGE);
@@ -455,5 +465,74 @@ class AMQChannelTest extends UnitTestBase
         channel.receiveMessageHeader(properties, 0);
 
         verify(_messageDestination).route((ServerMessage) any(), eq(ROUTING_KEY.toString()), any(InstanceProperties.class));
+    }
+
+    @Test
+    void failedMandatoryReturnReleasesStoredMessage()
+    {
+        when(_virtualHost.getDefaultDestination()).thenReturn(_messageDestination);
+        final AtomicReference<StoredMemoryMessage<MessageMetaData>> storedMessage = new AtomicReference<>();
+        when(_messageStore.addMessage(any())).thenAnswer(invocation ->
+        {
+            final StoredMemoryMessage<MessageMetaData> message =
+                    spy(new StoredMemoryMessage<>(1, invocation.getArgument(0)));
+            storedMessage.set(message);
+            return message;
+        });
+        doAnswer(invocation -> new RoutingResult<>((AMQMessage) invocation.getArgument(0)))
+                .when(_messageDestination)
+                .route(any(), anyString(), any(InstanceProperties.class));
+        final MessageConversionException failure = new MessageConversionException(getTestName());
+        final ProtocolOutputConverter outputConverter = _amqConnection.getProtocolOutputConverter();
+        doThrow(failure).when(outputConverter)
+                .writeReturn(any(), any(), any(), anyInt(), anyInt(), any());
+
+        final AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
+        channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, ROUTING_KEY, true, false);
+
+        assertSame(failure, assertThrows(MessageConversionException.class, () ->
+                channel.receiveMessageHeader(new BasicContentHeaderProperties(), 0)));
+        verify(storedMessage.get()).remove();
+    }
+
+    @Test
+    void failedTransactionalReturnReleasesRemainingStoredMessages()
+    {
+        when(_virtualHost.getDefaultDestination()).thenReturn(_messageDestination);
+        final AtomicReference<StoredMemoryMessage<MessageMetaData>> firstStoredMessage = new AtomicReference<>();
+        final AtomicReference<StoredMemoryMessage<MessageMetaData>> secondStoredMessage = new AtomicReference<>();
+        when(_messageStore.addMessage(any())).thenAnswer(invocation ->
+        {
+            final StoredMemoryMessage<MessageMetaData> message =
+                    spy(new StoredMemoryMessage<>(1, invocation.getArgument(0)));
+            if (!firstStoredMessage.compareAndSet(null, message))
+            {
+                secondStoredMessage.set(message);
+            }
+            return message;
+        });
+        doAnswer(invocation -> new RoutingResult<>((AMQMessage) invocation.getArgument(0)))
+                .when(_messageDestination)
+                .route(any(), anyString(), any(InstanceProperties.class));
+        final MessageConversionException failure =
+                new MessageConversionException(getTestName(), new GZIPInflationLimitException());
+        final ProtocolOutputConverter outputConverter = _amqConnection.getProtocolOutputConverter();
+        doThrow(failure).when(outputConverter)
+                .writeReturn(any(), any(), any(), anyInt(), anyInt(), any());
+        when(_amqConnection.createLocalTransaction()).thenReturn(new LocalTransaction(_messageStore));
+
+        final AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
+        channel.receiveTxSelect();
+        channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, ROUTING_KEY, true, false);
+        channel.receiveMessageHeader(new BasicContentHeaderProperties(), 0);
+        channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, ROUTING_KEY, true, false);
+        channel.receiveMessageHeader(new BasicContentHeaderProperties(), 0);
+
+        channel.receiveTxCommit();
+        verify(firstStoredMessage.get()).remove();
+        verify(secondStoredMessage.get()).remove();
+        verify(outputConverter, times(2)).writeReturn(any(), any(), any(), anyInt(), anyInt(), any());
+        verify(_amqConnection).closeSessionAsync(channel, AMQPConnection.CloseReason.RESOURCE_LIMIT,
+                failure.getMessage());
     }
 }

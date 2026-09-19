@@ -36,6 +36,7 @@ import org.apache.qpid.server.message.MessageInstance.ConsumerAcquiredState;
 import org.apache.qpid.server.message.MessageInstance.EntryState;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
@@ -54,6 +55,7 @@ import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.GZIPUtils;
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 import org.apache.qpid.server.util.StateChangeListener;
 
 public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0_10>
@@ -204,7 +206,8 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
                 throw new MessageConversionException(String.format("Cannot convert malformed message '%s'", serverMsg));
             }
             converter = (MessageConverter<? super ServerMessage, MessageTransferMessage>) MessageConverterRegistry.getConverter(serverMsg.getClass(), MessageTransferMessage.class);
-            msg = converter.convert(serverMsg, _session.getAddressSpace());
+            msg = converter.convert(serverMsg, _session.getAddressSpace(),
+                    _session.getAMQPConnection().getMaxMessageDecompressionSize());
         }
 
         DeliveryProperties origDeliveryProps = msg.getHeader() == null ? null : msg.getHeader().getDeliveryProperties();
@@ -256,10 +259,26 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
 
         if(msgCompressed && !compressionSupported && bodyBuffer != null)
         {
-            QpidByteBuffer uncompressedBuffer = inflateIfPossible(bodyBuffer);
-            messageProps.setContentEncoding(null);
-            bodyBuffer.dispose();
-            bodyBuffer = uncompressedBuffer;
+            final QpidByteBuffer uncompressedBuffer;
+            try
+            {
+                uncompressedBuffer = inflateIfPossible(bodyBuffer);
+            }
+            catch (final MessageConversionException e)
+            {
+                bodyBuffer.dispose();
+                if (converter != null)
+                {
+                    converter.dispose(msg);
+                }
+                throw e;
+            }
+            if (uncompressedBuffer != null)
+            {
+                messageProps.setContentEncoding(null);
+                bodyBuffer.dispose();
+                bodyBuffer = uncompressedBuffer;
+            }
         }
         else if(!msgCompressed
                 && compressionSupported
@@ -599,11 +618,18 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
 
     private QpidByteBuffer inflateIfPossible(final QpidByteBuffer buffer)
     {
+        final int maximumOutputSize = _session.getConnection().getMaxMessageDecompressionSize();
         try
         {
-            return QpidByteBuffer.inflate(buffer);
+            return QpidByteBuffer.inflate(buffer, maximumOutputSize);
         }
-        catch (IOException e)
+        catch (final GZIPInflationLimitException e)
+        {
+            throw new MessageConversionException(String.format( "Message decompression exceeds the effective %d " +
+                    "byte limit controlled by '%s' and '%s'", maximumOutputSize,
+                    Connection.MAX_MESSAGE_DECOMPRESSION_SIZE, Connection.MAX_MESSAGE_SIZE), e);
+        }
+        catch (final IOException e)
         {
             LOGGER.warn("Unable to decompress message payload for consumer with gzip, message will be sent as is", e);
             return null;

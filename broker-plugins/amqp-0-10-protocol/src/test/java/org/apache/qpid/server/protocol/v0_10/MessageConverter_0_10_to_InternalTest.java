@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.withSettings;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
@@ -46,6 +47,8 @@ import org.mockito.ArgumentCaptor;
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.ContextProvider;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_10.transport.AbstractDecoder;
@@ -56,6 +59,7 @@ import org.apache.qpid.server.protocol.v0_10.transport.mimecontentconverter.List
 import org.apache.qpid.server.protocol.v0_10.transport.mimecontentconverter.MapToAmqpMapConverter;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.typedmessage.TypedBytesContentWriter;
+import org.apache.qpid.server.util.GZIPUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 @SuppressWarnings({"rawtypes"})
@@ -328,6 +332,37 @@ class MessageConverter_0_10_to_InternalTest extends UnitTestBase
     {
         final byte[] expectedContent = "someContent".getBytes(UTF_8);
         doTest(expectedContent, null, expectedContent, null);
+    }
+
+    @Test
+    void rejectGzipContentExceedingDecompressionLimit()
+    {
+        final byte[] data = new byte[8192];
+        final byte[] compressed = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(data));
+        final MessageTransferMessage sourceMessage = getAmqMessage(compressed, "application/octet-stream");
+        when(_amqpHeader.getEncoding()).thenReturn(GZIPUtils.GZIP_CONTENT_ENCODING);
+
+        final NamedAddressSpace addressSpace = mock(NamedAddressSpace.class,
+                                                    withSettings().extraInterfaces(ContextProvider.class));
+        final ContextProvider contextProvider = (ContextProvider) addressSpace;
+        when(contextProvider.getContextValue(Integer.class, Connection.MAX_MESSAGE_DECOMPRESSION_SIZE))
+                .thenReturn(1024);
+        when(contextProvider.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE))
+                .thenReturn(Connection.DEFAULT_MAX_MESSAGE_SIZE);
+
+        assertThrows(MessageConversionException.class, () -> _converter.convert(sourceMessage, addressSpace));
+    }
+
+    @Test
+    void rejectGzipContentExceedingExplicitDecompressionLimit()
+    {
+        final byte[] data = new byte[8192];
+        final byte[] compressed = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(data));
+        final MessageTransferMessage sourceMessage = getAmqMessage(compressed, null);
+        when(_amqpHeader.getEncoding()).thenReturn(GZIPUtils.GZIP_CONTENT_ENCODING);
+
+        assertThrows(MessageConversionException.class, () ->
+                _converter.convert(sourceMessage, mock(NamedAddressSpace.class), 1024));
     }
 
     private byte[] getObjectStreamMessageBytes(final Serializable o) throws Exception

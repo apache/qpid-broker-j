@@ -20,32 +20,172 @@
  */
 package org.apache.qpid.server.queue;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
+import org.mockito.MockedStatic;
+
+import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.TestConsumerTarget;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
+import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.Content;
+import org.apache.qpid.server.model.DecompressionLimitedContent;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.plugin.MessageConverter;
+import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
+import org.apache.qpid.server.util.GZIPUtils;
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class StandardQueueTest extends AbstractQueueTestBase
 {
+    private static final int MAXIMUM_DECOMPRESSED_SIZE = 1024;
+
+    @ParameterizedTest
+    @CsvSource({"512, 512", "2048, 1024"})
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public void testJsonConversionUsesEffectiveDecompressionLimit(final int requestLimit,
+                                                                  final int expectedLimit) throws Exception
+    {
+        final long messageNumber = 1L;
+        final ServerMessage<?> message = createMessage(messageNumber);
+        when(message.getMessageHeader().getEncoding()).thenReturn(GZIPUtils.GZIP_CONTENT_ENCODING);
+        final InternalMessage convertedMessage = mock(InternalMessage.class);
+        when(convertedMessage.getMessageBody()).thenReturn("content");
+        final MessageConverter messageConverter = mock(MessageConverter.class);
+        when(messageConverter.convert(message, getVirtualHost(), expectedLimit)).thenReturn(convertedMessage);
+
+        getQueue().setAttributes(Map.of(Queue.CONTEXT, Map.of(Connection.MAX_MESSAGE_DECOMPRESSION_SIZE,
+                MAXIMUM_DECOMPRESSED_SIZE)));
+        getQueue().enqueue(message, null, null);
+
+        try (final MockedStatic<MessageConverterRegistry> converterRegistry = mockStatic(MessageConverterRegistry.class))
+        {
+            converterRegistry.when(() -> MessageConverterRegistry.getConverter(message.getClass(), InternalMessage.class))
+                    .thenReturn(messageConverter);
+            final Content content = getQueue().getMessageContent(messageNumber, -1L, true, false);
+            assertInstanceOf(DecompressionLimitedContent.class, content);
+            verify(messageConverter, never()).convert(any(ServerMessage.class), any(), anyInt());
+
+            try
+            {
+                ((DecompressionLimitedContent) content).prepareForWrite(requestLimit);
+                content.write(new ByteArrayOutputStream());
+
+                verify(messageConverter).convert(message, getVirtualHost(), expectedLimit);
+                verify(messageConverter, never()).convert(message, getVirtualHost());
+                verify(messageConverter, never()).dispose(convertedMessage);
+            }
+            finally
+            {
+                content.release();
+            }
+
+            verify(messageConverter).dispose(convertedMessage);
+        }
+    }
+
+    @Test
+    public void testFailedJsonContentCreationReleasesMessageReference()
+    {
+        final long messageNumber = 1L;
+        final ServerMessage<?> message = createMessage(messageNumber);
+        final MessageReference<?> traversalReference = mock(MessageReference.class);
+        final MessageReference<?> contentReference = mock(MessageReference.class);
+        when(traversalReference.getMessage()).thenReturn(message);
+        when(contentReference.getMessage()).thenReturn(message);
+        getQueue().enqueue(message, null, null);
+        clearInvocations(message);
+        when(message.newReference()).thenReturn(traversalReference, contentReference);
+
+        try (final MockedStatic<MessageConverterRegistry> converterRegistry = mockStatic(MessageConverterRegistry.class))
+        {
+            assertThrows(IllegalArgumentException.class, () ->
+                    getQueue().getMessageContent(messageNumber, -1L, true, false));
+        }
+
+        verify(traversalReference).release();
+        verify(contentReference).release();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"512, 512", "2048, 1024"})
+    public void testOverLimitCompressedMessageContentUsesEffectiveDecompressionLimit(final int requestLimit,
+                                                                                     final int expectedLimit)
+            throws Exception
+    {
+        final long messageNumber = 1L;
+        final byte[] uncompressed = new byte[expectedLimit + 1];
+        final byte[] compressed = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(uncompressed));
+        final ServerMessage<?> message = createMessage(messageNumber);
+        when(message.getSize()).thenReturn((long) compressed.length);
+        when(message.getMessageHeader().getEncoding()).thenReturn(GZIPUtils.GZIP_CONTENT_ENCODING);
+        when(message.getContent(0, compressed.length)).thenReturn(QpidByteBuffer.wrap(compressed));
+
+        getQueue().setAttributes(Map.of(Queue.CONTEXT, Map.of(Connection.MAX_MESSAGE_DECOMPRESSION_SIZE,
+                MAXIMUM_DECOMPRESSED_SIZE)));
+        getQueue().enqueue(message, null, null);
+
+        final Content content = getQueue().getMessageContent(messageNumber, expectedLimit + 1L, false, true);
+        assertNotNull(content);
+        assertTrue(content instanceof DecompressionLimitedContent);
+        ((DecompressionLimitedContent) content).prepareForWrite(requestLimit);
+        final CloseTrackingOutputStream outputStream = new CloseTrackingOutputStream();
+        try
+        {
+            final GZIPInflationLimitException exception = assertThrows(GZIPInflationLimitException.class, () ->
+                    content.write(outputStream));
+            assertEquals(String.format("Decompressed content exceeds the maximum size of %d bytes", expectedLimit),
+                    exception.getMessage());
+        }
+        finally
+        {
+            content.release();
+        }
+
+        assertTrue(outputStream.size() > 0);
+        assertFalse(outputStream.isClosed());
+        assertThrows(IOException.class, () ->
+        {
+            try (final GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(outputStream.toByteArray())))
+            {
+                gzipInputStream.readAllBytes();
+            }
+        });
+    }
+
     @Test
     public void testAutoDeleteQueue() throws Exception
     {
@@ -190,6 +330,23 @@ public class StandardQueueTest extends AbstractQueueTestBase
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
+    private static final class CloseTrackingOutputStream extends ByteArrayOutputStream
+    {
+        private boolean _closed;
+
+        @Override
+        public void close() throws IOException
+        {
+            _closed = true;
+            super.close();
+        }
+
+        private boolean isClosed()
+        {
+            return _closed;
+        }
+    }
+
     private final class DequeuedQueue extends AbstractQueue
     {
         private final QueueEntryList _entries = new DequeuedQueueEntryList(this, getQueueStatistics());

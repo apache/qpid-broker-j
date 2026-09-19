@@ -408,7 +408,8 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
                 throw new MessageConversionException(String.format("Cannot convert malformed message '%s'", serverMessage));
             }
             messageConverter = MessageConverterRegistry.getConverter((Class<ServerMessage<?>>) serverMessage.getClass(), AMQMessage.class);
-            msg = messageConverter.convert(serverMessage, getConnection().getAddressSpace());
+            msg = messageConverter.convert(serverMessage, getConnection().getAddressSpace(),
+                    getConnection().getMaxMessageDecompressionSize());
         }
 
         try

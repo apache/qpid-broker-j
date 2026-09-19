@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
@@ -263,6 +264,20 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
     @Override
     protected EncodingRetainingSection<?> getBodySection(final InternalMessage serverMessage,
                                                          final SectionEncoder encoder)
+    {
+        return getInternalBodySection(serverMessage);
+    }
+
+    @Override
+    protected EncodingRetainingSection<?> getBodySection(final InternalMessage serverMessage,
+                                                         final SectionEncoder encoder,
+                                                         final NamedAddressSpace addressSpace,
+                                                         final int maximumMessageDecompressionSize)
+    {
+        return getInternalBodySection(serverMessage);
+    }
+
+    private EncodingRetainingSection<?> getInternalBodySection(final InternalMessage serverMessage)
     {
         return convertToBody(serverMessage.getMessageBody()).createEncodingRetainingSection();
     }

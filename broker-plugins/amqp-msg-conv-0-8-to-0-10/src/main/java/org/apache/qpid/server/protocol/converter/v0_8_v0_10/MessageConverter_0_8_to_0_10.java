@@ -67,6 +67,15 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
     }
 
     @Override
+    public MessageTransferMessage convert(final AMQMessage message_0_8,
+                                          final NamedAddressSpace addressSpace,
+                                          final int maximumMessageDecompressionSize)
+    {
+        // converter does not inflate gzip content
+        return convert(message_0_8, addressSpace);
+    }
+
+    @Override
     public void dispose(final MessageTransferMessage message)
     {
 

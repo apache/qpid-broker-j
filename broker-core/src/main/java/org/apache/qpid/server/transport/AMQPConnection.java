@@ -37,6 +37,7 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.Deletable;
+import org.apache.qpid.server.util.GZIPUtils;
 
 public interface AMQPConnection<C extends AMQPConnection<C>>
         extends Connection<C>, Deletable<C>, EventLoggerProvider
@@ -113,6 +114,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
     enum CloseReason
     {
         MANAGEMENT,
+        RESOURCE_LIMIT,
         TRANSACTION_TIMEOUT
     }
 
@@ -139,6 +141,11 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
     boolean isClosing();
 
     long getMaxMessageSize();
+
+    default int getMaxMessageDecompressionSize()
+    {
+        return GZIPUtils.getMaximumMessageDecompressionSize(this, getMaxMessageSize());
+    }
 
     @Override
     AmqpPort<?> getPort();

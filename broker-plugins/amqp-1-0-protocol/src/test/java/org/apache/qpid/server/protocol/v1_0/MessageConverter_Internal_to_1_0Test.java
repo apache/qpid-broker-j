@@ -24,6 +24,7 @@ import static org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0.get
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -50,6 +51,7 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
@@ -85,6 +87,22 @@ class MessageConverter_Internal_to_1_0Test extends UnitTestBase
                content,
                Symbol.valueOf(mimeType),
                JmsMessageTypeAnnotation.TEXT_MESSAGE.getType());
+    }
+
+    @Test
+    void boundedConversionDispatchesLegacyBodySectionOverride() throws Exception
+    {
+        final LegacyMessageConverter converter = new LegacyMessageConverter();
+        final InternalMessage sourceMessage = getAmqMessage("content", "text/plain");
+        final Message_1_0 convertedMessage = converter.convert(sourceMessage, mock(NamedAddressSpace.class), 1);
+        try
+        {
+            assertTrue(converter.isLegacyBodySectionOverrideInvoked());
+        }
+        finally
+        {
+            converter.dispose(convertedMessage);
+        }
     }
 
     @Test
@@ -359,7 +377,7 @@ class MessageConverter_Internal_to_1_0Test extends UnitTestBase
                         final Byte expectedJmsTypeAnnotation) throws Exception
     {
         final InternalMessage sourceMessage = getAmqMessage(messageBytes, mimeType);
-        final Message_1_0 convertedMessage = CONVERTER.convert(sourceMessage, mock(NamedAddressSpace.class));
+        final Message_1_0 convertedMessage = CONVERTER.convert(sourceMessage, mock(NamedAddressSpace.class), 1);
         final QpidByteBuffer content = convertedMessage.getContent();
 
         final List<EncodingRetainingSection<?>> sections = getEncodingRetainingSections(content, 1);
@@ -399,5 +417,23 @@ class MessageConverter_Internal_to_1_0Test extends UnitTestBase
 
     private static class MySerializable implements Serializable
     {
+    }
+
+    private static final class LegacyMessageConverter extends MessageConverter_Internal_to_v1_0
+    {
+        private boolean _legacyBodySectionOverrideInvoked;
+
+        @Override
+        protected EncodingRetainingSection<?> getBodySection(final InternalMessage serverMessage,
+                                                             final SectionEncoder encoder)
+        {
+            _legacyBodySectionOverrideInvoked = true;
+            return convertToBody(serverMessage.getMessageBody()).createEncodingRetainingSection();
+        }
+
+        private boolean isLegacyBodySectionOverrideInvoked()
+        {
+            return _legacyBodySectionOverrideInvoked;
+        }
     }
 }

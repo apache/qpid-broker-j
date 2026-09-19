@@ -83,6 +83,7 @@ import org.apache.qpid.server.model.NoFactoryForTypeException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.ProtocolVersion;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v0_8.UnacknowledgedMessageMap.Visitor;
 import org.apache.qpid.server.protocol.v0_8.transport.*;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
@@ -97,6 +98,7 @@ import org.apache.qpid.server.txn.AsyncCommand;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.virtualhost.MessageDestinationIsAlternateException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
@@ -141,6 +143,7 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
 
     private final AMQPConnection_0_8 _connection;
     private final AtomicBoolean _closing = new AtomicBoolean(false);
+    private boolean _resourceLimitCloseScheduled;
 
     private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<>());
 
@@ -1338,12 +1341,19 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
                                         final ProtocolOutputConverter outputConverter =
                                                     _connection.getProtocolOutputConverter();
 
-                                        outputConverter.writeReturn(message.getMessagePublishInfo(),
-                                                                    message.getContentHeaderBody(),
-                                                                    message,
-                                                                    _channelId,
-                                                                    ErrorCodes.NO_CONSUMERS,
-                                                                    IMMEDIATE_DELIVERY_REPLY_TEXT);
+                                        try
+                                        {
+                                            outputConverter.writeReturn(message.getMessagePublishInfo(),
+                                                    message.getContentHeaderBody(),
+                                                    message,
+                                                    _channelId,
+                                                    ErrorCodes.NO_CONSUMERS,
+                                                    IMMEDIATE_DELIVERY_REPLY_TEXT);
+                                        }
+                                        catch (final MessageConversionException e)
+                                        {
+                                            handlePostCommitMessageConversionException(e);
+                                        }
 
                                     }
 
@@ -1427,9 +1437,9 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         private final String _description;
         private final MessageReference<AMQMessage> _reference;
 
-        public WriteReturnAction(int errorCode,
-                                 String description,
-                                 AMQMessage message)
+        public WriteReturnAction(final int errorCode,
+                                 final String description,
+                                 final AMQMessage message)
         {
             _errorCode = errorCode;
             _description = description;
@@ -1439,20 +1449,43 @@ public class AMQChannel extends AbstractAMQPSession<AMQChannel, ConsumerTarget_0
         @Override
         public void postCommit()
         {
-            AMQMessage message = _reference.getMessage();
-            _connection.getProtocolOutputConverter().writeReturn(message.getMessagePublishInfo(),
-                                                          message.getContentHeaderBody(),
-                                                          message,
-                                                          _channelId,
-                                                          _errorCode,
-                                                          AMQShortString.validValueOf(_description));
-            _reference.release();
+            try
+            {
+                final AMQMessage message = _reference.getMessage();
+                _connection.getProtocolOutputConverter().writeReturn(message.getMessagePublishInfo(),
+                        message.getContentHeaderBody(),
+                        message,
+                        _channelId,
+                        _errorCode,
+                        AMQShortString.validValueOf(_description));
+            }
+            catch (final MessageConversionException e)
+            {
+                handlePostCommitMessageConversionException(e);
+            }
+            finally
+            {
+                _reference.release();
+            }
         }
 
         @Override
         public void onRollback()
         {
             _reference.release();
+        }
+    }
+
+    private synchronized void handlePostCommitMessageConversionException(final MessageConversionException exception)
+    {
+        if (!(exception.getCause() instanceof GZIPInflationLimitException))
+        {
+            throw exception;
+        }
+        if (!_resourceLimitCloseScheduled && !isClosing())
+        {
+            _resourceLimitCloseScheduled = true;
+            _connection.closeSessionAsync(this, AMQPConnection.CloseReason.RESOURCE_LIMIT, exception.getMessage());
         }
     }
 

@@ -59,12 +59,14 @@ import org.apache.qpid.server.model.ConfiguredObjectFinder;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.CustomRestHeaders;
+import org.apache.qpid.server.model.DecompressionLimitedContent;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.RestContentHeader;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.GZIPUtils;
 
 public abstract class AbstractServlet extends HttpServlet
 {
@@ -299,9 +301,14 @@ public abstract class AbstractServlet extends HttpServlet
         {
             writeContent(content, request, response);
         }
-        catch (IOException e)
+        catch (final IOException e)
         {
             LOGGER.warn("Unexpected exception processing request", e);
+            if (response.isCommitted())
+            {
+                throw e;
+            }
+            response.reset();
             sendJsonErrorResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, GENERIC_ERROR_MESSAGE);
         }
     }
@@ -310,21 +317,45 @@ public abstract class AbstractServlet extends HttpServlet
                                 final HttpServletRequest request,
                                 final HttpServletResponse response) throws IOException
     {
-        Map<String, Object> headers = new HashMap<>(getResponseHeaders(content));
-        try (OutputStream os = getOutputStream(request, response, headers))
+        prepareContent(content, request);
+        final Map<String, Object> headers = new HashMap<>(getResponseHeaders(content));
+        final OutputStream outputStream = getOutputStream(request, response, headers, content);
+        boolean writeCompleted = false;
+        try
         {
             response.setStatus(HttpServletResponse.SC_OK);
-            for (Map.Entry<String, Object> entry : headers.entrySet())
+            for (final Map.Entry<String, Object> entry : headers.entrySet())
             {
                 response.setHeader(entry.getKey(), String.valueOf(entry.getValue()));
             }
-            content.write(os);
+            content.write(outputStream);
+            writeCompleted = true;
+        }
+        finally
+        {
+            if (writeCompleted)
+            {
+                outputStream.close();
+            }
+            else
+            {
+                abortOutputStream(outputStream);
+            }
+        }
+    }
+
+    private void prepareContent(final Content content, final HttpServletRequest request) throws IOException
+    {
+        if (content instanceof DecompressionLimitedContent decompressionLimitedContent)
+        {
+            decompressionLimitedContent.prepareForWrite(getMaximumMessageDecompressionSize(request, content));
         }
     }
 
     private OutputStream getOutputStream(final HttpServletRequest request,
                                          final HttpServletResponse response,
-                                         Map<String, Object> headers) throws IOException
+                                         final Map<String, Object> headers,
+                                         final Content content) throws IOException
     {
         final boolean isGzipCompressed = GZIP_CONTENT_ENCODING.equals(headers.get(CONTENT_ENCODING_HEADER.toUpperCase()));
         final boolean isCompressingAccepted = HttpManagementUtil.isCompressingAccepted(request, _managementConfiguration);
@@ -335,7 +366,7 @@ public abstract class AbstractServlet extends HttpServlet
         {
             if (!isCompressingAccepted)
             {
-                stream = new GunzipOutputStream(stream);
+                stream = new GunzipOutputStream(stream, getMaximumMessageDecompressionSize(request, content));
                 headers.remove(CONTENT_ENCODING_HEADER.toUpperCase());
             }
         }
@@ -343,12 +374,62 @@ public abstract class AbstractServlet extends HttpServlet
         {
             if (isCompressingAccepted)
             {
-                stream = new GZIPOutputStream(stream);
+                stream = new AbortableGZIPOutputStream(stream);
                 headers.put(CONTENT_ENCODING_HEADER.toUpperCase(), GZIP_CONTENT_ENCODING);
             }
         }
 
         return stream;
+    }
+
+    private int getMaximumMessageDecompressionSize(final HttpServletRequest request, final Content content)
+    {
+        final int portLimit = GZIPUtils.getMaximumMessageDecompressionSize(HttpManagementUtil.getPort(request));
+        final int managementLimit = GZIPUtils.getMaximumMessageDecompressionSize(_managementConfiguration);
+        final int contentLimit = content instanceof DecompressionLimitedContent decompressionLimitedContent ?
+                decompressionLimitedContent.getMaximumMessageDecompressionSize() : Integer.MAX_VALUE;
+        return Math.min(contentLimit, Math.min(portLimit, managementLimit));
+    }
+
+    private static void abortOutputStream(final OutputStream outputStream)
+    {
+        if (outputStream instanceof GunzipOutputStream gunzipOutputStream)
+        {
+            gunzipOutputStream.abort();
+        }
+        else if (outputStream instanceof AbortableGZIPOutputStream abortableGZIPOutputStream)
+        {
+            abortableGZIPOutputStream.abort();
+        }
+    }
+
+    private static final class AbortableGZIPOutputStream extends GZIPOutputStream
+    {
+        private boolean _closed;
+
+        private AbortableGZIPOutputStream(final OutputStream outputStream) throws IOException
+        {
+            super(outputStream);
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            if (!_closed)
+            {
+                _closed = true;
+                super.close();
+            }
+        }
+
+        private void abort()
+        {
+            if (!_closed)
+            {
+                _closed = true;
+                def.end();
+            }
+        }
     }
 
     private Map<String, Object> getResponseHeaders(final Object content)

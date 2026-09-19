@@ -91,9 +91,12 @@ import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.GZIPUtils;
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 import org.apache.qpid.server.util.StateChangeListener;
 
 class ManagementNode implements MessageSource, MessageDestination, BaseQueue
@@ -386,10 +389,24 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
             throw new MessageConversionException(String.format("Cannot convert malformed message '%s'", message));
         }
         @SuppressWarnings("unchecked")
-        MessageConverter<ServerMessage, InternalMessage> converter =
+        final MessageConverter<ServerMessage, InternalMessage> converter =
                 (MessageConverter<ServerMessage, InternalMessage>) MessageConverterRegistry.getConverter((message.getClass()), InternalMessage.class);
+        final int maximumMessageDecompressionSize = GZIPUtils.GZIP_CONTENT_ENCODING.equals(
+                message.getMessageHeader().getEncoding()) ? getMaximumMessageDecompressionSize() : 0;
 
-        final InternalMessage msg = converter.convert(message, _addressSpace);
+        final InternalMessage msg;
+        try
+        {
+            msg = converter.convert(message, _addressSpace, maximumMessageDecompressionSize);
+        }
+        catch (final MessageConversionException e)
+        {
+            if (!handleMessageConversionException(e))
+            {
+                throw e;
+            }
+            return;
+        }
 
         try
         {
@@ -1577,6 +1594,48 @@ class ManagementNode implements MessageSource, MessageDestination, BaseQueue
     public MessageConversionExceptionHandlingPolicy getMessageConversionExceptionHandlingPolicy()
     {
         return MessageConversionExceptionHandlingPolicy.CLOSE;
+    }
+
+    int getMaximumMessageDecompressionSize()
+    {
+        final Subject currentSubject = SubjectExecutionContext.currentSubject();
+        if (currentSubject != null)
+        {
+            final Set<ConnectionPrincipal> connectionPrincipals =
+                    currentSubject.getPrincipals(ConnectionPrincipal.class);
+            if (!connectionPrincipals.isEmpty())
+            {
+                return connectionPrincipals.iterator().next().getConnection().getMaxMessageDecompressionSize();
+            }
+        }
+        return GZIPUtils.getMaximumMessageDecompressionSize(_managedObject);
+    }
+
+    boolean handleMessageConversionException(final MessageConversionException exception)
+    {
+        if (!(exception.getCause() instanceof GZIPInflationLimitException))
+        {
+            return false;
+        }
+        closeCallerConnectionOnResourceLimit(exception.getMessage());
+        return true;
+    }
+
+    private void closeCallerConnectionOnResourceLimit(final String description)
+    {
+        final Subject currentSubject = SubjectExecutionContext.currentSubject();
+        if (currentSubject != null)
+        {
+            final Set<ConnectionPrincipal> connectionPrincipals =
+                    currentSubject.getPrincipals(ConnectionPrincipal.class);
+            if (!connectionPrincipals.isEmpty())
+            {
+                final AMQPConnection<?> connection = connectionPrincipals.iterator().next().getConnection();
+                connection.sendConnectionCloseAsync(AMQPConnection.CloseReason.RESOURCE_LIMIT, description);
+                return;
+            }
+        }
+        LOGGER.warn("Unable to close the originating connection after rejecting an over-limit compressed message");
     }
 
     private AmqpConnectionMetaData getCallerConnectionMetaData()

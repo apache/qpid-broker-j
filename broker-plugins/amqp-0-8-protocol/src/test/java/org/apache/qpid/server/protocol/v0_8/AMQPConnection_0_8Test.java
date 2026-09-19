@@ -927,6 +927,21 @@ class AMQPConnection_0_8Test extends UnitTestBase
         assertEquals(0L, statisticsAfterReset.get("transactedMessagesOut"));
     }
 
+    @Test
+    void cachesSmallestApplicableMessageDecompressionLimit()
+    {
+        when(_port.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(3072);
+        when(_port.getContextValue(Integer.class, Connection.MAX_MESSAGE_DECOMPRESSION_SIZE)).thenReturn(4096);
+        when(_virtualHost.getContextValue(Integer.class, Connection.MAX_MESSAGE_DECOMPRESSION_SIZE)).thenReturn(2048);
+
+        final AMQPConnection_0_8Impl connection = new AMQPConnection_0_8Impl(_broker, _network, _port, _transport,
+                _protocol, 0, _ticker);
+        connection.create();
+        connection.setAddressSpace(_virtualHost);
+
+        assertEquals(2048, connection.getMaxMessageDecompressionSize());
+    }
+
     private static QpidByteBuffer createConnectionStartOkFrame(final byte[] fieldTable,
                                                                final String mechanism,
                                                                final byte[] response,

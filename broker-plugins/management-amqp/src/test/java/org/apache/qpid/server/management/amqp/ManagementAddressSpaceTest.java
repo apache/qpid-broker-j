@@ -21,9 +21,12 @@
 
 package org.apache.qpid.server.management.amqp;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
@@ -34,16 +37,20 @@ import javax.security.auth.Subject;
 
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 
 public class ManagementAddressSpaceTest
 {
@@ -83,14 +90,67 @@ public class ManagementAddressSpaceTest
         assertNull(destinationWithoutSubject, "Proxy destination should not resolve without subject");
     }
 
+    @Test
+    public void managementConversionUsesConnectionDecompressionLimit() throws Exception
+    {
+        final AMQPConnection<?> connection = mock(AMQPConnection.class);
+        when(connection.getMaxMessageDecompressionSize()).thenReturn(1024);
+        final Subject subject = new Subject(false, Set.of(new ConnectionPrincipal(connection)), Set.of(), Set.of());
+        final ManagementAddressSpace addressSpace = new ManagementAddressSpace(createAddressSpaceRegistry());
+
+        final int maximumSize = SubjectExecutionContext.withSubject(subject, () ->
+                addressSpace.getManagementNode().getMaximumMessageDecompressionSize());
+
+        assertEquals(1024, maximumSize);
+    }
+
+    @Test
+    public void managementConversionWithoutConnectionUsesBrokerDecompressionLimit() throws Exception
+    {
+        final Broker broker = createBroker();
+        when(broker.getContextValue(Integer.class, Connection.MAX_MESSAGE_DECOMPRESSION_SIZE)).thenReturn(2048);
+        when(broker.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(4096);
+        final ManagementAddressSpace addressSpace = new ManagementAddressSpace(createAddressSpaceRegistry(broker));
+
+        final int maximumSize = SubjectExecutionContext.withSubject(null, () ->
+                addressSpace.getManagementNode().getMaximumMessageDecompressionSize());
+
+        assertEquals(2048, maximumSize);
+    }
+
+    @Test
+    public void decompressionLimitFailureIsContainedAndClosesConnection() throws Exception
+    {
+        final AMQPConnection<?> connection = mock(AMQPConnection.class);
+        final Subject subject = new Subject(false, Set.of(new ConnectionPrincipal(connection)), Set.of(), Set.of());
+        final ManagementAddressSpace addressSpace = new ManagementAddressSpace(createAddressSpaceRegistry());
+        final MessageConversionException exception = new MessageConversionException("limit exceeded",
+                new GZIPInflationLimitException());
+
+        final boolean handled = SubjectExecutionContext.withSubject(subject, () ->
+                addressSpace.getManagementNode().handleMessageConversionException(exception));
+
+        assertTrue(handled);
+        verify(connection).sendConnectionCloseAsync(AMQPConnection.CloseReason.RESOURCE_LIMIT, exception.getMessage());
+    }
+
     private static SystemAddressSpaceCreator.AddressSpaceRegistry createAddressSpaceRegistry()
+    {
+        return createAddressSpaceRegistry(createBroker());
+    }
+
+    private static Broker createBroker()
     {
         final Broker broker = mock(Broker.class);
         when(broker.getId()).thenReturn(UUID.randomUUID());
         when(broker.getModel()).thenReturn(BrokerModel.getInstance());
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.getTypeClass()).thenReturn(Broker.class);
+        return broker;
+    }
 
+    private static SystemAddressSpaceCreator.AddressSpaceRegistry createAddressSpaceRegistry(final Broker broker)
+    {
         final SystemAddressSpaceCreator.AddressSpaceRegistry registry =
                 mock(SystemAddressSpaceCreator.AddressSpaceRegistry.class);
         when(registry.getBroker()).thenReturn(broker);

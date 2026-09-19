@@ -80,6 +80,7 @@ import org.apache.qpid.server.txn.TransactionObserver;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
+import org.apache.qpid.server.util.GZIPUtils;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
@@ -140,6 +141,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     private volatile boolean _messageAuthorizationRequired;
 
     private final AtomicLong _maxMessageSize = new AtomicLong(Integer.MAX_VALUE);
+    private volatile int _maxMessageDecompressionSize = Connection.DEFAULT_MAX_MESSAGE_DECOMPRESSION_SIZE;
     private volatile int _messageCompressionThreshold;
     private volatile TransactionObserver _transactionObserver;
     private long _maxUncommittedInMemorySize;
@@ -375,6 +377,9 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     protected void updateMaxMessageSize()
     {
         _maxMessageSize.set(Math.min(getMaxMessageSize(getPort()), getMaxMessageSize(_contextProvider)));
+        _maxMessageDecompressionSize = Math.min(
+                GZIPUtils.getMaximumMessageDecompressionSize(getPort(), _maxMessageSize.get()),
+                GZIPUtils.getMaximumMessageDecompressionSize(_contextProvider, _maxMessageSize.get()));
     }
 
     private long getMaxMessageSize(final ContextProvider object)
@@ -397,6 +402,12 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     public long getMaxMessageSize()
     {
         return _maxMessageSize.get();
+    }
+
+    @Override
+    public int getMaxMessageDecompressionSize()
+    {
+        return _maxMessageDecompressionSize;
     }
 
     @Override

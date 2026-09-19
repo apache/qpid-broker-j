@@ -70,6 +70,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSect
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.typedmessage.TypedBytesContentWriter;
+import org.apache.qpid.server.util.GZIPUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 @SuppressWarnings({"unchecked"})
@@ -340,6 +341,25 @@ class MessageConverter_0_10_to_1_0Test extends UnitTestBase
         doTest(expectedContent, null, DataSection.class, expectedContent, null, null);
     }
 
+    @Test
+    void rejectGzipContentExceedingConnectionDecompressionLimit()
+    {
+        final byte[] data = new byte[8192];
+        final byte[] compressed = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(data));
+        final MessageTransferMessage sourceMessage = getAmqMessage(compressed, null);
+        when(_amqpHeader.getEncoding()).thenReturn(GZIPUtils.GZIP_CONTENT_ENCODING);
+
+        try
+        {
+            assertThrows(MessageConversionException.class, () ->
+                    _converter.convert(sourceMessage, mock(NamedAddressSpace.class), 1024));
+        }
+        finally
+        {
+            when(_amqpHeader.getEncoding()).thenReturn(null);
+        }
+    }
+
     private byte[] getObjectStreamMessageBytes(final Serializable o) throws Exception
     {
         try (final ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -400,6 +420,12 @@ class MessageConverter_0_10_to_1_0Test extends UnitTestBase
         final List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(content);
         assertEquals(expectedNumberOfSections, (long) sections.size(), "Unexpected number of sections");
         return sections;
+    }
+
+    private MessageTransferMessage getAmqMessage(final byte[] expected, final String mimeType)
+    {
+        return getAmqMessage(expected, mimeType, AbstractDecoder.DEFAULT_MAX_ZERO_WIDTH_ARRAY_ELEMENTS,
+                AbstractDecoder.DEFAULT_MAX_NESTED_OBJECTS);
     }
 
     private MessageTransferMessage getAmqMessage(final byte[] expected,

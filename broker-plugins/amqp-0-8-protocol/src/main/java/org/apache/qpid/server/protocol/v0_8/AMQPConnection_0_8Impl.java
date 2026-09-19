@@ -839,6 +839,7 @@ public class AMQPConnection_0_8Impl
                 cause = ErrorCodes.CONNECTION_FORCED;
                 break;
             case TRANSACTION_TIMEOUT:
+            case RESOURCE_LIMIT:
                 cause = ErrorCodes.RESOURCE_ERROR;
                 break;
             default:
@@ -872,6 +873,7 @@ public class AMQPConnection_0_8Impl
                 cause = ErrorCodes.CONNECTION_FORCED;
                 break;
             case TRANSACTION_TIMEOUT:
+            case RESOURCE_LIMIT:
                 cause = ErrorCodes.RESOURCE_ERROR;
                 break;
             default:

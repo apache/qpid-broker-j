@@ -22,6 +22,7 @@ package org.apache.qpid.server.management.plugin;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
@@ -32,6 +33,9 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterOutputStream;
 
+import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
+
 public class GunzipOutputStream extends InflaterOutputStream
 {
     private final GZIPHeader _header = new GZIPHeader();
@@ -39,10 +43,18 @@ public class GunzipOutputStream extends InflaterOutputStream
     private final byte[] _singleByteArray = new byte[1];
     private final CRC32 _crc;
     private StreamState _streamState = StreamState.HEADER_PARSING;
+    private boolean _outputLimitExceeded;
+    private boolean _closed;
 
     public GunzipOutputStream(final OutputStream targetOutputStream)
     {
-        super(new CheckedOutputStream(targetOutputStream, new CRC32()), new Inflater(true));
+        this(targetOutputStream, Connection.DEFAULT_MAX_MESSAGE_DECOMPRESSION_SIZE);
+    }
+
+    public GunzipOutputStream(final OutputStream targetOutputStream, final int maximumOutputSize)
+    {
+        super(new CheckedOutputStream(new MaximumSizeOutputStream(targetOutputStream, maximumOutputSize), new CRC32()),
+              new Inflater(true));
         _crc = (CRC32)((CheckedOutputStream)out).getChecksum();
     }
 
@@ -77,7 +89,15 @@ public class GunzipOutputStream extends InflaterOutputStream
                 if (_streamState == StreamState.INFLATING)
                 {
                     _singleByteArray[0] = (byte) b;
-                    super.write(_singleByteArray, 0, 1);
+                    try
+                    {
+                        super.write(_singleByteArray, 0, 1);
+                    }
+                    catch (final GZIPInflationLimitException e)
+                    {
+                        _outputLimitExceeded = true;
+                        throw e;
+                    }
 
                     if (inf.finished())
                     {
@@ -98,9 +118,78 @@ public class GunzipOutputStream extends InflaterOutputStream
         }
     }
 
+    @Override
+    public void close() throws IOException
+    {
+        if (!_closed)
+        {
+            if (_outputLimitExceeded)
+            {
+                // Closing the target could complete a truncated HTTP response successfully. Leave it open so that
+                // the caller can reset an uncommitted response or propagate the failure to abort a committed response.
+                abort();
+            }
+            else
+            {
+                _closed = true;
+                super.close();
+            }
+        }
+    }
+
+    public final void abort()
+    {
+        if (!_closed)
+        {
+            _closed = true;
+            inf.end();
+        }
+    }
+
     private enum StreamState
     {
         HEADER_PARSING, INFLATING, TRAILER_PARSING, DONE
+    }
+
+    private static final class MaximumSizeOutputStream extends FilterOutputStream
+    {
+        private final int _maximumOutputSize;
+        private int _outputSize;
+
+        private MaximumSizeOutputStream(final OutputStream outputStream, final int maximumOutputSize)
+        {
+            super(outputStream);
+            if (maximumOutputSize < 0)
+            {
+                throw new IllegalArgumentException("maximumOutputSize cannot be negative");
+            }
+            _maximumOutputSize = maximumOutputSize;
+        }
+
+        @Override
+        public void write(final int value) throws IOException
+        {
+            checkSize(1);
+            out.write(value);
+            _outputSize++;
+        }
+
+        @Override
+        public void write(final byte[] data, final int offset, final int length) throws IOException
+        {
+            checkSize(length);
+            out.write(data, offset, length);
+            _outputSize += length;
+        }
+
+        private void checkSize(final int length) throws GZIPInflationLimitException
+        {
+            if (length > _maximumOutputSize - _outputSize)
+            {
+                throw new GZIPInflationLimitException(String.format("Decompressed content exceeds the maximum " +
+                        "size of %d bytes", _maximumOutputSize));
+            }
+        }
     }
 
     private enum HeaderState

@@ -61,6 +61,7 @@ import org.apache.qpid.server.protocol.v1_0.JmsMessageTypeAnnotation;
 import org.apache.qpid.server.protocol.v1_0.Message_1_0;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
@@ -71,6 +72,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSect
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.typedmessage.TypedBytesContentWriter;
+import org.apache.qpid.server.util.GZIPUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 @SuppressWarnings({"unchecked"})
@@ -302,6 +304,46 @@ class MessageConverter_0_8_to_1_0Test extends UnitTestBase
         doTest(expectedContent, null, DataSection.class, expectedContent, null, null);
     }
 
+    @Test
+    void rejectGzipContentExceedingConnectionDecompressionLimit()
+    {
+        final byte[] data = new byte[8192];
+        final byte[] compressed = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(data));
+        final AMQMessage sourceMessage = getAmqMessage(compressed, "application/octet-stream");
+        when(_header.getEncoding()).thenReturn(GZIPUtils.GZIP_CONTENT_ENCODING);
+
+        final NamedAddressSpace addressSpace = mock(NamedAddressSpace.class);
+
+        try
+        {
+            assertThrows(MessageConversionException.class, () -> _converter.convert(sourceMessage, addressSpace, 1024));
+        }
+        finally
+        {
+            when(_header.getEncoding()).thenReturn(null);
+        }
+    }
+
+    @Test
+    void legacyBodySectionOverrideCannotBypassConnectionDecompressionLimit()
+    {
+        final byte[] data = new byte[8192];
+        final byte[] compressed = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(data));
+        final AMQMessage sourceMessage = getAmqMessage(compressed, "application/octet-stream");
+        when(_header.getEncoding()).thenReturn(GZIPUtils.GZIP_CONTENT_ENCODING);
+
+        try
+        {
+            final MessageConverter_0_8_to_1_0 converter = new LegacyMessageConverter();
+            assertThrows(MessageConversionException.class, () ->
+                    converter.convert(sourceMessage, mock(NamedAddressSpace.class), 1024));
+        }
+        finally
+        {
+            when(_header.getEncoding()).thenReturn(null);
+        }
+    }
+
     private byte[] getObjectStreamMessageBytes(final Serializable o) throws Exception
     {
         try (final ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -309,6 +351,16 @@ class MessageConverter_0_8_to_1_0Test extends UnitTestBase
         {
             oos.writeObject(o);
             return bos.toByteArray();
+        }
+    }
+
+    private static final class LegacyMessageConverter extends MessageConverter_0_8_to_1_0
+    {
+        @Override
+        protected EncodingRetainingSection<?> getBodySection(final AMQMessage serverMessage,
+                                                             final SectionEncoder encoder)
+        {
+            return super.getBodySection(serverMessage, encoder);
         }
     }
 
@@ -371,6 +423,11 @@ class MessageConverter_0_8_to_1_0Test extends UnitTestBase
         final List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(content);
         assertEquals(expectedNumberOfSections, (long) sections.size(), "Unexpected number of sections");
         return sections;
+    }
+
+    protected AMQMessage getAmqMessage(final byte[] expected, final String mimeType)
+    {
+        return getAmqMessage(expected, mimeType, AMQPConnection_0_8.DEFAULT_CODEC_MAX_NESTED_OBJECTS);
     }
 
     private AMQMessage getAmqMessage(final byte[] expected,

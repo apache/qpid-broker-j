@@ -21,6 +21,7 @@ package org.apache.qpid.server.queue;
 import static org.apache.qpid.server.util.GZIPUtils.GZIP_CONTENT_ENCODING;
 import static org.apache.qpid.server.util.ParameterizedTypes.MAP_OF_STRING_STRING;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -101,6 +102,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.CustomRestHeaders;
+import org.apache.qpid.server.model.DecompressionLimitedContent;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
@@ -119,6 +121,7 @@ import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.SubjectExecutionContext;
@@ -138,6 +141,8 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.util.DeleteDeleteTask;
+import org.apache.qpid.server.util.GZIPUtils;
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 import org.apache.qpid.server.util.LimitedInputStream;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
@@ -2665,7 +2670,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         @Override
         public final void release()
         {
-            _messageReference.release();
+            try
+            {
+                onRelease();
+            }
+            finally
+            {
+                _messageReference.release();
+            }
+        }
+
+        protected void onRelease()
+        {
         }
 
         protected boolean isTruncated()
@@ -2727,19 +2743,31 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     class JsonMessageContent extends BaseMessageContent
     {
-        private final InternalMessage _internalMessage;
+        private InternalMessage _internalMessage;
 
-        JsonMessageContent(MessageReference<?> messageReference, InternalMessage message, long limit)
+        JsonMessageContent(final MessageReference<?> messageReference,
+                           final InternalMessage message,
+                           final long limit)
         {
             super(messageReference, limit);
             _internalMessage = message;
         }
 
         @Override
-        public void write(OutputStream outputStream) throws IOException
+        public void write(final OutputStream outputStream) throws IOException
         {
-            Object messageBody = _internalMessage.getMessageBody();
+            final Object messageBody = getInternalMessage().getMessageBody();
             new MessageContentJsonConverter(messageBody, isTruncated() ? _limit : UNLIMITED).convertAndWrite(outputStream);
+        }
+
+        protected final InternalMessage getInternalMessage()
+        {
+            return _internalMessage;
+        }
+
+        protected final void setInternalMessage(final InternalMessage internalMessage)
+        {
+            _internalMessage = internalMessage;
         }
 
         @SuppressWarnings("unused")
@@ -2759,58 +2787,233 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    class MessageContent extends BaseMessageContent
+    class ConvertedJsonMessageContent extends JsonMessageContent implements DecompressionLimitedContent
     {
+        private final MessageConverter _messageConverter;
+        private final int _maximumMessageDecompressionSize;
 
-        private boolean _decompressBeforeLimiting;
-
-        MessageContent(MessageReference<?> messageReference, long limit, boolean decompressBeforeLimiting)
+        ConvertedJsonMessageContent(final MessageReference<?> messageReference,
+                                    final MessageConverter messageConverter,
+                                    final long limit)
         {
-            super(messageReference, limit);
-            if (decompressBeforeLimiting)
+            super(messageReference, null, limit);
+            _messageConverter = messageConverter;
+            _maximumMessageDecompressionSize = GZIPUtils.getMaximumMessageDecompressionSize(AbstractQueue.this);
+        }
+
+        @Override
+        public int getMaximumMessageDecompressionSize()
+        {
+            return _maximumMessageDecompressionSize;
+        }
+
+        @Override
+        public void prepareForWrite(final int maximumMessageDecompressionSize) throws IOException
+        {
+            if (getInternalMessage() == null)
             {
-                String contentEncoding = getContentEncoding();
-                if (GZIP_CONTENT_ENCODING.equals(contentEncoding))
+                final ServerMessage<?> message = _messageReference.getMessage();
+                final int effectiveLimit = Math.min(_maximumMessageDecompressionSize,
+                                                    maximumMessageDecompressionSize);
+                try
                 {
-                    _decompressBeforeLimiting = true;
+                    setInternalMessage((InternalMessage) _messageConverter.convert(message,
+                                                                                   getVirtualHost(),
+                                                                                   effectiveLimit));
                 }
-                else if (contentEncoding != null && !"".equals(contentEncoding) && !"identity".equals(contentEncoding))
+                catch (final MessageConversionException e)
                 {
-                    throw new IllegalArgumentException(String.format(
-                            "Requested decompression of message with unknown compression '%s'", contentEncoding));
+                    throw new IOException(String.format("Unable to convert message %d on queue '%s' to JSON",
+                            message.getMessageNumber(), getName()), e);
                 }
             }
         }
 
         @Override
-        public void write(OutputStream outputStream) throws IOException
+        public void write(final OutputStream outputStream) throws IOException
         {
-            ServerMessage message = _messageReference.getMessage();
+            if (getInternalMessage() == null)
+            {
+                prepareForWrite(_maximumMessageDecompressionSize);
+            }
+            super.write(outputStream);
+        }
 
-            int length = (int) ((_limit == UNLIMITED || _decompressBeforeLimiting) ? message.getSize() : _limit);
-            try (QpidByteBuffer content = message.getContent(0, length))
+        @Override
+        protected void onRelease()
+        {
+            final InternalMessage internalMessage = getInternalMessage();
+            if (internalMessage != null)
+            {
+                _messageConverter.dispose(internalMessage);
+            }
+        }
+    }
+
+    class MessageContent extends BaseMessageContent implements DecompressionLimitedContent
+    {
+        private final boolean _decompressBeforeLimiting;
+        private int _maximumDecompressedSize;
+
+        MessageContent(final MessageReference<?> messageReference,
+                       final long limit,
+                       final boolean decompressBeforeLimiting)
+        {
+            super(messageReference, limit);
+            final String contentEncoding = messageReference.getMessage().getMessageHeader().getEncoding();
+            final boolean gzipCompressed = GZIP_CONTENT_ENCODING.equals(contentEncoding);
+            _decompressBeforeLimiting = decompressBeforeLimiting && gzipCompressed;
+            if (decompressBeforeLimiting && !gzipCompressed &&
+                    contentEncoding != null && !contentEncoding.isEmpty() && !"identity".equals(contentEncoding))
+            {
+                throw new IllegalArgumentException(String.format("Requested decompression of message with unknown " +
+                        "compression '%s'", contentEncoding));
+            }
+            _maximumDecompressedSize = gzipCompressed ?
+                    GZIPUtils.getMaximumMessageDecompressionSize(AbstractQueue.this) : Integer.MAX_VALUE;
+        }
+
+        @Override
+        public int getMaximumMessageDecompressionSize()
+        {
+            return _maximumDecompressedSize;
+        }
+
+        @Override
+        public void prepareForWrite(final int maximumMessageDecompressionSize)
+        {
+            _maximumDecompressedSize = Math.min(_maximumDecompressedSize, maximumMessageDecompressionSize);
+        }
+
+        @Override
+        public void write(final OutputStream outputStream) throws IOException
+        {
+            final ServerMessage message = _messageReference.getMessage();
+
+            final int length = (int) ((_limit == UNLIMITED || _decompressBeforeLimiting) ? message.getSize() : _limit);
+            try (final QpidByteBuffer content = message.getContent(0, length))
             {
                 InputStream inputStream = content.asInputStream();
-                if (_limit != UNLIMITED && _decompressBeforeLimiting)
-                {
-                    inputStream = new GZIPInputStream(inputStream);
-                    inputStream = new LimitedInputStream(inputStream, _limit);
-                    outputStream = new GZIPOutputStream(outputStream, true);
-                }
-
+                OutputStream targetOutputStream = outputStream;
+                AbortableGZIPOutputStream gzipOutputStream = null;
+                boolean transferCompleted = false;
                 try
                 {
-                    inputStream.transferTo(outputStream);
+                    if (_limit != UNLIMITED && _decompressBeforeLimiting)
+                    {
+                        inputStream = new GZIPInputStream(inputStream);
+                        inputStream = new MaximumSizeInputStream(inputStream, _maximumDecompressedSize);
+                        inputStream = new LimitedInputStream(inputStream, _limit);
+                        gzipOutputStream = new AbortableGZIPOutputStream(outputStream);
+                        targetOutputStream = gzipOutputStream;
+                    }
+
+                    inputStream.transferTo(targetOutputStream);
+                    transferCompleted = true;
                 }
                 finally
                 {
-                    inputStream.close();
-                    // Seems weird to close the outputStream here but otherwise the GZIPOutputStream will be in an
-                    // invalid state. Calling flush() did not solve the problem.
-                    outputStream.close();
+                    try
+                    {
+                        inputStream.close();
+                    }
+                    finally
+                    {
+                        if (transferCompleted)
+                        {
+                            targetOutputStream.close();
+                        }
+                        else if (gzipOutputStream != null)
+                        {
+                            gzipOutputStream.abort();
+                        }
+                    }
                 }
             }
 
+        }
+    }
+
+    private static final class AbortableGZIPOutputStream extends GZIPOutputStream
+    {
+        private boolean _closed;
+
+        private AbortableGZIPOutputStream(final OutputStream outputStream) throws IOException
+        {
+            super(outputStream, true);
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            if (!_closed)
+            {
+                _closed = true;
+                super.close();
+            }
+        }
+
+        private void abort()
+        {
+            if (!_closed)
+            {
+                _closed = true;
+                def.end();
+            }
+        }
+    }
+
+    private static final class MaximumSizeInputStream extends FilterInputStream
+    {
+        private final int _maximumSize;
+        private int _size;
+
+        private MaximumSizeInputStream(final InputStream inputStream, final int maximumSize)
+        {
+            super(inputStream);
+            _maximumSize = maximumSize;
+        }
+
+        @Override
+        public int read() throws IOException
+        {
+            if (_size == _maximumSize)
+            {
+                verifyEndOfStream();
+                return -1;
+            }
+            final int value = super.read();
+            if (value != -1)
+            {
+                _size++;
+            }
+            return value;
+        }
+
+        @Override
+        public int read(final byte[] data, final int offset, final int length) throws IOException
+        {
+            if (_size == _maximumSize)
+            {
+                verifyEndOfStream();
+                return -1;
+            }
+            final int allowedLength = Math.min(length, _maximumSize - _size);
+            final int read = super.read(data, offset, allowedLength);
+            if (read != -1)
+            {
+                _size += read;
+            }
+            return read;
+        }
+
+        private void verifyEndOfStream() throws IOException
+        {
+            if (super.read() != -1)
+            {
+                throw new GZIPInflationLimitException(String.format("Decompressed content exceeds the maximum size " +
+                        "of %d bytes", _maximumSize));
+            }
         }
     }
 
@@ -3552,13 +3755,25 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public Content getMessageContent(final long messageId, final long limit, boolean returnJson, boolean decompressBeforeLimiting)
+    public Content getMessageContent(final long messageId,
+                                     final long limit,
+                                     final boolean returnJson,
+                                     final boolean decompressBeforeLimiting)
     {
         final MessageContentFinder messageFinder = new MessageContentFinder(messageId);
         visit(messageFinder);
         if (messageFinder.isFound())
         {
-            return createMessageContent(messageFinder.getMessageReference(), returnJson, limit, decompressBeforeLimiting);
+            final MessageReference<?> messageReference = messageFinder.getMessageReference();
+            try
+            {
+                return createMessageContent(messageReference, returnJson, limit, decompressBeforeLimiting);
+            }
+            catch (final RuntimeException | Error e)
+            {
+                messageReference.release();
+                throw e;
+            }
         }
         else
         {
@@ -3573,30 +3788,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         if (returnJson)
         {
-            ServerMessage message = messageReference.getMessage();
+            final ServerMessage message = messageReference.getMessage();
             if (message instanceof InternalMessage)
             {
                 return new JsonMessageContent(messageReference, (InternalMessage) message, limit);
             }
             else
             {
-                MessageConverter messageConverter =
+                final MessageConverter messageConverter =
                         MessageConverterRegistry.getConverter(message.getClass(), InternalMessage.class);
                 if (messageConverter != null && message.checkValid())
                 {
-                    InternalMessage convertedMessage = null;
-                    try
-                    {
-                        convertedMessage = (InternalMessage) messageConverter.convert(message, getVirtualHost());
-                        return new JsonMessageContent(messageReference, convertedMessage, limit);
-                    }
-                    finally
-                    {
-                        if (convertedMessage != null)
-                        {
-                            messageConverter.dispose(convertedMessage);
-                        }
-                    }
+                    return new ConvertedJsonMessageContent(messageReference, messageConverter, limit);
                 }
                 else
                 {

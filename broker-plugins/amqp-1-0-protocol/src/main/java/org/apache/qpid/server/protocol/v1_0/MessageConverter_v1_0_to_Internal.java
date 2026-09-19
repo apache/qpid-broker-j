@@ -67,6 +67,15 @@ public class MessageConverter_v1_0_to_Internal implements MessageConverter<Messa
         return InternalMessage.convert(serverMessage, convertHeader, bodyObject);
     }
 
+    @Override
+    public InternalMessage convert(final Message_1_0 serverMessage,
+                                   final NamedAddressSpace addressSpace,
+                                   final int maximumMessageDecompressionSize)
+    {
+        // converter does not inflate gzip content
+        return convert(serverMessage, addressSpace);
+    }
+
     private AMQMessageHeader convertHeader(final Message_1_0 serverMessage,
                                            final NamedAddressSpace addressSpace,
                                            final Object convertedBodyObject)

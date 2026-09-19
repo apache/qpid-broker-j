@@ -39,6 +39,8 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
+
 final class QpidByteBufferFactory
 {
     private static final ByteBuffer[] EMPTY_BYTE_BUFFER_ARRAY = new ByteBuffer[0];
@@ -211,23 +213,36 @@ final class QpidByteBufferFactory
         }
     }
 
-    static QpidByteBuffer inflate(QpidByteBuffer compressedBuffer) throws IOException
+    static QpidByteBuffer inflate(final QpidByteBuffer compressedBuffer, final int maximumOutputSize)
+            throws IOException
     {
         if (compressedBuffer == null)
         {
             throw new IllegalArgumentException("compressedBuffer cannot be null");
         }
+        if (maximumOutputSize < 0)
+        {
+            throw new IllegalArgumentException("maximumOutputSize cannot be negative");
+        }
 
-        boolean isDirect = compressedBuffer.isDirect();
+        final boolean isDirect = compressedBuffer.isDirect();
         final int bufferSize = (isDirect && _pooledBufferSize > 0) ? _pooledBufferSize : 65536;
 
-        List<QpidByteBuffer> uncompressedBuffers = new ArrayList<>();
-        try (GZIPInputStream gzipInputStream = new GZIPInputStream(compressedBuffer.asInputStream()))
+        final List<QpidByteBuffer> uncompressedBuffers = new ArrayList<>();
+        try (final GZIPInputStream gzipInputStream = new GZIPInputStream(compressedBuffer.asInputStream()))
         {
-            byte[] buf = new byte[bufferSize];
+            final byte[] buf = new byte[bufferSize];
+            int uncompressedSize = 0;
             int read;
             while ((read = gzipInputStream.read(buf)) != -1)
             {
+                if (read > maximumOutputSize - uncompressedSize)
+                {
+                    final String errorMessage = "Decompressed content exceeds the maximum size of %d bytes"
+                            .formatted(maximumOutputSize);
+                    throw new GZIPInflationLimitException(errorMessage);
+                }
+                uncompressedSize += read;
                 uncompressedBuffers.add(asQpidByteBuffer(buf, 0, read));
             }
             return concatenate(uncompressedBuffers);

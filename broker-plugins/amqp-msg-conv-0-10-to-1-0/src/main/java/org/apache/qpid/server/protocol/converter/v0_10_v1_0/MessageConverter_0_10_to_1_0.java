@@ -72,7 +72,6 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
         return MessageTransferMessage.class;
     }
 
-
     @Override
     protected MessageMetaData_1_0 convertMetaData(MessageTransferMessage serverMessage,
                                                   final EncodingRetainingSection<?> bodySection,

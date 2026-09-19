@@ -1553,6 +1553,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 cause = ConnectionError.CONNECTION_FORCED;
                 break;
             case TRANSACTION_TIMEOUT:
+            case RESOURCE_LIMIT:
                 cause = AmqpError.RESOURCE_LIMIT_EXCEEDED;
                 break;
             default:
@@ -1573,6 +1574,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 cause = ConnectionError.CONNECTION_FORCED;
                 break;
             case TRANSACTION_TIMEOUT:
+            case RESOURCE_LIMIT:
                 cause = AmqpError.RESOURCE_LIMIT_EXCEEDED;
                 break;
             default:

@@ -88,6 +88,15 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
     }
 
     @Override
+    public MessageTransferMessage convert(final Message_1_0 serverMsg,
+                                          final NamedAddressSpace addressSpace,
+                                          final int maximumMessageDecompressionSize)
+    {
+        // converter does not inflate gzip content
+        return convert(serverMsg, addressSpace);
+    }
+
+    @Override
     public void dispose(final MessageTransferMessage message)
     {
 

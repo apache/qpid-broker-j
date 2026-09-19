@@ -36,6 +36,7 @@ import static org.apache.qpid.server.protocol.v1_0.JmsMessageTypeAnnotation.TEXT
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,8 +49,10 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentConverterRegistry;
 import org.apache.qpid.server.message.mimecontentconverter.MimeContentToObjectConverter;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
+import org.apache.qpid.server.protocol.converter.MessageConversionException;
 import org.apache.qpid.server.protocol.v1_0.constants.Symbols;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
@@ -66,9 +69,12 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotations;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.NonEncodingRetainingSection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.GZIPUtils;
+import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 
 public abstract class MessageConverter_to_1_0<M extends ServerMessage> implements MessageConverter<M, Message_1_0>
 {
+    private static final String GET_BODY_SECTION_METHOD_NAME = "getBodySection";
+
     /** Must be treated as immutable and must not be modified */
     private static final byte[] SERIALIZED_NULL = getObjectBytes(null);
     /** Must be treated as immutable and must not be modified */
@@ -87,6 +93,48 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
             .registerMessagingLayer()
             .registerTransactionLayer()
             .registerSecurityLayer();
+    private final boolean _usesLegacyBodySectionOverride = usesLegacyBodySectionOverride(getClass());
+
+    private static boolean usesLegacyBodySectionOverride(final Class<?> converterClass)
+    {
+        Class<?> type = converterClass;
+        while (type != null && type != MessageConverter_to_1_0.class)
+        {
+            boolean legacyOverride = false;
+            boolean boundedOverride = false;
+            for (final Method method : type.getDeclaredMethods())
+            {
+                if (GET_BODY_SECTION_METHOD_NAME.equals(method.getName()))
+                {
+                    final Class<?>[] parameterTypes = method.getParameterTypes();
+                    if (parameterTypes.length == 2
+                        && ServerMessage.class.isAssignableFrom(parameterTypes[0])
+                        && parameterTypes[1] == SectionEncoder.class)
+                    {
+                        legacyOverride = true;
+                    }
+                    else if (parameterTypes.length == 4
+                             && ServerMessage.class.isAssignableFrom(parameterTypes[0])
+                             && parameterTypes[1] == SectionEncoder.class
+                             && parameterTypes[2] == NamedAddressSpace.class
+                             && parameterTypes[3] == Integer.TYPE)
+                    {
+                        boundedOverride = true;
+                    }
+                }
+            }
+            if (boundedOverride)
+            {
+                return false;
+            }
+            if (legacyOverride)
+            {
+                return true;
+            }
+            type = type.getSuperclass();
+        }
+        return false;
+    }
 
     public static Symbol getContentType(final String contentMimeType)
     {
@@ -233,11 +281,23 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
     }
 
     @Override
-    public final Message_1_0 convert(M message, NamedAddressSpace addressSpace)
+    public final Message_1_0 convert(final M message, final NamedAddressSpace addressSpace)
     {
+        final int maximumOutputSize = GZIPUtils.GZIP_CONTENT_ENCODING.equals(
+                message.getMessageHeader().getEncoding())
+                ? GZIPUtils.getMaximumMessageDecompressionSizeForAddressSpace(addressSpace)
+                : 0;
+        return convert(message, addressSpace, maximumOutputSize);
+    }
 
-        SectionEncoder sectionEncoder = new SectionEncoderImpl(_typeRegistry);
-        return new Message_1_0(convertToStoredMessage(message, sectionEncoder));
+    @Override
+    public final Message_1_0 convert(final M message,
+                                     final NamedAddressSpace addressSpace,
+                                     final int maximumMessageDecompressionSize)
+    {
+        final SectionEncoder sectionEncoder = new SectionEncoderImpl(_typeRegistry);
+        return new Message_1_0(convertToStoredMessage(message, sectionEncoder, addressSpace,
+                maximumMessageDecompressionSize));
     }
 
     @Override
@@ -249,12 +309,44 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         }
     }
 
-    private ConvertedMessage<M> convertToStoredMessage(final M serverMessage, SectionEncoder sectionEncoder)
+    private ConvertedMessage<M> convertToStoredMessage(final M serverMessage,
+                                                       final SectionEncoder sectionEncoder,
+                                                       final NamedAddressSpace addressSpace,
+                                                       final int maximumMessageDecompressionSize)
     {
-        EncodingRetainingSection<?> bodySection = getBodySection(serverMessage, sectionEncoder);
-
+        final EncodingRetainingSection<?> bodySection;
+        if (_usesLegacyBodySectionOverride)
+        {
+            validateLegacyBodySectionSize(serverMessage, maximumMessageDecompressionSize);
+            bodySection = getBodySection(serverMessage, sectionEncoder);
+        }
+        else
+        {
+            bodySection = getBodySection(serverMessage,
+                                         sectionEncoder,
+                                         addressSpace,
+                                         maximumMessageDecompressionSize);
+        }
         final MessageMetaData_1_0 metaData = convertMetaData(serverMessage, bodySection, sectionEncoder);
         return convertServerMessage(metaData, serverMessage, bodySection);
+    }
+
+    private void validateLegacyBodySectionSize(final M serverMessage,
+                                               final int maximumMessageDecompressionSize)
+    {
+        if (GZIPUtils.GZIP_CONTENT_ENCODING.equals(serverMessage.getMessageHeader().getEncoding()))
+        {
+            try (final QpidByteBuffer content = serverMessage.getContent())
+            {
+                GZIPUtils.validateDecompressedSize(content.asInputStream(), maximumMessageDecompressionSize);
+            }
+            catch (final GZIPInflationLimitException e)
+            {
+                throw new MessageConversionException(String.format("Message decompression exceeds the effective %d " +
+                        "byte limit controlled by '%s' and '%s'", maximumMessageDecompressionSize,
+                        Connection.MAX_MESSAGE_DECOMPRESSION_SIZE, Connection.MAX_MESSAGE_SIZE), e);
+            }
+        }
     }
 
     abstract protected MessageMetaData_1_0 convertMetaData(final M serverMessage,
@@ -376,19 +468,60 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
 
     protected EncodingRetainingSection<?> getBodySection(final M serverMessage, final SectionEncoder encoder)
     {
+        return getBodySectionWithMaximumOutputSize(serverMessage, encoder,
+                Connection.DEFAULT_MAX_MESSAGE_DECOMPRESSION_SIZE);
+    }
+
+    protected EncodingRetainingSection<?> getBodySection(final M serverMessage,
+                                                          final SectionEncoder encoder,
+                                                          final NamedAddressSpace addressSpace)
+    {
+        final int maximumOutputSize = GZIPUtils.GZIP_CONTENT_ENCODING.equals(
+                serverMessage.getMessageHeader().getEncoding())
+                ? GZIPUtils.getMaximumMessageDecompressionSizeForAddressSpace(addressSpace)
+                : 0;
+        return getBodySectionWithMaximumOutputSize(serverMessage, encoder, maximumOutputSize);
+    }
+
+    protected EncodingRetainingSection<?> getBodySection(final M serverMessage,
+                                                          final SectionEncoder encoder,
+                                                          final NamedAddressSpace addressSpace,
+                                                          final int maximumMessageDecompressionSize)
+    {
+        return getBodySectionWithMaximumOutputSize(serverMessage, encoder, maximumMessageDecompressionSize);
+    }
+
+    private EncodingRetainingSection<?> getBodySectionWithMaximumOutputSize(
+            final M serverMessage,
+            final SectionEncoder encoder,
+            final int maximumMessageDecompressionSize)
+    {
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];
 
-        try (QpidByteBuffer content = serverMessage.getContent())
+        try (final QpidByteBuffer content = serverMessage.getContent())
         {
             content.get(data);
         }
 
-        byte[] uncompressed;
-        if(GZIPUtils.GZIP_CONTENT_ENCODING.equals(serverMessage.getMessageHeader().getEncoding())
-           && (uncompressed = GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data))) != null)
+        if (GZIPUtils.GZIP_CONTENT_ENCODING.equals(serverMessage.getMessageHeader().getEncoding()))
         {
-            data = uncompressed;
+            final int maximumOutputSize = maximumMessageDecompressionSize;
+            try
+            {
+                final byte[] uncompressed =
+                        GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data), maximumOutputSize);
+                if (uncompressed != null)
+                {
+                    data = uncompressed;
+                }
+            }
+            catch (final GZIPInflationLimitException e)
+            {
+                throw new MessageConversionException(String.format("Message decompression exceeds the effective %d " +
+                        "byte limit controlled by '%s' and '%s'", maximumOutputSize,
+                        Connection.MAX_MESSAGE_DECOMPRESSION_SIZE, Connection.MAX_MESSAGE_SIZE), e);
+            }
         }
 
         return convertMessageBody(serverMessage, mimeType, data).createEncodingRetainingSection();
