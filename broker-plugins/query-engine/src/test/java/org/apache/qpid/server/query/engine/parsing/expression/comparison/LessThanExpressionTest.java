@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.qpid.server.query.engine.TestBroker;
 import org.apache.qpid.server.query.engine.exception.QueryEvaluationException;
@@ -194,31 +196,26 @@ public class LessThanExpressionTest
         }
     }
 
-    @Test()
-    public void comparingNulls()
+    @ParameterizedTest
+    @ValueSource(strings =
     {
-        String query = "select 1 < null as result from queue";
-        try
-        {
-            _queryEvaluator.execute(query);
-            fail("Expected exception not thrown");
-        }
-        catch (Exception e)
-        {
-            assertEquals(QueryEvaluationException.class, e.getClass());
-            assertEquals("Objects of types 'Integer' and 'null' can not be compared", e.getMessage());
-        }
+        "1 < null", "null < 1", "'test' < null", "null < 'test'",
+        "null < null", "(null + 1) < 1", "1 < (null + 1)",
+        "null < (select name from queue where 1 = 0)"
+    })
+    public void comparingNulls(final String expression)
+    {
+        final List<Map<String, Object>> result = _queryEvaluator.execute("select " + expression + " as result").getResults();
+        assertEquals(1, result.size(), expression);
+        assertEquals(false, result.get(0).get("result"), expression);
+    }
 
-        query = "select null < 'test' as result from queue";
-        try
-        {
-            _queryEvaluator.execute(query);
-            fail("Expected exception not thrown");
-        }
-        catch (Exception e)
-        {
-            assertEquals(QueryEvaluationException.class, e.getClass());
-            assertEquals("Objects of types 'null' and 'String' can not be compared", e.getMessage());
-        }
+    @ParameterizedTest
+    @ValueSource(strings = { "description < 'test description 2'", "'test description 2' < description" })
+    public void filteringNullableFields(final String predicate)
+    {
+        final List<Map<String, Object>> result = _queryEvaluator.execute("select count(*) as cnt from queue where " + predicate).getResults();
+        assertEquals(1, result.size(), predicate);
+        assertEquals(10, result.get(0).get("cnt"), predicate);
     }
 }

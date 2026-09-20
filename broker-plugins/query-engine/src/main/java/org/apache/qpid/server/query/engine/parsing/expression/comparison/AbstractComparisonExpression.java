@@ -87,6 +87,19 @@ public abstract class AbstractComparisonExpression<T, R> extends AbstractExpress
     }
 
     /**
+     * Returns true if one of the operands is null and false otherwise
+     *
+     * @param left Left operand
+     * @param right Right operand
+     *
+     * @return true if one of the operands is null and false otherwise
+     */
+    protected boolean hasNullOperand(final Object left, final Object right)
+    {
+        return left == null || right == null;
+    }
+
+    /**
      * Evaluates value to a boolean result
      *
      * @param value Object to handle
