@@ -59,6 +59,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     private Certificate _peerCertificate;
     private boolean _principalChecked;
     private volatile boolean _hostChecked;
+    private volatile boolean _needsReadForWrite;
     private QpidByteBuffer _netInputBuffer;
     private QpidByteBuffer _netOutputBuffer;
     private QpidByteBuffer _applicationBuffer;
@@ -208,7 +209,16 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                 }
             }
         }
+
+        _needsReadForWrite = _encryptedOutput.isEmpty() &&
+                _sslEngine.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_UNWRAP;
         return new WriteResult(bufsSent && _encryptedOutput.isEmpty(), totalConsumed);
+    }
+
+    @Override
+    public boolean needsReadForWrite()
+    {
+        return _needsReadForWrite;
     }
 
     protected void restoreApplicationBufferForWrite()
