@@ -51,9 +51,10 @@ public class StartupAppender  extends AppenderBase<ILoggingEvent>
     }
 
     @Override
-    protected synchronized void append(ILoggingEvent e)
+    protected synchronized void append(final ILoggingEvent event)
     {
-        _accumulatedLoggingEvents.add(e);
+        event.prepareForDeferredProcessing();
+        _accumulatedLoggingEvents.add(event);
     }
 
     public synchronized void replayAccumulatedEvents(Appender<ILoggingEvent> appender)
