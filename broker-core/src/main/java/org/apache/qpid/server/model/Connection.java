@@ -59,7 +59,9 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     int DEFAULT_MAX_MESSAGE_DECOMPRESSION_SIZE = 100 * 1024 * 1024;
 
     String CLOSE_RESPONSE_TIMEOUT = "connection.closeResponseTimeout";
-    @ManagedContextDefault(name = CLOSE_RESPONSE_TIMEOUT)
+    @ManagedContextDefault(name = CLOSE_RESPONSE_TIMEOUT,
+            description = "Maximum time in milliseconds to send the connection close and await the peer's response,"
+                          + " starting when closing is requested. A non-positive value expires immediately.")
     long DEFAULT_CLOSE_RESPONSE_TIMEOUT = 2000L;
 
     String MAX_MESSAGE_SIZE = "qpid.max_message_size";

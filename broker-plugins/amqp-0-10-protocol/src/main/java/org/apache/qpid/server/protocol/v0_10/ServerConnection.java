@@ -52,7 +52,6 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.v0_10.transport.Binary;
 import org.apache.qpid.server.protocol.v0_10.transport.ConnectionClose;
@@ -69,7 +68,6 @@ import org.apache.qpid.server.protocol.v0_10.transport.SessionDetachCode;
 import org.apache.qpid.server.protocol.v0_10.transport.SessionDetached;
 import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.transport.network.NetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -164,14 +162,9 @@ public class ServerConnection extends ConnectionInvoker
             lock.notifyAll();
         }
 
-        if(state == State.CLOSING)
+        if (state == State.CLOSING || state == State.CLOSE_RCVD)
         {
-            long timeoutTime = System.currentTimeMillis() + getAmqpConnection().getContextValue(Long.class, org.apache.qpid.server.model.Connection.CLOSE_RESPONSE_TIMEOUT);
-
-            getAmqpConnection().getAggregateTicker().addTicker(new ConnectionClosingTicker(timeoutTime, (ServerNetworkConnection) getNetworkConnection()));
-
-            // trigger a wakeup to ensure the ticker will be taken into account
-            getAmqpConnection().notifyWork();
+            getAmqpConnection().startCloseDeadline();
         }
     }
 
@@ -290,6 +283,7 @@ public class ServerConnection extends ConnectionInvoker
 
     void sendConnectionCloseAsync(final ConnectionCloseCode replyCode, final String message)
     {
+        getAmqpConnection().startCloseDeadline();
         addAsyncTask(object ->
         {
             if(!isClosing())
@@ -649,6 +643,7 @@ public class ServerConnection extends ConnectionInvoker
 
     protected void sendConnectionClose(ConnectionCloseCode replyCode, String replyText, Option... _options)
     {
+        getAmqpConnection().startCloseDeadline();
         connectionClose(replyCode, replyText, _options);
     }
 
