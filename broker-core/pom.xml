@@ -60,16 +60,6 @@
       <artifactId>caffeine</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk18on</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcpkix-jdk18on</artifactId>
-    </dependency>
-
      <!-- test dependencies -->
     <dependency>
       <groupId>org.apache.qpid</groupId>
@@ -148,6 +138,34 @@
         <configuration>
           <workingDirectory>${basedir}/..</workingDirectory>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>ban-bouncycastle</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <!-- certificate generation using Bouncy Castle belongs to the certificate-generator-bouncycastle plugin -->
+                  <excludes>
+                    <exclude>org.bouncycastle:*:*:*:compile</exclude>
+                    <exclude>org.bouncycastle:*:*:*:provided</exclude>
+                    <exclude>org.bouncycastle:*:*:*:runtime</exclude>
+                    <exclude>org.bouncycastle:*:*:*:system</exclude>
+                  </excludes>
+                  <message>broker-core must not depend on Bouncy Castle outside the test scope</message>
+                </bannedDependencies>
+              </rules>
+              <fail>true</fail>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
