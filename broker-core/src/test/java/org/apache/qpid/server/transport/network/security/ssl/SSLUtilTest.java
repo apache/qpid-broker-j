@@ -24,32 +24,24 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -59,6 +51,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.security.certificate.CertificateGeneratorsTestHelper;
 import org.apache.qpid.server.transport.TransportException;
 import org.apache.qpid.server.util.DataUrlUtils;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
@@ -66,6 +59,20 @@ import org.apache.qpid.test.utils.UnitTestBase;
 
 public class SSLUtilTest extends UnitTestBase
 {
+    @Test
+    public void generateSelfSignedCertificateRejectsMissingResult()
+    {
+        try (final CertificateGeneratorsTestHelper.Reset ignored =
+                     CertificateGeneratorsTestHelper.useGenerator("Broken", request -> null))
+        {
+            final long now = System.currentTimeMillis();
+            final GeneralSecurityException thrown = assertThrows(GeneralSecurityException.class,
+                    () -> SSLUtil.generateSelfSignedCertificate("RSA", "SHA256withRSA", 2048, now,
+                                                                now + 60_000, "CN=Qpid", Set.of(), Set.of()));
+            assertEquals("Certificate generator returned no certificate", thrown.getMessage());
+        }
+    }
+
     @Test
     public void testFilterEntries_empty()
     {
@@ -234,37 +241,6 @@ public class SSLUtilTest extends UnitTestBase
 
         assertEquals(1, certificates.length, "Unexpected number of certificates");
         assertEquals(certificate, certificates[0], "Unexpected certificate");
-    }
-
-    @Test
-    public void generateSelfSignedCertificate() throws Exception
-    {
-        final String keyAlgorithm = "RSA";
-        final String signatureAlgorithm = "SHA256withRSA";
-        final int keyLength = 2048;
-
-        final Set<InetAddress> addresses = Collections.list(NetworkInterface.getNetworkInterfaces()).stream()
-                .flatMap(networkInterface -> networkInterface.getInterfaceAddresses().stream())
-                .map(InterfaceAddress::getAddress)
-                .collect(Collectors.toSet());
-
-        final Set<String> dnsNames = addresses.stream()
-                .map(address -> address.getHostName() != null ? address.getHostName() : address.getCanonicalHostName())
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        final long startTime = System.currentTimeMillis();
-        final long endTime = Instant.ofEpochMilli(startTime).plus(365, ChronoUnit.DAYS).toEpochMilli();
-
-        final SSLUtil.KeyCertPair keyCertPair = SSLUtil.generateSelfSignedCertificate(keyAlgorithm,
-                signatureAlgorithm, keyLength, startTime, endTime, "CN=Qpid", dnsNames, addresses);
-
-        assertNotNull(keyCertPair);
-        assertNotNull(keyCertPair.getCertificate());
-        assertNotNull(keyCertPair.getPrivateKey());
-
-        assertEquals(keyAlgorithm, keyCertPair.getPrivateKey().getAlgorithm());
-        assertTrue(signatureAlgorithm.equalsIgnoreCase(keyCertPair.getCertificate().getSigAlgName()));
     }
 
     private Certificate getTestCertificate()
