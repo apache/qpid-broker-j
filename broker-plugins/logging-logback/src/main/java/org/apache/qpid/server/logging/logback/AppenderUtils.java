@@ -97,6 +97,14 @@ public class AppenderUtils
         {
             triggeringPolicy.start();
         }
+        if (!decorator.isStarted() || !triggeringPolicy.isStarted())
+        {
+            decorator.stop();
+            triggeringPolicy.stop();
+            final String path = file.getAbsolutePath();
+            final String message = String.format("Cannot initialize rolling policies for log file '%s'.", path);
+            throw new IllegalConfigurationException(message);
+        }
 
         final PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setPattern(fileLoggerSettings.getLayout());

@@ -149,6 +149,27 @@ public class AppenderUtilsTest extends UnitTestBase
         assertEquals(LAYOUT, ((PatternLayoutEncoder) appender.getEncoder()).getPattern(), "Unexpected layout");
     }
 
+    @Test
+    public void testFailedDailyPolicyRejectsAppenderConfiguration() throws Exception
+    {
+        final LocalDate date = LocalDate.of(2026, 2, 10);
+        final long modified = date.atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        Files.writeString(_testLogFile.toPath(), "existing log");
+        Files.setLastModifiedTime(_testLogFile.toPath(), FileTime.fromMillis(modified));
+        final Path archive = Path.of(_testLogFileName + "." + date + "." + Integer.MAX_VALUE + ".gz");
+        Files.writeString(archive, "existing archive");
+        final RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
+
+        final IllegalConfigurationException exception = assertThrows(IllegalConfigurationException.class, () ->
+                AppenderUtils.configureRollingFileAppender(_settings, _loggerContext, appender));
+
+        assertTrue(exception.getMessage().contains(_testLogFileName));
+        assertFalse(appender.getRollingPolicy().isStarted());
+        assertFalse(appender.getTriggeringPolicy().isStarted());
+        assertEquals("existing log", Files.readString(_testLogFile.toPath()));
+        assertEquals("existing archive", Files.readString(archive));
+    }
+
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     public void testDailyRestartRolloverAndNotification(final boolean compressed) throws Exception
