@@ -97,7 +97,12 @@ public final class CertificateGenerators
     }
 
     /**
+     * Selects the certificate generator, if not already selected. Use the result both to check availability and
+     * to report the reason, as the selection may change between two calls.
+     *
      * @return why certificate generation is unavailable, or null if it is available
+     * @throws IllegalArgumentException if the configuration does not identify a single generator
+     * @throws ServerScopedRuntimeException if the factories cannot be loaded or the generator cannot be created
      */
     public static String getUnavailableReason()
     {

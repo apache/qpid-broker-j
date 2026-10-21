@@ -160,16 +160,15 @@ final class BouncyCastleCertificateGenerator implements CertificateGenerator
             throw securityException(e, "Unable to sign certificate");
         }
 
-        if (LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug("Generated self-signed certificate '{}': key pair provider '{}', signature provider '{}', "
-                         + "certificate factory provider '{}'",
-                         request.getSubject().getName(),
-                         keyPairGenerator.getProvider().getName(),
-                         // the JCA name of the signature, as the requested name may be an alias the JCA does not know
-                         signatureProvider(certificate.getSigAlgName(), privateKey),
-                         CertificateFactory.getInstance("X.509").getProvider().getName());
-        }
+        // logged at info, as the providers come from the default JCA selection and this is the only record of them;
+        // certificates are generated only when a keystore is created or regenerated
+        LOGGER.info("Generated self-signed certificate '{}': key pair provider '{}', signature provider '{}', "
+                    + "certificate factory provider '{}'",
+                    request.getSubject().getName(),
+                    keyPairGenerator.getProvider().getName(),
+                    // the JCA name of the signature, as the requested name may be an alias the JCA does not know
+                    signatureProvider(certificate.getSigAlgName(), privateKey),
+                    certificateFactoryProvider());
 
         return new GeneratedCertificate(privateKey, certificate);
     }
@@ -219,14 +218,35 @@ final class BouncyCastleCertificateGenerator implements CertificateGenerator
     // visible for testing
     static String signatureProvider(final String signatureAlgorithm, final PrivateKey privateKey)
     {
+        // the lookup only feeds a log message, so it must not fail certificate generation
         try
         {
             final Signature signature = Signature.getInstance(signatureAlgorithm);
             signature.initSign(privateKey);
             return signature.getProvider().getName();
         }
-        catch (GeneralSecurityException e)
+        catch (GeneralSecurityException | RuntimeException e)
         {
+            LOGGER.debug("Unable to determine the provider of signature algorithm '{}'", signatureAlgorithm, e);
+            return "unknown";
+        }
+    }
+
+    /**
+     * The provider the default JCA selection uses for X.509 certificates, for diagnostics only.
+     *
+     * @return provider name, or {@code unknown} if no provider supports X.509 certificates
+     */
+    private static String certificateFactoryProvider()
+    {
+        // the lookup only feeds a log message, so it must not fail certificate generation
+        try
+        {
+            return CertificateFactory.getInstance("X.509").getProvider().getName();
+        }
+        catch (CertificateException | RuntimeException e)
+        {
+            LOGGER.debug("Unable to determine the provider of X.509 certificates", e);
             return "unknown";
         }
     }
