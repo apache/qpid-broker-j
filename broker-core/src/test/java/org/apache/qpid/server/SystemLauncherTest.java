@@ -22,6 +22,7 @@ package org.apache.qpid.server;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -46,6 +47,8 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.security.certificate.CertificateGenerators;
+import org.apache.qpid.server.security.certificate.CertificateGeneratorsTestHelper;
 import org.apache.qpid.server.util.FileUtils;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -122,6 +125,37 @@ public class SystemLauncherTest extends UnitTestBase
         // existing system property should not be overridden
         assertEquals(_brokerWork.getAbsolutePath(), System.getProperty(SystemConfig.PROPERTY_QPID_WORK),
                 "Unexpected QPID_WORK system property");
+    }
+
+    @Test
+    public void testStartupFailsForUnknownCertificateGenerator() throws Exception
+    {
+        setTestSystemProperty(CertificateGenerators.PROPERTY, "NOPE");
+        CertificateGeneratorsTestHelper.reset();
+        try
+        {
+            final Map<String,Object> attributes =
+                    Map.of(SystemConfig.INITIAL_CONFIGURATION_LOCATION, _initialConfiguration.getAbsolutePath(),
+                           SystemConfig.TYPE, JsonSystemConfigImpl.SYSTEM_CONFIG_TYPE);
+            final AtomicReference<RuntimeException> startupException = new AtomicReference<>();
+            _systemLauncher = new SystemLauncher(new SystemLauncherListener.DefaultSystemLauncherListener()
+            {
+                @Override
+                public void errorOnStartup(final RuntimeException e)
+                {
+                    startupException.set(e);
+                }
+            });
+            _systemLauncher.startup(attributes);
+
+            assertInstanceOf(IllegalArgumentException.class, startupException.get());
+            assertTrue(startupException.get().getMessage().contains(CertificateGenerators.PROPERTY),
+                       startupException.get().getMessage());
+        }
+        finally
+        {
+            CertificateGeneratorsTestHelper.reset();
+        }
     }
 
     @Test
