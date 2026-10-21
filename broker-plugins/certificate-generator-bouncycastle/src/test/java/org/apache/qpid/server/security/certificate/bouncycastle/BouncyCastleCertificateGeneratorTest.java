@@ -21,6 +21,7 @@
 package org.apache.qpid.server.security.certificate.bouncycastle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.when;
 import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyPairGenerator;
+import java.security.ProviderException;
 import java.security.SignatureException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -47,6 +49,8 @@ import javax.security.auth.x500.X500Principal;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.cert.CertIOException;
@@ -161,19 +165,52 @@ public class BouncyCastleCertificateGeneratorTest extends AbstractCertificateGen
         }
     }
 
+    /** A JCA provider may report a failure unchecked, which the contract requires as GeneralSecurityException. */
     @Test
-    public void generatesWithoutDebugLogging() throws Exception
+    public void providerFailureReported()
+    {
+        final ProviderException failure = new ProviderException("self-test failed");
+        final CertificateGenerator generator = createGenerator();
+        try (final MockedConstruction<JcaContentSignerBuilder> ignored = mockConstruction(JcaContentSignerBuilder.class,
+                (signerBuilder, context) -> when(signerBuilder.build(any())).thenThrow(failure)))
+        {
+            final GeneralSecurityException thrown =
+                    assertThrows(GeneralSecurityException.class, () -> generator.generate(request(Set.of())));
+
+            assertSame(failure, thrown.getCause());
+        }
+    }
+
+    /** The providers are the only record of the default JCA selection, so they are logged at info. */
+    @Test
+    public void logsProvidersAtInfo() throws Exception
     {
         final Logger logger = (Logger) LoggerFactory.getLogger(BouncyCastleCertificateGenerator.class);
         final Level level = logger.getLevel();
+        final ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
         logger.setLevel(Level.INFO);
         try
         {
             assertNotNull(createGenerator().generate(request(Set.of())).certificate());
+
+            final List<ILoggingEvent> events = appender.list.stream()
+                    .filter(event -> event.getLevel() == Level.INFO)
+                    .filter(event -> event.getMessage().startsWith("Generated self-signed certificate"))
+                    .toList();
+            assertEquals(1, events.size(), "Unexpected events: " + appender.list);
+            final Object[] arguments = events.get(0).getArgumentArray();
+            assertEquals(4, arguments.length);
+            for (int i = 1; i < arguments.length; i++)
+            {
+                assertNotEquals("unknown", arguments[i], events.get(0).getFormattedMessage());
+            }
         }
         finally
         {
             logger.setLevel(level);
+            logger.detachAppender(appender);
         }
     }
 
@@ -205,6 +242,18 @@ public class BouncyCastleCertificateGeneratorTest extends AbstractCertificateGen
         keyPairGenerator.initialize(2048);
 
         assertEquals("unknown", BouncyCastleCertificateGenerator.signatureProvider("NoSuchSignatureAlgorithm",
+                keyPairGenerator.generateKeyPair().getPrivate()));
+    }
+
+    /** The lookup only feeds a log message, so an unchecked failure must not escape either. */
+    @Test
+    public void signatureProviderUncheckedFailure() throws Exception
+    {
+        final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(2048);
+
+        // Signature.getInstance throws NullPointerException for a null name
+        assertEquals("unknown", BouncyCastleCertificateGenerator.signatureProvider(null,
                 keyPairGenerator.generateKeyPair().getPrivate()));
     }
 

@@ -29,6 +29,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.ProviderException;
 import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.cert.CertificateException;
@@ -101,6 +102,11 @@ final class BouncyCastleCertificateGenerator implements CertificateGenerator
             throw new GeneralSecurityException("The Bouncy Castle libraries on the classpath are incomplete or "
                                                + "incompatible: " + e, e);
         }
+        catch (ProviderException e)
+        {
+            // a JCA provider reports some failures unchecked, for example a FIPS provider whose self-test fails
+            throw new GeneralSecurityException("The security provider failed: " + e, e);
+        }
     }
 
     private GeneratedCertificate generateCertificate(final CertificateRequest request) throws GeneralSecurityException
@@ -161,7 +167,8 @@ final class BouncyCastleCertificateGenerator implements CertificateGenerator
         }
 
         // logged at info, as the providers come from the default JCA selection and this is the only record of them;
-        // certificates are generated only when a keystore is created or regenerated
+        // certificates are generated only when a keystore has no stored certificate: on creation, on regeneration,
+        // or when opened without one
         LOGGER.info("Generated self-signed certificate '{}': key pair provider '{}', signature provider '{}', "
                     + "certificate factory provider '{}'",
                     request.getSubject().getName(),
@@ -213,12 +220,14 @@ final class BouncyCastleCertificateGenerator implements CertificateGenerator
      *
      * @param signatureAlgorithm JCA name of the signature algorithm
      * @param privateKey key to sign with
-     * @return provider name, or {@code unknown} if no provider supports the algorithm and key
+     * @return provider name, or {@code unknown} if it cannot be determined, for example because no provider
+     * supports the algorithm and key
      */
     // visible for testing
     static String signatureProvider(final String signatureAlgorithm, final PrivateKey privateKey)
     {
-        // the lookup only feeds a log message, so it must not fail certificate generation
+        // the lookup only feeds a log message, so it must not fail certificate generation; the failure is logged at
+        // warn, as the provider record is otherwise lost
         try
         {
             final Signature signature = Signature.getInstance(signatureAlgorithm);
@@ -227,7 +236,7 @@ final class BouncyCastleCertificateGenerator implements CertificateGenerator
         }
         catch (GeneralSecurityException | RuntimeException e)
         {
-            LOGGER.debug("Unable to determine the provider of signature algorithm '{}'", signatureAlgorithm, e);
+            LOGGER.warn("Unable to determine the provider of signature algorithm '{}'", signatureAlgorithm, e);
             return "unknown";
         }
     }
@@ -235,18 +244,19 @@ final class BouncyCastleCertificateGenerator implements CertificateGenerator
     /**
      * The provider the default JCA selection uses for X.509 certificates, for diagnostics only.
      *
-     * @return provider name, or {@code unknown} if no provider supports X.509 certificates
+     * @return provider name, or {@code unknown} if it cannot be determined
      */
     private static String certificateFactoryProvider()
     {
-        // the lookup only feeds a log message, so it must not fail certificate generation
+        // the lookup only feeds a log message, so it must not fail certificate generation; the failure is logged at
+        // warn, as the provider record is otherwise lost
         try
         {
             return CertificateFactory.getInstance("X.509").getProvider().getName();
         }
         catch (CertificateException | RuntimeException e)
         {
-            LOGGER.debug("Unable to determine the provider of X.509 certificates", e);
+            LOGGER.warn("Unable to determine the provider of X.509 certificates", e);
             return "unknown";
         }
     }
