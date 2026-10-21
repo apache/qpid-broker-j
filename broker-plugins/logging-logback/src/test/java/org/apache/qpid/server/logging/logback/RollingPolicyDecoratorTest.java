@@ -214,6 +214,31 @@ public class RollingPolicyDecoratorTest extends UnitTestBase
         verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher2));
     }
 
+    @Test
+    public void testStartupIgnoresDirectoriesNamedAsArchives() throws IOException
+    {
+        Files.createDirectory(_baseFolder.toPath().resolve("test.2015-06-25.1.gz"));
+
+        _policy.start();
+
+        verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(getMatcher(new String[]{_testFile.getName()})));
+    }
+
+    @Test
+    public void testScanDepthIncludesDirectoriesInArchivePattern() throws IOException
+    {
+        final String fileNamePattern = _baseFolder.getAbsolutePath() + "/test.%d{yyyy/MM/dd}.%i.gz";
+        when(_delegate.getFileNamePattern()).thenReturn(fileNamePattern);
+        final Path archiveDirectory = Files.createDirectories(_baseFolder.toPath().resolve("test.2015").resolve("06"));
+        final Path archive = Files.createFile(archiveDirectory.resolve("25.0.gz"));
+        _policy = new RollingPolicyDecorator(_delegate, _listener, createMockExecutorService());
+
+        _policy.start();
+
+        final String relativeName = _baseFolder.toPath().relativize(archive).toString();
+        verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(getMatcher(new String[]{relativeName})));
+    }
+
     private ArgumentMatcher<String[]> getMatcher(final String[] expected)
     {
         return item -> Arrays.equals(expected, item);

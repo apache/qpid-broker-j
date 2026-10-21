@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -58,6 +59,7 @@ public class RollingPolicyDecorator implements RollingPolicy
     private final RolloverListener _listener;
     private final Path _rolledFilesBaseFolder;
     private final Pattern _rolledFileRegExp;
+    private final int _maxScanDepth;
     private final ScheduledExecutorService _executorService;
     private final long _rescanDelayMillis = Long.getLong(ROLLOVER_RESCAN_DELAY_MS_PROPERTY_NAME, DEFAULT_RESCAN_DELAY);
     private final long _rescanLimit = Long.getLong(ROLLOVER_RESCAN_LIMIT_PROPERTY_NAME, DEFAULT_RESCAN_LIMIT);
@@ -76,6 +78,7 @@ public class RollingPolicyDecorator implements RollingPolicy
         FilePathBaseFolderAndPatternPair pair = new FilePathBaseFolderAndPatternPair(filePathRegExp);
         _rolledFilesBaseFolder = pair.getBaseFolder();
         _rolledFileRegExp = pair.getPattern();
+        _maxScanDepth = pair.getMaxDepth();
         _currentScanTask = null;
     }
 
@@ -215,7 +218,7 @@ public class RollingPolicyDecorator implements RollingPolicy
             final List<Path> rolledFiles = new ArrayList<>();
             try
             {
-                Files.walkFileTree(_rolledFilesBaseFolder, new FileVisitor<>()
+                Files.walkFileTree(_rolledFilesBaseFolder, Collections.emptySet(), _maxScanDepth, new FileVisitor<>()
                 {
                     @Override
                     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
@@ -232,7 +235,7 @@ public class RollingPolicyDecorator implements RollingPolicy
                             absolutePath = absolutePath.replace('\\', '/');
                         }
 
-                        if (_rolledFileRegExp.matcher(absolutePath).matches())
+                        if (!attrs.isDirectory() && _rolledFileRegExp.matcher(absolutePath).matches())
                         {
                             rolledFiles.add(file);
                         }
@@ -289,6 +292,7 @@ public class RollingPolicyDecorator implements RollingPolicy
     {
         private final Path _baseFolder;
         private final Pattern _pattern;
+        private final int _maxDepth;
 
         public FilePathBaseFolderAndPatternPair(String fileNamePattern)
         {
@@ -310,6 +314,7 @@ public class RollingPolicyDecorator implements RollingPolicy
             }
             _baseFolder = new File(path).toPath().toAbsolutePath();
             _pattern = Pattern.compile(Pattern.quote(path) + "/" + fileNamePattern);
+            _maxDepth = fileNamePattern.split("/").length;
         }
 
         public Path getBaseFolder()
@@ -320,6 +325,11 @@ public class RollingPolicyDecorator implements RollingPolicy
         public Pattern getPattern()
         {
             return _pattern;
+        }
+
+        public int getMaxDepth()
+        {
+            return _maxDepth;
         }
     }
 }

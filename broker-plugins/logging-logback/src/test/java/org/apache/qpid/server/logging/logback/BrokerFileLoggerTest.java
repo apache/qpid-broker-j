@@ -39,12 +39,15 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -164,6 +167,51 @@ public class BrokerFileLoggerTest extends UnitTestBase
         }
         assertEquals(State.ERRORED, logger.getState(), "Restoring directory access must not hide the startup failure");
         assertEquals("existing log", Files.readString(_logFile.toPath()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testStartupDoesNotWaitForUnrelatedSubdirectory(final boolean rollDaily) throws Exception
+    {
+        final Path unrelated = Files.createDirectories(_baseFolder.toPath().resolve("unrelated")).toAbsolutePath();
+        Files.writeString(unrelated.resolve("unrelated.txt"), "not a log archive");
+        final Map<String, Object> attributes = Map.of(BrokerLogger.NAME, getTestName(),
+                ConfiguredObject.TYPE, BrokerFileLogger.TYPE, BrokerFileLogger.FILE_NAME, _logFile.getPath(),
+                "rollDaily", rollDaily);
+        final BrokerFileLoggerImpl logger = new BrokerFileLoggerImpl(attributes, _broker);
+        _logger = logger;
+        final AtomicBoolean unrelatedDirectoryOpened = new AtomicBoolean();
+        final CountDownLatch release = new CountDownLatch(1);
+        final CompletableFuture<Void> opening = CompletableFuture.runAsync(() ->
+        {
+            try (final MockedStatic<Files> mockedFiles = mockStatic(Files.class, invocation ->
+            {
+                if ("newDirectoryStream".equals(invocation.getMethod().getName()) &&
+                        invocation.getMethod().getParameterCount() == 1 &&
+                        unrelated.equals(invocation.getArgument(0)))
+                {
+                    unrelatedDirectoryOpened.set(true);
+                    assertTrue(release.await(30, TimeUnit.SECONDS), "The test must release the blocked listing");
+                }
+                return invocation.callRealMethod();
+            }))
+            {
+                logger.open();
+            }
+        }, _taskExecutor);
+
+        try
+        {
+            opening.get(10, TimeUnit.SECONDS);
+            assertFalse(unrelatedDirectoryOpened.get(), "Startup must not open unrelated subdirectories");
+            assertEquals(State.ACTIVE, logger.getState());
+            assertTrue(logger.getAppender().isStarted());
+        }
+        finally
+        {
+            release.countDown();
+            opening.get(10, TimeUnit.SECONDS);
+        }
     }
 
     private BrokerFileLogger createLoggerInErroredState()
