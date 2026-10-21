@@ -42,6 +42,8 @@ import ch.qos.logback.core.FileAppender;
 import ch.qos.logback.core.rolling.RollingPolicy;
 import ch.qos.logback.core.rolling.RollingPolicyBase;
 import ch.qos.logback.core.rolling.RolloverFailure;
+import ch.qos.logback.core.rolling.TimeBasedFileNamingAndTriggeringPolicy;
+import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.helper.CompressionMode;
 import ch.qos.logback.core.rolling.helper.FileNamePattern;
 import org.slf4j.Logger;
@@ -85,8 +87,24 @@ public class RollingPolicyDecorator implements RollingPolicy
     @Override
     public void rollover() throws RolloverFailure
     {
-        ScanTask task = createScanTaskAndCancelInProgress();
-        _decorated.rollover();
+        final ScanTask task = createScanTaskAndCancelInProgress();
+        try
+        {
+            _decorated.rollover();
+        }
+        catch (final RolloverFailure e)
+        {
+            if (_decorated instanceof TimeBasedRollingPolicy)
+            {
+                final TimeBasedFileNamingAndTriggeringPolicy<?> triggeringPolicy =
+                        ((TimeBasedRollingPolicy<?>) _decorated).getTimeBasedFileNamingAndTriggeringPolicy();
+                if (triggeringPolicy instanceof DailyTriggeringPolicy)
+                {
+                    ((DailyTriggeringPolicy<?>) triggeringPolicy).rolloverFailed();
+                }
+            }
+            throw e;
+        }
         _executorService.execute(task);
     }
 

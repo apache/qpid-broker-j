@@ -25,8 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,7 +47,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
@@ -71,6 +75,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.MockedStatic;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 
@@ -283,8 +288,7 @@ class DailyTriggeringPolicyTest extends UnitTestBase
         Files.writeString(existing, "existing");
         try (final TestAppender appender = new TestAppender(true, false))
         {
-            appender._rollingPolicy.start();
-            appender._appender.start();
+            appender.startAppender();
             assertFalse(appender._triggeringPolicy.isStarted());
             assertFalse(appender._rollingPolicy.isStarted());
             assertFalse(appender._appender.isStarted());
@@ -346,7 +350,6 @@ class DailyTriggeringPolicyTest extends UnitTestBase
             {
                 if (status.getOrigin() == appender._triggeringPolicy && status.getLevel() == Status.ERROR)
                 {
-                    // Bound forwarding so recursion fails an assertion instead of overflowing the stack.
                     if (errors.incrementAndGet() == 1)
                     {
                         listener.addStatusEvent(status);
@@ -366,7 +369,6 @@ class DailyTriggeringPolicyTest extends UnitTestBase
                 }
             };
             statusFilter.start();
-            // Broker filters installed by other tests must not suppress the listener's diagnostic.
             statusLogger.getLoggerContext().getTurboFilterList().add(0, statusFilter);
             statusLogger.setLevel(Level.ERROR);
             statusLogger.setAdditive(false);
@@ -413,23 +415,193 @@ class DailyTriggeringPolicyTest extends UnitTestBase
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void rolloverFailurePreservesActiveFile(final boolean compressed) throws IOException
+    {
+        writeActive("old", NOW);
+        try (final TestAppender appender = new TestAppender(true, compressed))
+        {
+            appender.start();
+            doThrow(new RolloverFailure("test failure")).doCallRealMethod().when(appender._rollingPolicy).rollover();
+            appender.append("new");
+            assertEquals("oldnew", Files.readString(_activeFile));
+            assertEquals(Files.size(_activeFile), appender.length());
+            appender.append(FULL_FILE);
+            assertEquals(Files.size(_activeFile), appender.length());
+            verify(appender._rollingPolicy).rollover();
+            writeArchive(TODAY, 0, compressed, "existing");
+            appender._triggeringPolicy.setCurrentTime(NOW.plusSeconds(30).toEpochMilli());
+            appender.append("after");
+            assertEquals(5, appender.length());
+            verify(appender._rollingPolicy, times(2)).rollover();
+            appender.assertNoErrors();
+        }
+        assertEquals("existing", readArchive(TODAY, 0, compressed));
+        assertEquals("oldnew" + FULL_FILE, readArchive(TODAY, 1, compressed));
+        assertEquals("after", Files.readString(_activeFile));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void restartRolloverRetriesRepeatedFailuresBelowSizeLimit(final boolean compressed) throws IOException
+    {
+        writeActive("old", NOW);
+        try (final TestAppender appender = new TestAppender(true, compressed))
+        {
+            appender.start();
+            doThrow(new RolloverFailure("first failure"), new RolloverFailure("second failure"))
+                    .doCallRealMethod().when(appender._rollingPolicy).rollover();
+            appender.append("one");
+            assertEquals(Files.size(_activeFile), appender.length());
+            appender._triggeringPolicy.setCurrentTime(NOW.plusSeconds(29).toEpochMilli());
+            appender.append("two");
+            verify(appender._rollingPolicy).rollover();
+
+            appender._triggeringPolicy.setCurrentTime(NOW.plusSeconds(30).toEpochMilli());
+            appender.append("three");
+            assertEquals(Files.size(_activeFile), appender.length());
+            verify(appender._rollingPolicy, times(2)).rollover();
+            appender._triggeringPolicy.setCurrentTime(NOW.plusSeconds(59).toEpochMilli());
+            appender.append("four");
+            verify(appender._rollingPolicy, times(2)).rollover();
+            assertTrue(appender.length() < MAX_FILE_SIZE);
+
+            appender._triggeringPolicy.setCurrentTime(NOW.plusSeconds(60).toEpochMilli());
+            appender.append("recovered");
+            assertEquals(9, appender.length());
+            verify(appender._rollingPolicy, times(3)).rollover();
+            appender.assertNoErrors();
+        }
+        assertEquals("oldonetwothreefour", readArchive(TODAY, 0, compressed));
+        assertEquals("recovered", Files.readString(_activeFile));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
+    void failedRolloverCountsExistingBytesAcrossSizeLimit(final boolean restart, final boolean compressed)
+            throws IOException
+    {
+        final String existing = "x".repeat(restart ? MAX_FILE_SIZE - 4 : MAX_FILE_SIZE);
+        writeActive(existing, NOW);
+        try (final TestAppender appender = new TestAppender(restart, compressed))
+        {
+            appender.start();
+            doThrow(new RolloverFailure("test failure")).doCallRealMethod().when(appender._rollingPolicy).rollover();
+            for (final String message : List.of("123", "45", "6"))
+            {
+                appender.append(message);
+                assertEquals(Files.size(_activeFile), appender.length());
+            }
+            assertTrue(appender.length() > MAX_FILE_SIZE);
+            verify(appender._rollingPolicy).rollover();
+
+            appender._triggeringPolicy.setCurrentTime(NOW.plusSeconds(30).toEpochMilli());
+            appender.append("next");
+            assertEquals(4, appender.length());
+            verify(appender._rollingPolicy, times(2)).rollover();
+            appender.assertNoErrors();
+        }
+        assertEquals(existing + "123456", readArchive(TODAY, 0, compressed));
+        assertEquals("next", Files.readString(_activeFile));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void dailyRolloverFailurePreservesArchiveDateAndNumbering(final boolean compressed) throws IOException
+    {
+        writeActive("yesterday", NOW.minusSeconds(86400));
+        writeArchive(TODAY.minusDays(1), 2, compressed, "yesterday-archive");
+        writeArchive(TODAY, 4, compressed, "today-archive");
+        try (final TestAppender appender = new TestAppender(false, compressed))
+        {
+            appender.start();
+            doThrow(new RolloverFailure("test failure")).doCallRealMethod().when(appender._rollingPolicy).rollover();
+            appender.append("new");
+            assertEquals(Files.size(_activeFile), appender.length());
+            appender._triggeringPolicy.setCurrentTime(NOW.plusSeconds(30).toEpochMilli());
+            appender.append(FULL_FILE);
+            assertEquals(MAX_FILE_SIZE, appender.length());
+            appender.append("next");
+            assertEquals(4, appender.length());
+            appender.assertNoErrors();
+        }
+        assertEquals("yesterday-archive", readArchive(TODAY.minusDays(1), 2, compressed));
+        assertEquals("yesterdaynew", readArchive(TODAY.minusDays(1), 3, compressed));
+        assertEquals("today-archive", readArchive(TODAY, 4, compressed));
+        assertEquals(FULL_FILE, readArchive(TODAY, 5, compressed));
+        assertEquals("next", Files.readString(_activeFile));
+    }
+
     @Test
-    void rolloverFailurePreservesActiveFile() throws IOException
+    void rolloverFailureRetainsCounterWhenFileAttributesCannotBeRead() throws IOException
     {
         writeActive("old", NOW);
         try (final TestAppender appender = new TestAppender(true, false))
         {
             appender.start();
             doThrow(new RolloverFailure("test failure")).doCallRealMethod().when(appender._rollingPolicy).rollover();
-            appender.append("new");
+            final AtomicBoolean failNextRead = new AtomicBoolean(true);
+            try (final MockedStatic<Files> mockedFiles = mockStatic(Files.class, invocation ->
+            {
+                if ("readAttributes".equals(invocation.getMethod().getName()) &&
+                        _activeFile.equals(invocation.getArgument(0)) && failNextRead.compareAndSet(true, false))
+                {
+                    throw new IOException("Temporary file attribute failure");
+                }
+                return invocation.callRealMethod();
+            }))
+            {
+                appender.append("new");
+            }
+            assertFalse(failNextRead.get(), "The file size read after the failed rollover must fail");
             assertEquals("oldnew", Files.readString(_activeFile));
-            appender.append(FULL_FILE);
-            appender.append("after");
-            assertEquals(5, appender.length());
+            assertEquals(Files.size(_activeFile), appender.length());
+            appender._triggeringPolicy.setCurrentTime(NOW.plusSeconds(30).toEpochMilli());
+            appender.append("recovered");
+            assertEquals(9, appender.length());
             appender.assertNoErrors();
         }
-        assertEquals("oldnew" + FULL_FILE, readArchive(TODAY, 1, false));
-        assertEquals("after", Files.readString(_activeFile));
+        assertEquals("oldnew", readArchive(TODAY, 0, false));
+        assertEquals("recovered", Files.readString(_activeFile));
+    }
+
+    @Test
+    void archiveScanFailureAfterFailedRolloverIsReportedOnce() throws IOException
+    {
+        final Path archiveDirectory = Files.createDirectory(_directory.resolve("archives"));
+        writeActive("old", NOW);
+        try (final TestAppender appender = new TestAppender(true, false))
+        {
+            appender._rollingPolicy.setFileNamePattern(archiveDirectory.resolve("broker.log") +
+                    ".%d{yyyy-MM-dd,UTC}.%i");
+            appender.start();
+            doThrow(new RolloverFailure("test failure")).doCallRealMethod().when(appender._rollingPolicy).rollover();
+            appender.append("new");
+            appender.assertNoErrors();
+
+            Files.delete(archiveDirectory);
+            Files.writeString(archiveDirectory, "blocked");
+            appender._triggeringPolicy.setCurrentTime(NOW.plusSeconds(30).toEpochMilli());
+            appender.append("first-retry");
+            appender._triggeringPolicy.setCurrentTime(NOW.plusSeconds(60).toEpochMilli());
+            appender.append("second-retry");
+            assertEquals(Files.size(_activeFile), appender.length());
+            assertEquals(1L, appender._context.getStatusManager().getCopyOfStatusList().stream()
+                    .filter(status -> status.getOrigin() == appender._triggeringPolicy &&
+                            status.getLevel() == Status.ERROR && status.getThrowable() instanceof IOException).count());
+            verify(appender._rollingPolicy).rollover();
+
+            Files.delete(archiveDirectory);
+            Files.createDirectory(archiveDirectory);
+            appender._triggeringPolicy.setCurrentTime(NOW.plusSeconds(90).toEpochMilli());
+            appender.append("recovered");
+            assertEquals(9, appender.length());
+            verify(appender._rollingPolicy, times(2)).rollover();
+        }
+        assertEquals("oldnewfirst-retrysecond-retry",
+                Files.readString(archiveDirectory.resolve("broker.log." + TODAY + ".0")));
+        assertEquals("recovered", Files.readString(_activeFile));
     }
 
     @ParameterizedTest
@@ -594,7 +766,6 @@ class DailyTriggeringPolicyTest extends UnitTestBase
             _rollingPolicy.setParent(_appender);
             _rollingPolicy.setFileNamePattern(_activeFile + ".%d{yyyy-MM-dd,UTC}.%i" + (compressed ? ".gz" : ""));
             _rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(_triggeringPolicy);
-            _appender.setRollingPolicy(_rollingPolicy);
             _encoder.setContext(_context);
             _encoder.setCharset(StandardCharsets.UTF_8);
             _encoder.setPattern("%msg");
@@ -607,9 +778,18 @@ class DailyTriggeringPolicyTest extends UnitTestBase
 
         private void start()
         {
-            _rollingPolicy.start();
-            _appender.start();
+            startAppender();
             assertTrue(_appender.isStarted(), () -> _context.getStatusManager().getCopyOfStatusList().toString());
+        }
+
+        private void startAppender()
+        {
+            final RollingPolicyDecorator decorator = new RollingPolicyDecorator(_rollingPolicy,
+                    mock(RollingPolicyDecorator.RolloverListener.class), mock(ScheduledExecutorService.class));
+            _appender.setRollingPolicy(decorator);
+            _appender.setTriggeringPolicy(_triggeringPolicy);
+            decorator.start();
+            _appender.start();
         }
 
         private void append(final String message)

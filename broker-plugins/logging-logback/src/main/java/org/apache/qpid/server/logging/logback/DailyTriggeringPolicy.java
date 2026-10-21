@@ -62,11 +62,16 @@ final class DailyTriggeringPolicy<E> extends ContextAwareBase implements TimeBas
     private ArchiveRemover _archiveRemover;
     private String _compressionSuffix;
     private Instant _period;
+    private Instant _elapsedPeriod;
     private long _nextCheck;
     private long _retryAfter;
+    private long _lengthBeforeRollover;
     private int _nextArchiveIndex;
+    private int _elapsedArchiveIndex;
     private String _elapsedFileName;
-    private boolean _restartPending;
+    private boolean _rolloverPending;
+    private boolean _rescanArchives;
+    private boolean _archiveErrorReported;
     private boolean _started;
     private long _currentTime = -1;
 
@@ -119,8 +124,11 @@ final class DailyTriggeringPolicy<E> extends ContextAwareBase implements TimeBas
             _period = nonempty ? attributes.lastModifiedTime().toInstant() : Instant.ofEpochMilli(getCurrentTime());
             _nextCheck = _calendar.getNextTriggeringDate(_period).toEpochMilli();
             _nextArchiveIndex = nextArchiveIndex(_period);
-            _restartPending = _rollOnRestart && nonempty;
+            _rolloverPending = _rollOnRestart && nonempty;
+            _rescanArchives = false;
+            _archiveErrorReported = false;
             _elapsedFileName = null;
+            _elapsedPeriod = null;
             _retryAfter = 0;
             _lengthCounter.reset();
             final SizeAndTimeBasedArchiveRemover remover =
@@ -158,41 +166,77 @@ final class DailyTriggeringPolicy<E> extends ContextAwareBase implements TimeBas
         }
         try
         {
+            if (_rescanArchives)
+            {
+                _nextArchiveIndex = nextArchiveIndex(_period);
+                _rescanArchives = false;
+            }
             if (now >= _nextCheck)
             {
                 final Instant nextPeriod = Instant.ofEpochMilli(now);
                 final int nextIndex = nextArchiveIndex(nextPeriod);
-                _elapsedFileName = getCurrentPeriodsFileNameWithoutCompressionSuffix();
+                prepareRollover();
                 _period = nextPeriod;
                 _nextArchiveIndex = nextIndex;
                 _nextCheck = _calendar.getNextTriggeringDate(nextPeriod).toEpochMilli();
-                _restartPending = false;
+                _rolloverPending = false;
                 _retryAfter = 0;
-                final boolean nonempty = _lengthCounter.getLength() > 0;
-                _lengthCounter.reset();
-                return nonempty;
+                return _lengthBeforeRollover > 0;
             }
-            if (_restartPending || _lengthCounter.getLength() >= _maxFileSize.getSize())
+            if (_rolloverPending || _lengthCounter.getLength() >= _maxFileSize.getSize())
             {
                 final int nextIndex = Math.incrementExact(_nextArchiveIndex);
-                _elapsedFileName = getCurrentPeriodsFileNameWithoutCompressionSuffix();
+                prepareRollover();
                 _nextArchiveIndex = nextIndex;
-                _restartPending = false;
+                _rolloverPending = false;
                 _retryAfter = 0;
-                _lengthCounter.reset();
                 return true;
             }
         }
         catch (IOException | DirectoryIteratorException | ArithmeticException e)
         {
-            final boolean reportError = _retryAfter == 0;
             _retryAfter = now + RETRY_DELAY_MILLIS;
-            if (reportError)
+            if (!_archiveErrorReported)
             {
+                _archiveErrorReported = true;
                 addError("Cannot determine a safe daily archive name; continuing to append and retrying later", e);
             }
         }
         return false;
+    }
+
+    private void prepareRollover()
+    {
+        _elapsedPeriod = _period;
+        _elapsedArchiveIndex = _nextArchiveIndex;
+        _elapsedFileName = getCurrentPeriodsFileNameWithoutCompressionSuffix();
+        _lengthBeforeRollover = _lengthCounter.getLength();
+        _lengthCounter.reset();
+        _archiveErrorReported = false;
+    }
+
+    void rolloverFailed()
+    {
+        _period = _elapsedPeriod;
+        _nextArchiveIndex = _elapsedArchiveIndex;
+        _nextCheck = _calendar.getNextTriggeringDate(_period).toEpochMilli();
+        _rolloverPending = true;
+        _rescanArchives = true;
+        _retryAfter = getCurrentTime() + RETRY_DELAY_MILLIS;
+        try
+        {
+            final BasicFileAttributes attributes = readActiveFileAttributes();
+            _lengthCounter.reset();
+            if (attributes != null)
+            {
+                _lengthCounter.add(attributes.size());
+            }
+        }
+        catch (final IOException e)
+        {
+            _lengthCounter.add(_lengthBeforeRollover);
+            addWarn("Cannot read the active log size after a failed rollover; retaining the previous byte count", e);
+        }
     }
 
     private int nextArchiveIndex(final Instant period) throws IOException
