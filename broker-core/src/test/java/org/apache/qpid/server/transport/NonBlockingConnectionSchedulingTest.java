@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -48,6 +47,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -107,14 +107,15 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
         blocked.awaitWriteInterest();
 
         final int readIdleMillis = 2000;
-        final AtomicLong lastReadTime = new AtomicLong(System.currentTimeMillis());
+        final AtomicLong currentTime = new AtomicLong();
+        final AtomicLong lastReadTime = new AtomicLong();
         final BlockingQueue<Integer> heartbeats = new LinkedBlockingQueue<>();
         final AtomicBoolean readerIdle = new AtomicBoolean();
         when(blocked._engine.getLastReadTime()).thenAnswer(invocation -> lastReadTime.get());
         doAnswer(invocation ->
         {
             final QpidByteBuffer input = invocation.getArgument(0);
-            lastReadTime.set(System.currentTimeMillis());
+            lastReadTime.set(currentTime.get());
             while (input.hasRemaining())
             {
                 heartbeats.add((int) input.get());
@@ -128,25 +129,35 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             return null;
         }).when(blocked._engine).readerIdle();
 
-        final AggregateTicker ticker = new AggregateTicker();
-        ticker.addTicker(new ServerIdleReadTimeoutTicker(blocked._connection, blocked._engine, readIdleMillis));
-        when(blocked._engine.getAggregateTicker()).thenReturn(ticker);
-        blocked._engine.notifyWork();
+        // Keep wall-clock scheduling timestamps out of the idle calculation so only the test advances time.
+        blocked._ticker.addTicker(new ServerIdleReadTimeoutTicker(mock(ServerNetworkConnection.class),
+                blocked._engine, readIdleMillis)
+        {
+            @Override
+            public int getTimeToNextTick(final long ignored)
+            {
+                return super.getTimeToNextTick(currentTime.get());
+            }
+        });
         blocked.awaitWriteInterest();
 
-        final long end = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(2L * readIdleMillis);
-        do
+        for (int i = 0; i < 8; i++)
         {
+            currentTime.addAndGet(readIdleMillis / 4);
             blocked._client.getOutputStream().write(42);
-            assertEquals(Integer.valueOf(42), heartbeats.poll(readIdleMillis, TimeUnit.MILLISECONDS),
+            assertEquals(Integer.valueOf(42), heartbeats.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS),
                     "Incoming heartbeats must be consumed while the peer is not reading output");
-            assertFalse(readerIdle.get(), "A peer sending heartbeats must not be considered idle");
             blocked.awaitWriteInterest();
-            Thread.sleep(readIdleMillis / 4);
+            assertFalse(readerIdle.get(), "A peer sending heartbeats must not be considered idle");
         }
-        while (System.nanoTime() < end);
 
         assertTrue(blocked._connection.wantsWrite(), "Output must remain blocked throughout the heartbeat checks");
+        currentTime.addAndGet(readIdleMillis - 1);
+        blocked.awaitWriteInterest();
+        assertFalse(readerIdle.get(), "The connection must remain open until the read deadline");
+
+        currentTime.incrementAndGet();
+        blocked._connection.getSelectionTask().wakeup();
         blocked._closed.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
         assertTrue(readerIdle.get(), "The read timeout must still close the connection after heartbeats stop");
     }
@@ -222,6 +233,17 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
         private final AtomicBoolean _blocked = new AtomicBoolean();
         private final AtomicReference<Iterator<Runnable>> _pending =
                 new AtomicReference<>(Collections.emptyIterator());
+        private final AtomicReference<CompletableFuture<Void>> _writeInterest = new AtomicReference<>();
+        private final AggregateTicker _ticker = new AggregateTicker()
+        {
+            @Override
+            public void resetModified()
+            {
+                super.resetModified();
+                // The selector calls this after examining a registered connection's ticker.
+                signalWriteInterest();
+            }
+        };
         private final CompletableFuture<Void> _closed = new CompletableFuture<>();
         private final Socket _client = new Socket();
         private final SocketChannel _channel;
@@ -240,9 +262,7 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             }
             _channel.configureBlocking(false);
             _channel.socket().setSendBufferSize(4096);
-            final AggregateTicker ticker = mock(AggregateTicker.class);
-            when(ticker.getTimeToNextTick(anyLong())).thenReturn(Integer.MAX_VALUE);
-            when(_engine.getAggregateTicker()).thenReturn(ticker);
+            when(_engine.getAggregateTicker()).thenReturn(_ticker);
             when(_engine.hasWork()).thenAnswer(invocation -> _hasWork.get());
             when(_engine.processPendingIterator()).thenAnswer(invocation -> _pending.get());
             doAnswer(invocation ->
@@ -303,21 +323,38 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             }
         }
 
-        private void awaitWriteInterest() throws InterruptedException
+        private void awaitWriteInterest() throws Exception
         {
-            final long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(TIMEOUT_MILLIS);
-            while (System.nanoTime() < deadline)
+            final CompletableFuture<Void> writeInterest = new CompletableFuture<>();
+            _writeInterest.set(writeInterest);
+            _connection.getSelectionTask().wakeup();
+            try
+            {
+                writeInterest.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+            }
+            catch (TimeoutException e)
+            {
+                fail("A socket with pending output never returned to write-readiness selection", e);
+            }
+            finally
+            {
+                _writeInterest.compareAndSet(writeInterest, null);
+            }
+        }
+
+        private void signalWriteInterest()
+        {
+            final CompletableFuture<Void> writeInterest = _writeInterest.get();
+            if (writeInterest != null)
             {
                 final SelectionKey key = _channel.keyFor(_connection.getSelectionTask().getSelector());
                 final int expectedOps = SelectionKey.OP_WRITE | (_connection.wantsRead() ? SelectionKey.OP_READ : 0);
-                if (_connection.wantsWrite() && !_connection.isStateChanged() && key != null &&
+                if (_connection.wantsWrite() && !_connection.isStateChanged() && !_connection.isPartialRead() && key != null &&
                         key.isValid() && key.interestOps() == expectedOps)
                 {
-                    return;
+                    writeInterest.complete(null);
                 }
-                Thread.sleep(10);
             }
-            fail("A socket with pending output never returned to write-readiness selection");
         }
     }
 }
