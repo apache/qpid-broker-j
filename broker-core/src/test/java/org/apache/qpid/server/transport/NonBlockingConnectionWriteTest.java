@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,6 +48,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -156,7 +158,7 @@ class NonBlockingConnectionWriteTest extends UnitTestBase
         assertFalse(_connection.doWork());
 
         assertTrue(_connection.wantsWrite());
-        assertFalse(_connection.wantsRead());
+        assertTrue(_connection.wantsRead(), "Completed protocol work must allow incoming traffic during a blocked write");
         assertFalse(_connection.isStateChanged(), "Pending output alone must not reschedule the connection");
         assertEquals(List.of(true), _blockedTransitions);
 
@@ -231,6 +233,7 @@ class NonBlockingConnectionWriteTest extends UnitTestBase
 
         assertEquals(0, completed.get());
         assertTrue(_connection.wantsWrite());
+        assertFalse(_connection.wantsRead(), "Suspended protocol work must continue to apply read backpressure");
         assertFalse(_connection.isStateChanged(), "A suspended iterator must wait for its buffered output to drain");
 
         _writableBytes.set(NETWORK_BUFFER_SIZE);
@@ -238,6 +241,132 @@ class NonBlockingConnectionWriteTest extends UnitTestBase
 
         assertEquals(1, completed.get(), "Suspended work must resume exactly once");
         assertFalse(_connection.wantsWrite());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false, 768", "true, 768", "false, 1023", "true, 1023"})
+    void partialWriteBelowBufferLimitResumesWorkAndReads(final boolean pendingTask,
+                                                        final int remainingOutput) throws Exception
+    {
+        final AtomicInteger completed = new AtomicInteger();
+        final AtomicInteger received = new AtomicInteger();
+        final List<Runnable> tasks = new ArrayList<>();
+        tasks.add(() -> send(remainingOutput + NETWORK_BUFFER_SIZE / 4));
+        if (pendingTask)
+        {
+            tasks.add(completed::incrementAndGet);
+        }
+        when(_engine.processPendingIterator()).thenReturn(tasks.iterator());
+        _writableBytes.set(NETWORK_BUFFER_SIZE / 4);
+        when(_channel.read(any(ByteBuffer.class))).thenAnswer(invocation ->
+        {
+            final ByteBuffer input = invocation.getArgument(0);
+            input.put((byte) 42);
+            return 1;
+        }).thenReturn(0);
+        doAnswer(invocation ->
+        {
+            final QpidByteBuffer input = invocation.getArgument(0);
+            assertEquals(42, input.get());
+            received.incrementAndGet();
+            return null;
+        }).when(_engine).received(any());
+
+        _connection.doWork();
+
+        assertEquals(0, completed.get());
+        assertEquals(0, received.get());
+        assertEquals(0, _writableBytes.get());
+        assertFalse(_connection.isPartialRead());
+        assertTrue(_connection.isStateChanged(), "Freed buffer space must schedule a continuation");
+        assertTrue(_connection.wantsWrite(), "The partial write must leave output pending");
+        assertEquals(List.of(true), _blockedTransitions);
+
+        _connection.doWork();
+
+        assertEquals(pendingTask ? 1 : 0, completed.get());
+        assertEquals(1, received.get(), "Incoming data must be read without further write capacity");
+        assertTrue(_connection.wantsRead(), "Completing the iterator must restore read interest");
+        assertTrue(_connection.wantsWrite());
+        assertTrue(_connection.isPartialRead());
+        assertFalse(_connection.isStateChanged());
+        assertEquals(List.of(true), _blockedTransitions, "Consumers must remain blocked until output drains");
+
+        _connection.doWork();
+
+        assertEquals(pendingTask ? 1 : 0, completed.get(), "Pending work must run exactly once");
+        assertEquals(1, received.get());
+        assertTrue(_connection.wantsRead());
+        assertTrue(_connection.wantsWrite());
+        assertFalse(_connection.isPartialRead());
+        assertFalse(_connection.isStateChanged(), "The connection must return to selector waiting");
+        assertEquals(List.of(true), _blockedTransitions);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false, 1024", "true, 1024", "false, 1025", "true, 1025"})
+    void partialWriteAtOrAboveBufferLimitWaitsForSocketReadiness(final boolean pendingTask,
+                                                                 final int remainingOutput) throws Exception
+    {
+        final AtomicInteger completed = new AtomicInteger();
+        final List<Runnable> tasks = new ArrayList<>();
+        tasks.add(() -> send(remainingOutput + NETWORK_BUFFER_SIZE / 4));
+        if (pendingTask)
+        {
+            tasks.add(completed::incrementAndGet);
+        }
+        when(_engine.processPendingIterator()).thenReturn(tasks.iterator());
+        _writableBytes.set(NETWORK_BUFFER_SIZE / 4);
+
+        _connection.doWork();
+
+        assertEquals(0, _writableBytes.get());
+        assertEquals(0, completed.get());
+        assertFalse(_connection.isStateChanged(), "A full buffer must wait for socket write readiness");
+        assertFalse(_connection.isPartialRead());
+        assertFalse(_connection.wantsRead());
+        assertTrue(_connection.wantsWrite());
+
+        _engine.notifyWork();
+        _connection.doWork();
+
+        assertEquals(0, completed.get());
+        assertFalse(_connection.isStateChanged(), "Retrying with no write progress must not cause a busy loop");
+        assertFalse(_connection.isPartialRead());
+        assertFalse(_connection.wantsRead());
+        assertTrue(_connection.wantsWrite());
+        assertEquals(List.of(true), _blockedTransitions);
+        verify(_channel, never()).read(any(ByteBuffer.class));
+    }
+
+    @Test
+    void resumedIteratorWaitsAgainWhenOutputReachesBufferLimit()
+    {
+        final AtomicInteger completed = new AtomicInteger();
+        final List<Runnable> tasks = List.of(() -> send(NETWORK_BUFFER_SIZE),
+                () -> send(NETWORK_BUFFER_SIZE / 4), completed::incrementAndGet);
+        when(_engine.processPendingIterator()).thenReturn(tasks.iterator());
+        _writableBytes.set(NETWORK_BUFFER_SIZE / 4);
+
+        _connection.doWork();
+
+        assertTrue(_connection.isStateChanged(), "The partial write must allow pending work to resume");
+
+        _connection.doWork();
+
+        assertEquals(0, completed.get(), "Refilling the buffer must suspend the remaining task");
+        assertFalse(_connection.isStateChanged());
+        assertFalse(_connection.isPartialRead());
+        assertFalse(_connection.wantsRead());
+        assertTrue(_connection.wantsWrite());
+        assertEquals(List.of(true), _blockedTransitions);
+
+        _writableBytes.set(NETWORK_BUFFER_SIZE);
+        _connection.doWork();
+
+        assertEquals(1, completed.get(), "Write readiness must eventually resume the remaining task");
+        assertFalse(_connection.wantsWrite());
+        assertEquals(List.of(true, false), _blockedTransitions);
     }
 
     @Test
@@ -289,6 +418,28 @@ class NonBlockingConnectionWriteTest extends UnitTestBase
 
         verify(_engine).closed();
         verify(_channel).close();
+    }
+
+    @Test
+    void pendingTlsWrapDoesNotSelectForReading() throws Exception
+    {
+        final NonBlockingConnectionDelegate delegate = mock(NonBlockingConnectionDelegate.class);
+        when(delegate.readyForRead()).thenReturn(false);
+        when(delegate.doWrite(any())).thenReturn(new NonBlockingConnectionDelegate.WriteResult(false, 0));
+        final Field field = NonBlockingConnection.class.getDeclaredField("_delegate");
+        field.setAccessible(true);
+        ((NonBlockingConnectionDelegate) field.get(_connection)).shutdownInput();
+        field.set(_connection, delegate);
+
+        send(128);
+        _connection.doWork();
+
+        assertTrue(_connection.wantsWrite());
+        assertFalse(_connection.wantsRead(), "TLS NEED_WRAP cannot make progress from read readiness");
+        assertFalse(_connection.isStateChanged(), "Pending TLS output must not reschedule the connection");
+
+        when(delegate.readyForRead()).thenReturn(true);
+        assertTrue(_connection.wantsRead(), "Read interest must return when TLS can process incoming data");
     }
 
     @Test

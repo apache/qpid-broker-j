@@ -225,7 +225,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     boolean wantsRead()
     {
-        return _fullyWritten || _delegate.needsReadForWrite();
+        return (_fullyWritten || _pendingIterator == null || _delegate.needsReadForWrite()) && _delegate.readyForRead();
     }
 
     boolean wantsWrite()
@@ -293,7 +293,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                         }
                     }
 
-                    if (!processPendingComplete && _fullyWritten)
+                    if (!processPendingComplete && (_fullyWritten || getBufferedSize() < _port.getNetworkBufferSize()))
                     {
                         _protocolEngine.notifyWork();
                     }

@@ -19,7 +19,9 @@
 package org.apache.qpid.server.transport;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -41,12 +43,17 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -62,67 +69,133 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
 {
     private static final int TIMEOUT_MILLIS = 10000;
 
+    private final List<Thread> _threads = new CopyOnWriteArrayList<>();
+    private final List<TestConnection> _connections = new ArrayList<>();
+    private NetworkConnectionScheduler _scheduler;
+
     @ParameterizedTest
     @ValueSource(ints = {2, 4})
     void blockedSocketReturnsWorkersAndRecoversPendingOutput(final int workers) throws Exception
     {
-        final List<Thread> threads = new CopyOnWriteArrayList<>();
-        final NetworkConnectionScheduler scheduler = new NetworkConnectionScheduler(getTestName(), 1, workers, 1L,
-                task ->
-                {
-                    final Thread thread = new Thread(task, getTestName() + "-" + threads.size());
-                    threads.add(thread);
-                    return thread;
-                });
-        final List<TestConnection> connections = new ArrayList<>();
-        scheduler.start();
-        try
+        startScheduler(workers);
+        final TestConnection blocked = createConnection(1024);
+        final TestConnection independent = createConnection(1024);
+        final byte[] payload = new byte[2 * 1024 * 1024];
+        Arrays.fill(payload, (byte) 42);
+        final byte[] marker = new byte[]{1, 2, 3};
+        for (int i = 0; i < 3; i++)
         {
-            final TestConnection blocked = new TestConnection(scheduler);
-            connections.add(blocked);
-            final TestConnection independent = new TestConnection(scheduler);
-            connections.add(independent);
-            final byte[] payload = new byte[2 * 1024 * 1024];
-            Arrays.fill(payload, (byte) 42);
-            final byte[] marker = new byte[]{1, 2, 3};
-            for (int i = 0; i < 3; i++)
-            {
-                blocked.submit(List.of(() -> blocked.send(payload), () -> blocked.send(marker)));
-                blocked.awaitWriteInterest();
+            blocked.submit(List.of(() -> blocked.send(payload), () -> blocked.send(marker)));
+            blocked.awaitWriteInterest();
 
-                independent.submit(List.of(() -> independent.send(marker)));
-                assertArrayEquals(marker, independent._client.getInputStream().readNBytes(marker.length),
-                        "An independent connection must progress while the first socket remains blocked");
+            independent.submit(List.of(() -> independent.send(marker)));
+            assertArrayEquals(marker, independent._client.getInputStream().readNBytes(marker.length),
+                    "An independent connection must progress while the first socket remains blocked");
 
-                assertArrayEquals(payload, blocked._client.getInputStream().readNBytes(payload.length));
-                assertArrayEquals(marker, blocked._client.getInputStream().readNBytes(marker.length),
-                        "The suspended protocol iterator must resume after socket capacity becomes available");
-            }
+            assertArrayEquals(payload, blocked._client.getInputStream().readNBytes(payload.length));
+            assertArrayEquals(marker, blocked._client.getInputStream().readNBytes(marker.length),
+                    "The suspended protocol iterator must resume after socket capacity becomes available");
         }
-        finally
+    }
+
+    @Test
+    void incomingHeartbeatsPreventReadIdleTimeoutWhileOutputIsBlocked() throws Exception
+    {
+        startScheduler(2);
+        final TestConnection blocked = createConnection(4 * 1024 * 1024);
+        blocked.submit(List.of(() -> blocked.send(new byte[2 * 1024 * 1024])));
+        blocked.awaitWriteInterest();
+
+        final int readIdleMillis = 2000;
+        final AtomicLong lastReadTime = new AtomicLong(System.currentTimeMillis());
+        final BlockingQueue<Integer> heartbeats = new LinkedBlockingQueue<>();
+        final AtomicBoolean readerIdle = new AtomicBoolean();
+        when(blocked._engine.getLastReadTime()).thenAnswer(invocation -> lastReadTime.get());
+        doAnswer(invocation ->
+        {
+            final QpidByteBuffer input = invocation.getArgument(0);
+            lastReadTime.set(System.currentTimeMillis());
+            while (input.hasRemaining())
+            {
+                heartbeats.add((int) input.get());
+            }
+            return null;
+        }).when(blocked._engine).received(any());
+        doAnswer(invocation ->
+        {
+            readerIdle.set(true);
+            blocked._connection.close();
+            return null;
+        }).when(blocked._engine).readerIdle();
+
+        final AggregateTicker ticker = new AggregateTicker();
+        ticker.addTicker(new ServerIdleReadTimeoutTicker(blocked._connection, blocked._engine, readIdleMillis));
+        when(blocked._engine.getAggregateTicker()).thenReturn(ticker);
+        blocked._engine.notifyWork();
+        blocked.awaitWriteInterest();
+
+        final long end = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(2L * readIdleMillis);
+        do
+        {
+            blocked._client.getOutputStream().write(42);
+            assertEquals(Integer.valueOf(42), heartbeats.poll(readIdleMillis, TimeUnit.MILLISECONDS),
+                    "Incoming heartbeats must be consumed while the peer is not reading output");
+            assertFalse(readerIdle.get(), "A peer sending heartbeats must not be considered idle");
+            blocked.awaitWriteInterest();
+            Thread.sleep(readIdleMillis / 4);
+        }
+        while (System.nanoTime() < end);
+
+        assertTrue(blocked._connection.wantsWrite(), "Output must remain blocked throughout the heartbeat checks");
+        blocked._closed.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        assertTrue(readerIdle.get(), "The read timeout must still close the connection after heartbeats stop");
+    }
+
+    private void startScheduler(final int workers)
+    {
+        _scheduler = new NetworkConnectionScheduler(getTestName(), 1, workers, 1L, task ->
+        {
+            final Thread thread = new Thread(task, getTestName() + "-" + _threads.size());
+            _threads.add(thread);
+            return thread;
+        });
+        _scheduler.start();
+    }
+
+    private TestConnection createConnection(final int networkBufferSize) throws Exception
+    {
+        final TestConnection connection = new TestConnection(_scheduler, networkBufferSize);
+        _connections.add(connection);
+        return connection;
+    }
+
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        if (_scheduler != null)
         {
             try
             {
-                for (final TestConnection connection : connections)
+                for (final TestConnection connection : _connections)
                 {
                     connection._connection.close();
                 }
-                for (final TestConnection connection : connections)
+                for (final TestConnection connection : _connections)
                 {
                     connection._closed.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
                 }
             }
             finally
             {
-                for (final TestConnection connection : connections)
+                for (final TestConnection connection : _connections)
                 {
                     connection._client.close();
                     connection._channel.close();
                 }
-                scheduler.close();
+                _scheduler.close();
                 try
                 {
-                    for (final Thread thread : threads)
+                    for (final Thread thread : _threads)
                     {
                         thread.join(TIMEOUT_MILLIS);
                         assertFalse(thread.isAlive(), "Scheduler worker did not terminate: " + thread.getName());
@@ -130,11 +203,11 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
                 }
                 finally
                 {
-                    for (final Thread thread : threads)
+                    for (final Thread thread : _threads)
                     {
                         thread.interrupt();
                     }
-                    for (final Thread thread : threads)
+                    for (final Thread thread : _threads)
                     {
                         thread.join(TIMEOUT_MILLIS);
                     }
@@ -155,7 +228,7 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
         private final ProtocolEngine _engine = mock(ProtocolEngine.class);
         private final NonBlockingConnection _connection;
 
-        private TestConnection(final NetworkConnectionScheduler scheduler) throws Exception
+        private TestConnection(final NetworkConnectionScheduler scheduler, final int networkBufferSize) throws Exception
         {
             try (final ServerSocketChannel listener = ServerSocketChannel.open())
             {
@@ -192,7 +265,7 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
                 return null;
             }).when(_engine).closed();
             final AmqpPort<?> port = mock(AmqpPort.class);
-            when(port.getNetworkBufferSize()).thenReturn(1024);
+            when(port.getNetworkBufferSize()).thenReturn(networkBufferSize);
             when(port.getContextValue(Integer.class, AmqpPort.FINAL_WRITE_THRESHOLD)).thenReturn(1);
             when(port.getContextValue(Long.class, AmqpPort.FINAL_WRITE_TIMEOUT)).thenReturn(0L);
             when(port.getContextValue(Integer.class, AmqpPort.MAX_GATHERING_WRITE_BUFFERS)).thenReturn(1024);
@@ -236,8 +309,9 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             while (System.nanoTime() < deadline)
             {
                 final SelectionKey key = _channel.keyFor(_connection.getSelectionTask().getSelector());
+                final int expectedOps = SelectionKey.OP_WRITE | (_connection.wantsRead() ? SelectionKey.OP_READ : 0);
                 if (_connection.wantsWrite() && !_connection.isStateChanged() && key != null &&
-                        key.isValid() && key.interestOps() == SelectionKey.OP_WRITE)
+                        key.isValid() && key.interestOps() == expectedOps)
                 {
                     return;
                 }
