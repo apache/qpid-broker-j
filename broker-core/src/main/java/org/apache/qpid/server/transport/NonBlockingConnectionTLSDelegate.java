@@ -140,11 +140,11 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
             }
 
             tasksRun = runSSLEngineTasks(_status);
-            _applicationBuffer.flip();
             if(_applicationBuffer.position() > oldAppBufPos)
             {
                 readData = true;
             }
+            _applicationBuffer.flip();
 
             _parent.processAmqpData(_applicationBuffer);
 

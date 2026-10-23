@@ -52,9 +52,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -72,6 +77,13 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
     private final List<Thread> _threads = new CopyOnWriteArrayList<>();
     private final List<TestConnection> _connections = new ArrayList<>();
     private NetworkConnectionScheduler _scheduler;
+    private SSLContext _sslContext;
+
+    @BeforeAll
+    void createTlsContext() throws Exception
+    {
+        _sslContext = TlsTestContext.create();
+    }
 
     @ParameterizedTest
     @ValueSource(ints = {2, 4})
@@ -95,6 +107,43 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             assertArrayEquals(payload, blocked._client.getInputStream().readNBytes(payload.length));
             assertArrayEquals(marker, blocked._client.getInputStream().readNBytes(marker.length),
                     "The suspended protocol iterator must resume after socket capacity becomes available");
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({"TLSv1.2, 2", "TLSv1.2, 4", "TLSv1.3, 2", "TLSv1.3, 4"})
+    void blockedTlsSocketReturnsWorkersAndRecoversPendingOutput(final String protocol, final int workers) throws Exception
+    {
+        startScheduler(workers);
+        final TestConnection blocked = createTlsConnection(protocol);
+        final TestConnection independent = createTlsConnection(protocol);
+        final byte[] payload = new byte[2 * 1024 * 1024];
+        for (int i = 0; i < payload.length; i++)
+        {
+            payload[i] = (byte) i;
+        }
+        final byte[] marker = new byte[]{11, 22, 33};
+        for (int round = 0; round < 3; round++)
+        {
+            blocked.submit(List.of(() -> blocked.send(payload), () -> blocked.send(marker)));
+            blocked.awaitWriteInterest();
+            assertTrue(blocked._blocked.get());
+
+            independent.submit(List.of(() -> independent.send(marker)));
+            assertArrayEquals(marker, independent._client.getInputStream().readNBytes(marker.length),
+                    "An independent TLS connection must progress while the first socket is blocked");
+
+            blocked._client.getOutputStream().write(42 + round);
+            assertEquals(Integer.valueOf(42 + round), blocked._received.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS),
+                    "TLS input must still be decrypted while encrypted output is blocked");
+            blocked.awaitWriteInterest();
+            assertTrue(blocked._blocked.get(), "Reading peer input must not briefly resume blocked consumers");
+
+            assertArrayEquals(payload, blocked._client.getInputStream().readNBytes(payload.length));
+            assertArrayEquals(marker, blocked._client.getInputStream().readNBytes(marker.length),
+                    "Pending output must resume without losing or reordering application bytes");
+            blocked.awaitSelection(false);
+            assertFalse(blocked._blocked.get(), "Draining encrypted output must resume consumers");
         }
     }
 
@@ -180,6 +229,17 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
         return connection;
     }
 
+    private TestConnection createTlsConnection(final String protocol) throws Exception
+    {
+        final SSLSocket client = (SSLSocket) _sslContext.getSocketFactory().createSocket();
+        client.setEnabledProtocols(new String[]{protocol});
+        final TestConnection connection = new TestConnection(_scheduler, 64 * 1024, client, _sslContext);
+        _connections.add(connection);
+        client.startHandshake();
+        assertEquals(protocol, client.getSession().getProtocol());
+        return connection;
+    }
+
     @AfterEach
     void tearDown() throws Exception
     {
@@ -233,7 +293,8 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
         private final AtomicBoolean _blocked = new AtomicBoolean();
         private final AtomicReference<Iterator<Runnable>> _pending =
                 new AtomicReference<>(Collections.emptyIterator());
-        private final AtomicReference<CompletableFuture<Void>> _writeInterest = new AtomicReference<>();
+        private final AtomicReference<SelectionInterest> _selectionInterest = new AtomicReference<>();
+        private final BlockingQueue<Integer> _received = new LinkedBlockingQueue<>();
         private final AggregateTicker _ticker = new AggregateTicker()
         {
             @Override
@@ -241,17 +302,24 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             {
                 super.resetModified();
                 // The selector calls this after examining a registered connection's ticker.
-                signalWriteInterest();
+                signalSelection();
             }
         };
         private final CompletableFuture<Void> _closed = new CompletableFuture<>();
-        private final Socket _client = new Socket();
+        private final Socket _client;
         private final SocketChannel _channel;
         private final ProtocolEngine _engine = mock(ProtocolEngine.class);
         private final NonBlockingConnection _connection;
 
         private TestConnection(final NetworkConnectionScheduler scheduler, final int networkBufferSize) throws Exception
         {
+            this(scheduler, networkBufferSize, new Socket(), null);
+        }
+
+        private TestConnection(final NetworkConnectionScheduler scheduler, final int networkBufferSize,
+                               final Socket client, final SSLContext sslContext) throws Exception
+        {
+            _client = client;
             try (final ServerSocketChannel listener = ServerSocketChannel.open())
             {
                 listener.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
@@ -265,6 +333,15 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             when(_engine.getAggregateTicker()).thenReturn(_ticker);
             when(_engine.hasWork()).thenAnswer(invocation -> _hasWork.get());
             when(_engine.processPendingIterator()).thenAnswer(invocation -> _pending.get());
+            doAnswer(invocation ->
+            {
+                final QpidByteBuffer input = invocation.getArgument(0);
+                while (input.hasRemaining())
+                {
+                    _received.add((int) input.get());
+                }
+                return null;
+            }).when(_engine).received(any());
             doAnswer(invocation ->
             {
                 _hasWork.set(false);
@@ -289,6 +366,12 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             when(port.getContextValue(Integer.class, AmqpPort.FINAL_WRITE_THRESHOLD)).thenReturn(1);
             when(port.getContextValue(Long.class, AmqpPort.FINAL_WRITE_TIMEOUT)).thenReturn(0L);
             when(port.getContextValue(Integer.class, AmqpPort.MAX_GATHERING_WRITE_BUFFERS)).thenReturn(1024);
+            when(port.getSSLContext()).thenReturn(sslContext);
+            when(port.getContextValue(Boolean.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING)).thenReturn(false);
+            when(port.getContextValue(Integer.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_WARN_THRESHOLD))
+                    .thenReturn(1000);
+            when(port.getContextValue(Integer.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD))
+                    .thenReturn(10000);
             final Broker<?> broker = mock(Broker.class);
             when(broker.getEventLogger()).thenReturn(mock(EventLogger.class));
             doReturn(broker).when(port).getParent();
@@ -304,7 +387,8 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
                 workListener.get().performAction(_engine);
                 return null;
             }).when(_engine).notifyWork();
-            _connection = new NonBlockingConnection(_channel, _engine, Set.of(TransportEncryption.NONE),
+            _connection = new NonBlockingConnection(_channel, _engine,
+                    Set.of(sslContext == null ? TransportEncryption.NONE : TransportEncryption.TLS),
                     () -> { }, scheduler, port);
             scheduler.addConnection(_connection);
         }
@@ -325,36 +409,47 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
 
         private void awaitWriteInterest() throws Exception
         {
-            final CompletableFuture<Void> writeInterest = new CompletableFuture<>();
-            _writeInterest.set(writeInterest);
+            awaitSelection(true);
+        }
+
+        private void awaitSelection(final boolean wantsWrite) throws Exception
+        {
+            final SelectionInterest interest = new SelectionInterest(wantsWrite, new CompletableFuture<>());
+            _selectionInterest.set(interest);
             _connection.getSelectionTask().wakeup();
             try
             {
-                writeInterest.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+                interest.ready().get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
             }
             catch (TimeoutException e)
             {
-                fail("A socket with pending output never returned to write-readiness selection", e);
+                fail("Socket never returned to readiness selection with wantsWrite=" + wantsWrite, e);
             }
             finally
             {
-                _writeInterest.compareAndSet(writeInterest, null);
+                _selectionInterest.compareAndSet(interest, null);
             }
         }
 
-        private void signalWriteInterest()
+        private void signalSelection()
         {
-            final CompletableFuture<Void> writeInterest = _writeInterest.get();
-            if (writeInterest != null)
+            final SelectionInterest interest = _selectionInterest.get();
+            if (interest != null)
             {
                 final SelectionKey key = _channel.keyFor(_connection.getSelectionTask().getSelector());
-                final int expectedOps = SelectionKey.OP_WRITE | (_connection.wantsRead() ? SelectionKey.OP_READ : 0);
-                if (_connection.wantsWrite() && !_connection.isStateChanged() && !_connection.isPartialRead() && key != null &&
+                final int expectedOps = (interest.wantsWrite() ? SelectionKey.OP_WRITE : 0)
+                        | (_connection.wantsRead() ? SelectionKey.OP_READ : 0);
+                if (_connection.wantsWrite() == interest.wantsWrite() && !_connection.isStateChanged()
+                        && !_connection.isPartialRead() && key != null &&
                         key.isValid() && key.interestOps() == expectedOps)
                 {
-                    writeInterest.complete(null);
+                    interest.ready().complete(null);
                 }
             }
+        }
+
+        private record SelectionInterest(boolean wantsWrite, CompletableFuture<Void> ready)
+        {
         }
     }
 }
