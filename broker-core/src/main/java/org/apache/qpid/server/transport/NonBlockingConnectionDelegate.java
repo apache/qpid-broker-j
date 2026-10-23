@@ -54,6 +54,12 @@ interface NonBlockingConnectionDelegate
 
     boolean readyForRead();
 
+    /** Whether pending output requires peer input before another write can make progress. */
+    default boolean needsReadForWrite()
+    {
+        return false;
+    }
+
     boolean processData() throws IOException;
 
     Principal getPeerPrincipal();
