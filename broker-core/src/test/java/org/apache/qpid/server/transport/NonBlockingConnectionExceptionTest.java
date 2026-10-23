@@ -21,17 +21,16 @@
 
 package org.apache.qpid.server.transport;
 
+import static org.apache.qpid.server.transport.NonBlockingConnectionTestHelper.createPort;
+import static org.apache.qpid.server.transport.NonBlockingConnectionTestHelper.createSocketChannel;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Collections;
@@ -41,8 +40,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -56,14 +53,8 @@ class NonBlockingConnectionExceptionTest extends UnitTestBase
     @BeforeEach
     void setUp()
     {
-        final Broker<?> broker = mock(Broker.class);
-        when(broker.getEventLogger()).thenReturn(mock(EventLogger.class));
-        _port = mock(AmqpPort.class);
-        doReturn(broker).when(_port).getParent();
-        when(_port.getNetworkBufferSize()).thenReturn(128);
+        _port = createPort(128, 100L);
         when(_port.getContextValue(Integer.class, AmqpPort.FINAL_WRITE_THRESHOLD)).thenReturn(100);
-        when(_port.getContextValue(Long.class, AmqpPort.FINAL_WRITE_TIMEOUT)).thenReturn(100L);
-        when(_port.getContextValue(Integer.class, AmqpPort.MAX_GATHERING_WRITE_BUFFERS)).thenReturn(1024);
         _scheduler = mock(NetworkConnectionScheduler.class);
     }
 
@@ -72,8 +63,8 @@ class NonBlockingConnectionExceptionTest extends UnitTestBase
     {
         final ProtocolEngine failingEngine = mock(ProtocolEngine.class);
         final ProtocolEngine healthyEngine = mock(ProtocolEngine.class);
-        final SocketChannel failingChannel = mock(SocketChannel.class);
-        final SocketChannel healthyChannel = mock(SocketChannel.class);
+        final SocketChannel failingChannel = createSocketChannel(() -> false);
+        final SocketChannel healthyChannel = createSocketChannel(() -> false);
         final NonBlockingConnection failing = createConnection(failingEngine, failingChannel);
         final NonBlockingConnection healthy = createConnection(healthyEngine, healthyChannel);
         final ArithmeticException failure = new ArithmeticException("Injected decoding failure");
@@ -101,10 +92,6 @@ class NonBlockingConnectionExceptionTest extends UnitTestBase
     private NonBlockingConnection createConnection(final ProtocolEngine engine, final SocketChannel channel)
             throws Exception
     {
-        final Socket socket = mock(Socket.class);
-        when(socket.getRemoteSocketAddress()).thenReturn(new InetSocketAddress("localhost", 1000));
-        when(socket.getLocalSocketAddress()).thenReturn(new InetSocketAddress("localhost", 5672));
-        when(channel.socket()).thenReturn(socket);
         when(channel.read(any(ByteBuffer.class))).thenAnswer(invocation ->
         {
             final ByteBuffer input = invocation.getArgument(0);

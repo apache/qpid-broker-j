@@ -45,6 +45,7 @@ import org.apache.qpid.server.logging.messages.NetworkMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.transport.network.TransportEncryption;
+import org.apache.qpid.server.transport.network.Ticker;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.SystemUtils;
 
@@ -59,6 +60,8 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     private final String _remoteSocketAddress;
     private final AtomicBoolean _closed = new AtomicBoolean(false);
+    private volatile boolean _aborted;
+    private volatile Ticker _closeDeadline;
     private final ProtocolEngine _protocolEngine;
     private final Runnable _onTransportEncryptionAction;
     private final int _finalWriteThreshold;
@@ -156,6 +159,22 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     public ByteBufferSender getSender()
     {
         return this;
+    }
+
+    @Override
+    public synchronized void setCloseDeadline(final Ticker deadline)
+    {
+        if (_closeDeadline == null)
+        {
+            _closeDeadline = deadline;
+        }
+    }
+
+    @Override
+    public void abort()
+    {
+        _aborted = true;
+        close();
     }
 
     @Override
@@ -392,10 +411,16 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
         try
         {
-            shutdownInput();
-            shutdownFinalWrite();
-            _protocolEngine.closed();
-            shutdownOutput();
+            try
+            {
+                shutdownInput();
+                shutdownFinalWrite();
+                _protocolEngine.closed();
+            }
+            finally
+            {
+                shutdownOutput();
+            }
         }
         finally
         {
@@ -435,7 +460,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         {
             final long startTime = System.currentTimeMillis();
             int cnt = 0;
-            while (!doWrite())
+            while (!_aborted && !isCloseDeadlineExpired() && !doWrite())
             {
                 if (cnt % _finalWriteThreshold == 0 && System.currentTimeMillis() - startTime > _finalWriteTimeout)
                 {
@@ -449,6 +474,12 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         {
             LOGGER.info("Exception performing final write/close for '{}': {}", _remoteSocketAddress, e.getMessage());
         }
+    }
+
+    private boolean isCloseDeadlineExpired()
+    {
+        final Ticker deadline = _closeDeadline;
+        return deadline != null && deadline.getTimeToNextTick(System.currentTimeMillis()) <= 0;
     }
 
     private void shutdownOutput()

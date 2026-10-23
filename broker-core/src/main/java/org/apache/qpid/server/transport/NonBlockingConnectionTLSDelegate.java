@@ -451,7 +451,11 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     @Override
     public void shutdownOutput()
     {
-
+        for (final QpidByteBuffer buffer : _encryptedOutput)
+        {
+            buffer.dispose();
+        }
+        _encryptedOutput.clear();
         if (_netOutputBuffer != null)
         {
             _netOutputBuffer.dispose();

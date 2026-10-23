@@ -20,38 +20,54 @@
  */
 package org.apache.qpid.server.protocol;
 
+import java.util.concurrent.TimeUnit;
+import java.util.function.LongSupplier;
+
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.transport.network.Ticker;
 
 public class ConnectionClosingTicker implements Ticker
 {
-    private final long _timeoutTime;
+    private final long _startTimeNanos;
+    private final long _timeoutNanos;
+    private final LongSupplier _nanoTime;
     private final ServerNetworkConnection _network;
 
-    public ConnectionClosingTicker(final long timeoutTime, final ServerNetworkConnection network)
+    public ConnectionClosingTicker(final long timeoutMillis, final ServerNetworkConnection network)
     {
-        _timeoutTime = timeoutTime;
+        this(timeoutMillis, network, System::nanoTime);
+    }
+
+    ConnectionClosingTicker(final long timeoutMillis,
+                            final ServerNetworkConnection network,
+                            final LongSupplier nanoTime)
+    {
+        _nanoTime = nanoTime;
+        _startTimeNanos = nanoTime.getAsLong();
+        _timeoutNanos = TimeUnit.MILLISECONDS.toNanos(Math.max(0L, timeoutMillis));
         _network = network;
     }
 
     @Override
     public int getTimeToNextTick(final long currentTime)
     {
-        if (_network.getScheduledTime() > 0)
+        final long elapsed = _nanoTime.getAsLong() - _startTimeNanos;
+        if (elapsed >= _timeoutNanos)
         {
-            return (int) (_timeoutTime - _network.getScheduledTime());
+            return 0;
         }
-
-        return (int) (_timeoutTime - currentTime);
+        final long remaining = _timeoutNanos - elapsed;
+        final long millis = TimeUnit.NANOSECONDS.toMillis(remaining);
+        return (int) Math.min(Integer.MAX_VALUE, millis + (remaining % 1_000_000L == 0 ? 0 : 1));
     }
 
     @Override
     public int tick(final long currentTime)
     {
-        int nextTick = getTimeToNextTick(currentTime);
+        final int nextTick = getTimeToNextTick(currentTime);
         if(nextTick <= 0)
         {
-            _network.close();
+            _network.abort();
         }
         return nextTick;
     }

@@ -608,6 +608,7 @@ class AMQPConnection_0_8Test extends UnitTestBase
     @Test
     void testIncompleteDiscardRetainsCloseTimeout()
     {
+        when(_port.getContext()).thenReturn(Map.of(Connection.CLOSE_RESPONSE_TIMEOUT, "0"));
         final AMQPConnection_0_8Impl connection = new AMQPConnection_0_8Impl(_broker, _network, _port, _transport,
                 _protocol, 0, _ticker);
         openConnection(connection, ProtocolVersion.v0_8);
@@ -623,9 +624,8 @@ class AMQPConnection_0_8Test extends UnitTestBase
             assertFalse(frame.hasRemaining());
             verify(_network, never()).close();
 
-            final long closeTimeout = connection.getContextValue(Long.class, Connection.CLOSE_RESPONSE_TIMEOUT);
-            _ticker.tick(System.currentTimeMillis() + closeTimeout + 1);
-            verify(_network).close();
+            _ticker.tick(System.currentTimeMillis());
+            verify(_network).abort();
         }
     }
 
