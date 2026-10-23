@@ -968,14 +968,16 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             error.setInfo(Map.of(Symbols.SOLE_CONNECTION_ENFORCEMENT, true));
 
             final EventLogger logger = getEventLogger();
-            final List<CompletableFuture<Void>> rescheduleFutures = new ArrayList<>();
+            final List<CompletableFuture<?>> rescheduleFutures = new ArrayList<>();
             for (final AMQPConnection_1_0<?> connection : e.getExistingConnections())
             {
                 if (!connection.isClosing())
                 {
                     LOGGER.debug("Closing existing connection '{}': {}",
                             connection.getName(), e.getMessage());
-                    rescheduleFutures.add(connection.doOnIOThreadAsync(() -> connection.close(error)));
+                    connection.startCloseDeadline();
+                    rescheduleFutures.add(CompletableFuture.anyOf(connection.getTransportClosedFuture(),
+                            connection.doOnIOThreadAsync(() -> connection.close(error))));
                     logger.message(ResourceLimitMessages.INFO(
                             String.format("Closing existing connection '%s'", connection.getName()), e.getMessage()));
                 }

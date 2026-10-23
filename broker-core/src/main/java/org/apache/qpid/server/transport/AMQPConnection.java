@@ -122,6 +122,8 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
 
     void startCloseDeadline();
 
+    CompletableFuture<Void> getTransportClosedFuture();
+
     boolean isIOThread();
     CompletableFuture<Void> doOnIOThreadAsync(final Runnable task);
 

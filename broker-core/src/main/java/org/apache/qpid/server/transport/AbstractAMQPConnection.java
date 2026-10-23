@@ -819,6 +819,12 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         return getSessionModels().size();
     }
 
+    @Override
+    public final CompletableFuture<Void> getTransportClosedFuture()
+    {
+        return _transportClosedFuture.copy();
+    }
+
     protected void markTransportClosed()
     {
         _transportClosedFuture.complete(null);
