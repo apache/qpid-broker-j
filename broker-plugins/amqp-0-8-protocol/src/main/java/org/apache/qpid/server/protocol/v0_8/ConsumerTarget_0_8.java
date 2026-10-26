@@ -114,7 +114,18 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
                              ClientDeliveryMethod deliveryMethod,
                              boolean multiQueue)
         {
-            super(channel, consumerTag, filters, creditManager, deliveryMethod, multiQueue);
+            this(channel, consumerTag, filters, creditManager, deliveryMethod, multiQueue, false);
+        }
+
+        private NoAckConsumer(final AMQChannel channel,
+                              final AMQShortString consumerTag,
+                              final FieldTable filters,
+                              final FlowCreditManager_0_8 creditManager,
+                              final ClientDeliveryMethod deliveryMethod,
+                              final boolean multiQueue,
+                              final boolean isGet)
+        {
+            super(channel, consumerTag, filters, creditManager, deliveryMethod, multiQueue, isGet);
 
             _txn = new AutoCommitTransaction(channel.getAddressSpace().getMessageStore());
         }
@@ -172,7 +183,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
                                 FlowCreditManager_0_8 creditManager,
                                 ClientDeliveryMethod deliveryMethod)
         {
-            super(channel, consumerTag, filters, creditManager, deliveryMethod, false);
+            super(channel, consumerTag, filters, creditManager, deliveryMethod, false, true);
         }
 
     }
@@ -188,7 +199,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
                                consumerTag,
                                filters, creditManager,
                                channel.getClientDeliveryMethod(),
-                               multiQueue, true);
+                               multiQueue, true, false);
     }
 
 
@@ -197,7 +208,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
                                                         FlowCreditManager_0_8 creditManager,
                                                         ClientDeliveryMethod deliveryMethod)
     {
-        return new AckConsumer(channel, consumerTag, filters, creditManager, deliveryMethod, false, false);
+        return new AckConsumer(channel, consumerTag, filters, creditManager, deliveryMethod, false, false, true);
     }
 
     static final class AckConsumer extends ConsumerTarget_0_8
@@ -209,9 +220,10 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
                            FlowCreditManager_0_8 creditManager,
                            ClientDeliveryMethod deliveryMethod,
                            boolean multiQueue,
-                           final boolean usesCredit)
+                           final boolean usesCredit,
+                           final boolean isGet)
         {
-            super(channel, consumerTag, filters, creditManager, deliveryMethod, multiQueue);
+            super(channel, consumerTag, filters, creditManager, deliveryMethod, multiQueue, isGet);
             _usesCredit = usesCredit;
         }
 
@@ -243,12 +255,25 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
 
     private final Boolean _autoClose;
 
+    private final boolean _isGet;
+
     public ConsumerTarget_0_8(AMQChannel channel,
                               AMQShortString consumerTag,
                               FieldTable arguments,
                               FlowCreditManager_0_8 creditManager,
                               ClientDeliveryMethod deliveryMethod,
                               boolean multiQueue)
+    {
+        this(channel, consumerTag, arguments, creditManager, deliveryMethod, multiQueue, false);
+    }
+
+    private ConsumerTarget_0_8(final AMQChannel channel,
+                               final AMQShortString consumerTag,
+                               final FieldTable arguments,
+                               final FlowCreditManager_0_8 creditManager,
+                               final ClientDeliveryMethod deliveryMethod,
+                               final boolean multiQueue,
+                               final boolean isGet)
     {
         super(multiQueue, channel.getAMQPConnection());
 
@@ -258,6 +283,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
         _creditManager = creditManager;
 
         _deliveryMethod = deliveryMethod;
+        _isGet = isGet;
 
         if (arguments != null)
         {
@@ -313,10 +339,11 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<Consumer
     {
         final AMQPConnection_0_8 amqpConnection = (AMQPConnection_0_8) _channel.getAMQPConnection();
 
-        boolean state = _channel.isChannelFlow()
-                        && !amqpConnection.isTransportBlockedForWriting()
-                        // this last condition does not need to exist for browsers and no ack
-                        && getCreditManager().hasCredit();
+        boolean state = _channel.isChannelFlow() &&
+                // Basic.Get must report queue availability even when its response will be buffered
+                (_isGet || !amqpConnection.isTransportBlockedForWriting()) &&
+                // this last condition does not need to exist for browsers and no ack
+                getCreditManager().hasCredit();
 
         setNotifyWorkDesired(state);
     }

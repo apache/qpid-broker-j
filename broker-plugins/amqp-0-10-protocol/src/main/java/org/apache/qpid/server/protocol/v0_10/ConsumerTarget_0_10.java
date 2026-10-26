@@ -75,6 +75,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
     private volatile FlowCreditManager_0_10 _creditManager;
     private int _deferredMessageCredit;
     private long _deferredSizeCredit;
+    private boolean _flushing;
 
     private final StateChangeListener<MessageInstance, EntryState> _unacknowledgedMessageListener =
             new StateChangeListener<>()
@@ -129,8 +130,8 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
     {
         final AMQPConnection_0_10 amqpConnection = _session.getAMQPConnection();
 
-        boolean state = !amqpConnection.isTransportBlockedForWriting()
-                        && getCreditManager().hasCredit();
+        final boolean state = (_flushing || !amqpConnection.isTransportBlockedForWriting()) &&
+                getCreditManager().hasCredit();
 
         setNotifyWorkDesired(state);
     }
@@ -564,9 +565,19 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
 
     public void flush()
     {
-        flushCreditState(true);
-        while(sendNextMessage());
-        stop();
+        _flushing = true;
+        try
+        {
+            flushCreditState(true);
+            updateNotifyWorkDesired();
+            while (sendNextMessage());
+            stop();
+        }
+        finally
+        {
+            _flushing = false;
+            updateNotifyWorkDesired();
+        }
     }
 
     @Override
