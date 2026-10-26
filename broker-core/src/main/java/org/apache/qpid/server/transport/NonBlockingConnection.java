@@ -294,7 +294,12 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
                     final boolean processPendingComplete = processPending();
 
-                    if (processPendingComplete)
+                    if (isCloseDeadlineExpired())
+                    {
+                        abort();
+                    }
+
+                    if (processPendingComplete && !_closed.get())
                     {
                         _pendingIterator = null;
                         _protocolEngine.setTransportBlockedForWriting(false);
@@ -369,7 +374,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
         final int networkBufferSize = _port.getNetworkBufferSize();
 
-        while(_pendingIterator.hasNext())
+        while (!_closed.get() && !isCloseDeadlineExpired() && _pendingIterator.hasNext())
         {
             long size = getBufferedSize();
             if(size >= networkBufferSize)
@@ -386,6 +391,11 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                 final Runnable task = _pendingIterator.next();
                 task.run();
             }
+        }
+
+        if (_closed.get() || isCloseDeadlineExpired())
+        {
+            return false;
         }
 
         boolean complete = !_pendingIterator.hasNext();

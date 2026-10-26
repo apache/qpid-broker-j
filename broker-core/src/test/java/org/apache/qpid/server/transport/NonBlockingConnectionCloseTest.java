@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -49,13 +50,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
-import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.server.transport.network.Ticker;
+import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 class NonBlockingConnectionCloseTest extends UnitTestBase
@@ -121,6 +123,121 @@ class NonBlockingConnectionCloseTest extends UnitTestBase
         verify(_socket, never()).write(any(ByteBuffer[].class));
         verify(_engine, never()).processPendingIterator();
         verify(_selectionTask).wakeup();
+        assertClosedAndReleased();
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransportEncryption.class)
+    void deadlineExpiresDuringPendingWork(final TransportEncryption encryption) throws Exception
+    {
+        createConnection(encryption);
+        _writable.set(true);
+        final AtomicBoolean expired = new AtomicBoolean();
+        installDeadline(expired);
+        final Runnable pending = mock(Runnable.class);
+        final List<Runnable> work = List.of(() ->
+        {
+            queueOutput();
+            expired.set(true);
+        }, pending);
+        when(_engine.processPendingIterator()).thenReturn(work.iterator());
+
+        assertTrue(_connection.doWork(), "Deadline expiry must stop the active pending-work loop");
+
+        verify(pending, never()).run();
+        verify(_socket, never()).write(any(ByteBuffer[].class));
+        assertClosedAndReleased();
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransportEncryption.class)
+    void deadlineInstalledByLastPendingTaskDiscardsOutput(final TransportEncryption encryption) throws Exception
+    {
+        createConnection(encryption);
+        _writable.set(true);
+        final List<Runnable> work = List.of(() ->
+        {
+            queueOutput();
+            _connection.setCloseDeadline(new ConnectionClosingTicker(0, _connection));
+        });
+        when(_engine.processPendingIterator()).thenReturn(work.iterator());
+
+        assertTrue(_connection.doWork(), "A deadline installed during processing must prevent the final pending write");
+
+        verify(_socket, never()).write(any(ByteBuffer[].class));
+        assertClosedAndReleased();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"NONE, true", "NONE, false", "TLS, true", "TLS, false"})
+    void deadlineExpiresDuringSuccessfulWrite(final TransportEncryption encryption,
+                                              final boolean pendingWork) throws Exception
+    {
+        createConnection(encryption);
+        final AtomicBoolean expired = new AtomicBoolean();
+        installDeadline(expired);
+        queueOutput();
+        final Runnable pending = mock(Runnable.class);
+        when(_engine.processPendingIterator()).thenReturn(pendingWork ?
+                List.of(pending).iterator() : Collections.emptyIterator());
+        when(_socket.write(any(ByteBuffer[].class))).thenAnswer(invocation ->
+        {
+            long written = 0;
+            for (final ByteBuffer buffer : (ByteBuffer[]) invocation.getArgument(0))
+            {
+                written += buffer.remaining();
+                buffer.position(buffer.limit());
+            }
+            expired.set(true);
+            return written;
+        });
+
+        assertTrue(_connection.doWork(), "Successful writes must not postpone deadline enforcement");
+
+        verify(pending, never()).run();
+        verify(_socket).write(any(ByteBuffer[].class));
+        assertClosedAndReleased();
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransportEncryption.class)
+    void abortDuringPendingWorkStopsFurtherTasks(final TransportEncryption encryption) throws Exception
+    {
+        createConnection(encryption);
+        _writable.set(true);
+        final Runnable pending = mock(Runnable.class);
+        final List<Runnable> work = List.of(() ->
+        {
+            queueOutput();
+            _connection.abort();
+        }, pending);
+        when(_engine.processPendingIterator()).thenReturn(work.iterator());
+
+        assertTrue(_connection.doWork());
+
+        verify(pending, never()).run();
+        verify(_socket, never()).write(any(ByteBuffer[].class));
+        assertClosedAndReleased();
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransportEncryption.class)
+    void gracefulCloseDuringPendingWorkFlushesOutput(final TransportEncryption encryption) throws Exception
+    {
+        createConnection(encryption);
+        _writable.set(true);
+        final Runnable pending = mock(Runnable.class);
+        final List<Runnable> work = List.of(() ->
+        {
+            queueOutput();
+            _connection.close();
+        }, pending);
+        when(_engine.processPendingIterator()).thenReturn(work.iterator());
+
+        assertTrue(_connection.doWork());
+
+        verify(pending, never()).run();
+        verify(_socket).write(any(ByteBuffer[].class));
         assertClosedAndReleased();
     }
 
@@ -292,13 +409,26 @@ class NonBlockingConnectionCloseTest extends UnitTestBase
 
     private void fillOutput()
     {
-        try (final QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(2 * BUFFER_SIZE))
-        {
-            _connection.send(buffer);
-        }
+        queueOutput();
         assertFalse(_connection.doWork());
         assertTrue(_connection.wantsWrite() || _connection.wantsRead(),
                 "Blocked output must wait for socket capacity or TLS peer input");
         assertTrue(QpidByteBuffer.getNumberOfBuffersInUse() > 0);
+    }
+
+    private void queueOutput()
+    {
+        try (final QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(2 * BUFFER_SIZE))
+        {
+            _connection.send(buffer);
+        }
+    }
+
+    private void installDeadline(final AtomicBoolean expired)
+    {
+        final Ticker deadline = mock(Ticker.class);
+        when(deadline.getTimeToNextTick(anyLong())).thenAnswer(invocation -> expired.get() ? 0 : 1000);
+        _connection.setCloseDeadline(deadline);
+        _ticker.addTicker(deadline);
     }
 }

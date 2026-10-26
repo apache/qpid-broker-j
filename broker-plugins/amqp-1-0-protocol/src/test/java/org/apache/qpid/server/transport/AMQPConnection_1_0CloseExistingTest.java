@@ -71,6 +71,7 @@ import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.limit.ConnectionSlot;
+import org.apache.qpid.server.session.AMQPSession;
 import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -201,6 +202,27 @@ class AMQPConnection_1_0CloseExistingTest extends UnitTestBase
         verify(existing._socket, never()).close();
         assertFalse(replacement._network.doWork());
         assertTrue(replacement._connection.isOpen());
+    }
+
+    @Test
+    void queuedCloseTakesPrecedenceOverPendingSessionWork() throws IOException
+    {
+        final ConnectionFixture existing = newConnection();
+        existing.open();
+        final AMQPSession<?, ?> session = mock(AMQPSession.class);
+        when(session.processPending()).thenReturn(true, false);
+        existing._connection.notifyWork(session);
+        final ConnectionFixture replacement = newConnection();
+
+        replacement.open();
+        assertFalse(replacement._connection.isOpen());
+        assertFalse(existing._network.doWork());
+
+        verify(session, never()).processPending();
+        assertTrue(existing._connection.isClosing(), "Pending session work must not delay the queued close");
+        verify(existing._socket, never()).close();
+        assertFalse(replacement._network.doWork());
+        assertTrue(replacement._connection.isOpen(), "The replacement must open while session work remains pending");
     }
 
     private ConnectionFixture newConnection() throws IOException

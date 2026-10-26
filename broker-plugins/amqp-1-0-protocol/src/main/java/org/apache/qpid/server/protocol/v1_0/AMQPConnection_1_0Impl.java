@@ -975,6 +975,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 {
                     LOGGER.debug("Closing existing connection '{}': {}",
                             connection.getName(), e.getMessage());
+                    connection.stopConnection();
                     connection.startCloseDeadline();
                     rescheduleFutures.add(CompletableFuture.anyOf(connection.getTransportClosedFuture(),
                             connection.doOnIOThreadAsync(() -> connection.close(error))));
