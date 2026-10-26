@@ -158,7 +158,8 @@ class NonBlockingConnectionWriteTest extends UnitTestBase
         assertFalse(_connection.doWork());
 
         assertTrue(_connection.wantsWrite());
-        assertTrue(_connection.wantsRead(), "Completed protocol work must allow incoming traffic during a blocked write");
+        assertTrue(_connection.wantsRead(),
+                "Completed protocol work must allow incoming traffic during a blocked write");
         assertFalse(_connection.isStateChanged(), "Pending output alone must not reschedule the connection");
         assertEquals(List.of(true), _blockedTransitions);
 
@@ -246,7 +247,7 @@ class NonBlockingConnectionWriteTest extends UnitTestBase
     @ParameterizedTest
     @CsvSource({"false, 768", "true, 768", "false, 1023", "true, 1023"})
     void partialWriteBelowBufferLimitResumesWorkAndReads(final boolean pendingTask,
-                                                        final int remainingOutput) throws Exception
+                                                         final int remainingOutput) throws Exception
     {
         final AtomicInteger completed = new AtomicInteger();
         final AtomicInteger received = new AtomicInteger();
@@ -343,8 +344,8 @@ class NonBlockingConnectionWriteTest extends UnitTestBase
     void resumedIteratorWaitsAgainWhenOutputReachesBufferLimit()
     {
         final AtomicInteger completed = new AtomicInteger();
-        final List<Runnable> tasks = List.of(() -> send(NETWORK_BUFFER_SIZE),
-                () -> send(NETWORK_BUFFER_SIZE / 4), completed::incrementAndGet);
+        final List<Runnable> tasks = List.of(() -> send(NETWORK_BUFFER_SIZE), () ->
+                send(NETWORK_BUFFER_SIZE / 4), completed::incrementAndGet);
         when(_engine.processPendingIterator()).thenReturn(tasks.iterator());
         _writableBytes.set(NETWORK_BUFFER_SIZE / 4);
 
@@ -473,7 +474,7 @@ class NonBlockingConnectionWriteTest extends UnitTestBase
         field.setAccessible(true);
         ((NonBlockingConnectionDelegate) field.get(_connection)).shutdownInput();
         field.set(_connection, delegate);
-        try (QpidByteBuffer input = QpidByteBuffer.allocate(NETWORK_BUFFER_SIZE))
+        try (final QpidByteBuffer input = QpidByteBuffer.allocate(NETWORK_BUFFER_SIZE))
         {
             when(delegate.getNetInputBuffer()).thenReturn(input);
             final List<Runnable> tasks = List.of(() -> send(NETWORK_BUFFER_SIZE), completed::incrementAndGet);

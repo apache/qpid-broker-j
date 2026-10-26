@@ -286,8 +286,8 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                         final boolean dataRead = doRead();
                         doWrite();
 
-                        if (_fullyWritten &&
-                                (dataRead || (_delegate.needsWork() && _delegate.getNetInputBuffer().position() != 0)))
+                        if (_fullyWritten && (dataRead || (_delegate.needsWork() &&
+                                _delegate.getNetInputBuffer().position() != 0)))
                         {
                             _protocolEngine.notifyWork();
                         }

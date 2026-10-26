@@ -32,6 +32,7 @@ final class TlsTestContext
 {
     private TlsTestContext()
     {
+        // utility class has private constructor
     }
 
     static SSLContext create() throws Exception
@@ -43,7 +44,8 @@ final class TlsTestContext
         keys.setKeyEntry("server", certificate.privateKey(), password, new Certificate[]{certificate.certificate()});
         final KeyManagerFactory keyManagers = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         keyManagers.init(keys, password);
-        final TrustManagerFactory trustManagers = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        final TrustManagerFactory trustManagers = TrustManagerFactory
+                .getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagers.init(keys);
         final SSLContext context = SSLContext.getInstance("TLS");
         context.init(keyManagers.getKeyManagers(), trustManagers.getTrustManagers(), null);

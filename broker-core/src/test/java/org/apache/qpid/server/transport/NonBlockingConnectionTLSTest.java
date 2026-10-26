@@ -172,7 +172,8 @@ class NonBlockingConnectionTLSTest extends UnitTestBase
             tls._connection.doWork();
             assertFalse(tls._connection.wantsWrite());
             assertFalse(tls._connection.isPartialRead(), "No new socket bytes were supplied during the drain");
-            assertTrue(tls._connection.isStateChanged(), "Retained TLS input must request a continuation after draining");
+            assertTrue(tls._connection.isStateChanged(),
+                    "Retained TLS input must request a continuation after draining");
 
             tls._readAllowance = Integer.MAX_VALUE;
             tls._connection.doWork();
@@ -232,10 +233,18 @@ class NonBlockingConnectionTLSTest extends UnitTestBase
             when(engine.getAggregateTicker()).thenReturn(new AggregateTicker());
             when(engine.processPendingIterator()).thenAnswer(invocation -> Collections.emptyIterator());
             when(engine.hasWork()).thenAnswer(invocation -> _hasWork);
-            doAnswer(invocation -> { _hasWork = false; return null; }).when(engine).clearWork();
-            doAnswer(invocation -> { _hasWork = true; return null; }).when(engine).notifyWork();
-            doAnswer(invocation -> { _blocked = invocation.getArgument(0); return null; })
-                    .when(engine).setTransportBlockedForWriting(anyBoolean());
+            doAnswer(invocation ->
+            {
+                _hasWork = false; return null;
+            }).when(engine).clearWork();
+            doAnswer(invocation ->
+            {
+                _hasWork = true; return null;
+            }).when(engine).notifyWork();
+            doAnswer(invocation ->
+            {
+                _blocked = invocation.getArgument(0); return null;
+            }).when(engine).setTransportBlockedForWriting(anyBoolean());
             doAnswer(invocation ->
             {
                 final QpidByteBuffer input = invocation.getArgument(0);
@@ -261,8 +270,8 @@ class NonBlockingConnectionTLSTest extends UnitTestBase
             final Broker<?> broker = mock(Broker.class);
             when(broker.getEventLogger()).thenReturn(mock(EventLogger.class));
             doReturn(broker).when(port).getParent();
-            _connection = new NonBlockingConnection(channel, engine, Set.of(TransportEncryption.TLS),
-                    () -> { }, mock(NetworkConnectionScheduler.class), port);
+            final Set<TransportEncryption> encryptionSet = Set.of(TransportEncryption.TLS);
+            _connection = new NonBlockingConnection(channel, engine, encryptionSet, () -> { }, mock(), port);
             _connection.setSelectionTask(mock(SelectorThread.SelectionTask.class));
         }
 
@@ -276,9 +285,9 @@ class NonBlockingConnectionTLSTest extends UnitTestBase
                     wrapPeer(ByteBuffer.allocate(0));
                 }
                 _connection.doWork();
-                if (_peer.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING
-                        && _server.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING
-                        && _fromPeer.position() == 0 && _toPeer.position() == 0)
+                if (_peer.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING &&
+                        _server.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING &&
+                        _fromPeer.position() == 0 && _toPeer.position() == 0)
                 {
                     assertEquals(_peer.getSession().getProtocol(), _server.getSession().getProtocol());
                     assertFalse(_connection.wantsWrite());
@@ -296,7 +305,8 @@ class NonBlockingConnectionTLSTest extends UnitTestBase
                 final SSLEngineResult result = _peer.wrap(application, _fromPeer);
                 assertEquals(SSLEngineResult.Status.OK, result.getStatus());
                 runPeerTasks();
-                assertTrue(result.bytesConsumed() > 0 || result.bytesProduced() > 0, "Peer wrap made no progress");
+                assertTrue(result.bytesConsumed() > 0 || result.bytesProduced() > 0,
+                        "Peer wrap made no progress");
             }
             while (application.hasRemaining() || _peer.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_WRAP);
         }

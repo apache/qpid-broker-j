@@ -130,7 +130,8 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
     {
         final AMQPConnection_0_10 amqpConnection = _session.getAMQPConnection();
 
-        boolean state = (_flushing || !amqpConnection.isTransportBlockedForWriting()) && getCreditManager().hasCredit();
+        final boolean state = (_flushing || !amqpConnection.isTransportBlockedForWriting()) &&
+                getCreditManager().hasCredit();
 
         setNotifyWorkDesired(state);
     }

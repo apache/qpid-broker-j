@@ -75,7 +75,7 @@ class NonBlockingConnectionTLSDelegateTest extends UnitTestBase
         when(port.getContextValue(Integer.class, AmqpPort.PORT_DIAGNOSIS_OF_SSL_ENGINE_LOOPING_BREAK_THRESHOLD))
                 .thenReturn(10000);
         final NonBlockingConnectionTLSDelegate delegate = new NonBlockingConnectionTLSDelegate(parent, port);
-        try (QpidByteBuffer application = QpidByteBuffer.wrap(new byte[128]))
+        try (final QpidByteBuffer application = QpidByteBuffer.wrap(new byte[128]))
         {
             final List<QpidByteBuffer> buffers = List.of(application);
             assertFalse(delegate.doWrite(buffers).isComplete());

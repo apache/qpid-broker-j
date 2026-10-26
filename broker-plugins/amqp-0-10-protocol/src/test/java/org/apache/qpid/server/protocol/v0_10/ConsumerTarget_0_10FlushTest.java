@@ -77,12 +77,13 @@ class ConsumerTarget_0_10FlushTest extends UnitTestBase
 {
     private static final int MESSAGE_SIZE = 10;
 
+    private final List<MessageTransfer> _transfers = new ArrayList<>();
+
     private QueueManagingVirtualHost<?> _host;
     private Queue<?> _queue;
     private AMQPConnection_0_10 _connection;
     private ServerSession _session;
     private ConsumerTarget_0_10 _target;
-    private final List<MessageTransfer> _transfers = new ArrayList<>();
 
     @BeforeEach
     void setUp() throws Exception
@@ -156,7 +157,8 @@ class ConsumerTarget_0_10FlushTest extends UnitTestBase
         final InOrder order = inOrder(_session);
         if (expectedDeliveries > 0)
         {
-            order.verify(_session, times(expectedDeliveries)).sendMessage(any(MessageTransfer.class), any(Runnable.class));
+            order.verify(_session, times(expectedDeliveries)).sendMessage(any(MessageTransfer.class),
+                    any(Runnable.class));
         }
         else
         {

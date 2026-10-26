@@ -112,7 +112,8 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
 
     @ParameterizedTest
     @CsvSource({"TLSv1.2, 2", "TLSv1.2, 4", "TLSv1.3, 2", "TLSv1.3, 4"})
-    void blockedTlsSocketReturnsWorkersAndRecoversPendingOutput(final String protocol, final int workers) throws Exception
+    void blockedTlsSocketReturnsWorkersAndRecoversPendingOutput(final String protocol,
+                                                                final int workers) throws Exception
     {
         startScheduler(workers);
         final TestConnection blocked = createTlsConnection(protocol);
@@ -301,7 +302,6 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             public void resetModified()
             {
                 super.resetModified();
-                // The selector calls this after examining a registered connection's ticker.
                 signalSelection();
             }
         };
@@ -316,8 +316,10 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             this(scheduler, networkBufferSize, new Socket(), null);
         }
 
-        private TestConnection(final NetworkConnectionScheduler scheduler, final int networkBufferSize,
-                               final Socket client, final SSLContext sslContext) throws Exception
+        private TestConnection(final NetworkConnectionScheduler scheduler,
+                               final int networkBufferSize,
+                               final Socket client,
+                               final SSLContext sslContext) throws Exception
         {
             _client = client;
             try (final ServerSocketChannel listener = ServerSocketChannel.open())
@@ -387,9 +389,11 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
                 workListener.get().performAction(_engine);
                 return null;
             }).when(_engine).notifyWork();
-            _connection = new NonBlockingConnection(_channel, _engine,
-                    Set.of(sslContext == null ? TransportEncryption.NONE : TransportEncryption.TLS),
-                    () -> { }, scheduler, port);
+            final TransportEncryption transportEncryption = sslContext == null
+                    ? TransportEncryption.NONE
+                    : TransportEncryption.TLS;
+            final Set<TransportEncryption> encryptionSet = Set.of(transportEncryption);
+            _connection = new NonBlockingConnection(_channel, _engine, encryptionSet, () -> { }, scheduler, port);
             scheduler.addConnection(_connection);
         }
 
@@ -437,10 +441,10 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             if (interest != null)
             {
                 final SelectionKey key = _channel.keyFor(_connection.getSelectionTask().getSelector());
-                final int expectedOps = (interest.wantsWrite() ? SelectionKey.OP_WRITE : 0)
-                        | (_connection.wantsRead() ? SelectionKey.OP_READ : 0);
-                if (_connection.wantsWrite() == interest.wantsWrite() && !_connection.isStateChanged()
-                        && !_connection.isPartialRead() && key != null &&
+                final int expectedOps = (interest.wantsWrite() ? SelectionKey.OP_WRITE : 0) |
+                        (_connection.wantsRead() ? SelectionKey.OP_READ : 0);
+                if (_connection.wantsWrite() == interest.wantsWrite() && !_connection.isStateChanged() &&
+                        !_connection.isPartialRead() && key != null &&
                         key.isValid() && key.interestOps() == expectedOps)
                 {
                     interest.ready().complete(null);

@@ -647,8 +647,8 @@ class AMQChannelTest extends UnitTestBase
 
         private AMQMessage enqueueMessage()
         {
-            final MessageMetaData metaData = new MessageMetaData(new MessagePublishInfo(),
-                    new ContentHeaderBody(new BasicContentHeaderProperties()));
+            final ContentHeaderBody contentHeaderBody = new ContentHeaderBody(new BasicContentHeaderProperties());
+            final MessageMetaData metaData = new MessageMetaData(new MessagePublishInfo(), contentHeaderBody);
             final AMQMessage message = new AMQMessage(new StoredMemoryMessage<>(1L, metaData));
             _queue.enqueue(message, null, null);
             return message;
