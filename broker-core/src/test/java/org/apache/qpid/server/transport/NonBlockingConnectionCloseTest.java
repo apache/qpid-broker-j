@@ -20,6 +20,7 @@ package org.apache.qpid.server.transport;
 
 import static org.apache.qpid.server.transport.NonBlockingConnectionTestHelper.createPort;
 import static org.apache.qpid.server.transport.NonBlockingConnectionTestHelper.createSocketChannel;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -27,8 +28,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -53,6 +57,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.InOrder;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -382,6 +387,155 @@ class NonBlockingConnectionCloseTest extends UnitTestBase
         assertThrows(IllegalStateException.class, _connection::doWork);
 
         assertClosedAndReleased();
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransportEncryption.class)
+    void expiredDeadlineInstalledDuringReadDiscardsOutput(final TransportEncryption encryption) throws Exception
+    {
+        createConnection(encryption);
+        _writable.set(true);
+        receiveDuringRead(() ->
+        {
+            queueOutput();
+            final Ticker deadline = new ConnectionClosingTicker(0, _connection);
+            _connection.setCloseDeadline(deadline);
+            _ticker.addTicker(deadline);
+            _connection.close();
+        });
+
+        final boolean closed = _connection.doWork();
+
+        verify(_engine).received(any(QpidByteBuffer.class));
+        assertNoIoAfterReadClose(closed);
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransportEncryption.class)
+    void deadlineExpiresDuringReadDiscardsOutput(final TransportEncryption encryption) throws Exception
+    {
+        createConnection(encryption);
+        _writable.set(true);
+        final AtomicBoolean expired = new AtomicBoolean();
+        installDeadline(expired);
+        receiveDuringRead(() ->
+        {
+            queueOutput();
+            expired.set(true);
+        });
+
+        final boolean closed = _connection.doWork();
+
+        verify(_engine).received(any(QpidByteBuffer.class));
+        assertNoIoAfterReadClose(closed);
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransportEncryption.class)
+    void abortDuringReadDiscardsOutput(final TransportEncryption encryption) throws Exception
+    {
+        createConnection(encryption);
+        _writable.set(true);
+        receiveDuringRead(() ->
+        {
+            queueOutput();
+            _connection.abort();
+        });
+
+        final boolean closed = _connection.doWork();
+
+        verify(_engine).received(any(QpidByteBuffer.class));
+        assertNoIoAfterReadClose(closed);
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransportEncryption.class)
+    void gracefulCloseDuringReadFlushesOutput(final TransportEncryption encryption) throws Exception
+    {
+        createConnection(encryption);
+        _writable.set(true);
+        receiveDuringRead(() ->
+        {
+            queueOutput();
+            _connection.close();
+        });
+
+        assertTrue(_connection.doWork());
+
+        verify(_engine).received(any(QpidByteBuffer.class));
+        verify(_socket, atLeastOnce()).write(any(ByteBuffer[].class));
+        final InOrder shutdownOrder = inOrder(_engine, _socket);
+        shutdownOrder.verify(_engine).setIOThread(null);
+        shutdownOrder.verify(_socket, atLeastOnce()).write(any(ByteBuffer[].class));
+        verify(_engine, never()).setTransportBlockedForWriting(anyBoolean());
+        assertFalse(_connection.wantsWrite(), "Graceful close must drain queued output");
+        assertClosedAndReleased();
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransportEncryption.class)
+    void unexpiredDeadlineInstalledDuringReadAllowsWrite(final TransportEncryption encryption) throws Exception
+    {
+        createConnection(encryption);
+        _writable.set(true);
+        receiveDuringRead(() ->
+        {
+            queueOutput();
+            installDeadline(new AtomicBoolean());
+        });
+
+        assertFalse(_connection.doWork());
+
+        verify(_engine).received(any(QpidByteBuffer.class));
+        verify(_socket).write(any(ByteBuffer[].class));
+        verify(_socket, never()).close();
+    }
+
+    private void receiveDuringRead(final Runnable action) throws Exception
+    {
+        // Supply a TLS application-data record; the mocked unwrap below produces one application byte.
+        final byte[] record = {23, 3, 3, 0, 1, 1};
+        when(_socket.read(any(ByteBuffer.class))).thenAnswer(invocation ->
+        {
+            final ByteBuffer target = invocation.getArgument(0);
+            target.put(record);
+            return record.length;
+        });
+        if (_sslEngine != null)
+        {
+            when(_sslEngine.unwrap(any(ByteBuffer.class), any(ByteBuffer.class))).thenAnswer(invocation ->
+            {
+                final ByteBuffer source = invocation.getArgument(0);
+                final ByteBuffer target = invocation.getArgument(1);
+                final int consumed = source.remaining();
+                source.position(source.limit());
+                target.put((byte) 1);
+                return new SSLEngineResult(SSLEngineResult.Status.OK,
+                        SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING, consumed, 1);
+            });
+        }
+        doAnswer(invocation ->
+        {
+            final QpidByteBuffer input = invocation.getArgument(0);
+            input.position(input.limit());
+            action.run();
+            return null;
+        }).when(_engine).received(any(QpidByteBuffer.class));
+    }
+
+    private void assertNoIoAfterReadClose(final boolean closed)
+    {
+        assertAll(() -> assertTrue(closed, "Read-side closure must finish in the same work cycle"),
+                  () -> verify(_socket, never()).write(any(ByteBuffer[].class)),
+                  () ->
+                  {
+                      if (_sslEngine != null)
+                      {
+                          verify(_sslEngine, never()).wrap(any(ByteBuffer[].class), any(ByteBuffer.class));
+                      }
+                  },
+                  () -> verify(_engine, never()).setTransportBlockedForWriting(anyBoolean()),
+                  this::assertClosedAndReleased);
     }
 
     private void assertClosedAndReleased() throws IOException

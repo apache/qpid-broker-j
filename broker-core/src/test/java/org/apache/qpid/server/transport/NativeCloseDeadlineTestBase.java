@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Map;
@@ -211,6 +213,27 @@ public abstract class NativeCloseDeadlineTestBase extends UnitTestBase
         }
         assertEquals(1, getTickers().size(), "Peer close must start the same bounded closing phase");
         assertTrue(_network.doWork(), protocol + ": peer close did not reach native shutdown while output was paused");
+        verify(_socket).close();
+    }
+
+    @ParameterizedTest
+    @MethodSource("protocols")
+    protected void testPeerCloseDuringReadSkipsExpiredWrite(final Protocol protocol) throws Exception
+    {
+        setCloseTimeout(0);
+        final AMQPConnection<?> connection = createConnection(protocol);
+        _writable.set(true);
+        when(_socket.read(any(ByteBuffer.class))).thenAnswer(invocation ->
+        {
+            // Invoke the protocol handler within doRead so its deadline starts after the initial expiry check.
+            receivePeerClose(connection);
+            return 0;
+        });
+
+        assertTrue(_network.doWork(), protocol + ": close received during read must finish in this work cycle");
+
+        verify(_socket).read(any(ByteBuffer.class));
+        verify(_socket, never()).write(any(ByteBuffer[].class));
         verify(_socket).close();
     }
 
