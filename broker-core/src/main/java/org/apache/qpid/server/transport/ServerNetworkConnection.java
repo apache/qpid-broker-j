@@ -27,7 +27,7 @@ import org.apache.qpid.server.transport.network.Ticker;
 
 public interface ServerNetworkConnection extends NetworkConnection
 {
-    default void setCloseDeadline(Ticker deadline)
+    default void setCloseDeadline(final Ticker deadline)
     {
     }
 

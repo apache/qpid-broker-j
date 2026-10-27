@@ -38,6 +38,7 @@ final class NonBlockingConnectionTestHelper
 {
     private NonBlockingConnectionTestHelper()
     {
+        // utility class has private constructor
     }
 
     static AmqpPort<?> createPort(final int bufferSize, final long finalWriteTimeout)

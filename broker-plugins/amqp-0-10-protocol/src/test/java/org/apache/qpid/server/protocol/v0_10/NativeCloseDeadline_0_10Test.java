@@ -62,7 +62,8 @@ class NativeCloseDeadline_0_10Test extends NativeCloseDeadlineTestBase
     protected void receivePeerClose(final AMQPConnection<?> connection) throws Exception
     {
         final ServerConnection server = getServerConnection(connection);
-        final ConnectionClose connectionClose = new ConnectionClose(ConnectionCloseCode.NORMAL, "Peer close reproduction");
+        final ConnectionClose connectionClose = new ConnectionClose(ConnectionCloseCode.NORMAL,
+                "Peer close reproduction");
         server.getConnectionDelegate().connectionClose(server, connectionClose);
     }
 

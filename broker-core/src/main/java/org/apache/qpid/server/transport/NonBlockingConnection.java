@@ -44,8 +44,8 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.NetworkMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.server.transport.network.Ticker;
+import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.SystemUtils;
 
@@ -60,8 +60,6 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     private final String _remoteSocketAddress;
     private final AtomicBoolean _closed = new AtomicBoolean(false);
-    private volatile boolean _aborted;
-    private volatile Ticker _closeDeadline;
     private final ProtocolEngine _protocolEngine;
     private final Runnable _onTransportEncryptionAction;
     private final int _finalWriteThreshold;
@@ -86,6 +84,8 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private final AtomicBoolean _hasShutdown = new AtomicBoolean();
     private volatile long _bufferedSize;
     private String _selectedHost;
+    private volatile boolean _aborted;
+    private volatile Ticker _closeDeadline;
 
     public NonBlockingConnection(final SocketChannel socketChannel,
                                  final ProtocolEngine protocolEngine,

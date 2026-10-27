@@ -63,8 +63,8 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
-import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.server.transport.network.Ticker;
+import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.test.utils.UnitTestBase;
 
@@ -72,12 +72,13 @@ public abstract class NativeCloseDeadlineTestBase extends UnitTestBase
 {
     protected static final int NETWORK_BUFFER_SIZE = 1024;
 
+    private final AtomicBoolean _writable = new AtomicBoolean();
+
     protected Broker<?> _broker;
     protected AmqpPort<?> _port;
     protected NonBlockingConnection _network;
     protected AggregateTicker _ticker;
 
-    private final AtomicBoolean _writable = new AtomicBoolean();
     private SocketChannel _socket;
     private TaskExecutor _taskExecutor;
     private MultiVersionProtocolEngine _engine;
@@ -135,9 +136,9 @@ public abstract class NativeCloseDeadlineTestBase extends UnitTestBase
         }
     }
 
-    protected abstract AMQPConnection<?> createConnection(Protocol protocol) throws Exception;
+    protected abstract AMQPConnection<?> createConnection(final Protocol protocol) throws Exception;
 
-    protected abstract void receivePeerClose(AMQPConnection<?> connection) throws Exception;
+    protected abstract void receivePeerClose(final AMQPConnection<?> connection) throws Exception;
 
     protected abstract Stream<Protocol> protocols();
 
