@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doThrow;
@@ -217,6 +218,38 @@ class NonBlockingConnectionCloseTest extends UnitTestBase
 
         verify(pending, never()).run();
         verify(_socket, never()).write(any(ByteBuffer[].class));
+        assertClosedAndReleased();
+    }
+
+    @Test
+    void deadlineExpiresAfterLastTlsWriteSkipsFurtherIo() throws Exception
+    {
+        createConnection(TransportEncryption.TLS);
+        final AtomicBoolean expired = new AtomicBoolean();
+        installDeadline(expired);
+        try (final QpidByteBuffer output = QpidByteBuffer.allocateDirect(BUFFER_SIZE))
+        {
+            _connection.send(output);
+        }
+        when(_socket.write(any(ByteBuffer[].class))).thenAnswer(invocation ->
+        {
+            long written = 0;
+            for (final ByteBuffer buffer : (ByteBuffer[]) invocation.getArgument(0))
+            {
+                written += buffer.remaining();
+                buffer.position(buffer.limit());
+            }
+            expired.set(true);
+            // Only wrapping after expiry matters, regardless of how the output was batched.
+            clearInvocations(_sslEngine);
+            return written;
+        });
+
+        assertTrue(_connection.doWork());
+
+        verify(_socket).write(any(ByteBuffer[].class));
+        verify(_sslEngine, never()).wrap(any(ByteBuffer[].class), any(ByteBuffer.class));
+        verify(_engine, never()).setTransportBlockedForWriting(anyBoolean());
         assertClosedAndReleased();
     }
 

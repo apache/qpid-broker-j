@@ -300,29 +300,33 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                         abort();
                     }
 
-                    if (processPendingComplete && !_closed.get())
+                    if (!_closed.get())
                     {
-                        _pendingIterator = null;
-                    }
+                        if (processPendingComplete)
+                        {
+                            _pendingIterator = null;
+                        }
 
-                    if (processPendingComplete || _delegate.needsReadForWrite())
-                    {
-                        final boolean dataRead = doRead();
-                        doWrite();
+                        if (processPendingComplete || _delegate.needsReadForWrite())
+                        {
+                            final boolean dataRead = doRead();
+                            doWrite();
 
-                        if (_fullyWritten && (dataRead || (_delegate.needsWork() &&
-                                _delegate.getNetInputBuffer().position() != 0)))
+                            if (_fullyWritten && (dataRead || (_delegate.needsWork() &&
+                                    _delegate.getNetInputBuffer().position() != 0)))
+                            {
+                                _protocolEngine.notifyWork();
+                            }
+                        }
+
+                        if (!processPendingComplete &&
+                                (_fullyWritten || getBufferedSize() < _port.getNetworkBufferSize()))
                         {
                             _protocolEngine.notifyWork();
                         }
-                    }
 
-                    if (!processPendingComplete && (_fullyWritten || getBufferedSize() < _port.getNetworkBufferSize()))
-                    {
-                        _protocolEngine.notifyWork();
+                        _protocolEngine.setTransportBlockedForWriting(!_fullyWritten);
                     }
-
-                    _protocolEngine.setTransportBlockedForWriting(!_fullyWritten);
                 }
 
             }
