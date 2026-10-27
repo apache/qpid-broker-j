@@ -21,11 +21,9 @@
 
 package org.apache.qpid.server.logging.logback;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import ch.qos.logback.classic.net.SocketAppender;
@@ -35,7 +33,6 @@ import ch.qos.logback.core.Context;
 import ch.qos.logback.core.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -62,7 +59,7 @@ public class BrokerLogbackSocketLoggerImpl
     private boolean _includeCallerData;
 
     @ManagedAttributeField
-    private Map<String,String> _mappedDiagnosticContext;
+    private volatile Map<String, String> _mappedDiagnosticContext;
 
     @ManagedAttributeField
     private Map<String, String> _contextProperties;
@@ -110,11 +107,11 @@ public class BrokerLogbackSocketLoggerImpl
     }
 
     @Override
-    protected Appender<ILoggingEvent> createAppenderInstance(Context loggerContext)
+    protected Appender<ILoggingEvent> createAppenderInstance(final Context loggerContext)
     {
         if (_contextProperties != null && !_contextProperties.isEmpty())
         {
-            for (Map.Entry<String, String> property : _contextProperties.entrySet())
+            for (final Map.Entry<String, String> property : _contextProperties.entrySet())
             {
                 final String key = property.getKey();
                 final String value = property.getValue();
@@ -132,33 +129,7 @@ public class BrokerLogbackSocketLoggerImpl
             }
         }
 
-        SocketAppender socketAppender = new SocketAppender()
-                                        {
-                                            @Override
-                                            protected void append(final ILoggingEvent event)
-                                            {
-                                                Set<String> keys = new HashSet<>();
-                                                try
-                                                {
-                                                    for (Map.Entry<String, String> entry : _mappedDiagnosticContext.entrySet())
-                                                    {
-                                                        MDC.put(entry.getKey(), entry.getValue());
-                                                        keys.add(entry.getKey());
-                                                    }
-
-                                                    // Workaround for suspected Logback defect LOGBACK-1088
-                                                    event.prepareForDeferredProcessing();
-                                                    super.append(event);
-                                                }
-                                                finally
-                                                {
-                                                    for (String key : keys)
-                                                    {
-                                                        MDC.remove(key);
-                                                    }
-                                                }
-                                            }
-                                        };
+        final SocketAppender socketAppender = new MdcEnrichingSocketAppender(this::getMappedDiagnosticContext);
         socketAppender.setPort(_port);
         socketAppender.setRemoteHost(_remoteHost);
         socketAppender.setIncludeCallerData(_includeCallerData);

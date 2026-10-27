@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,13 +45,17 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -63,14 +69,21 @@ import org.apache.qpid.server.message.RoutingResult;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.converter.MessageConversionException;
+import org.apache.qpid.server.protocol.v0_8.transport.AMQFrame;
 import org.apache.qpid.server.protocol.v0_8.transport.BasicContentHeaderProperties;
+import org.apache.qpid.server.protocol.v0_8.transport.BasicGetEmptyBody;
+import org.apache.qpid.server.protocol.v0_8.transport.ContentHeaderBody;
+import org.apache.qpid.server.protocol.v0_8.transport.MessagePublishInfo;
 import org.apache.qpid.server.protocol.v0_8.transport.MethodRegistry;
 import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SubjectExecutionContext;
@@ -82,6 +95,7 @@ import org.apache.qpid.server.store.NullMessageStore;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMemoryMessage;
 import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.util.GZIPUtils.GZIPInflationLimitException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -152,6 +166,76 @@ class AMQChannelTest extends UnitTestBase
 
         when(_amqConnection.getEventLogger()).thenReturn(mock(EventLogger.class));
         _messageDestination = mock(MessageDestination.class);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void basicGetDeliversAvailableMessageWhileTransportBlocked(final boolean noAck) throws Exception
+    {
+        try (final ConsumerTestContext context = new ConsumerTestContext())
+        {
+            final AMQMessage message = context.enqueueMessage();
+            when(_amqConnection.isTransportBlockedForWriting()).thenReturn(true);
+
+            context._channel.receiveBasicGet(context._queueName, noAck);
+
+            verify(_amqConnection.getProtocolOutputConverter())
+                    .writeGetOk(eq(message), any(InstanceProperties.class), eq(1), eq(1L), anyInt());
+            verify(_amqConnection, never()).writeFrame(any(AMQFrame.class));
+            verify(_amqConnection, never()).setTransportBlockedForWriting(anyBoolean());
+            assertEquals(0, context._queue.getAvailableMessages());
+            assertEquals(noAck ? 0 : 1, context._channel.getUnacknowledgedMessageCount());
+            if (!noAck)
+            {
+                context._channel.receiveBasicAck(1L, false);
+            }
+            assertEquals(0, context._queue.getQueueDepthMessages());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void basicGetReturnsEmptyForEmptyQueueWhileTransportBlocked(final boolean noAck) throws Exception
+    {
+        try (final ConsumerTestContext context = new ConsumerTestContext())
+        {
+            when(_amqConnection.isTransportBlockedForWriting()).thenReturn(true);
+
+            context._channel.receiveBasicGet(context._queueName, noAck);
+
+            final ArgumentCaptor<AMQFrame> frame = ArgumentCaptor.forClass(AMQFrame.class);
+            verify(_amqConnection).writeFrame(frame.capture());
+            assertInstanceOf(BasicGetEmptyBody.class, frame.getValue().getBodyFrame());
+            verifyNoInteractions(_amqConnection.getProtocolOutputConverter());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void subscriptionWaitsForTransportToUnblock(final boolean noAck) throws Exception
+    {
+        final ClientDeliveryMethod deliveryMethod = mock(ClientDeliveryMethod.class);
+        when(_amqConnection.createDeliveryMethod(1)).thenReturn(deliveryMethod);
+        try (final ConsumerTestContext context = new ConsumerTestContext())
+        {
+            final AMQMessage message = context.enqueueMessage();
+            when(_amqConnection.isTransportBlockedForWriting()).thenReturn(true);
+            context._channel.receiveBasicConsume(context._queueName, AMQShortString.valueOf("consumer"),
+                    false, noAck, false, true, null);
+
+            assertFalse(context._channel.processPending());
+            assertEquals(0, context._queue.getConsumerCountWithCredit());
+            assertEquals(1, context._queue.getAvailableMessages());
+            verifyNoInteractions(deliveryMethod);
+
+            when(_amqConnection.isTransportBlockedForWriting()).thenReturn(false);
+            context._channel.transportStateChanged();
+            context._channel.processPending();
+
+            verify(deliveryMethod).deliverToClient(any(ConsumerTarget_0_8.class), eq(message),
+                    any(InstanceProperties.class), eq(1L));
+            assertEquals(0, context._queue.getAvailableMessages());
+        }
     }
 
     @Test
@@ -534,5 +618,53 @@ class AMQChannelTest extends UnitTestBase
         verify(outputConverter, times(2)).writeReturn(any(), any(), any(), anyInt(), anyInt(), any());
         verify(_amqConnection).closeSessionAsync(channel, AMQPConnection.CloseReason.RESOURCE_LIMIT,
                 failure.getMessage());
+    }
+
+    private final class ConsumerTestContext implements AutoCloseable
+    {
+        private final QueueManagingVirtualHost<?> _host;
+        private final Queue<?> _queue;
+        private final AMQShortString _queueName = AMQShortString.valueOf("queue");
+        private final AMQChannel _channel;
+
+        private ConsumerTestContext() throws Exception
+        {
+            _host = BrokerTestHelper.createVirtualHost(getTestName(), AMQChannelTest.this);
+            _queue = _host.createChild(Queue.class, Map.of(Queue.NAME, _queueName.toString()));
+            when(_virtualHost.getAttainedMessageSource(_queueName.toString())).thenReturn(_queue);
+            when(_virtualHost.getMessageStore()).thenReturn(_host.getMessageStore());
+            when(_amqConnection.isIOThread()).thenReturn(true);
+            when(_amqConnection.getAggregateTicker()).thenReturn(new AggregateTicker());
+            when(_amqConnection.getContextValue(Long.class, Consumer.SUSPEND_NOTIFICATION_PERIOD))
+                    .thenReturn(Consumer.SUSPEND_NOTIFICATION_PERIOD_DEFAULT);
+            doAnswer(invocation ->
+            {
+                ((Runnable) invocation.getArgument(0)).run();
+                return CompletableFuture.completedFuture(null);
+            }).when(_amqConnection).doOnIOThreadAsync(any(Runnable.class));
+            _channel = new AMQChannel(_amqConnection, 1, _host.getMessageStore());
+        }
+
+        private AMQMessage enqueueMessage()
+        {
+            final ContentHeaderBody contentHeaderBody = new ContentHeaderBody(new BasicContentHeaderProperties());
+            final MessageMetaData metaData = new MessageMetaData(new MessagePublishInfo(), contentHeaderBody);
+            final AMQMessage message = new AMQMessage(new StoredMemoryMessage<>(1L, metaData));
+            _queue.enqueue(message, null, null);
+            return message;
+        }
+
+        @Override
+        public void close()
+        {
+            try
+            {
+                _channel.close();
+            }
+            finally
+            {
+                _host.close();
+            }
+        }
     }
 }
