@@ -57,6 +57,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -259,6 +260,141 @@ class NonBlockingConnectionCloseTest extends UnitTestBase
     }
 
     @ParameterizedTest
+    @CsvSource({"false, 512", "false, 2048", "true, 512", "true, 2048"})
+    void deadlineExpiresDuringTlsWrap(final boolean finalWrite, final int bufferedBytes) throws Exception
+    {
+        createConnection(TransportEncryption.TLS);
+        _writable.set(true);
+        final AtomicBoolean expired = new AtomicBoolean();
+        installDeadline(expired);
+        final Runnable delegatedTask = mock(Runnable.class);
+        when(_sslEngine.getDelegatedTask()).thenReturn(delegatedTask, (Runnable) null);
+        doAnswer(invocation ->
+        {
+            final SSLEngineResult result = wrapTlsOutput(invocation.getArgument(0), invocation.getArgument(1),
+                    SSLEngineResult.HandshakeStatus.NEED_TASK);
+            expired.set(true);
+            return result;
+        }).when(_sslEngine).wrap(any(ByteBuffer[].class), any(ByteBuffer.class));
+        queueOutput(bufferedBytes);
+        if (finalWrite)
+        {
+            _connection.close();
+        }
+
+        assertTrue(_connection.doWork());
+
+        assertAll(() -> verify(_sslEngine).wrap(any(ByteBuffer[].class), any(ByteBuffer.class)),
+                  () -> verify(delegatedTask, never()).run(),
+                  () -> verify(_socket, never()).write(any(ByteBuffer[].class)),
+                  this::assertClosedAndReleased);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void deadlineExpiresDuringLastTlsWrap(final boolean finalWrite) throws Exception
+    {
+        createConnection(TransportEncryption.TLS);
+        _writable.set(true);
+        final AtomicBoolean expired = new AtomicBoolean();
+        installDeadline(expired);
+        doAnswer(invocation ->
+        {
+            final SSLEngineResult result = wrapTlsOutput(invocation.getArgument(0), invocation.getArgument(1),
+                    SSLEngineResult.HandshakeStatus.NEED_UNWRAP);
+            when(_sslEngine.getHandshakeStatus()).thenReturn(SSLEngineResult.HandshakeStatus.NEED_UNWRAP);
+            expired.set(true);
+            return result;
+        }).when(_sslEngine).wrap(any(ByteBuffer[].class), any(ByteBuffer.class));
+        queueOutput(BUFFER_SIZE / 2);
+        if (finalWrite)
+        {
+            _connection.close();
+        }
+
+        assertTrue(_connection.doWork());
+
+        verify(_sslEngine).wrap(any(ByteBuffer[].class), any(ByteBuffer.class));
+        verify(_socket, never()).write(any(ByteBuffer[].class));
+        assertClosedAndReleased();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void abortDuringTlsWrapStopsFurtherOutput(final boolean finalWrite) throws Exception
+    {
+        createConnection(TransportEncryption.TLS);
+        _writable.set(true);
+        doAnswer(invocation ->
+        {
+            final SSLEngineResult result = wrapTlsOutput(invocation.getArgument(0), invocation.getArgument(1),
+                    SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING);
+            _connection.abort();
+            return result;
+        }).when(_sslEngine).wrap(any(ByteBuffer[].class), any(ByteBuffer.class));
+        queueOutput();
+        if (finalWrite)
+        {
+            _connection.close();
+        }
+
+        assertTrue(_connection.doWork());
+
+        assertAll(() -> verify(_sslEngine).wrap(any(ByteBuffer[].class), any(ByteBuffer.class)),
+                  () -> verify(_socket, never()).write(any(ByteBuffer[].class)),
+                  this::assertClosedAndReleased);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void deadlineExpiresDuringTlsTask(final boolean finalWrite) throws Exception
+    {
+        createConnection(TransportEncryption.TLS);
+        _writable.set(true);
+        final AtomicBoolean expired = new AtomicBoolean();
+        installDeadline(expired);
+        final Runnable laterTask = mock(Runnable.class);
+        when(_sslEngine.getDelegatedTask()).thenReturn(() -> expired.set(true), laterTask, null);
+        doAnswer(invocation -> wrapTlsOutput(invocation.getArgument(0), invocation.getArgument(1),
+                SSLEngineResult.HandshakeStatus.NEED_TASK))
+                .when(_sslEngine).wrap(any(ByteBuffer[].class), any(ByteBuffer.class));
+        queueOutput();
+        if (finalWrite)
+        {
+            _connection.close();
+        }
+
+        assertTrue(_connection.doWork());
+
+        assertAll(() -> verify(_sslEngine).wrap(any(ByteBuffer[].class), any(ByteBuffer.class)),
+                  () -> verify(laterTask, never()).run(),
+                  () -> verify(_socket, never()).write(any(ByteBuffer[].class)),
+                  this::assertClosedAndReleased);
+    }
+
+    @Test
+    void gracefulTlsCloseWrapsOutputAndRunsTasksBeforeDeadline() throws Exception
+    {
+        createConnection(TransportEncryption.TLS);
+        _writable.set(true);
+        installDeadline(new AtomicBoolean());
+        final Runnable delegatedTask = mock(Runnable.class);
+        when(_sslEngine.getDelegatedTask()).thenReturn(delegatedTask, (Runnable) null);
+        doAnswer(invocation -> wrapTlsOutput(invocation.getArgument(0), invocation.getArgument(1),
+                SSLEngineResult.HandshakeStatus.NEED_TASK))
+                .when(_sslEngine).wrap(any(ByteBuffer[].class), any(ByteBuffer.class));
+        queueOutput();
+        _connection.close();
+
+        assertTrue(_connection.doWork());
+
+        verify(delegatedTask).run();
+        verify(_socket).write(any(ByteBuffer[].class));
+        assertFalse(_connection.wantsWrite(), "Graceful close must wrap and drain the plaintext backlog");
+        assertClosedAndReleased();
+    }
+
+    @ParameterizedTest
     @EnumSource(TransportEncryption.class)
     void gracefulCloseDuringPendingWorkFlushesOutput(final TransportEncryption encryption) throws Exception
     {
@@ -317,9 +453,13 @@ class NonBlockingConnectionCloseTest extends UnitTestBase
     {
         createConnection(encryption);
         fillOutput();
-        final Ticker deadline = mock(Ticker.class);
-        when(deadline.getTimeToNextTick(anyLong())).thenReturn(1, 0);
-        _connection.setCloseDeadline(deadline);
+        final AtomicBoolean expired = new AtomicBoolean();
+        installDeadline(expired);
+        doAnswer(invocation ->
+        {
+            expired.set(true);
+            return 0L;
+        }).when(_socket).write(any(ByteBuffer[].class));
         _connection.close();
         clearInvocations(_socket);
 
@@ -577,21 +717,24 @@ class NonBlockingConnectionCloseTest extends UnitTestBase
                 .thenReturn(0);
         when(_sslEngine.getHandshakeStatus()).thenReturn(SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING);
         when(_sslEngine.wrap(any(ByteBuffer[].class), any(ByteBuffer.class))).thenAnswer(invocation ->
+                wrapTlsOutput(invocation.getArgument(0), invocation.getArgument(1),
+                        SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING));
+    }
+
+    private SSLEngineResult wrapTlsOutput(final ByteBuffer[] sources,
+                                          final ByteBuffer target,
+                                          final SSLEngineResult.HandshakeStatus handshakeStatus)
+    {
+        int count = 0;
+        for (int i = 0; i < sources.length && target.hasRemaining(); i++)
         {
-            final ByteBuffer[] sources = invocation.getArgument(0);
-            final ByteBuffer target = invocation.getArgument(1);
-            int count = 0;
-            for (int i = 0; i < sources.length && target.hasRemaining(); i++)
+            while (sources[i].hasRemaining() && target.hasRemaining())
             {
-                while (sources[i].hasRemaining() && target.hasRemaining())
-                {
-                    target.put(sources[i].get());
-                    count++;
-                }
+                target.put(sources[i].get());
+                count++;
             }
-            final SSLEngineResult.HandshakeStatus handshakeStatus = SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
-            return new SSLEngineResult(SSLEngineResult.Status.OK, handshakeStatus, count, count);
-        });
+        }
+        return new SSLEngineResult(SSLEngineResult.Status.OK, handshakeStatus, count, count);
     }
 
     private void fillOutput()
@@ -605,8 +748,14 @@ class NonBlockingConnectionCloseTest extends UnitTestBase
 
     private void queueOutput()
     {
-        try (final QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(2 * BUFFER_SIZE))
+        queueOutput(2 * BUFFER_SIZE);
+    }
+
+    private void queueOutput(final int size)
+    {
+        try (final QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(Math.max(BUFFER_SIZE, size)))
         {
+            buffer.limit(size);
             _connection.send(buffer);
         }
     }

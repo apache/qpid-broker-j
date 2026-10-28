@@ -494,7 +494,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         {
             final long startTime = System.currentTimeMillis();
             int cnt = 0;
-            while (!_aborted && !isCloseDeadlineExpired() && !doWrite())
+            while (!checkForWriteAbort() && !doWrite())
             {
                 if (cnt % _finalWriteThreshold == 0 && System.currentTimeMillis() - startTime > _finalWriteTimeout)
                 {
@@ -514,6 +514,15 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     {
         final Ticker deadline = _closeDeadline;
         return deadline != null && deadline.getTimeToNextTick(System.currentTimeMillis()) <= 0;
+    }
+
+    boolean checkForWriteAbort()
+    {
+        if (!_aborted && isCloseDeadlineExpired())
+        {
+            abort();
+        }
+        return _aborted;
     }
 
     private void shutdownOutput()
@@ -595,6 +604,10 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     long writeToTransport(final Collection<QpidByteBuffer> buffers) throws IOException
     {
+        if (checkForWriteAbort())
+        {
+            return 0L;
+        }
         final long written = QpidByteBuffer.write(_socketChannel, buffers, _maxGatheringWriteBuffers);
         if (LOGGER.isDebugEnabled())
         {

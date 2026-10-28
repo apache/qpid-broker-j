@@ -139,7 +139,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                 LOGGER.debug("SSLEngine closed, discarded {} byte(s)", remaining);
             }
 
-            tasksRun = runSSLEngineTasks(_status);
+            tasksRun = runSSLEngineTasks(_status, false);
             if(_applicationBuffer.position() > oldAppBufPos)
             {
                 readData = true;
@@ -175,11 +175,15 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     }
 
     @Override
-    public WriteResult doWrite(Collection<QpidByteBuffer> buffers) throws IOException
+    public WriteResult doWrite(final Collection<QpidByteBuffer> buffers) throws IOException
     {
         final int bufCount = buffers.size();
 
-        int totalConsumed = wrapBufferArray(buffers);
+        final int totalConsumed = wrapBufferArray(buffers);
+        if (_parent.checkForWriteAbort())
+        {
+            return new WriteResult(false, totalConsumed);
+        }
 
         boolean bufsSent = true;
         final Iterator<QpidByteBuffer> itr = buffers.iterator();
@@ -257,12 +261,16 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
 
     }
 
-    private int wrapBufferArray(Collection<QpidByteBuffer> buffers) throws SSLException
+    private int wrapBufferArray(final Collection<QpidByteBuffer> buffers) throws SSLException
     {
         int totalConsumed = 0;
         boolean encrypted;
         do
         {
+            if (_parent.checkForWriteAbort())
+            {
+                return totalConsumed;
+            }
             if(_sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_UNWRAP)
             {
                 if(_netOutputBuffer.remaining() < _sslEngine.getSession().getPacketBufferSize())
@@ -297,7 +305,11 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                 }
                 encrypted = _status.bytesProduced() > 0;
                 totalConsumed += _status.bytesConsumed();
-                runSSLEngineTasks(_status);
+                runSSLEngineTasks(_status, true);
+                if (_parent.checkForWriteAbort())
+                {
+                    return totalConsumed;
+                }
                 if(encrypted && _netOutputBuffer.remaining() < _sslEngine.getSession().getPacketBufferSize())
                 {
                     _netOutputBuffer.flip();
@@ -352,12 +364,12 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         return totalConsumed;
     }
 
-    private boolean runSSLEngineTasks(final SSLEngineResult status)
+    private boolean runSSLEngineTasks(final SSLEngineResult status, final boolean writing)
     {
         if(status.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_TASK)
         {
             Runnable task;
-            while((task = _sslEngine.getDelegatedTask()) != null)
+            while ((!writing || !_parent.checkForWriteAbort()) && (task = _sslEngine.getDelegatedTask()) != null)
             {
                 task.run();
             }
