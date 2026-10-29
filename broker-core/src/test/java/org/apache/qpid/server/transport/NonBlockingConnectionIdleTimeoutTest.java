@@ -220,6 +220,10 @@ class NonBlockingConnectionIdleTimeoutTest extends UnitTestBase
     {
         final Field delegateField = NonBlockingConnection.class.getDeclaredField("_delegate");
         delegateField.setAccessible(true);
+        final NonBlockingConnectionDelegate originalDelegate =
+                (NonBlockingConnectionDelegate) delegateField.get(_connection);
+        originalDelegate.shutdownInput();
+        originalDelegate.shutdownOutput();
         delegateField.set(_connection, delegate);
     }
 
