@@ -54,10 +54,11 @@ public class RecordEventAppender extends AppenderBase<ILoggingEvent>
     }
 
     @Override
-    protected void append(ILoggingEvent eventObject)
+    protected void append(final ILoggingEvent eventObject)
     {
         if (isStarted())
         {
+            eventObject.prepareForDeferredProcessing();
             _buffer.add(new LogRecord(_recordId.incrementAndGet(), eventObject));
         }
     }
