@@ -21,6 +21,7 @@
 package org.apache.qpid.server.logging.logback;
 
 import java.io.File;
+import java.util.concurrent.ScheduledExecutorService;
 
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -28,7 +29,6 @@ import ch.qos.logback.core.Context;
 import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.RollingPolicyBase;
-import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.TriggeringPolicy;
@@ -38,12 +38,12 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 
 public class AppenderUtils
 {
-    public static void configureRollingFileAppender(FileLoggerSettings fileLoggerSettings,
-                                                    Context loggerContext,
-                                                    RollingFileAppender<ILoggingEvent> appender)
+    public static void configureRollingFileAppender(final FileLoggerSettings fileLoggerSettings,
+                                                    final Context loggerContext,
+                                                    final RollingFileAppender<ILoggingEvent> appender)
     {
-        String fileName = fileLoggerSettings.getFileName();
-        File file = new File(fileName);
+        final String fileName = fileLoggerSettings.getFileName();
+        final File file = new File(fileName);
         if (file.getParentFile() != null)
         {
             file.getParentFile().mkdirs();
@@ -55,39 +55,56 @@ public class AppenderUtils
         appender.setAppend(true);
         appender.setContext(loggerContext);
 
-        TriggeringPolicy triggeringPolicy;
-        RollingPolicyBase rollingPolicy;
-        final String maxFileSizeAsString = String.valueOf(fileLoggerSettings.getMaxFileSize()) + "MB";
-        if(fileLoggerSettings.isRollDaily())
+        final TriggeringPolicy<ILoggingEvent> triggeringPolicy;
+        final RollingPolicyBase rollingPolicy;
+        final String maxFileSizeAsString = fileLoggerSettings.getMaxFileSize() + "MB";
+        final boolean isRollOnRestart = fileLoggerSettings.isRollOnRestart();
+        if (fileLoggerSettings.isRollDaily())
         {
-            DailyTriggeringPolicy dailyTriggeringPolicy = new DailyTriggeringPolicy(fileLoggerSettings.isRollOnRestart(), maxFileSizeAsString);
-            dailyTriggeringPolicy.setContext(loggerContext);
-            TimeBasedRollingPolicy<ILoggingEvent> timeBasedRollingPolicy = new TimeBasedRollingPolicy<>();
+            final FileSize maxFileSize = FileSize.valueOf(maxFileSizeAsString);
+            final DailyTriggeringPolicy<ILoggingEvent> dailyTriggeringPolicy =
+                    new DailyTriggeringPolicy<>(maxFileSize, isRollOnRestart);
+            final TimeBasedRollingPolicy<ILoggingEvent> timeBasedRollingPolicy = new TimeBasedRollingPolicy<>();
             timeBasedRollingPolicy.setMaxHistory(fileLoggerSettings.getMaxHistory());
             timeBasedRollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(dailyTriggeringPolicy);
-            timeBasedRollingPolicy.setFileNamePattern(fileName + ".%d{yyyy-MM-dd}.%i" + (fileLoggerSettings.isCompressOldFiles()
-                    ? ".gz"
-                    : ""));
+            timeBasedRollingPolicy.setFileNamePattern(fileName + ".%d{yyyy-MM-dd}.%i" +
+                    (fileLoggerSettings.isCompressOldFiles() ? ".gz" : ""));
             rollingPolicy = timeBasedRollingPolicy;
             triggeringPolicy = dailyTriggeringPolicy;
         }
         else
         {
-            SizeTriggeringPolicy sizeTriggeringPolicy = new SizeTriggeringPolicy(fileLoggerSettings.isRollOnRestart(), maxFileSizeAsString);
+            final SizeTriggeringPolicy sizeTriggeringPolicy =
+                    new SizeTriggeringPolicy(isRollOnRestart, maxFileSizeAsString);
             sizeTriggeringPolicy.setContext(loggerContext);
-            SimpleRollingPolicy simpleRollingPolicy = new SimpleRollingPolicy(fileLoggerSettings.getMaxHistory());
-            simpleRollingPolicy.setFileNamePattern(fileName + ".%i" + (fileLoggerSettings.isCompressOldFiles() ? ".gz" : ""));
+            final SimpleRollingPolicy simpleRollingPolicy = new SimpleRollingPolicy(fileLoggerSettings.getMaxHistory());
+            simpleRollingPolicy.setFileNamePattern(fileName + ".%i" +
+                    (fileLoggerSettings.isCompressOldFiles() ? ".gz" : ""));
             rollingPolicy = simpleRollingPolicy;
             triggeringPolicy = sizeTriggeringPolicy;
         }
 
         rollingPolicy.setContext(loggerContext);
-        RollingPolicyDecorator decorator = new RollingPolicyDecorator(rollingPolicy, fileLoggerSettings.getRolloverListener(), fileLoggerSettings.getExecutorService());
+        final RollingPolicyDecorator.RolloverListener rolloverListener = fileLoggerSettings.getRolloverListener();
+        final ScheduledExecutorService executorService = fileLoggerSettings.getExecutorService();
+        final RollingPolicyDecorator decorator = new RollingPolicyDecorator(rollingPolicy, rolloverListener,
+                executorService);
         decorator.setParent(appender);
         appender.setRollingPolicy(decorator);
         appender.setTriggeringPolicy(triggeringPolicy);
         decorator.start();
-        triggeringPolicy.start();
+        if (!fileLoggerSettings.isRollDaily())
+        {
+            triggeringPolicy.start();
+        }
+        if (!decorator.isStarted() || !triggeringPolicy.isStarted())
+        {
+            decorator.stop();
+            triggeringPolicy.stop();
+            final String path = file.getAbsolutePath();
+            final String message = String.format("Cannot initialize rolling policies for log file '%s'.", path);
+            throw new IllegalConfigurationException(message);
+        }
 
         final PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setPattern(fileLoggerSettings.getLayout());
@@ -98,9 +115,11 @@ public class AppenderUtils
 
     static void validateLogFilePermissions(final File file)
     {
-        if ((file.exists() && (!file.isFile() || !file.canWrite())) || !file.getAbsoluteFile().getParentFile().canWrite())
+        if ((file.exists() && (!file.isFile() || !file.canWrite())) ||
+                !file.getAbsoluteFile().getParentFile().canWrite())
         {
-            throw new IllegalConfigurationException(String.format("Do not have the permissions to log to file '%s'.", file.getAbsolutePath()));
+            throw new IllegalConfigurationException(String.format("Do not have the permissions to log to file '%s'.",
+                    file.getAbsolutePath()));
         }
     }
 
@@ -108,54 +127,8 @@ public class AppenderUtils
     {
         if (maxFileSize < 1)
         {
-            throw new IllegalConfigurationException(String.format("Maximum file size must be at least 1. Cannot set to %d.", maxFileSize));
-        }
-    }
-
-    static class DailyTriggeringPolicy extends SizeAndTimeBasedFNATP<ILoggingEvent>
-    {
-        private final boolean _rollOnRestart;
-        private final FileSize _maxFileSize;
-        private volatile boolean _isFirst = true;
-
-        private long _nextCheck;
-
-        public DailyTriggeringPolicy(boolean isRollOnRestart, String maxFileSize)
-        {
-            _rollOnRestart = isRollOnRestart;
-            _maxFileSize = FileSize.valueOf(maxFileSize);
-            setMaxFileSize(_maxFileSize);
-        }
-
-        @Override
-        public void start()
-        {
-            super.start();
-            if (_rollOnRestart)
-            {
-                _nextCheck = 0L;
-            }
-        }
-
-        @Override
-        public boolean isTriggeringEvent(final File activeFile, final ILoggingEvent event)
-        {
-            if (_rollOnRestart && _isFirst)
-            {
-                _isFirst = false;
-                if (activeFile != null && activeFile.exists() && activeFile.length() == 0)
-                {
-                    _nextCheck = computeNextCheck(_nextCheck);
-                    return false;
-                }
-            }
-
-            return super.isTriggeringEvent(activeFile, event);
-        }
-
-        public FileSize getMaxFileSize()
-        {
-            return _maxFileSize;
+            throw new IllegalConfigurationException(String.format("Maximum file size must be at least 1." +
+                    "Cannot set to %d.", maxFileSize));
         }
     }
 

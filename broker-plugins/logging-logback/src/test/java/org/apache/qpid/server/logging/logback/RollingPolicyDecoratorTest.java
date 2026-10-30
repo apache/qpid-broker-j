@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.logging.logback;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -32,8 +33,11 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Queue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -42,11 +46,11 @@ import ch.qos.logback.core.Context;
 import ch.qos.logback.core.FileAppender;
 import ch.qos.logback.core.rolling.RollingPolicyBase;
 import ch.qos.logback.core.rolling.helper.FileNamePattern;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,6 +158,46 @@ public class RollingPolicyDecoratorTest extends UnitTestBase
         verify(_listener).onNoRolloverDetected(eq(_baseFolder.toPath()), argThat(matcher));
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testFirstRolloverRescansUntilArchiveAppears(final boolean existingArchive) throws IOException
+    {
+        if (!existingArchive)
+        {
+            Files.delete(_testFile.toPath());
+        }
+        final Queue<Runnable> scans = new ArrayDeque<>();
+        final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
+        doAnswer(invocation ->
+        {
+            scans.add(invocation.getArgument(0));
+            return null;
+        }).when(executor).execute(any(Runnable.class));
+        doAnswer(invocation ->
+        {
+            scans.add(invocation.getArgument(0));
+            return null;
+        }).when(executor).schedule(any(Runnable.class), any(long.class), any(TimeUnit.class));
+        _policy = new RollingPolicyDecorator(_delegate, _listener, executor);
+        _policy.start();
+        _policy.rollover();
+
+        // The archive is still being compressed when the first rollover scan runs.
+        final int initialScanCount = scans.size();
+        for (int i = 0; i < initialScanCount; i++)
+        {
+            scans.remove().run();
+        }
+        assertEquals(1, scans.size(), "The first rollover must keep scanning until its archive appears");
+
+        final File archive = createTestFile("test.2015-06-25.1.gz");
+        scans.remove().run();
+        final String[] expected = existingArchive ? new String[]{_testFile.getName(), archive.getName()} :
+                new String[]{archive.getName()};
+        verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(getMatcher(expected)));
+        assertTrue(scans.isEmpty(), "A detected rollover must stop rescanning");
+    }
+
     @Test
     public void testSequentialRollover() throws IOException
     {
@@ -168,6 +212,31 @@ public class RollingPolicyDecoratorTest extends UnitTestBase
         verify(_delegate, times(2)).rollover();
         final ArgumentMatcher<String[]> matcher2 = getMatcher(new String[]{_testFile.getName(), secondFile.getName()});
         verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher2));
+    }
+
+    @Test
+    public void testStartupIgnoresDirectoriesNamedAsArchives() throws IOException
+    {
+        Files.createDirectory(_baseFolder.toPath().resolve("test.2015-06-25.1.gz"));
+
+        _policy.start();
+
+        verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(getMatcher(new String[]{_testFile.getName()})));
+    }
+
+    @Test
+    public void testScanDepthIncludesDirectoriesInArchivePattern() throws IOException
+    {
+        final String fileNamePattern = _baseFolder.getAbsolutePath() + "/test.%d{yyyy/MM/dd}.%i.gz";
+        when(_delegate.getFileNamePattern()).thenReturn(fileNamePattern);
+        final Path archiveDirectory = Files.createDirectories(_baseFolder.toPath().resolve("test.2015").resolve("06"));
+        final Path archive = Files.createFile(archiveDirectory.resolve("25.0.gz"));
+        _policy = new RollingPolicyDecorator(_delegate, _listener, createMockExecutorService());
+
+        _policy.start();
+
+        final String relativeName = _baseFolder.toPath().relativize(archive).toString();
+        verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(getMatcher(new String[]{relativeName})));
     }
 
     private ArgumentMatcher<String[]> getMatcher(final String[] expected)
