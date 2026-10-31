@@ -44,6 +44,7 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.NetworkMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.transport.network.Ticker;
 import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.SystemUtils;
@@ -83,6 +84,8 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private final AtomicBoolean _hasShutdown = new AtomicBoolean();
     private volatile long _bufferedSize;
     private String _selectedHost;
+    private volatile boolean _aborted;
+    private volatile Ticker _closeDeadline;
 
     public NonBlockingConnection(final SocketChannel socketChannel,
                                  final ProtocolEngine protocolEngine,
@@ -156,6 +159,22 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     public ByteBufferSender getSender()
     {
         return this;
+    }
+
+    @Override
+    public synchronized void setCloseDeadline(final Ticker deadline)
+    {
+        if (_closeDeadline == null)
+        {
+            _closeDeadline = deadline;
+        }
+    }
+
+    @Override
+    public void abort()
+    {
+        _aborted = true;
+        close();
     }
 
     @Override
@@ -276,29 +295,50 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
                     final boolean processPendingComplete = processPending();
 
-                    if (processPendingComplete)
+                    if (isCloseDeadlineExpired())
                     {
-                        _pendingIterator = null;
+                        abort();
                     }
 
-                    if (processPendingComplete || _delegate.needsReadForWrite())
+                    if (!_closed.get())
                     {
-                        final boolean dataRead = doRead();
-                        doWrite();
-
-                        if (_fullyWritten && (dataRead || (_delegate.needsWork() &&
-                                _delegate.getNetInputBuffer().position() != 0)))
+                        if (processPendingComplete)
                         {
-                            _protocolEngine.notifyWork();
+                            _pendingIterator = null;
+                        }
+
+                        if (processPendingComplete || _delegate.needsReadForWrite())
+                        {
+                            final boolean dataRead = doRead();
+                            // Processing incoming frames may close the connection or start its close deadline.
+                            if (isCloseDeadlineExpired())
+                            {
+                                abort();
+                            }
+
+                            if (!_closed.get())
+                            {
+                                doWrite();
+
+                                if (_fullyWritten && (dataRead || (_delegate.needsWork() &&
+                                        _delegate.getNetInputBuffer().position() != 0)))
+                                {
+                                    _protocolEngine.notifyWork();
+                                }
+                            }
+                        }
+
+                        if (!_closed.get())
+                        {
+                            if (!processPendingComplete &&
+                                    (_fullyWritten || getBufferedSize() < _port.getNetworkBufferSize()))
+                            {
+                                _protocolEngine.notifyWork();
+                            }
+
+                            _protocolEngine.setTransportBlockedForWriting(!_fullyWritten);
                         }
                     }
-
-                    if (!processPendingComplete && (_fullyWritten || getBufferedSize() < _port.getNetworkBufferSize()))
-                    {
-                        _protocolEngine.notifyWork();
-                    }
-
-                    _protocolEngine.setTransportBlockedForWriting(!_fullyWritten);
                 }
 
             }
@@ -358,7 +398,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
         final int networkBufferSize = _port.getNetworkBufferSize();
 
-        while(_pendingIterator.hasNext())
+        while (!_closed.get() && !isCloseDeadlineExpired() && _pendingIterator.hasNext())
         {
             long size = getBufferedSize();
             if(size >= networkBufferSize)
@@ -375,6 +415,11 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                 final Runnable task = _pendingIterator.next();
                 task.run();
             }
+        }
+
+        if (_closed.get() || isCloseDeadlineExpired())
+        {
+            return false;
         }
 
         boolean complete = !_pendingIterator.hasNext();
@@ -400,10 +445,16 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
         try
         {
-            shutdownInput();
-            shutdownFinalWrite();
-            _protocolEngine.closed();
-            shutdownOutput();
+            try
+            {
+                shutdownInput();
+                shutdownFinalWrite();
+                _protocolEngine.closed();
+            }
+            finally
+            {
+                shutdownOutput();
+            }
         }
         finally
         {
@@ -443,7 +494,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         {
             final long startTime = System.currentTimeMillis();
             int cnt = 0;
-            while (!doWrite())
+            while (!checkForWriteAbort() && !doWrite())
             {
                 if (cnt % _finalWriteThreshold == 0 && System.currentTimeMillis() - startTime > _finalWriteTimeout)
                 {
@@ -457,6 +508,21 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         {
             LOGGER.info("Exception performing final write/close for '{}': {}", _remoteSocketAddress, e.getMessage());
         }
+    }
+
+    private boolean isCloseDeadlineExpired()
+    {
+        final Ticker deadline = _closeDeadline;
+        return deadline != null && deadline.getTimeToNextTick(System.currentTimeMillis()) <= 0;
+    }
+
+    boolean checkForWriteAbort()
+    {
+        if (!_aborted && isCloseDeadlineExpired())
+        {
+            abort();
+        }
+        return _aborted;
     }
 
     private void shutdownOutput()
@@ -538,6 +604,10 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     long writeToTransport(final Collection<QpidByteBuffer> buffers) throws IOException
     {
+        if (checkForWriteAbort())
+        {
+            return 0L;
+        }
         final long written = QpidByteBuffer.write(_socketChannel, buffers, _maxGatheringWriteBuffers);
         if (LOGGER.isDebugEnabled())
         {

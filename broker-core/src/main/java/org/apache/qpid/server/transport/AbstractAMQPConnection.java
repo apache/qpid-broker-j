@@ -64,6 +64,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TaskExecutorProvider;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.security.AccessDeniedException;
 import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
@@ -114,6 +115,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     private String _clientId;
     private volatile boolean _stopped;
+    private boolean _closeDeadlineStarted;
 
     private final AtomicLong _messagesIn = new AtomicLong();
     private final AtomicLong _messagesOut = new AtomicLong();
@@ -323,6 +325,24 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     public final void stopConnection()
     {
         _stopped = true;
+    }
+
+    @Override
+    public final void startCloseDeadline()
+    {
+        synchronized (this)
+        {
+            if (_closeDeadlineStarted || _transportClosedFuture.isDone())
+            {
+                return;
+            }
+            final long timeoutMillis = getContextValue(Long.class, Connection.CLOSE_RESPONSE_TIMEOUT);
+            final ConnectionClosingTicker deadline = new ConnectionClosingTicker(timeoutMillis, _network);
+            _network.setCloseDeadline(deadline);
+            _aggregateTicker.addTicker(deadline);
+            _closeDeadlineStarted = true;
+        }
+        notifyWork();
     }
 
     @Override
@@ -797,6 +817,12 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     public int getSessionCount()
     {
         return getSessionModels().size();
+    }
+
+    @Override
+    public final CompletableFuture<Void> getTransportClosedFuture()
+    {
+        return _transportClosedFuture.copy();
     }
 
     protected void markTransportClosed()

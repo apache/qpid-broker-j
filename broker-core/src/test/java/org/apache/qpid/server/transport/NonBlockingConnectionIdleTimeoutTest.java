@@ -19,13 +19,14 @@
 
 package org.apache.qpid.server.transport;
 
+import static org.apache.qpid.server.transport.NonBlockingConnectionTestHelper.createPort;
+import static org.apache.qpid.server.transport.NonBlockingConnectionTestHelper.createSocketChannel;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -33,9 +34,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,8 +48,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.transport.network.TransportEncryption;
 import org.apache.qpid.test.utils.UnitTestBase;
@@ -63,15 +59,9 @@ class NonBlockingConnectionIdleTimeoutTest extends UnitTestBase
     private NonBlockingConnection _connection;
 
     @BeforeEach
-    void beforeEach()
+    void beforeEach() throws Exception
     {
-        final SocketAddress localAddress = mock(SocketAddress.class);
-        when(localAddress.toString()).thenReturn("127.0.0.1:5672");
-        final Socket socket = mock(Socket.class);
-        when(socket.getRemoteSocketAddress()).thenReturn(new InetSocketAddress("localhost", 1000));
-        when(socket.getLocalSocketAddress()).thenReturn(localAddress);
-        final SocketChannel socketChannel = mock(SocketChannel.class);
-        when(socketChannel.socket()).thenReturn(socket);
+        final SocketChannel socketChannel = createSocketChannel(() -> false);
 
         _ticker = mock(AggregateTicker.class);
         _protocolEngine = mock(ProtocolEngine.class);
@@ -79,15 +69,8 @@ class NonBlockingConnectionIdleTimeoutTest extends UnitTestBase
         when(_protocolEngine.processPendingIterator()).thenAnswer(invocation -> Collections.emptyIterator());
 
         final NetworkConnectionScheduler scheduler = mock(NetworkConnectionScheduler.class);
-        final AmqpPort<?> port = mock(AmqpPort.class);
-        when(port.getNetworkBufferSize()).thenReturn(1024);
+        final AmqpPort<?> port = createPort(1024, 100L);
         when(port.getContextValue(Integer.class, AmqpPort.FINAL_WRITE_THRESHOLD)).thenReturn(100);
-        when(port.getContextValue(Long.class, AmqpPort.FINAL_WRITE_TIMEOUT)).thenReturn(100L);
-        when(port.getContextValue(Integer.class, AmqpPort.MAX_GATHERING_WRITE_BUFFERS)).thenReturn(1024);
-        final EventLogger eventLogger = mock(EventLogger.class);
-        final Broker<?> broker = mock(Broker.class);
-        when(broker.getEventLogger()).thenReturn(eventLogger);
-        doReturn(broker).when(port).getParent();
 
         _connection = new NonBlockingConnection(socketChannel, _protocolEngine, Set.of(TransportEncryption.NONE),
                 () -> { }, scheduler, port);
@@ -237,6 +220,10 @@ class NonBlockingConnectionIdleTimeoutTest extends UnitTestBase
     {
         final Field delegateField = NonBlockingConnection.class.getDeclaredField("_delegate");
         delegateField.setAccessible(true);
+        final NonBlockingConnectionDelegate originalDelegate =
+                (NonBlockingConnectionDelegate) delegateField.get(_connection);
+        originalDelegate.shutdownInput();
+        originalDelegate.shutdownOutput();
         delegateField.set(_connection, delegate);
     }
 
