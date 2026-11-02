@@ -174,6 +174,7 @@
     <module>apache-qpid-broker-j</module>
     <module>broker-plugins/access-control</module>
     <module>broker-plugins/connection-limits</module>
+    <module>broker-plugins/certificate-generator-bouncycastle</module>
     <module>broker-plugins/amqp-0-8-protocol</module>
     <module>broker-plugins/amqp-0-10-protocol</module>
     <module>broker-plugins/amqp-1-0-protocol</module>
@@ -311,6 +312,12 @@
       <dependency>
         <groupId>org.apache.qpid</groupId>
         <artifactId>qpid-broker-plugins-connection-limits</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.qpid</groupId>
+        <artifactId>qpid-broker-plugins-certificate-generator-bouncycastle</artifactId>
         <version>${project.version}</version>
       </dependency>
 

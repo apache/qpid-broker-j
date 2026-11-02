@@ -35,16 +35,11 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.PrivateKey;
-import java.security.Provider;
-import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -53,10 +48,10 @@ import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -65,8 +60,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
@@ -85,24 +78,14 @@ import javax.security.auth.x500.X500Principal;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
-import org.bouncycastle.asn1.x509.BasicConstraints;
-import org.bouncycastle.asn1.x509.Extension;
-import org.bouncycastle.asn1.x509.GeneralName;
-import org.bouncycastle.asn1.x509.GeneralNames;
-import org.bouncycastle.cert.CertIOException;
-import org.bouncycastle.cert.X509v3CertificateBuilder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.OperatorCreationException;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.bouncycastle.util.IPAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.security.certificate.CertificateGenerators;
+import org.apache.qpid.server.security.certificate.CertificateRequest;
+import org.apache.qpid.server.security.certificate.GeneratedCertificate;
 import org.apache.qpid.server.transport.TransportException;
 import org.apache.qpid.server.util.Strings;
 
@@ -112,11 +95,7 @@ public class SSLUtil
 
     private static final Integer DNS_NAME_TYPE = 2;
     private static final String[] TLS_PROTOCOL_PREFERENCES = new String[] { "TLSv1.3", "TLSv1.2", "TLSv1.1", "TLS", "TLSv1" };
-    private static final Pattern DNS_NAME_PATTERN = Pattern.compile("[\\w&&[^\\d]][\\w\\d.-]*");
 
-    private static final Provider PROVIDER = new BouncyCastleProvider();
-    private static final boolean CA_SIGNED = false;
-    private static final boolean CRITICAL = true;
     private static final CertificateFactory CERTIFICATE_FACTORY;
 
     static
@@ -869,9 +848,24 @@ public class SSLUtil
 
     public static boolean canGenerateCerts()
     {
-        return true;
+        return CertificateGenerators.isAvailable();
     }
 
+    /**
+     * Generates a self-signed certificate with the certificate generator selected by {@link CertificateGenerators}.
+     *
+     * @param keyAlgorithm JCA name of the key algorithm, for example RSA
+     * @param signatureAlgorithm name of the signature algorithm, for example SHA256withRSA
+     * @param keyLength key length in bits
+     * @param startTime start of the validity period, in milliseconds since the epoch
+     * @param endTime end of the validity period, in milliseconds since the epoch
+     * @param x500Name subject and issuer distinguished name
+     * @param dnsNames DNS names for the subject alternative name extension, or null for none
+     * @param addresses IP addresses for the subject alternative name extension, or null for none
+     * @return private key and self-signed certificate
+     * @throws NoSuchAlgorithmException if no certificate generator is available, or an algorithm is not supported
+     * @throws GeneralSecurityException if the parameters are invalid or the certificate cannot be generated
+     */
     public static KeyCertPair generateSelfSignedCertificate(final String keyAlgorithm,
                                                             final String signatureAlgorithm,
                                                             final int keyLength,
@@ -880,54 +874,47 @@ public class SSLUtil
                                                             final String x500Name,
                                                             final Set<String> dnsNames,
                                                             final Set<InetAddress> addresses)
-            throws NoSuchAlgorithmException, OperatorCreationException, CertificateException, CertIOException
+            throws GeneralSecurityException
     {
-        final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(keyAlgorithm);
-        keyPairGenerator.initialize(keyLength);
+        final CertificateRequest request;
+        try
+        {
+            request = CertificateRequest.builder()
+                    .keyAlgorithm(keyAlgorithm, keyLength)
+                    .signatureAlgorithm(signatureAlgorithm)
+                    .subject(new X500Principal(x500Name))
+                    .validity(Instant.ofEpochMilli(startTime), Instant.ofEpochMilli(endTime))
+                    .dnsNames((dnsNames == null) ? Set.of() : dnsNames)
+                    .addresses((addresses == null) ? Set.of() : addresses)
+                    .build();
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new GeneralSecurityException("Invalid certificate parameters: " + e.getMessage(), e);
+        }
+        catch (NullPointerException e)
+        {
+            throw new GeneralSecurityException("Invalid certificate parameters: a name, DNS name or address is null",
+                                               e);
+        }
 
-        final KeyPair keyPair = keyPairGenerator.generateKeyPair();
-        final PrivateKey privateKey = keyPair.getPrivate();
-
-        final ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
-
-        final GeneralName[] sanLocalHost = Stream.concat(dnsNames.stream()
-                    .filter(dnsName -> DNS_NAME_PATTERN.matcher(dnsName).matches())
-                    .map(dnaName -> new GeneralName(GeneralName.dNSName, dnaName)),
-                addresses.stream()
-                    .map(InetAddress::getHostAddress)
-                    .filter(address -> IPAddress.isValidIPv4(address) || IPAddress.isValidIPv4WithNetmask(address) ||
-                            IPAddress.isValidIPv6(address) || IPAddress.isValidIPv6WithNetmask(address))
-                    .map(address -> new GeneralName(GeneralName.iPAddress, address)))
-                    .toArray(GeneralName[]::new);
-
-        final X500Principal issuerDn = new X500Principal(x500Name);
-        final X500Principal subjectDn = new X500Principal(x500Name);
-        final BigInteger serialNumber = new BigInteger(64, new SecureRandom());
-        final Date startDate = new Date(startTime);
-        final Date endDate = new Date(endTime);
-        final PublicKey publicKey = keyPair.getPublic();
-
-        final X509v3CertificateBuilder certificateBuilder =
-                new JcaX509v3CertificateBuilder(issuerDn, serialNumber, startDate, endDate, subjectDn, publicKey)
-                    .addExtension(Extension.basicConstraints, CRITICAL, new BasicConstraints(CA_SIGNED))
-                    .addExtension(Extension.subjectAlternativeName, false, new GeneralNames(sanLocalHost));
-
-        final X509Certificate certificate = new JcaX509CertificateConverter()
-                .setProvider(PROVIDER)
-                .getCertificate(certificateBuilder.build(contentSigner));
-
+        final GeneratedCertificate generated = CertificateGenerators.get().generate(request);
+        if (generated == null)
+        {
+            throw new GeneralSecurityException("Certificate generator returned no certificate");
+        }
         return new KeyCertPair()
         {
             @Override
             public PrivateKey getPrivateKey()
             {
-                return privateKey;
+                return generated.privateKey();
             }
 
             @Override
             public X509Certificate getCertificate()
             {
-                return certificate;
+                return generated.certificate();
             }
         };
     }
