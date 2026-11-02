@@ -23,9 +23,19 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 import org.apache.qpid.server.transport.network.NetworkConnection;
+import org.apache.qpid.server.transport.network.Ticker;
 
 public interface ServerNetworkConnection extends NetworkConnection
 {
+    default void setCloseDeadline(final Ticker deadline)
+    {
+    }
+
+    default void abort()
+    {
+        close();
+    }
+
     String getTransportInfo();
 
     long getScheduledTime();

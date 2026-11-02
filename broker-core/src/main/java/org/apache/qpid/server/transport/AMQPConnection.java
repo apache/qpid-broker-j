@@ -120,6 +120,10 @@ public interface AMQPConnection<C extends AMQPConnection<C>>
 
     void sendConnectionCloseAsync(CloseReason reason, String description);
 
+    void startCloseDeadline();
+
+    CompletableFuture<Void> getTransportClosedFuture();
+
     boolean isIOThread();
     CompletableFuture<Void> doOnIOThreadAsync(final Runnable task);
 

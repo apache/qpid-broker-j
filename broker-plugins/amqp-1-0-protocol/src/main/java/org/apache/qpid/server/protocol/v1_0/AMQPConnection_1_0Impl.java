@@ -60,7 +60,6 @@ import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ConnectionPropertyEnricher;
-import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ProtocolHandler;
@@ -372,7 +371,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         _saslComplete = true;
         disposeSaslNegotiator();
         _connectionState = ConnectionState.CLOSED;
-        addCloseTicker();
+        startCloseDeadline();
     }
 
     private void disposeSaslNegotiator()
@@ -514,6 +513,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                         "Connection close sent before connection was opened");
                 break;
             case OPENED:
+                startCloseDeadline();
                 _connectionState = ConnectionState.CLOSE_RECEIVED;
                 closeReceived();
                 if(close.getError() != null)
@@ -527,7 +527,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
                 sendClose(new Close());
                 _connectionState = ConnectionState.CLOSED;
                 _orderlyClose.set(true);
-                addCloseTicker();
                 break;
             case CLOSE_SENT:
                 closeReceived();
@@ -969,14 +968,17 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             error.setInfo(Map.of(Symbols.SOLE_CONNECTION_ENFORCEMENT, true));
 
             final EventLogger logger = getEventLogger();
-            final List<CompletableFuture<Void>> rescheduleFutures = new ArrayList<>();
+            final List<CompletableFuture<?>> rescheduleFutures = new ArrayList<>();
             for (final AMQPConnection_1_0<?> connection : e.getExistingConnections())
             {
                 if (!connection.isClosing())
                 {
                     LOGGER.debug("Closing existing connection '{}': {}",
                             connection.getName(), e.getMessage());
-                    rescheduleFutures.add(connection.doOnIOThreadAsync(() -> connection.close(error)));
+                    connection.stopConnection();
+                    connection.startCloseDeadline();
+                    rescheduleFutures.add(CompletableFuture.anyOf(connection.getTransportClosedFuture(),
+                            connection.doOnIOThreadAsync(() -> connection.close(error))));
                     logger.message(ResourceLimitMessages.INFO(
                             String.format("Closing existing connection '%s'", connection.getName()), e.getMessage()));
                 }
@@ -1158,12 +1160,10 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
             case OPENED:
                 sendClose(close);
                 _connectionState = ConnectionState.CLOSE_SENT;
-                addCloseTicker();
                 break;
             case CLOSE_RECEIVED:
                 sendClose(close);
                 _connectionState = ConnectionState.CLOSED;
-                addCloseTicker();
                 break;
             case CLOSE_SENT:
             case CLOSED:
@@ -1458,16 +1458,6 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
     }
 
-    private void addCloseTicker()
-    {
-        long timeoutTime = System.currentTimeMillis() + getContextValue(Long.class, Connection.CLOSE_RESPONSE_TIMEOUT);
-
-        getAggregateTicker().addTicker(new ConnectionClosingTicker(timeoutTime, getNetwork()));
-
-        // trigger a wakeup to ensure the ticker will be taken into account
-        notifyWork();
-    }
-
     @Override
     public boolean isTransportBlockedForWriting()
     {
@@ -1544,8 +1534,8 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     @Override
     public void sendConnectionCloseAsync(final CloseReason reason, final String description)
     {
-
         stopConnection();
+        startCloseDeadline();
         final ErrorCondition cause;
         switch(reason)
         {
@@ -1753,6 +1743,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
 
     private void sendClose(Close closeToSend)
     {
+        startCloseDeadline();
         sendFrame(CONNECTION_CONTROL_CHANNEL, closeToSend);
         closeSender();
     }

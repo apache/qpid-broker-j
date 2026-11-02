@@ -55,7 +55,6 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ConnectionPropertyEnricher;
 import org.apache.qpid.server.properties.ConnectionStartProperties;
-import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.protocol.ErrorCodes;
 import org.apache.qpid.server.protocol.ProtocolVersion;
 import org.apache.qpid.server.protocol.v0_8.transport.AMQDataBlock;
@@ -604,6 +603,7 @@ public class AMQPConnection_0_8Impl
 
     private void sendConnectionClose(final int channelId, final AMQFrame frame)
     {
+        startCloseDeadline();
         if (_orderlyClose.compareAndSet(false, true))
         {
             try
@@ -613,19 +613,7 @@ public class AMQPConnection_0_8Impl
             }
             finally
             {
-                try
-                {
-                    writeFrame(frame);
-                }
-                finally
-                {
-                    final long timeoutTime = System.currentTimeMillis()
-                                             + getContextValue(Long.class, Connection.CLOSE_RESPONSE_TIMEOUT);
-
-                    getAggregateTicker().addTicker(new ConnectionClosingTicker(timeoutTime, getNetwork()));
-                    // trigger a wakeup to ensure the ticker will be taken into account
-                    notifyWork();
-                }
+                writeFrame(frame);
             }
         }
     }
@@ -866,6 +854,7 @@ public class AMQPConnection_0_8Impl
     public void sendConnectionCloseAsync(final CloseReason reason, final String description)
     {
         stopConnection();
+        startCloseDeadline();
         final int cause;
         switch(reason)
         {
@@ -1102,6 +1091,7 @@ public class AMQPConnection_0_8Impl
 
         try
         {
+            startCloseDeadline();
             if (_orderlyClose.compareAndSet(false, true))
             {
                 completeAndCloseAllChannels();
