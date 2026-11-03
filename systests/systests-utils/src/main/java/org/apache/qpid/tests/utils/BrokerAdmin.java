@@ -57,6 +57,22 @@ public interface BrokerAdmin extends Pluggable
     boolean isDeleteQueueSupported();
 
     /**
+     * Indicates whether a persistent message store and flow-to-disk statistics are available.
+     */
+    default boolean isFlowToDiskSupported()
+    {
+        return false;
+    }
+
+    /**
+     * Returns the virtual host's cumulative number of bytes evacuated from memory by flow-to-disk.
+     */
+    default long getBytesEvacuatedFromMemory()
+    {
+        throw new UnsupportedOperationException("Flow-to-disk statistics are not supported");
+    }
+
+    /**
      * Indicates whether connection lookup and asynchronous close operations are available.
      */
     default boolean isConnectionManagementSupported()
