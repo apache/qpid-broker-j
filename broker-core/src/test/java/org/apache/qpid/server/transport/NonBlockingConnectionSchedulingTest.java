@@ -21,6 +21,7 @@ package org.apache.qpid.server.transport;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -73,6 +75,8 @@ import org.apache.qpid.test.utils.UnitTestBase;
 class NonBlockingConnectionSchedulingTest extends UnitTestBase
 {
     private static final int TIMEOUT_MILLIS = 10000;
+    private static final int NETWORK_BUFFER_SIZE = 64 * 1024;
+    private static final int BUFFER_SIZE = 4096;
 
     private final List<Thread> _threads = new CopyOnWriteArrayList<>();
     private final List<TestConnection> _connections = new ArrayList<>();
@@ -179,9 +183,7 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             return null;
         }).when(blocked._engine).readerIdle();
 
-        // Keep wall-clock scheduling timestamps out of the idle calculation so only the test advances time.
-        blocked._ticker.addTicker(new ServerIdleReadTimeoutTicker(mock(ServerNetworkConnection.class),
-                blocked._engine, readIdleMillis)
+        blocked._ticker.addTicker(new ServerIdleReadTimeoutTicker(mock(), blocked._engine, readIdleMillis)
         {
             @Override
             public int getTimeToNextTick(final long ignored)
@@ -212,6 +214,84 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
         assertTrue(readerIdle.get(), "The read timeout must still close the connection after heartbeats stop");
     }
 
+    @ParameterizedTest
+    @CsvSource({"TLSv1.2, 2", "TLSv1.2, 4", "TLSv1.3, 2", "TLSv1.3, 4"})
+    void incompleteTlsRecordReturnsToSelectorAndResumesOnReadiness(final String protocol,
+                                                                   final int workers) throws Exception
+    {
+        startScheduler(workers);
+        final TestConnection connection = createTlsEngineConnection();
+        final TlsTestPeer peer = new TlsTestPeer(_sslContext, protocol, connection._client);
+        peer.send(peer.wrap(new byte[]{42}));
+        assertEquals(Integer.valueOf(42), connection._received.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
+        connection.awaitSelection(false);
+        final TestConnection independent = createConnection(1024);
+
+        for (int round = 0; round < 3; round++)
+        {
+            final byte[] record = peer.wrap(new byte[]{11, 22, 33});
+            final int prefix = record.length - 1;
+            final long expectedRead = connection._networkBytesRead.get() + prefix;
+            peer.send(Arrays.copyOf(record, prefix));
+            connection.awaitNetworkBytes(expectedRead);
+
+            connection.awaitSelection(false);
+            assertTrue(connection._connection.wantsRead());
+            assertTrue(connection._received.isEmpty(), "An incomplete record must not expose plaintext");
+            independent.submit(List.of(() -> independent.send(new byte[]{44})));
+            assertEquals(44, independent._client.getInputStream().read());
+            connection.awaitSelection(false);
+
+            peer.send(Arrays.copyOfRange(record, prefix, record.length));
+            for (int expected : new int[]{11, 22, 33})
+            {
+                assertEquals(Integer.valueOf(expected), connection._received.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS),
+                        "Read readiness must resume the buffered record in order");
+            }
+            connection.awaitSelection(false);
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"TLSv1.2", "TLSv1.3"})
+    void incompleteTlsRecordStillHonorsReadIdleTimeout(final String protocol) throws Exception
+    {
+        startScheduler(2);
+        final TestConnection connection = createTlsEngineConnection();
+        final TlsTestPeer peer = new TlsTestPeer(_sslContext, protocol, connection._client);
+        peer.send(peer.wrap(new byte[]{42}));
+        assertEquals(Integer.valueOf(42), connection._received.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS));
+        connection.awaitSelection(false);
+        final long expectedRead = connection._networkBytesRead.get() + 5;
+        peer.send(Arrays.copyOf(peer.wrap(new byte[]{1, 2, 3}), 5));
+        connection.awaitNetworkBytes(expectedRead);
+        connection.awaitSelection(false);
+
+        final AtomicLong currentTime = new AtomicLong();
+        final AtomicBoolean readerIdle = new AtomicBoolean();
+        when(connection._engine.getLastReadTime()).thenReturn(0L);
+        doAnswer(invocation ->
+        {
+            readerIdle.set(true);
+            connection._connection.close();
+            return null;
+        }).when(connection._engine).readerIdle();
+        connection._ticker.addTicker(new ServerIdleReadTimeoutTicker(mock(), connection._engine, 2000)
+        {
+            @Override
+            public int getTimeToNextTick(final long ignored)
+            {
+                return super.getTimeToNextTick(currentTime.get());
+            }
+        });
+        connection.awaitSelection(false);
+        assertFalse(readerIdle.get());
+        currentTime.set(2000);
+        connection._connection.getSelectionTask().wakeup();
+        connection._closed.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        assertTrue(readerIdle.get(), "Waiting for record completion must not disable timeout processing");
+    }
+
     private void startScheduler(final int workers)
     {
         _scheduler = new NetworkConnectionScheduler(getTestName(), 1, workers, 1L, task ->
@@ -234,10 +314,17 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
     {
         final SSLSocket client = (SSLSocket) _sslContext.getSocketFactory().createSocket();
         client.setEnabledProtocols(new String[]{protocol});
-        final TestConnection connection = new TestConnection(_scheduler, 64 * 1024, client, _sslContext);
+        final TestConnection connection = new TestConnection(_scheduler, NETWORK_BUFFER_SIZE, client, _sslContext);
         _connections.add(connection);
         client.startHandshake();
         assertEquals(protocol, client.getSession().getProtocol());
+        return connection;
+    }
+
+    private TestConnection createTlsEngineConnection() throws Exception
+    {
+        final TestConnection connection = new TestConnection(_scheduler, NETWORK_BUFFER_SIZE, new Socket(), _sslContext);
+        _connections.add(connection);
         return connection;
     }
 
@@ -292,10 +379,12 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
     {
         private final AtomicBoolean _hasWork = new AtomicBoolean();
         private final AtomicBoolean _blocked = new AtomicBoolean();
-        private final AtomicReference<Iterator<Runnable>> _pending =
-                new AtomicReference<>(Collections.emptyIterator());
+        private final Iterator<Runnable> emptyIterator = Collections.emptyIterator();
+        private final AtomicReference<Iterator<Runnable>> _pending = new AtomicReference<>(emptyIterator);
         private final AtomicReference<SelectionInterest> _selectionInterest = new AtomicReference<>();
         private final BlockingQueue<Integer> _received = new LinkedBlockingQueue<>();
+        private final AtomicLong _networkBytesRead = new AtomicLong();
+        private final BlockingQueue<Long> _networkReads = new LinkedBlockingQueue<>();
         private final AggregateTicker _ticker = new AggregateTicker()
         {
             @Override
@@ -325,13 +414,13 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             try (final ServerSocketChannel listener = ServerSocketChannel.open())
             {
                 listener.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
-                _client.setReceiveBufferSize(4096);
+                _client.setReceiveBufferSize(BUFFER_SIZE);
                 _client.setSoTimeout(TIMEOUT_MILLIS);
                 _client.connect(listener.getLocalAddress(), TIMEOUT_MILLIS);
                 _channel = listener.accept();
             }
             _channel.configureBlocking(false);
-            _channel.socket().setSendBufferSize(4096);
+            _channel.socket().setSendBufferSize(BUFFER_SIZE);
             when(_engine.getAggregateTicker()).thenReturn(_ticker);
             when(_engine.hasWork()).thenAnswer(invocation -> _hasWork.get());
             when(_engine.processPendingIterator()).thenAnswer(invocation -> _pending.get());
@@ -393,7 +482,19 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
                     ? TransportEncryption.NONE
                     : TransportEncryption.TLS;
             final Set<TransportEncryption> encryptionSet = Set.of(transportEncryption);
-            _connection = new NonBlockingConnection(_channel, _engine, encryptionSet, () -> { }, scheduler, port);
+            _connection = new NonBlockingConnection(_channel, _engine, encryptionSet, () -> { }, scheduler, port)
+            {
+                @Override
+                protected long readFromNetwork() throws IOException
+                {
+                    final long count = super.readFromNetwork();
+                    if (count > 0)
+                    {
+                        _networkReads.add(_networkBytesRead.addAndGet(count));
+                    }
+                    return count;
+                }
+            };
             scheduler.addConnection(_connection);
         }
 
@@ -408,6 +509,15 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             try (final QpidByteBuffer buffer = QpidByteBuffer.wrap(bytes))
             {
                 _connection.send(buffer);
+            }
+        }
+
+        private void awaitNetworkBytes(final long expected) throws InterruptedException
+        {
+            while (_networkBytesRead.get() < expected)
+            {
+                assertNotNull(_networkReads.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS),
+                        "The connection did not read the supplied TLS fragment");
             }
         }
 

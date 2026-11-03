@@ -60,6 +60,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     private boolean _principalChecked;
     private volatile boolean _hostChecked;
     private volatile boolean _needsReadForWrite;
+    private boolean _needsMoreNetworkData;
     private QpidByteBuffer _netInputBuffer;
     private QpidByteBuffer _netOutputBuffer;
     private QpidByteBuffer _applicationBuffer;
@@ -117,6 +118,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                 }
                 else
                 {
+                    _needsMoreNetworkData = true;
                     return false;
                 }
             }
@@ -131,6 +133,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
             oldNetBufferPos = _netInputBuffer.position();
 
             _status = QpidByteBuffer.decryptSSL(_sslEngine, _netInputBuffer, _applicationBuffer);
+            _needsMoreNetworkData = _status.getStatus() == SSLEngineResult.Status.BUFFER_UNDERFLOW;
             if (_status.getStatus() == SSLEngineResult.Status.CLOSED)
             {
                 int remaining = _netInputBuffer.remaining();
@@ -397,7 +400,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     @Override
     public boolean needsWork()
     {
-        return _sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_UNWRAP;
+        return !_needsMoreNetworkData && _sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_UNWRAP;
     }
 
     private synchronized void checkPeerPrincipal()
