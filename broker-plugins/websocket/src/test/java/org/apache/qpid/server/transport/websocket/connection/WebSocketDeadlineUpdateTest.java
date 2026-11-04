@@ -89,6 +89,19 @@ class WebSocketDeadlineUpdateTest extends WebSocketTestBase
     }
 
     @Test
+    void testSharedCloseDeadlineWakesWaitingScheduler() throws Exception
+    {
+        final WebSocketConnection connection = createConnection(new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS));
+        _connectionScheduler.registerConnection(connection);
+        startScheduler();
+        _observedScheduler.awaitWait(timeoutMillis -> timeoutMillis == FAR_FUTURE_TICK_DELAY_MILLIS);
+
+        connection.setCloseDeadline(new MutableTicker(500));
+
+        _observedScheduler.awaitWait(timeoutMillis -> timeoutMillis == 500L);
+    }
+
+    @Test
     void testRegistrationWakesIdleScheduler() throws Exception
     {
         startScheduler();
@@ -354,7 +367,8 @@ class WebSocketDeadlineUpdateTest extends WebSocketTestBase
     void testStalledWriteDoesNotExtendCloseDeadline() throws Exception
     {
         final Session session = mock(Session.class);
-        final WebSocketConnection connection = createConnection(new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS), session);
+        final MutableTicker mutableTicker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(mutableTicker, session);
         final CountDownLatch disconnected = new CountDownLatch(1);
         final Runnable closeTask = mock(Runnable.class);
         doAnswer(invocation ->

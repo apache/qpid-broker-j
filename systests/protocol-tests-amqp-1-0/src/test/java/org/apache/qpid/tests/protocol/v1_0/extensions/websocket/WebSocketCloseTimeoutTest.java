@@ -21,14 +21,16 @@
 package org.apache.qpid.tests.protocol.v1_0.extensions.websocket;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -46,7 +48,9 @@ public class WebSocketCloseTimeoutTest extends BrokerAdminUsingTestBase
 {
     static final String CLOSE_RESPONSE_TIMEOUT_MILLIS = "250";
     static final String FINAL_WRITE_TIMEOUT_MILLIS = "5000";
-    private static final long AWAIT_TIMEOUT_SECONDS = 10L;
+
+    private static final Duration CLOSE_COMPLETION_TIMEOUT =
+            Duration.ofMillis(Long.parseLong(CLOSE_RESPONSE_TIMEOUT_MILLIS)).plusSeconds(2L);
 
     @BeforeEach
     public void setUp()
@@ -56,8 +60,9 @@ public class WebSocketCloseTimeoutTest extends BrokerAdminUsingTestBase
         assumeTrue(getBrokerAdmin().isConnectionManagementSupported(), "Broker connection management is required");
     }
 
-    @Test
-    public void brokerRemovesConnectionWhenPeerWithholdsBothCloseResponses() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void brokerRemovesConnectionWithinSharedCloseDeadline(final boolean respondToAmqpClose) throws Exception
     {
         final String containerId = getFullTestName();
         try (final WebSocketFrameTransport transport = new WebSocketFrameTransport(getBrokerAdmin())
@@ -69,18 +74,22 @@ public class WebSocketCloseTimeoutTest extends BrokerAdminUsingTestBase
             assertTrue(getBrokerAdmin().isConnectionRegistered(containerId),
                     "Connection was not registered after the AMQP open");
 
-            final CompletableFuture<Void> closeFuture = getBrokerAdmin().closeConnectionAsync(containerId);
-            interaction.consumeResponse(Close.class);
-            // Deliberately omit the peer's AMQP CLOSE response.
+            assertTimeoutPreemptively(CLOSE_COMPLETION_TIMEOUT, () ->
+            {
+                final CompletableFuture<Void> closeFuture = getBrokerAdmin().closeConnectionAsync(containerId);
+                interaction.consumeResponse(Close.class);
+                if (respondToAmqpClose)
+                {
+                    interaction.close().sync();
+                }
 
-            assertTrue(transport.awaitWebSocketCloseFrame(AWAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS),
-                       "Broker did not begin the WebSocket closing handshake");
-            assertTrue(transport.isChannelOutputOpen(),
-                       "Test peer terminated TCP instead of preserving the writable half");
+                closeFuture.get();
 
-            closeFuture.get(AWAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            assertFalse(getBrokerAdmin().isConnectionRegistered(containerId),
-                        "Connection remained registered after the close deadlines expired");
+                assertTrue(transport.isChannelOutputOpen(),
+                        "Test peer terminated TCP instead of preserving the writable half");
+                assertFalse(getBrokerAdmin().isConnectionRegistered(containerId),
+                        "Connection remained registered after the shared close deadline expired");
+            }, "Broker did not complete close within the shared deadline and scheduling allowance");
         }
     }
 }
