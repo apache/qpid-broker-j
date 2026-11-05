@@ -157,28 +157,6 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
         blocked.awaitWriteInterest();
 
         final int readIdleMillis = 2000;
-        final AtomicLong currentTime = new AtomicLong();
-        final AtomicLong lastReadTime = new AtomicLong();
-        final BlockingQueue<Integer> heartbeats = new LinkedBlockingQueue<>();
-        final AtomicBoolean readerIdle = new AtomicBoolean();
-        when(blocked._engine.getLastReadTime()).thenAnswer(invocation -> lastReadTime.get());
-        doAnswer(invocation ->
-        {
-            final QpidByteBuffer input = invocation.getArgument(0);
-            lastReadTime.set(currentTime.get());
-            while (input.hasRemaining())
-            {
-                heartbeats.add((int) input.get());
-            }
-            return null;
-        }).when(blocked._engine).received(any());
-        doAnswer(invocation ->
-        {
-            readerIdle.set(true);
-            blocked._connection.close();
-            return null;
-        }).when(blocked._engine).readerIdle();
-
         // Keep wall-clock scheduling timestamps out of the idle calculation so only the test advances time.
         blocked._ticker.addTicker(new ServerIdleReadTimeoutTicker(mock(ServerNetworkConnection.class),
                 blocked._engine, readIdleMillis)
@@ -186,30 +164,30 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             @Override
             public int getTimeToNextTick(final long ignored)
             {
-                return super.getTimeToNextTick(currentTime.get());
+                return super.getTimeToNextTick(blocked._currentTime.get());
             }
         });
         blocked.awaitWriteInterest();
 
         for (int i = 0; i < 8; i++)
         {
-            currentTime.addAndGet(readIdleMillis / 4);
+            blocked._currentTime.addAndGet(readIdleMillis / 4);
             blocked._client.getOutputStream().write(42);
-            assertEquals(Integer.valueOf(42), heartbeats.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS),
+            assertEquals(Integer.valueOf(42), blocked._received.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS),
                     "Incoming heartbeats must be consumed while the peer is not reading output");
             blocked.awaitWriteInterest();
-            assertFalse(readerIdle.get(), "A peer sending heartbeats must not be considered idle");
+            assertFalse(blocked._readerIdle.get(), "A peer sending heartbeats must not be considered idle");
         }
 
         assertTrue(blocked._connection.wantsWrite(), "Output must remain blocked throughout the heartbeat checks");
-        currentTime.addAndGet(readIdleMillis - 1);
+        blocked._currentTime.addAndGet(readIdleMillis - 1);
         blocked.awaitWriteInterest();
-        assertFalse(readerIdle.get(), "The connection must remain open until the read deadline");
+        assertFalse(blocked._readerIdle.get(), "The connection must remain open until the read deadline");
 
-        currentTime.incrementAndGet();
+        blocked._currentTime.incrementAndGet();
         blocked._connection.getSelectionTask().wakeup();
         blocked._closed.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-        assertTrue(readerIdle.get(), "The read timeout must still close the connection after heartbeats stop");
+        assertTrue(blocked._readerIdle.get(), "The read timeout must still close the connection after heartbeats stop");
     }
 
     private void startScheduler(final int workers)
@@ -244,47 +222,56 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
     @AfterEach
     void tearDown() throws Exception
     {
-        if (_scheduler != null)
+        try
         {
-            try
+            if (_scheduler != null)
             {
-                for (final TestConnection connection : _connections)
-                {
-                    connection._connection.close();
-                }
-                for (final TestConnection connection : _connections)
-                {
-                    connection._closed.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
-                }
-            }
-            finally
-            {
-                for (final TestConnection connection : _connections)
-                {
-                    connection._client.close();
-                    connection._channel.close();
-                }
-                _scheduler.close();
                 try
                 {
-                    for (final Thread thread : _threads)
+                    for (final TestConnection connection : _connections)
                     {
-                        thread.join(TIMEOUT_MILLIS);
-                        assertFalse(thread.isAlive(), "Scheduler worker did not terminate: " + thread.getName());
+                        connection._connection.close();
+                    }
+                    for (final TestConnection connection : _connections)
+                    {
+                        connection._closed.get(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
                     }
                 }
                 finally
                 {
-                    for (final Thread thread : _threads)
+                    for (final TestConnection connection : _connections)
                     {
-                        thread.interrupt();
+                        connection._client.close();
+                        connection._channel.close();
                     }
-                    for (final Thread thread : _threads)
+                    _scheduler.close();
+                    try
                     {
-                        thread.join(TIMEOUT_MILLIS);
+                        for (final Thread thread : _threads)
+                        {
+                            thread.join(TIMEOUT_MILLIS);
+                            assertFalse(thread.isAlive(), "Scheduler worker did not terminate: " + thread.getName());
+                        }
+                    }
+                    finally
+                    {
+                        for (final Thread thread : _threads)
+                        {
+                            thread.interrupt();
+                        }
+                        for (final Thread thread : _threads)
+                        {
+                            thread.join(TIMEOUT_MILLIS);
+                        }
                     }
                 }
             }
+        }
+        finally
+        {
+            _connections.clear();
+            _threads.clear();
+            _scheduler = null;
         }
     }
 
@@ -292,6 +279,9 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
     {
         private final AtomicBoolean _hasWork = new AtomicBoolean();
         private final AtomicBoolean _blocked = new AtomicBoolean();
+        private final AtomicBoolean _readerIdle = new AtomicBoolean();
+        private final AtomicLong _currentTime = new AtomicLong();
+        private final AtomicLong _lastReadTime = new AtomicLong();
         private final AtomicReference<Iterator<Runnable>> _pending =
                 new AtomicReference<>(Collections.emptyIterator());
         private final AtomicReference<SelectionInterest> _selectionInterest = new AtomicReference<>();
@@ -335,9 +325,11 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
             when(_engine.getAggregateTicker()).thenReturn(_ticker);
             when(_engine.hasWork()).thenAnswer(invocation -> _hasWork.get());
             when(_engine.processPendingIterator()).thenAnswer(invocation -> _pending.get());
+            when(_engine.getLastReadTime()).thenAnswer(invocation -> _lastReadTime.get());
             doAnswer(invocation ->
             {
                 final QpidByteBuffer input = invocation.getArgument(0);
+                _lastReadTime.set(_currentTime.get());
                 while (input.hasRemaining())
                 {
                     _received.add((int) input.get());
@@ -394,6 +386,12 @@ class NonBlockingConnectionSchedulingTest extends UnitTestBase
                     : TransportEncryption.TLS;
             final Set<TransportEncryption> encryptionSet = Set.of(transportEncryption);
             _connection = new NonBlockingConnection(_channel, _engine, encryptionSet, () -> { }, scheduler, port);
+            doAnswer(invocation ->
+            {
+                _readerIdle.set(true);
+                _connection.close();
+                return null;
+            }).when(_engine).readerIdle();
             scheduler.addConnection(_connection);
         }
 
