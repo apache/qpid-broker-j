@@ -21,34 +21,51 @@
 package org.apache.qpid.server.logging.logback;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.zip.GZIPInputStream;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.util.LogbackMDCAdapter;
 import ch.qos.logback.core.encoder.Encoder;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.RollingPolicy;
+import ch.qos.logback.core.rolling.TimeBasedFileNamingAndTriggeringPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.TriggeringPolicy;
 import ch.qos.logback.core.rolling.helper.CompressionMode;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.logging.logback.RollingPolicyDecorator.RolloverListener;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 public class AppenderUtilsTest extends UnitTestBase
@@ -58,6 +75,10 @@ public class AppenderUtilsTest extends UnitTestBase
     public static final int MAX_FILE_SIZE = 101;
     public static final int MAX_HISTORY = 13;
 
+    @TempDir
+    private Path _logDirectory;
+    private LoggerContext _loggerContext;
+    private RollingFileAppender<ILoggingEvent> _appender;
     private FileLoggerSettings _settings;
     private File _testLogFile;
     private String _testLogFileName;
@@ -65,7 +86,8 @@ public class AppenderUtilsTest extends UnitTestBase
     @BeforeEach
     public void setUp() throws Exception
     {
-        _testLogFile = File.createTempFile(getTestName(), ".log");
+        _testLogFile = Files.createFile(_logDirectory.resolve("broker.log")).toFile();
+        _loggerContext = new LoggerContext();
         _testLogFileName = _testLogFile.getAbsolutePath();
         _settings = mock(FileLoggerSettings.class);
         when(_settings.getFileName()).thenReturn(_testLogFileName);
@@ -75,20 +97,29 @@ public class AppenderUtilsTest extends UnitTestBase
         when(_settings.isRollDaily()).thenReturn(Boolean.TRUE);
         when(_settings.isRollOnRestart()).thenReturn(Boolean.TRUE);
         when(_settings.getMaxHistory()).thenReturn(MAX_HISTORY);
+        when(_settings.getRolloverListener()).thenReturn(mock(RolloverListener.class));
         when(_settings.getExecutorService()).thenReturn(mock(ScheduledExecutorService.class));
     }
 
     @AfterEach
     public void tearDown()
     {
-        _testLogFile.delete();
+        if (_appender != null)
+        {
+            _appender.stop();
+            _appender.getRollingPolicy().stop();
+            _appender.getTriggeringPolicy().stop();
+            _appender.getEncoder().stop();
+        }
+        _loggerContext.stop();
     }
 
     @Test
     public void testCreateRollingFileAppenderDailyRolling()
     {
         final RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
-        AppenderUtils.configureRollingFileAppender(_settings, new LoggerContext(), appender);
+        _appender = appender;
+        AppenderUtils.configureRollingFileAppender(_settings, _loggerContext, appender);
 
         assertEquals(_testLogFileName, appender.getFile(), "Unexpected appender file name");
 
@@ -107,13 +138,88 @@ public class AppenderUtilsTest extends UnitTestBase
 
         assertEquals(CompressionMode.GZ, rollingPolicy.getCompressionMode(), "Unexpected compression mode");
 
-        final TriggeringPolicy<?> triggeringPolicy = ((TimeBasedRollingPolicy<?>) rollingPolicy).getTimeBasedFileNamingAndTriggeringPolicy();
-        final boolean condition = triggeringPolicy instanceof AppenderUtils.DailyTriggeringPolicy;
-        assertTrue(condition, "Unexpected triggering policy");
-        assertEquals(MAX_FILE_SIZE + " MB",
-                ((AppenderUtils.DailyTriggeringPolicy) triggeringPolicy).getMaxFileSize().toString(),
-                "Unexpected triggering policy");
+        final TimeBasedFileNamingAndTriggeringPolicy<?> triggeringPolicy =
+                ((TimeBasedRollingPolicy<?>) rollingPolicy).getTimeBasedFileNamingAndTriggeringPolicy();
+        assertSame(triggeringPolicy, appender.getTriggeringPolicy());
+        assertTrue(triggeringPolicy.isStarted());
+        triggeringPolicy.getLengthCounter().add(MAX_FILE_SIZE * 1024L * 1024L - 1);
+        assertFalse(triggeringPolicy.isTriggeringEvent(_testLogFile, null));
+        triggeringPolicy.getLengthCounter().add(1);
+        assertTrue(triggeringPolicy.isTriggeringEvent(_testLogFile, null), "Configured size limit must be in MB");
         assertEquals(LAYOUT, ((PatternLayoutEncoder) appender.getEncoder()).getPattern(), "Unexpected layout");
+    }
+
+    @Test
+    public void testFailedDailyPolicyRejectsAppenderConfiguration() throws Exception
+    {
+        final LocalDate date = LocalDate.of(2026, 2, 10);
+        final long modified = date.atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        Files.writeString(_testLogFile.toPath(), "existing log");
+        Files.setLastModifiedTime(_testLogFile.toPath(), FileTime.fromMillis(modified));
+        final Path archive = Path.of(_testLogFileName + "." + date + "." + Integer.MAX_VALUE + ".gz");
+        Files.writeString(archive, "existing archive");
+        final RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
+
+        final IllegalConfigurationException exception = assertThrows(IllegalConfigurationException.class, () ->
+                AppenderUtils.configureRollingFileAppender(_settings, _loggerContext, appender));
+
+        assertTrue(exception.getMessage().contains(_testLogFileName));
+        assertFalse(appender.getRollingPolicy().isStarted());
+        assertFalse(appender.getTriggeringPolicy().isStarted());
+        assertEquals("existing log", Files.readString(_testLogFile.toPath()));
+        assertEquals("existing archive", Files.readString(archive));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testDailyRestartRolloverAndNotification(final boolean compressed) throws Exception
+    {
+        final LocalDate date = LocalDate.of(2026, 2, 10);
+        final long now = date.atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        final Path activeFile = _testLogFile.toPath();
+        final Path archive = Path.of(_testLogFileName + "." + date + ".0" + (compressed ? ".gz" : ""));
+        Files.writeString(activeFile, "old");
+        Files.setLastModifiedTime(activeFile, FileTime.fromMillis(now));
+        when(_settings.getLayout()).thenReturn("%msg");
+        when(_settings.isCompressOldFiles()).thenReturn(compressed);
+        final Queue<Runnable> scans = new ArrayDeque<>();
+        final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
+        doAnswer(invocation ->
+        {
+            scans.add(invocation.getArgument(0));
+            return null;
+        }).when(executor).execute(any(Runnable.class));
+        when(_settings.getExecutorService()).thenReturn(executor);
+        final RolloverListener listener = mock(RolloverListener.class);
+        when(_settings.getRolloverListener()).thenReturn(listener);
+        _loggerContext.setMDCAdapter(new LogbackMDCAdapter());
+        _appender = new RollingFileAppender<>();
+        AppenderUtils.configureRollingFileAppender(_settings, _loggerContext, _appender);
+        ((TimeBasedFileNamingAndTriggeringPolicy<?>) _appender.getTriggeringPolicy()).setCurrentTime(now);
+        _appender.start();
+        assertTrue(_appender.isStarted());
+        _loggerContext.getLogger(getTestName()).addAppender(_appender);
+        _loggerContext.getLogger(getTestName()).info("new");
+
+        // wait for compression and cleanup without cancelling the queued notification scan
+        final RollingPolicyDecorator rollingPolicy = (RollingPolicyDecorator) _appender.getRollingPolicy();
+        rollingPolicy.getDecorated().stop();
+        assertEquals(1, scans.size(), "Expected a rollover scan");
+        scans.remove().run();
+        verify(listener).onRollover(eq(_logDirectory), eq(new String[]{archive.getFileName().toString()}));
+        _appender.stop();
+        assertEquals("new", Files.readString(activeFile));
+        if (compressed)
+        {
+            try (final GZIPInputStream input = new GZIPInputStream(Files.newInputStream(archive)))
+            {
+                assertEquals("old", new String(input.readAllBytes(), StandardCharsets.UTF_8));
+            }
+        }
+        else
+        {
+            assertEquals("old", Files.readString(archive));
+        }
     }
 
     @Test
@@ -123,7 +229,8 @@ public class AppenderUtilsTest extends UnitTestBase
         when(_settings.isCompressOldFiles()).thenReturn(Boolean.FALSE);
 
         final RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
-        AppenderUtils.configureRollingFileAppender(_settings, new LoggerContext(), appender);
+        _appender = appender;
+        AppenderUtils.configureRollingFileAppender(_settings, _loggerContext, appender);
 
         assertEquals(_testLogFileName, appender.getFile(), "Unexpected appender file name");
 

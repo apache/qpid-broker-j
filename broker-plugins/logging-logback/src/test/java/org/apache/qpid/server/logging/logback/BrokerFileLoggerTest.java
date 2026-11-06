@@ -21,18 +21,34 @@
 package org.apache.qpid.server.logging.logback;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.MockedStatic;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
@@ -109,6 +125,93 @@ public class BrokerFileLoggerTest extends UnitTestBase
 
         final List<LogFileDetails> logFileDetails = _logger.getLogFiles();
         assertTrue(logFileDetails.isEmpty(), "File details should be empty");
+    }
+
+    @Test
+    public void testInitialArchiveScanFailurePreventsActivation() throws Exception
+    {
+        final Path directory = Files.createDirectories(_baseFolder.toPath()).toAbsolutePath();
+        Files.writeString(_logFile.toPath(), "existing log");
+        final Map<String, Object> attributes = Map.of(BrokerLogger.NAME, getTestName(),
+                ConfiguredObject.TYPE, BrokerFileLogger.TYPE, BrokerFileLogger.FILE_NAME, _logFile.getPath(),
+                "rollDaily", true);
+        final BrokerFileLoggerImpl logger = new BrokerFileLoggerImpl(attributes, _broker);
+        _logger = logger;
+        final AtomicBoolean failNextListing = new AtomicBoolean(true);
+        CompletableFuture.runAsync(() ->
+        {
+            try (final MockedStatic<Files> mockedFiles = mockStatic(Files.class, invocation ->
+            {
+                if ("newDirectoryStream".equals(invocation.getMethod().getName()) &&
+                        invocation.getMethod().getParameterCount() == 1 &&
+                        directory.equals(invocation.getArgument(0)) && failNextListing.compareAndSet(true, false))
+                {
+                    throw new IOException("Temporary archive listing failure");
+                }
+                return invocation.callRealMethod();
+            }))
+            {
+                logger.open();
+            }
+        }, _taskExecutor).get(10, TimeUnit.SECONDS);
+
+        assertFalse(failNextListing.get(), "The initial archive listing must fail");
+        assertFalse(logger.getContextValue(Boolean.class, BrokerFileLogger.BROKER_FAIL_ON_LOGGER_IO_ERROR));
+        assertEquals(State.ERRORED, logger.getState(), "A failed logging policy must prevent activation");
+        assertNull(logger.getAppender(), "A failed appender must not be attached");
+        verify(logger.getAncestor(SystemConfig.class), never()).closeAsync();
+
+        try (final DirectoryStream<Path> entries = Files.newDirectoryStream(directory))
+        {
+            assertTrue(entries.iterator().hasNext(), "Directory access has recovered");
+        }
+        assertEquals(State.ERRORED, logger.getState(), "Restoring directory access must not hide the startup failure");
+        assertEquals("existing log", Files.readString(_logFile.toPath()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testStartupDoesNotWaitForUnrelatedSubdirectory(final boolean rollDaily) throws Exception
+    {
+        final Path unrelated = Files.createDirectories(_baseFolder.toPath().resolve("unrelated")).toAbsolutePath();
+        Files.writeString(unrelated.resolve("unrelated.txt"), "not a log archive");
+        final Map<String, Object> attributes = Map.of(BrokerLogger.NAME, getTestName(),
+                ConfiguredObject.TYPE, BrokerFileLogger.TYPE, BrokerFileLogger.FILE_NAME, _logFile.getPath(),
+                "rollDaily", rollDaily);
+        final BrokerFileLoggerImpl logger = new BrokerFileLoggerImpl(attributes, _broker);
+        _logger = logger;
+        final AtomicBoolean unrelatedDirectoryOpened = new AtomicBoolean();
+        final CountDownLatch release = new CountDownLatch(1);
+        final CompletableFuture<Void> opening = CompletableFuture.runAsync(() ->
+        {
+            try (final MockedStatic<Files> mockedFiles = mockStatic(Files.class, invocation ->
+            {
+                if ("newDirectoryStream".equals(invocation.getMethod().getName()) &&
+                        invocation.getMethod().getParameterCount() == 1 &&
+                        unrelated.equals(invocation.getArgument(0)))
+                {
+                    unrelatedDirectoryOpened.set(true);
+                    assertTrue(release.await(30, TimeUnit.SECONDS), "The test must release the blocked listing");
+                }
+                return invocation.callRealMethod();
+            }))
+            {
+                logger.open();
+            }
+        }, _taskExecutor);
+
+        try
+        {
+            opening.get(10, TimeUnit.SECONDS);
+            assertFalse(unrelatedDirectoryOpened.get(), "Startup must not open unrelated subdirectories");
+            assertEquals(State.ACTIVE, logger.getState());
+            assertTrue(logger.getAppender().isStarted());
+        }
+        finally
+        {
+            release.countDown();
+            opening.get(10, TimeUnit.SECONDS);
+        }
     }
 
     private BrokerFileLogger createLoggerInErroredState()
