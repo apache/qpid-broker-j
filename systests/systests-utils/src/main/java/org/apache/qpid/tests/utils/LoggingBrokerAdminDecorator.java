@@ -175,6 +175,18 @@ public class LoggingBrokerAdminDecorator implements BrokerAdmin
     }
 
     @Override
+    public boolean isFlowToDiskSupported()
+    {
+        return _delegate.isFlowToDiskSupported();
+    }
+
+    @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return _delegate.getBytesEvacuatedFromMemory();
+    }
+
+    @Override
     public boolean isConnectionManagementSupported()
     {
         return _delegate.isConnectionManagementSupported();
