@@ -805,7 +805,7 @@ abstract class AbstractQueueTestBase extends UnitTestBase
         long acceptableExpiration = System.currentTimeMillis() + 5000L;
 
         assertEquals(acceptableExpiration, getExpirationOnQueue(queue, 0L, acceptableExpiration),
-                "TTL has been incorrectly overriden");
+                "TTL has been incorrectly overridden");
 
         // Test the scenarios where only the minimum TTL has been set
 
