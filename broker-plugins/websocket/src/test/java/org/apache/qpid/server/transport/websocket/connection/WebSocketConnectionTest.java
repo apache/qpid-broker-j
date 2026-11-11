@@ -49,6 +49,8 @@ import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
@@ -277,12 +279,18 @@ class WebSocketConnectionTest extends WebSocketTestBase
         verify(session).close(eq(StatusCode.BAD_DATA), isNull(), any(Callback.class));
     }
 
-    @Test
-    void expiredDeadlineDiscardsSelectedWriteBeforeSubmission() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void expiredDeadlineDiscardsSelectedWriteBeforeSubmission(final boolean sharedDeadline) throws Exception
     {
         final Session session = mock(Session.class);
         final MutableTicker ticker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
         final BlockingWriteConnection connection = createBlockingWriteConnection(ticker, session);
+        final MutableTicker deadline = new MutableTicker(500);
+        if (sharedDeadline)
+        {
+            connection.setCloseDeadline(deadline);
+        }
         try (final QpidByteBuffer buffer = QpidByteBuffer.wrap(new byte[] {1}))
         {
             connection.send(buffer);
@@ -301,7 +309,8 @@ class WebSocketConnectionTest extends WebSocketTestBase
         try
         {
             connection.awaitWriteSelected();
-            _nanoTime.addAndGet(TimeUnit.SECONDS.toNanos(1L));
+            _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(sharedDeadline ? 500L : 1_000L));
+            deadline.setTimeToNextTick(0);
         }
         finally
         {
@@ -579,12 +588,18 @@ class WebSocketConnectionTest extends WebSocketTestBase
         }
     }
 
-    @Test
-    void expiredDeadlinePreventsWebSocketCloseSubmission() throws Exception
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void expiredDeadlinePreventsWebSocketCloseSubmission(final boolean sharedDeadline) throws Exception
     {
         final Session session = mock(Session.class);
         final MutableTicker ticker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
         final BlockingCloseConnection connection = createBlockingCloseConnection(ticker, session);
+        final MutableTicker deadline = new MutableTicker(500);
+        if (sharedDeadline)
+        {
+            connection.setCloseDeadline(deadline);
+        }
         _connectionScheduler.registerConnection(connection);
         connection.close();
         connection.doWrite();
@@ -599,7 +614,8 @@ class WebSocketConnectionTest extends WebSocketTestBase
         try
         {
             connection.awaitCloseSelected();
-            _nanoTime.addAndGet(TimeUnit.SECONDS.toNanos(1L));
+            _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(sharedDeadline ? 500L : 1_000L));
+            deadline.setTimeToNextTick(0);
         }
         finally
         {

@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,10 +52,10 @@ import org.apache.qpid.tests.utils.ConfigItem;
 
 /**
  * Verifies that a compressed connection is removed when a peer stops answering after message delivery begins.
- * The peer negotiates permessage-deflate, receives a delivery, and then withholds both the AMQP CLOSE response and
- * the WebSocket CLOSE response. Half closure keeps the client's writable half open after the broker closes its output.
- * The client keeps reading so the broker's WebSocket CLOSE can be observed. Pending-write deadlines are exercised
- * separately by the scheduler tests, which deliberately leave a write-completion callback unfinished.
+ * The peer negotiates permessage-deflate, receives a delivery, and then withholds the AMQP CLOSE response.
+ * The broker must force transport closure at the shared close deadline without waiting for a WebSocket handshake.
+ * Half closure keeps the client's writable half open after the broker closes its output. Pending-write deadlines are
+ * exercised separately by the scheduler tests, which deliberately leave a write-completion callback unfinished.
  */
 @BrokerSpecific(kind = BrokerAdmin.KIND_BROKER_J)
 @ConfigItem(name = Connection.CLOSE_RESPONSE_TIMEOUT,
@@ -68,12 +67,9 @@ public class WebSocketCompressedCloseTimeoutTest extends BrokerAdminUsingTestBas
     static final String CLOSE_RESPONSE_TIMEOUT_MILLIS = "250";
     static final String FINAL_WRITE_TIMEOUT_MILLIS = "5000";
 
-    static final long LONG_CLOSE_RESPONSE_TIMEOUT_MILLIS = Long.parseLong(CLOSE_RESPONSE_TIMEOUT_MILLIS);
-    static final long LONG_FINAL_WRITE_TIMEOUT_MILLIS = Long.parseLong(FINAL_WRITE_TIMEOUT_MILLIS);
-    static final long TIMEOUT_MILLIS = LONG_CLOSE_RESPONSE_TIMEOUT_MILLIS + LONG_FINAL_WRITE_TIMEOUT_MILLIS;
-
     private static final long AWAIT_TIMEOUT_SECONDS = 30L;
-    private static final Duration CLOSE_COMPLETION_TIMEOUT = Duration.ofMillis(TIMEOUT_MILLIS).plusSeconds(5L);
+    private static final Duration CLOSE_COMPLETION_TIMEOUT =
+            Duration.ofMillis(Long.parseLong(CLOSE_RESPONSE_TIMEOUT_MILLIS)).plusSeconds(2L);
     private static final int QUEUED_MESSAGE_COUNT = 20;
     private static final int MESSAGE_SIZE = 8 * 1024;
 
@@ -120,24 +116,20 @@ public class WebSocketCompressedCloseTimeoutTest extends BrokerAdminUsingTestBas
                 interaction.consume(Transfer.class, Flow.class);
             }, "Broker did not deliver a message before close was requested");
 
-            final CompletableFuture<Void> closeFuture = getBrokerAdmin().closeConnectionAsync(containerId);
-
             // All close stages share one timeout, including any intervening deliveries or flow updates
             assertTimeoutPreemptively(CLOSE_COMPLETION_TIMEOUT, () ->
             {
+                final CompletableFuture<Void> closeFuture = getBrokerAdmin().closeConnectionAsync(containerId);
                 interaction.consume(Close.class, Transfer.class, Flow.class);
 
-                // Omit the peer's AMQP CLOSE response
-                assertTrue(transport.awaitWebSocketCloseFrame(AWAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS),
-                           "Broker did not begin the WebSocket closing handshake");
-                assertTrue(transport.isChannelOutputOpen(), "Test peer terminated TCP instead of preserving the " +
-                        "writable half, so the broker was not left waiting on an unanswered handshake");
+                // Omit the peer's AMQP CLOSE response; expiry must force transport closure.
+                closeFuture.get();
 
-                closeFuture.get(AWAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            }, "Broker did not complete close within the configured deadlines and scheduling allowance");
-
-            assertFalse(getBrokerAdmin().isConnectionRegistered(containerId), "Connection remained registered after " +
-                    "the close deadlines expired");
+                assertTrue(transport.isChannelOutputOpen(),
+                        "Test peer terminated TCP instead of preserving the writable half");
+                assertFalse(getBrokerAdmin().isConnectionRegistered(containerId),
+                        "Connection remained registered after the shared close deadline expired");
+            }, "Broker did not complete close within the shared deadline and scheduling allowance");
         }
     }
 

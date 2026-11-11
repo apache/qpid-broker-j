@@ -40,6 +40,7 @@ import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.transport.SchedulingDelayNotificationListener;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
+import org.apache.qpid.server.transport.network.Ticker;
 
 class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
 {
@@ -53,6 +54,7 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketConnection.class);
+    private static final long CLOSE_HANDSHAKE_RESERVE_DIVISOR = 10L;
     private static final long FORCE_CLOSE_RETRY_DELAY_NANOS = TimeUnit.SECONDS.toNanos(1L);
 
     private final Session _connection;
@@ -68,6 +70,8 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
     private final CleanupJob _cleanupJob;
 
     private Certificate _certificate;
+    private Ticker _closeDeadline;
+    private long _closeHandshakeReserveMillis;
     private long _maxWriteIdleMillis;
     private long _maxReadIdleMillis;
     private long _closeStartTimeNanos;
@@ -101,6 +105,34 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
     long getTimeToNextTick(final long currentTime)
     {
         return _protocolEngine.getAggregateTicker().getTimeToNextTick(currentTime);
+    }
+
+    long getTimeToCloseDeadline(final long currentTime)
+    {
+        synchronized (_writeQueue)
+        {
+            return _closeDeadline == null
+                    ? Long.MAX_VALUE
+                    : Math.max(0L, _closeDeadline.getTimeToNextTick(currentTime));
+        }
+    }
+
+    long processCloseDeadline(final long currentTime)
+    {
+        final long delay;
+        synchronized (_writeQueue)
+        {
+            if (_closeDeadline == null || !isOpen())
+            {
+                return Long.MAX_VALUE;
+            }
+            delay = Math.max(0L, (long) _closeDeadline.getTimeToNextTick(currentTime) - _closeHandshakeReserveMillis);
+        }
+        if (delay == 0L)
+        {
+            close(_protocolEngine.isProtocolCloseComplete() ? StatusCode.NORMAL : StatusCode.NO_CODE, true);
+        }
+        return delay;
     }
 
     long getTickRetryDelay(final long currentTime)
@@ -140,6 +172,35 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
     public void flush()
     {
         _writeJob.flush();
+    }
+
+    @Override
+    public void setCloseDeadline(final Ticker deadline)
+    {
+        Objects.requireNonNull(deadline, "Close deadline must not be null");
+        synchronized (_writeQueue)
+        {
+            if (_closeDeadline != null)
+            {
+                return;
+            }
+            final long remainingMillis = Math.max(0L, deadline.getTimeToNextTick(_scheduler.getCurrentTime()));
+            final long finalWriteMillis = TimeUnit.NANOSECONDS
+                    .toMillis(Math.max(0L, _scheduler.getCloseTimeoutNanos()));
+            _closeHandshakeReserveMillis =
+                    Math.min(remainingMillis / CLOSE_HANDSHAKE_RESERVE_DIVISOR, finalWriteMillis);
+            _closeDeadline = deadline;
+        }
+        _scheduler.wakeup();
+    }
+
+    @Override
+    public void abort()
+    {
+        if (requestForceClose())
+        {
+            _scheduler.wakeup();
+        }
     }
 
     @Override
@@ -256,6 +317,10 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
 
     public void doWrite()
     {
+        if (isOpen() && _protocolEngine.isProtocolCloseComplete())
+        {
+            close();
+        }
         _writeJob.schedule();
     }
 
@@ -282,9 +347,7 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
     {
         synchronized (_writeQueue)
         {
-            if ((_webSocketConnectionState == WebSocketConnectionState.CLOSE_REQUESTED ||
-                    _webSocketConnectionState == WebSocketConnectionState.CLOSE_SENT) &&
-                    getRemainingCloseTime(_scheduler.getNanoTime()) == 0L)
+            if (!isClosed() && !isForceClosing() && getRemainingCloseTime(_scheduler.getNanoTime()) == 0L)
             {
                 return requestForceClose();
             }
@@ -461,8 +524,15 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
 
     private long getRemainingCloseTime(final long currentNanoTime)
     {
-        return WebSocketConnectionScheduler
+        final long deadlineRemaining = TimeUnit.MILLISECONDS
+                .toNanos(getTimeToCloseDeadline(_scheduler.getCurrentTime()));
+        if (isOpen())
+        {
+            return deadlineRemaining;
+        }
+        final long remainingTimeNanos = WebSocketConnectionScheduler
                 .getRemainingTimeNanos(currentNanoTime, _closeStartTimeNanos, _scheduler.getCloseTimeoutNanos());
+        return Math.min(deadlineRemaining, remainingTimeNanos);
     }
 
     private void enterForceClosing()

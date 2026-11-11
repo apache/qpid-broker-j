@@ -253,6 +253,20 @@ transport layer.
 The `Port`, `Keystore` and `Truststore` model objects are used to configure the websocket connection according
 to the TLS requirements.
 
+AMQP and WebSocket closing share the absolute `connection.closeResponseTimeout` deadline. When the AMQP Close
+exchange completes, queued AMQP output is drained before the WebSocket Close is sent. To allow a readable peer
+that does not answer AMQP Close to receive a WebSocket Close, the transport reserves the last 10% of the remaining
+budget measured when closing starts, capped by `qpid.port.final_write_timeout`. The reserve is rounded down to
+whole milliseconds; a zero reserve leaves only the hard deadline. During the reserve, the transport stops accepting
+new AMQP output and drains already queued output before sending an empty WebSocket Close frame, without a status
+code or reason. A completed AMQP Close exchange uses normal status code 1000 instead. The empty frame uses Jetty's
+internal `NO_CODE` sentinel; reserved status code 1005 is never transmitted.
+
+The reserve does not extend the original deadline. At expiry the transport disconnects even if a write, a worker,
+or the peer's WebSocket Close response is still pending. Explicit aborts and failed write submissions also retain
+immediate force-close behavior. Timeout processing uses the existing scheduler, write job, and buffer cleanup;
+it does not allocate a timer task or additional data buffers per connection.
+
 
 ## AMQP Protocol Engines
 

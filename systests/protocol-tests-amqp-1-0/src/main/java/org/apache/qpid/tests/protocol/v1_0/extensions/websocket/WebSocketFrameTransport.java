@@ -135,6 +135,16 @@ public class WebSocketFrameTransport extends FrameTransport
         return _webSocketClientHandler.isChannelOutputOpen();
     }
 
+    ChannelFuture sendWebSocketCloseResponse()
+    {
+        return _webSocketClientHandler.sendWebSocketCloseResponse();
+    }
+
+    int getWebSocketCloseStatusCode()
+    {
+        return _webSocketClientHandler.getWebSocketCloseStatusCode();
+    }
+
     String getNegotiatedExtensions()
     {
         return _webSocketClientHandler.getNegotiatedExtensions();
@@ -257,6 +267,7 @@ public class WebSocketFrameTransport extends FrameTransport
         private volatile String _negotiatedExtensions;
         private volatile Channel _channel;
         private volatile boolean _withholdWebSocketCloseResponse;
+        private volatile int _webSocketCloseStatusCode = -1;
 
         WebSocketClientHandler(final WebSocketClientHandshaker handshaker)
         {
@@ -287,6 +298,19 @@ public class WebSocketFrameTransport extends FrameTransport
         {
             final Channel channel = _channel;
             return channel instanceof DuplexChannel && !((DuplexChannel) channel).isOutputShutdown();
+        }
+
+        ChannelFuture sendWebSocketCloseResponse()
+        {
+            final int statusCode = _webSocketCloseStatusCode;
+            return _channel.pipeline().context(this).writeAndFlush(statusCode < 0
+                    ? new CloseWebSocketFrame()
+                    : new CloseWebSocketFrame(statusCode, ""));
+        }
+
+        int getWebSocketCloseStatusCode()
+        {
+            return _webSocketCloseStatusCode;
         }
 
         @Override
@@ -322,22 +346,22 @@ public class WebSocketFrameTransport extends FrameTransport
                 return;
             }
 
-            if (msg instanceof FullHttpResponse)
+            if (msg instanceof FullHttpResponse response)
             {
-                final FullHttpResponse response = (FullHttpResponse) msg;
                 throw new IllegalStateException(String.format("Unexpected FullHttpResponse (getStatus=%s, content=%s)",
-                                                  response.content().toString(StandardCharsets.UTF_8), response.status()));
+                        response.content().toString(StandardCharsets.UTF_8), response.status()));
             }
 
             final WebSocketFrame frame = (WebSocketFrame) msg;
-            if (frame instanceof CloseWebSocketFrame)
+            if (frame instanceof CloseWebSocketFrame closeWebSocketFrame)
             {
+                _webSocketCloseStatusCode = closeWebSocketFrame.statusCode();
                 _webSocketCloseFrameReceived.countDown();
-                if (_withholdWebSocketCloseResponse)
+                if (!_withholdWebSocketCloseResponse)
                 {
-                    // consume the frame without writing the peer's WebSocket CLOSE response
-                    return;
+                    ctx.writeAndFlush(frame.retain());
                 }
+                return;
             }
             ctx.fireChannelRead(frame.retain());
         }
