@@ -145,7 +145,15 @@
         retained.</para>
       <para><emphasis>Roll on restart</emphasis> governs whether the log file is rolled when the
         Broker is restarted. If not ticked, the Broker will append to the existing log file until it
-        needs to be rolled.</para>
+        needs to be rolled. If enabled, a non-empty existing log file is rolled before the first new
+        log event, including when <emphasis>roll daily</emphasis> is enabled. Daily archive numbering
+        continues after existing archives for the same date. Empty log files are not rolled on
+        restart.</para>
+      <para>If the daily archive directory cannot be listed or an archive index exceeds the supported
+        range, the Broker checks individual archive filenames and may fill gaps in archive numbering.
+        If a filename cannot be checked safely, the Broker continues appending and retries rollover
+        after 30 seconds. The active file may exceed the maximum file size until rollover becomes
+        possible.</para>
     </section>
     <section xml:id="Java-Broker-Runtime-Logging-Loggers-ConsoleLogger">
       <title>ConsoleLogger</title>
