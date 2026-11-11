@@ -25,10 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -97,7 +100,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         connection.setCloseDeadline(deadline);
         _connectionScheduler.registerConnection(connection);
 
-        assertEquals(500L, scheduleDueConnections());
+        assertEquals(450L, scheduleDueConnections());
         assertTrue(connection.isOpen());
         assertEquals(0, _threadPool.getQueueSize());
 
@@ -125,7 +128,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
             _threadPool.rejectNext();
         }
 
-        assertEquals(50L, scheduleDueConnections());
+        assertEquals(45L, scheduleDueConnections());
         _currentTime.addAndGet(50L);
         _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(50L));
         deadline.setTimeToNextTick(0);
@@ -157,7 +160,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
 
         assertEquals(250L, scheduleDueConnections());
         _threadPool.runNext();
-        final ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.forClass(Callback.class);
+        final ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.captor();
         if (pendingWrite)
         {
             verify(session).sendBinary(any(ByteBuffer.class), callbackCaptor.capture());
@@ -282,8 +285,15 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         try
         {
             await(workStarted, "Protocol work did not start");
-            assertEquals(500L, scheduleDueConnections());
-            _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(500L));
+            assertEquals(450L, scheduleDueConnections());
+            _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(450L));
+            deadline.setTimeToNextTick(50);
+            assertEquals(50L, scheduleDueConnections());
+            _threadPool.runAll();
+            verify(session).close(eq(StatusCode.NO_CODE), isNull(), any(Callback.class));
+            verify(session, never()).disconnect();
+
+            _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(50L));
             deadline.setTimeToNextTick(0);
             scheduleDueConnections();
             _threadPool.runAll();
@@ -302,5 +312,259 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         scheduleDueConnections();
         _threadPool.runAll();
         verify(closeTask).run();
+    }
+
+    @Test
+    void unansweredAmqpCloseReservesTimeForWebSocketClose()
+    {
+        final Session session = mock(Session.class);
+        final MutableTicker mutableTicker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(mutableTicker, session);
+        final MutableTicker deadline = new MutableTicker(500);
+        connection.setCloseDeadline(deadline);
+        _connectionScheduler.registerConnection(connection);
+
+        assertEquals(450L, scheduleDueConnections());
+        _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(450L));
+        deadline.setTimeToNextTick(50);
+        assertEquals(50L, scheduleDueConnections());
+        assertTrue(connection.isCloseRequested());
+        for (int i = 0; i < 10; i++)
+        {
+            assertEquals(50L, scheduleDueConnections());
+        }
+        assertEquals(1, _threadPool.getQueueSize());
+        _threadPool.runAll();
+
+        final ArgumentCaptor<Callback> closeCallback = ArgumentCaptor.captor();
+        verify(session).close(eq(StatusCode.NO_CODE), isNull(), closeCallback.capture());
+        verify(session, never()).disconnect();
+
+        _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(49L));
+        deadline.setTimeToNextTick(1);
+        assertEquals(1L, scheduleDueConnections());
+        verify(session, never()).disconnect();
+
+        _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(1L));
+        deadline.setTimeToNextTick(0);
+        scheduleDueConnections();
+        closeCallback.getValue().succeed();
+        _threadPool.runAll();
+
+        verify(session).disconnect();
+        verify(session).close(eq(StatusCode.NO_CODE), isNull(), any(Callback.class));
+        assertEquals(0, _threadPool.getQueueSize());
+    }
+
+    @Test
+    void reserveIsCappedByFinalWriteTimeout()
+    {
+        final Session session = mock(Session.class);
+        final MutableTicker mutableTicker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(mutableTicker, session);
+        final MutableTicker deadline = new MutableTicker(20_000);
+        connection.setCloseDeadline(deadline);
+        _connectionScheduler.registerConnection(connection);
+
+        assertEquals(19_000L, scheduleDueConnections());
+        _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(18_999L));
+        deadline.setTimeToNextTick(1_001);
+        assertEquals(1L, scheduleDueConnections());
+        assertTrue(connection.isOpen());
+
+        _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(1L));
+        deadline.setTimeToNextTick(1_000);
+        assertEquals(1_000L, scheduleDueConnections());
+        _threadPool.runAll();
+        verify(session).close(eq(StatusCode.NO_CODE), isNull(), any(Callback.class));
+        verify(session, never()).disconnect();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void noReserveWhenTimeoutIsTooShortOrFinalWritesAreDisabled(final boolean disableFinalWrites)
+    {
+        if (disableFinalWrites)
+        {
+            _connectionScheduler =
+                    new WebSocketConnectionScheduler(getTestName(), _currentTime::get, _nanoTime::get, 0L);
+        }
+        final Session session = mock(Session.class);
+        final MutableTicker mutableTicker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(mutableTicker, session);
+        final int timeout = disableFinalWrites ? 500 : 9;
+        final MutableTicker deadline = new MutableTicker(timeout);
+        connection.setCloseDeadline(deadline);
+        _connectionScheduler.registerConnection(connection);
+
+        assertEquals(timeout, scheduleDueConnections());
+        deadline.setTimeToNextTick(1);
+        assertEquals(1L, scheduleDueConnections());
+        assertTrue(connection.isOpen());
+
+        deadline.setTimeToNextTick(0);
+        scheduleDueConnections();
+        _threadPool.runAll();
+
+        verify(session).disconnect();
+        verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
+    }
+
+    @Test
+    void completedAmqpCloseAtReserveBoundaryUsesNormalWebSocketStatus()
+    {
+        final MultiVersionProtocolEngine protocolEngine = mock(MultiVersionProtocolEngine.class);
+        when(protocolEngine.getAggregateTicker()).thenReturn(new AggregateTicker());
+        final Session session = mock(Session.class);
+        final WebSocketConnection connection = createConnection(protocolEngine, session);
+        final MutableTicker deadline = new MutableTicker(500);
+        connection.setCloseDeadline(deadline);
+        _connectionScheduler.registerConnection(connection);
+
+        when(protocolEngine.isProtocolCloseComplete()).thenReturn(true);
+        deadline.setTimeToNextTick(50);
+        scheduleDueConnections();
+        _threadPool.runAll();
+
+        verify(session).close(eq(StatusCode.NORMAL), isNull(), any(Callback.class));
+        verify(session, never()).disconnect();
+    }
+
+    @Test
+    void pendingBinaryWriteDrainsBeforeTimeoutClose()
+    {
+        final Session session = mock(Session.class);
+        final MutableTicker mutableTicker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(mutableTicker, session);
+        final MutableTicker deadline = new MutableTicker(500);
+        connection.setCloseDeadline(deadline);
+        _connectionScheduler.registerConnection(connection);
+        send(connection, new byte[] {1});
+        connection.doWrite();
+        _threadPool.runAll();
+        final ArgumentCaptor<Callback> writeCallback = ArgumentCaptor.captor();
+        verify(session).sendBinary(any(ByteBuffer.class), writeCallback.capture());
+        send(connection, new byte[] {2});
+
+        deadline.setTimeToNextTick(50);
+        assertEquals(50L, scheduleDueConnections());
+        assertEquals(0, _threadPool.getQueueSize());
+        verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
+
+        writeCallback.getValue().succeed();
+        _threadPool.runNext();
+        final ArgumentCaptor<Callback> lastWriteCallback = ArgumentCaptor.captor();
+        verify(session, times(2)).sendBinary(any(ByteBuffer.class), lastWriteCallback.capture());
+        verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
+        lastWriteCallback.getValue().succeed();
+        _threadPool.runAll();
+
+        verify(session).close(eq(StatusCode.NO_CODE), isNull(), any(Callback.class));
+        verify(session, never()).disconnect();
+    }
+
+    @Test
+    void blockedWriteDisposesQueuedBuffersAtHardDeadline()
+    {
+        final Session session = mock(Session.class);
+        final MutableTicker mutableTicker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(mutableTicker, session);
+        final MutableTicker deadline = new MutableTicker(500);
+        connection.setCloseDeadline(deadline);
+        _connectionScheduler.registerConnection(connection);
+        send(connection, new byte[] {1});
+        connection.doWrite();
+        _threadPool.runAll();
+        final ArgumentCaptor<Callback> writeCallback = ArgumentCaptor.captor();
+        verify(session).sendBinary(any(ByteBuffer.class), writeCallback.capture());
+        final QpidByteBuffer buffer = mock(QpidByteBuffer.class);
+        final QpidByteBuffer duplicate = mock(QpidByteBuffer.class);
+        when(buffer.remaining()).thenReturn(10);
+        when(buffer.limit()).thenReturn(10);
+        when(buffer.duplicate()).thenReturn(duplicate);
+        connection.send(buffer);
+
+        deadline.setTimeToNextTick(50);
+        assertEquals(50L, scheduleDueConnections());
+        assertTrue(connection.isCloseRequested());
+        verify(duplicate, never()).dispose();
+        verify(session, never()).disconnect();
+
+        deadline.setTimeToNextTick(0);
+        scheduleDueConnections();
+        _threadPool.runAll();
+        writeCallback.getValue().succeed();
+        _threadPool.runAll();
+
+        verify(session).disconnect();
+        verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
+        verify(duplicate).dispose();
+        assertEquals(0, _threadPool.getQueueSize());
+    }
+
+    @Test
+    void rejectedTimeoutCloseSubmissionAbortsImmediately()
+    {
+        final Session session = mock(Session.class);
+        final MutableTicker mutableTicker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(mutableTicker, session);
+        final MutableTicker deadline = new MutableTicker(500);
+        connection.setCloseDeadline(deadline);
+        _connectionScheduler.registerConnection(connection);
+        deadline.setTimeToNextTick(50);
+        _threadPool.rejectNext();
+
+        scheduleDueConnections();
+        _threadPool.runAll();
+
+        assertTrue(connection.isForceClosing());
+        verify(session).disconnect();
+        verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
+        assertEquals(0, _threadPool.getQueueSize());
+    }
+
+    @Test
+    void queuedTimeoutCloseCannotBeSubmittedAfterHardDeadline()
+    {
+        final Session session = mock(Session.class);
+        final MutableTicker mutableTicker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(mutableTicker, session);
+        final MutableTicker deadline = new MutableTicker(500);
+        connection.setCloseDeadline(deadline);
+        _connectionScheduler.registerConnection(connection);
+        deadline.setTimeToNextTick(50);
+        scheduleDueConnections();
+        assertEquals(1, _threadPool.getQueueSize());
+
+        deadline.setTimeToNextTick(0);
+        _threadPool.runNext();
+        scheduleDueConnections();
+        _threadPool.runAll();
+
+        verify(session).disconnect();
+        verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
+        assertEquals(0, _threadPool.getQueueSize());
+    }
+
+    @Test
+    void explicitAbortDuringReserveRemainsImmediate()
+    {
+        final Session session = mock(Session.class);
+        final MutableTicker mutableTicker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(mutableTicker, session);
+        final MutableTicker deadline = new MutableTicker(500);
+        connection.setCloseDeadline(deadline);
+        _connectionScheduler.registerConnection(connection);
+        deadline.setTimeToNextTick(50);
+        scheduleDueConnections();
+
+        connection.abort();
+        scheduleDueConnections();
+        _threadPool.runAll();
+
+        assertTrue(connection.isForceClosing());
+        verify(session).disconnect();
+        verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
+        assertEquals(0, _threadPool.getQueueSize());
     }
 }
