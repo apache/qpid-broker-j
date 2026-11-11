@@ -28,7 +28,6 @@ import ch.qos.logback.core.Context;
 import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.RollingPolicyBase;
-import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.TriggeringPolicy;
@@ -58,9 +57,11 @@ public class AppenderUtils
         TriggeringPolicy triggeringPolicy;
         RollingPolicyBase rollingPolicy;
         final String maxFileSizeAsString = String.valueOf(fileLoggerSettings.getMaxFileSize()) + "MB";
-        if(fileLoggerSettings.isRollDaily())
+        if (fileLoggerSettings.isRollDaily())
         {
-            DailyTriggeringPolicy dailyTriggeringPolicy = new DailyTriggeringPolicy(fileLoggerSettings.isRollOnRestart(), maxFileSizeAsString);
+            final DailyTriggeringPolicy<ILoggingEvent> dailyTriggeringPolicy =
+                    new DailyTriggeringPolicy<>(FileSize.valueOf(maxFileSizeAsString),
+                            fileLoggerSettings.isRollOnRestart());
             dailyTriggeringPolicy.setContext(loggerContext);
             TimeBasedRollingPolicy<ILoggingEvent> timeBasedRollingPolicy = new TimeBasedRollingPolicy<>();
             timeBasedRollingPolicy.setMaxHistory(fileLoggerSettings.getMaxHistory());
@@ -109,53 +110,6 @@ public class AppenderUtils
         if (maxFileSize < 1)
         {
             throw new IllegalConfigurationException(String.format("Maximum file size must be at least 1. Cannot set to %d.", maxFileSize));
-        }
-    }
-
-    static class DailyTriggeringPolicy extends SizeAndTimeBasedFNATP<ILoggingEvent>
-    {
-        private final boolean _rollOnRestart;
-        private final FileSize _maxFileSize;
-        private volatile boolean _isFirst = true;
-
-        private long _nextCheck;
-
-        public DailyTriggeringPolicy(boolean isRollOnRestart, String maxFileSize)
-        {
-            _rollOnRestart = isRollOnRestart;
-            _maxFileSize = FileSize.valueOf(maxFileSize);
-            setMaxFileSize(_maxFileSize);
-        }
-
-        @Override
-        public void start()
-        {
-            super.start();
-            if (_rollOnRestart)
-            {
-                _nextCheck = 0L;
-            }
-        }
-
-        @Override
-        public boolean isTriggeringEvent(final File activeFile, final ILoggingEvent event)
-        {
-            if (_rollOnRestart && _isFirst)
-            {
-                _isFirst = false;
-                if (activeFile != null && activeFile.exists() && activeFile.length() == 0)
-                {
-                    _nextCheck = computeNextCheck(_nextCheck);
-                    return false;
-                }
-            }
-
-            return super.isTriggeringEvent(activeFile, event);
-        }
-
-        public FileSize getMaxFileSize()
-        {
-            return _maxFileSize;
         }
     }
 
