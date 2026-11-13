@@ -202,6 +202,7 @@
     <module>systests/qpid-systests-jms_1.1</module>
     <module>systests/qpid-systests-jms_2.0</module>
     <module>systests/qpid-systests-http-management</module>
+    <module>systests/qpid-systests-websocket</module>
     <module>systests/protocol-tests-core</module>
     <module>systests/protocol-tests-amqp-0-8</module>
     <module>systests/protocol-tests-amqp-0-10</module>
