@@ -54,7 +54,7 @@ jobs:
         run: mvn test
 
       - name: Integration Tests
-        run: mvn verify -pl systests/protocol-tests-amqp-0-8,systests/protocol-tests-amqp-0-10,systests/protocol-tests-amqp-1-0,systests/qpid-systests-jms_1.1,systests/qpid-systests-jms_2.0,systests/qpid-systests-http-management -DskipTests=false -DskipITs=false
+        run: mvn verify -pl systests/protocol-tests-amqp-0-8,systests/protocol-tests-amqp-0-10,systests/protocol-tests-amqp-1-0,systests/qpid-systests-jms_1.1,systests/qpid-systests-jms_2.0,systests/qpid-systests-http-management,systests/qpid-systests-websocket -DskipTests=false -DskipITs=false
 
       - name: Archive Test Logs On Failure
         if: failure()

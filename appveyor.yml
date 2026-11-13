@@ -25,6 +25,7 @@ build_script:
 test_script:
   - mvn test -B -Dskip.systests=true --fail-at-end
   - mvn verify -pl systests/protocol-tests-amqp-1-0,systests/protocol-tests-amqp-0-8,systests/protocol-tests-amqp-0-10 -Dskip.unittests=true -B --fail-at-end
+  - mvn verify -pl systests/qpid-systests-websocket -DskipITs=false -B --fail-at-end
 
 on_failure:
   - ps: |
