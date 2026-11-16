@@ -66,6 +66,8 @@ public class ResourceLimitMessages
     public static final String ACCEPTED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "resourcelimit.accepted";
     public static final String INFO_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "resourcelimit.info";
     public static final String REJECTED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "resourcelimit.rejected";
+    public static final String REJECTED_ERRORED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "resourcelimit.rejected_errored";
+    public static final String REJECTED_INITIALIZING_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "resourcelimit.rejected_initializing";
 
     static
     {
@@ -73,6 +75,8 @@ public class ResourceLimitMessages
         LoggerFactory.getLogger(ACCEPTED_LOG_HIERARCHY);
         LoggerFactory.getLogger(INFO_LOG_HIERARCHY);
         LoggerFactory.getLogger(REJECTED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(REJECTED_ERRORED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(REJECTED_INITIALIZING_LOG_HIERARCHY);
 
         MESSAGES = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.ResourceLimit_logmessages", CURRENT_LOCALE);
     }
@@ -227,6 +231,126 @@ public class ResourceLimitMessages
             public String getLogHierarchy()
             {
                 return REJECTED_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a ResourceLimit message of the Format:
+     * <pre>RL-1005 : Rejected : {0} {1} by {2} : {3}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage REJECTED_ERRORED(CharSequence param1, CharSequence param2, CharSequence param3, CharSequence param4)
+    {
+        String rawMessage = MESSAGES.getString("REJECTED_ERRORED");
+
+        final Object[] messageArguments = {param1, param2, param3, param4};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return REJECTED_ERRORED_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a ResourceLimit message of the Format:
+     * <pre>RL-1004 : Rejected : {0} {1} by {2} : {3}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage REJECTED_INITIALIZING(CharSequence param1, CharSequence param2, CharSequence param3, CharSequence param4)
+    {
+        String rawMessage = MESSAGES.getString("REJECTED_INITIALIZING");
+
+        final Object[] messageArguments = {param1, param2, param3, param4};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, CURRENT_LOCALE);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            @Override
+            public String toString()
+            {
+                return message;
+            }
+
+            @Override
+            public String getLogHierarchy()
+            {
+                return REJECTED_INITIALIZING_LOG_HIERARCHY;
             }
 
             @Override

@@ -18,16 +18,19 @@
  */
 package org.apache.qpid.server.virtualhost;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.logging.messages.ResourceLimitMessages;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerConnectionLimitProvider;
@@ -38,10 +41,13 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostConnectionLimitProvider;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.limit.CachedConnectionLimiterImpl;
+import org.apache.qpid.server.security.limit.ConnectionLimitException;
 import org.apache.qpid.server.security.limit.ConnectionLimitProvider;
 import org.apache.qpid.server.security.limit.ConnectionLimiter;
 import org.apache.qpid.server.security.limit.ConnectionLimiter.CachedLimiter;
 import org.apache.qpid.server.security.limit.ConnectionLimiterService;
+import org.apache.qpid.server.security.limit.ConnectionSlot;
+import org.apache.qpid.server.transport.AMQPConnection;
 
 final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl implements CachedLimiter
 {
@@ -51,12 +57,16 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
 
     private final Broker<?> _broker;
 
-    private final Map<ConnectionLimitProvider<?>, ConnectionLimiter> _connectionLimitProviders = new ConcurrentHashMap<>();
+    private final Map<ConnectionLimitProvider<?>, ConnectionLimiter> _connectionLimitProviders = new HashMap<>();
+
+    private final Map<ConfiguredObject<?>, ProviderChangeListener> _providerListeners = new ConcurrentHashMap<>();
 
     private final List<ConnectionLimiterService> _serviceLimiters = new CopyOnWriteArrayList<>();
 
     private final ChangeListener _virtualHostChangeListener;
     private final ChangeListener _brokerChangeListener;
+
+    private final AtomicBoolean _open = new AtomicBoolean();
 
     VirtualHostConnectionLimiter(VirtualHost<?> virtualHost, Broker<?> broker)
     {
@@ -69,13 +79,17 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
 
     public void open()
     {
+        if (!_open.compareAndSet(false, true))
+        {
+            return;
+        }
         _virtualHost.addChangeListener(_virtualHostChangeListener);
         _broker.addChangeListener(_brokerChangeListener);
 
         _virtualHost.getChildren(VirtualHostConnectionLimitProvider.class)
-                .forEach(child -> child.addChangeListener(ProviderChangeListener.virtualHostChangeListener(this)));
+                .forEach(child -> addProvider(child, VirtualHostConnectionLimitProvider.class));
         _broker.getChildren(BrokerConnectionLimitProvider.class)
-                .forEach(child -> child.addChangeListener(ProviderChangeListener.brokerChangeListener(this)));
+                .forEach(child -> addProvider(child, BrokerConnectionLimitProvider.class));
 
         final QpidServiceLoader serviceLoader = new QpidServiceLoader();
         for (final ConnectionLimiterService service : serviceLoader.instancesOf(ConnectionLimiterService.class))
@@ -92,31 +106,83 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
 
     public void close()
     {
+        synchronized (this)
+        {
+            if (!_open.compareAndSet(true, false))
+            {
+                return;
+            }
+            _connectionLimitProviders.clear();
+            _serviceLimiters.clear();
+            swapLimiter(ConnectionLimiter.noLimits());
+        }
+
         _virtualHost.removeChangeListener(_virtualHostChangeListener);
         _broker.removeChangeListener(_brokerChangeListener);
 
-        final ProviderChangeListener virtualHostChangeListener = ProviderChangeListener.virtualHostChangeListener(this);
-        _virtualHost.getChildren(VirtualHostConnectionLimitProvider.class)
-                .forEach(child -> child.removeChangeListener(virtualHostChangeListener));
-
-        final ProviderChangeListener brokerChangeListener = ProviderChangeListener.brokerChangeListener(this);
-        _broker.getChildren(BrokerConnectionLimitProvider.class)
-                .forEach(child -> child.removeChangeListener(brokerChangeListener));
-
-        _serviceLimiters.clear();
-
-        swapLimiter(ConnectionLimiter.noLimits());
+        _providerListeners.forEach((provider, listener) ->
+        {
+            if (_providerListeners.remove(provider, listener))
+            {
+                provider.removeChangeListener(listener);
+            }
+        });
     }
 
-    private void update(ConfiguredObject<?> object)
+    private void addProvider(final ConfiguredObject<?> provider, final Class<?> category)
+    {
+        if (_open.get())
+        {
+            final ProviderChangeListener listener = _providerListeners.computeIfAbsent(provider,
+                    object -> new ProviderChangeListener(this, category));
+            provider.addChangeListener(listener);
+            if (!_open.get() || _providerListeners.get(provider) != listener)
+            {
+                _providerListeners.remove(provider, listener);
+                provider.removeChangeListener(listener);
+            }
+        }
+    }
+
+    private void removeProvider(final ConfiguredObject<?> provider)
+    {
+        final ProviderChangeListener listener = _providerListeners.remove(provider);
+        if (listener != null)
+        {
+            provider.removeChangeListener(listener);
+        }
+        update(provider);
+    }
+
+    private synchronized void update(final ConfiguredObject<?> provider, final ProviderChangeListener listener)
+    {
+        if (_providerListeners.get(provider) == listener)
+        {
+            update(provider);
+        }
+    }
+
+    private synchronized void updateState(final ConfiguredObject<?> provider, final ProviderChangeListener listener)
+    {
+        if (_providerListeners.get(provider) == listener)
+        {
+            if (provider.getState() != State.ACTIVE)
+            {
+                _connectionLimitProviders.remove(provider);
+            }
+            update();
+        }
+    }
+
+    private synchronized void update(final ConfiguredObject<?> object)
     {
         _connectionLimitProviders.remove(object);
         update();
     }
 
-    private void update()
+    private synchronized void update()
     {
-        if (!((SystemConfig<?>) _broker.getParent()).isManagementMode())
+        if (_open.get() && !((SystemConfig<?>) _broker.getParent()).isManagementMode())
         {
             swapLimiter(newLimiter(_connectionLimitProviders));
         }
@@ -130,14 +196,15 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
         for (final VirtualHostConnectionLimitProvider<?> provider :
                 _virtualHost.getChildren(VirtualHostConnectionLimitProvider.class))
         {
-            if (provider.getState() == State.ACTIVE)
+            final State state = provider.getState();
+            if (state == State.ACTIVE)
             {
                 limiter = limiter.append(
                         cache.computeIfAbsent(provider, ConnectionLimitProvider::getConnectionLimiter));
             }
-            else if (provider.getState() == State.ERRORED)
+            else if (state == State.UNINITIALIZED || state == State.ERRORED)
             {
-                limiter = ConnectionLimiter.blockEveryone();
+                limiter = unavailableProviderLimiter(provider, state);
             }
         }
 
@@ -145,14 +212,15 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
         for (final BrokerConnectionLimitProvider<?> provider :
                 _broker.getChildren(BrokerConnectionLimitProvider.class))
         {
-            if (provider.getState() == State.ACTIVE)
+            final State state = provider.getState();
+            if (state == State.ACTIVE)
             {
                 limiter = limiter.append(
                         cache.computeIfAbsent(provider, ConnectionLimitProvider::getConnectionLimiter));
             }
-            else if (provider.getState() == State.ERRORED)
+            else if (state == State.UNINITIALIZED || state == State.ERRORED)
             {
-                limiter = ConnectionLimiter.blockEveryone();
+                limiter = unavailableProviderLimiter(provider, state);
             }
         }
 
@@ -162,6 +230,39 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
             limiter = limiter.append(service);
         }
         return limiter;
+    }
+
+    private ConnectionLimiter unavailableProviderLimiter(final ConnectionLimitProvider<?> provider,
+                                                         final State blockingState)
+    {
+        return new ConnectionLimiter()
+        {
+            @Override
+            public ConnectionSlot register(final AMQPConnection<?> connection)
+            {
+                final State currentState = provider.getState();
+                final State state = currentState == State.UNINITIALIZED || currentState == State.ERRORED ?
+                        currentState : blockingState;
+                final String message = String.format(
+                        "Connection limit provider '%s' (%s) is %s (state %s); "
+                        + "new connections to virtual host '%s' are rejected",
+                        provider.getName(), provider.getCategoryClass().getSimpleName(),
+                        state == State.UNINITIALIZED ? "initializing" : "errored", state, _virtualHost.getName());
+                final String principal = connection.getPrincipal();
+                final LogMessage logMessage = state == State.UNINITIALIZED
+                        ? ResourceLimitMessages.REJECTED_INITIALIZING("Opening", "connection", principal, message)
+                        : ResourceLimitMessages.REJECTED_ERRORED("Opening", "connection", principal, message);
+                connection.getEventLogger().message(logMessage);
+                throw new ConnectionLimitException(message);
+            }
+
+            @Override
+            public ConnectionLimiter append(final ConnectionLimiter limiter)
+            {
+                Objects.requireNonNull(limiter);
+                return this;
+            }
+        };
     }
 
     private abstract static class AbstractChangeListener extends AbstractConfigurationChangeListener
@@ -177,38 +278,15 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
             _providerClazz = Objects.requireNonNull(providerClazz);
         }
 
-        void addProvider(ConfiguredObject<?> provider)
+        void addProvider(final ConfiguredObject<?> provider)
         {
-            provider.addChangeListener(new ProviderChangeListener(_limiter, _providerClazz));
+            _limiter.addProvider(provider, _providerClazz);
             _limiter.update();
         }
 
-        void removeProvider(ConfiguredObject<?> provider)
+        void removeProvider(final ConfiguredObject<?> provider)
         {
-            provider.removeChangeListener(new ProviderChangeListener(_limiter, _providerClazz));
-            _limiter.update(provider);
-        }
-
-        void updateProvider(ConfiguredObject<?> provider)
-        {
-            _limiter.update(provider);
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return 31 * _limiter.hashCode() + _providerClazz.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object obj)
-        {
-            if (obj instanceof AbstractChangeListener)
-            {
-                final AbstractChangeListener changeListener = (AbstractChangeListener) obj;
-                return _limiter == changeListener._limiter && _providerClazz == changeListener._providerClazz;
-            }
-            return false;
+            _limiter.removeProvider(provider);
         }
     }
 
@@ -256,21 +334,20 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
 
     private static final class ProviderChangeListener extends AbstractChangeListener
     {
-        private final Map<ConfiguredObject<?>, Boolean> _bulkChanges = new ConcurrentHashMap<>();
+        private final AtomicBoolean _bulkChange = new AtomicBoolean();
 
-        static ProviderChangeListener virtualHostChangeListener(VirtualHostConnectionLimiter limiter)
-        {
-            return new ProviderChangeListener(limiter, VirtualHostConnectionLimitProvider.class);
-        }
-
-        static ProviderChangeListener brokerChangeListener(VirtualHostConnectionLimiter limiter)
-        {
-            return new ProviderChangeListener(limiter, BrokerConnectionLimitProvider.class);
-        }
-
-        ProviderChangeListener(VirtualHostConnectionLimiter limiter, Class<?> clazz)
+        ProviderChangeListener(final VirtualHostConnectionLimiter limiter, final Class<?> clazz)
         {
             super(limiter, clazz);
+        }
+
+        @Override
+        public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
+        {
+            if (object.getCategoryClass() == _providerClazz)
+            {
+                _limiter.updateState(object, this);
+            }
         }
 
         @Override
@@ -280,7 +357,7 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
                                  final Object newAttributeValue)
         {
             super.attributeSet(object, attributeName, oldAttributeValue, newAttributeValue);
-            if (object.getCategoryClass() == _providerClazz && !_bulkChanges.containsKey(object))
+            if (object.getCategoryClass() == _providerClazz && !_bulkChange.get())
             {
                 updateProvider(object);
             }
@@ -290,17 +367,22 @@ final class VirtualHostConnectionLimiter extends CachedConnectionLimiterImpl imp
         public void bulkChangeStart(final ConfiguredObject<?> object)
         {
             super.bulkChangeStart(object);
-            _bulkChanges.put(object, Boolean.TRUE);
+            _bulkChange.set(true);
         }
 
         @Override
         public void bulkChangeEnd(final ConfiguredObject<?> object)
         {
             super.bulkChangeEnd(object);
-            if (Optional.ofNullable(_bulkChanges.remove(object)).orElse(Boolean.FALSE))
+            if (_bulkChange.getAndSet(false))
             {
                 updateProvider(object);
             }
+        }
+
+        private void updateProvider(final ConfiguredObject<?> provider)
+        {
+            _limiter.update(provider, this);
         }
     }
 }

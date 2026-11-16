@@ -2979,6 +2979,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 new VirtualHostStoreUpgraderAndRecoverer((VirtualHostNode<?>) getParent());
         virtualHostStoreUpgraderAndRecoverer.reloadAndRecoverVirtualHost(getDurableConfigurationStore());
 
+        openConnectionLimiter();
+
         final Collection<VirtualHostAccessControlProvider> accessControlProviders = getChildren(VirtualHostAccessControlProvider.class);
         if (!accessControlProviders.isEmpty())
         {

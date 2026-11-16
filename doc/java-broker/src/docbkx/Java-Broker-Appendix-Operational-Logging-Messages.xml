@@ -2313,7 +2313,7 @@
         </row>
         <row>
           <entry>
-            <para>Connection has been rejected.</para>
+            <para>Connection has been rejected because it violates a connection limit rule.</para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-RL-1003">
@@ -2323,6 +2323,32 @@
         <row>
           <entry>
             <para>An informational message regarding connection limits.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-RL-1004">
+          <entry morerows="1">RL-1004</entry>
+          <entry>Rejected : <replaceable>operation</replaceable> <replaceable>resource</replaceable>
+            by <replaceable>principal</replaceable> : <replaceable>details</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Connection has been rejected because an applicable Connection Limit Provider is
+              <literal>UNINITIALIZED</literal> (initializing). The details identify the provider name and type,
+              its state, and the affected Virtual Host. This does not indicate a connection limit rule violation.
+              See <xref linkend="Java-Broker-Security-ConnectionLimitProviders-Lifecycle"/>.</para>
+          </entry>
+        </row>
+        <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-RL-1005">
+          <entry morerows="1">RL-1005</entry>
+          <entry>Rejected : <replaceable>operation</replaceable> <replaceable>resource</replaceable>
+            by <replaceable>principal</replaceable> : <replaceable>details</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Connection has been rejected because an applicable Connection Limit Provider is
+              <literal>ERRORED</literal>. The details identify the provider name and type, its state, and the
+              affected Virtual Host. This does not indicate a connection limit rule violation.
+              See <xref linkend="Java-Broker-Security-ConnectionLimitProviders-Lifecycle"/>.</para>
           </entry>
         </row>
       </tbody>
