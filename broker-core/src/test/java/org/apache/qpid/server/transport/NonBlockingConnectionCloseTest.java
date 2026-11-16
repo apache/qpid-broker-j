@@ -79,6 +79,7 @@ class NonBlockingConnectionCloseTest extends UnitTestBase
     private AmqpPort<?> _port;
     private SSLEngine _sslEngine;
     private NonBlockingConnection _connection;
+    private int _buffersInUseBeforeTest;
 
     @BeforeEach
     void setUp() throws Exception
@@ -89,6 +90,7 @@ class NonBlockingConnectionCloseTest extends UnitTestBase
         _sslEngine = null;
         QpidByteBuffer.deinitialisePool();
         QpidByteBuffer.initialisePool(BUFFER_SIZE, 16, 0.5);
+        _buffersInUseBeforeTest = QpidByteBuffer.getNumberOfBuffersInUse();
         _socket = createSocketChannel(_writable::get);
         _engine = mock(ProtocolEngine.class);
         when(_engine.getAggregateTicker()).thenReturn(_ticker);
@@ -683,7 +685,8 @@ class NonBlockingConnectionCloseTest extends UnitTestBase
         verify(_socket).close();
         verify(_engine).closed();
         verify(_scheduler).removeConnection(_connection);
-        assertEquals(0, QpidByteBuffer.getNumberOfBuffersInUse(), "Shutdown must release buffers");
+        assertEquals(_buffersInUseBeforeTest, QpidByteBuffer.getNumberOfBuffersInUse(),
+                "Shutdown must release buffers allocated by this test");
     }
 
     private void createConnection(final TransportEncryption encryption) throws Exception
@@ -743,7 +746,7 @@ class NonBlockingConnectionCloseTest extends UnitTestBase
         assertFalse(_connection.doWork());
         assertTrue(_connection.wantsWrite() || _connection.wantsRead(),
                 "Blocked output must wait for socket capacity or TLS peer input");
-        assertTrue(QpidByteBuffer.getNumberOfBuffersInUse() > 0);
+        assertTrue(QpidByteBuffer.getNumberOfBuffersInUse() > _buffersInUseBeforeTest);
     }
 
     private void queueOutput()
