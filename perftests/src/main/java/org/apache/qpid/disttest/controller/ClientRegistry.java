@@ -18,9 +18,9 @@
  */
 package org.apache.qpid.disttest.controller;
 
-
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -35,6 +35,18 @@ public class ClientRegistry
     private final Set<String> _registeredClientNames = new ConcurrentSkipListSet<>();
 
     private final Object _lock = new Object();
+
+    private final RegistrationWaiter _registrationWaiter;
+
+    public ClientRegistry()
+    {
+        this(Object::wait);
+    }
+
+    ClientRegistry(final RegistrationWaiter registrationWaiter)
+    {
+        _registrationWaiter = Objects.requireNonNull(registrationWaiter);
+    }
 
     public void registerClient(String clientName)
     {
@@ -66,18 +78,18 @@ public class ClientRegistry
      */
     public int awaitClients(final int numberOfClientsToAwait, final long idleTimeout)
     {
-        long startTime = System.currentTimeMillis();
+        final long startTime = currentTimeMillis();
         long deadlineForNextRegistration = deadline(idleTimeout);
 
         synchronized (_lock)
         {
             int numberOfClientsAbsent = numberAbsent(numberOfClientsToAwait);
 
-            while(numberOfClientsAbsent > 0 && System.currentTimeMillis() < deadlineForNextRegistration)
+            while(numberOfClientsAbsent > 0 && currentTimeMillis() < deadlineForNextRegistration)
             {
                 try
                 {
-                    _lock.wait(idleTimeout);
+                    _registrationWaiter.await(_lock, idleTimeout);
                 }
                 catch (InterruptedException e)
                 {
@@ -101,6 +113,10 @@ public class ClientRegistry
         }
     }
 
+    long currentTimeMillis()
+    {
+        return System.currentTimeMillis();
+    }
 
     private void logAwaitClients(int numberOfClientsToAwait, long idleTimeout, long startTime, int retVal)
     {
@@ -110,16 +126,22 @@ public class ClientRegistry
                         numberOfClientsToAwait,
                         idleTimeout,
                         retVal,
-                        System.currentTimeMillis() - startTime);
+                        currentTimeMillis() - startTime);
     }
 
     private long deadline(final long idleTimeout)
     {
-        return System.currentTimeMillis() + idleTimeout;
+        return currentTimeMillis() + idleTimeout;
     }
 
     private int numberAbsent(int numberOfClientsToAwait)
     {
         return numberOfClientsToAwait - _registeredClientNames.size();
+    }
+
+    @FunctionalInterface
+    interface RegistrationWaiter
+    {
+        void await(final Object lock, final long idleTimeout) throws InterruptedException;
     }
 }
