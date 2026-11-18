@@ -391,6 +391,18 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
     }
 
     @Override
+    public boolean isFlowToDiskSupported()
+    {
+        return _isPersistentStore;
+    }
+
+    @Override
+    public long getBytesEvacuatedFromMemory()
+    {
+        return ((QueueManagingVirtualHost<?>) _currentVirtualHostNode.getVirtualHost()).getBytesEvacuatedFromMemory();
+    }
+
+    @Override
     public boolean supportsRestart()
     {
         return _isPersistentStore;

@@ -43,6 +43,7 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
 
     private S _section;
     private QpidByteBuffer _encodedForm;
+    private boolean _encodedFormDetached;
     // _encodedSize is valid only when _encodedForm is non-null
     private long _encodedSize = 0;
     private final int _maxNestedObjects;
@@ -128,12 +129,14 @@ public abstract class AbstractSection<T, S extends NonEncodingRetainingSection<T
     @Override
     public synchronized void clearEncodedForm()
     {
-        if (_encodedForm != null)
+        if (_encodedForm != null && !_encodedFormDetached)
         {
-            _section = decode(createNonEncodingRetainingSectionConstructor());
+            final QpidByteBuffer encodedForm = QpidByteBuffer.allocate(_encodedForm.remaining());
+            encodedForm.putCopyOf(_encodedForm);
+            encodedForm.flip();
             _encodedForm.dispose();
-            _encodedForm = null;
-            _encodedSize = 0;
+            _encodedForm = encodedForm;
+            _encodedFormDetached = true;
         }
     }
 
