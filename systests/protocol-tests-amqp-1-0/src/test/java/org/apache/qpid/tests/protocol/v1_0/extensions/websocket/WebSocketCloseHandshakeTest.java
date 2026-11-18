@@ -63,17 +63,6 @@ public class WebSocketCloseHandshakeTest extends BrokerAdminUsingTestBase
     @Test
     public void brokerInitiatedCloseExchangesWebSocketCloseFramesBeforeTcpTeardown() throws Exception
     {
-        assertClosingHandshakes(true);
-    }
-
-    @Test
-    public void unansweredAmqpCloseStillExchangesWebSocketCloseFrames() throws Exception
-    {
-        assertClosingHandshakes(false);
-    }
-
-    private void assertClosingHandshakes(final boolean respondToAmqpClose) throws Exception
-    {
         final String containerId = getFullTestName();
         try (final WebSocketFrameTransport transport = new WebSocketFrameTransport(getBrokerAdmin())
                 .withholdWebSocketCloseResponse()
@@ -82,20 +71,16 @@ public class WebSocketCloseHandshakeTest extends BrokerAdminUsingTestBase
             final Interaction interaction = transport.newInteraction();
             interaction.openContainerId(containerId).negotiateOpen();
 
-            final Duration completionTimeout = respondToAmqpClose ? CLOSE_COMPLETION_TIMEOUT : Duration.ofSeconds(12L);
-            assertTimeoutPreemptively(completionTimeout, () ->
+            assertTimeoutPreemptively(CLOSE_COMPLETION_TIMEOUT, () ->
             {
                 final CompletableFuture<Void> closeFuture = getBrokerAdmin().closeConnectionAsync(containerId);
                 interaction.consumeResponse(Close.class);
-                if (respondToAmqpClose)
-                {
-                    interaction.close().sync();
-                }
+                interaction.close().sync();
 
-                assertTrue(transport.awaitWebSocketCloseFrame(completionTimeout.toMillis(), TimeUnit.MILLISECONDS),
+                assertTrue(transport.awaitWebSocketCloseFrame(CLOSE_COMPLETION_TIMEOUT.toSeconds(), TimeUnit.SECONDS),
                         "Broker did not send WebSocket Close within the shared close budget");
-                assertEquals(respondToAmqpClose ? 1000 : -1, transport.getWebSocketCloseStatusCode(),
-                        "Expected normal status after AMQP Close, or an empty Close frame after its timeout");
+                assertEquals(1000, transport.getWebSocketCloseStatusCode(),
+                        "Expected normal status after the AMQP Close exchange completed");
                 assertTrue(transport.isChannelOutputOpen(), "Test peer closed TCP before sending WebSocket Close");
                 assertThrows(TimeoutException.class, () -> closeFuture.get(100L, TimeUnit.MILLISECONDS),
                         "Broker completed transport closure before the peer sent WebSocket Close");

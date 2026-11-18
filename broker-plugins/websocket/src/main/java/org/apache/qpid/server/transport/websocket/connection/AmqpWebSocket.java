@@ -27,6 +27,7 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Objects;
 
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
@@ -36,6 +37,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +46,7 @@ import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngineFactory;
 
 @WebSocket
-public final class AmqpWebSocket
+public final class AmqpWebSocket implements Connection.Listener
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AmqpWebSocket.class);
 
@@ -93,6 +96,14 @@ public final class AmqpWebSocket
         _protocolEngine.setNetworkConnection(_connection);
         _protocolEngine.setWorkListener(object -> _connection.scheduleWork());
         _connectionScheduler.registerConnection(_connection);
+
+        final WebSocketCoreSession coreSession = (WebSocketCoreSession) ((WebSocketSession) session).getCoreSession();
+        final Connection transport = coreSession.getConnection();
+        transport.addEventListener(this);
+        if (!transport.getEndPoint().isOpen())
+        {
+            onClosed(transport);
+        }
     }
 
     @OnWebSocketMessage
@@ -178,9 +189,19 @@ public final class AmqpWebSocket
         }
         else
         {
-            connection.webSocketClosed(this::completeClose);
+            connection.webSocketCloseReceived();
         }
         callback.succeed();
+    }
+
+    @Override
+    public void onClosed(final Connection transport)
+    {
+        final WebSocketConnection connection = _connection;
+        if (connection != null)
+        {
+            connection.webSocketClosed(this::completeClose);
+        }
     }
 
     private void completeClose()
