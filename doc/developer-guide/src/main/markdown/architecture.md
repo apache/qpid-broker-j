@@ -253,19 +253,22 @@ transport layer.
 The `Port`, `Keystore` and `Truststore` model objects are used to configure the websocket connection according
 to the TLS requirements.
 
-AMQP and WebSocket closing share the absolute `connection.closeResponseTimeout` deadline. When the AMQP Close
-exchange completes, queued AMQP output is drained before the WebSocket Close is sent. To allow a readable peer
-that does not answer AMQP Close to receive a WebSocket Close, the transport reserves the last 10% of the remaining
-budget measured when closing starts, capped by `qpid.port.final_write_timeout`. The reserve is rounded down to
-whole milliseconds; a zero reserve leaves only the hard deadline. During the reserve, the transport stops accepting
-new AMQP output and drains already queued output before sending an empty WebSocket Close frame, without a status
-code or reason. A completed AMQP Close exchange uses normal status code 1000 instead. The empty frame uses Jetty's
-internal `NO_CODE` sentinel; reserved status code 1005 is never transmitted.
+AMQP and WebSocket closing share the absolute `connection.closeResponseTimeout` deadline. The full configured
+timeout remains available for the AMQP Close exchange on both WS and WSS connections. As soon as the AMQP Close
+exchange completes, the transport drains queued AMQP output and sends a WebSocket Close with normal status code
+1000. Final writes and the WebSocket closing handshake are bounded by both the remaining shared deadline and
+`qpid.port.final_write_timeout`.
 
-The reserve does not extend the original deadline. At expiry the transport disconnects even if a write, a worker,
-or the peer's WebSocket Close response is still pending. Explicit aborts and failed write submissions also retain
-immediate force-close behavior. Timeout processing uses the existing scheduler, write job, and buffer cleanup;
-it does not allocate a timer task or additional data buffers per connection.
+At the shared deadline the transport disconnects even if the AMQP Close exchange, a write, a worker, or the peer's
+WebSocket Close response is still pending. A peer that never answers AMQP Close is disconnected without starting
+a WebSocket closing handshake. Explicit aborts and failed write submissions also retain immediate force-close
+behavior. Timeout processing uses the existing scheduler, write job, and buffer cleanup; it does not allocate a
+timer task or additional data buffers per connection.
+
+Jetty can notify the application of an incoming WebSocket Close before sending its reply. This notification stops
+new AMQP output but leaves the close deadline active while Jetty drains its pending writes and Close reply.
+Only the transport connection's close event marks the connection closed and allows protocol cleanup and scheduler
+unregistration. An incoming Close cannot extend either the shared deadline or an existing final-write timeout.
 
 
 ## AMQP Protocol Engines

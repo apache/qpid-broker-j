@@ -99,14 +99,13 @@ public class WebSocketConnectionScheduler extends Thread
         for (final WebSocketConnection connection : _activeConnections)
         {
             connection.requestForceCloseIfDeadlineExpired();
-            final long closeDeadlineDelay = connection.processCloseDeadline(currentTime);
             if (connection.isClosed() || connection.isClosing())
             {
                 timeToNextTick = Math.min(timeToNextTick, processClosingConnection(connection, currentNanoTime));
                 continue;
             }
 
-            timeToNextTick = Math.min(timeToNextTick, closeDeadlineDelay);
+            timeToNextTick = Math.min(timeToNextTick, connection.getTimeToCloseDeadline(currentTime));
             final long timeToTick = connection.getTimeToNextTick(currentTime);
             if (timeToTick > 0L)
             {

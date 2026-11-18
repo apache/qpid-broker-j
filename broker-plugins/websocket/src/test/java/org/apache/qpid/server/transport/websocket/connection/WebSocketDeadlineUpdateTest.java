@@ -98,7 +98,7 @@ class WebSocketDeadlineUpdateTest extends WebSocketTestBase
 
         connection.setCloseDeadline(new MutableTicker(500));
 
-        _observedScheduler.awaitWait(timeoutMillis -> timeoutMillis == 450L);
+        _observedScheduler.awaitWait(timeoutMillis -> timeoutMillis == 500L);
     }
 
     @Test

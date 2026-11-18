@@ -47,6 +47,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.ThrowableProxy;
 import ch.qos.logback.core.read.ListAppender;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
@@ -54,8 +55,8 @@ import org.eclipse.jetty.websocket.api.exceptions.ProtocolException;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,7 +77,8 @@ class AmqpWebSocketTest extends UnitTestBase
     private AmqpWebSocket _endpoint;
     private WebSocketConnection _connection;
     private JettyWebSocketFrameHandler _frameHandler;
-    private CoreSession _coreSession;
+    private WebSocketCoreSession _coreSession;
+    private org.eclipse.jetty.websocket.core.WebSocketConnection _transportConnection;
     private MultiVersionProtocolEngine _protocolEngine;
     private QpidByteBuffer _inputBuffer;
     private Logger _logger;
@@ -98,7 +100,12 @@ class AmqpWebSocketTest extends UnitTestBase
                 new JettyWebSocketFrameHandlerFactory(container, mock(WebSocketComponents.class));
         _frameHandler = new JettyWebSocketFrameHandler(container, _endpoint,
                 handlerFactory.getMetadata(_endpoint.getClass()));
-        _coreSession = mock(CoreSession.class);
+        _coreSession = mock();
+        _transportConnection = mock();
+        final EndPoint transport = mock();
+        when(transport.isOpen()).thenReturn(true);
+        when(_transportConnection.getEndPoint()).thenReturn(transport);
+        when(_coreSession.getConnection()).thenReturn(_transportConnection);
         when(_coreSession.isOutputOpen()).thenReturn(true);
         when(_coreSession.getLocalAddress()).thenReturn(new InetSocketAddress("127.0.0.1", 10000));
         when(_coreSession.getRemoteAddress()).thenReturn(new InetSocketAddress("127.0.0.1", 10001));
@@ -340,6 +347,7 @@ class AmqpWebSocketTest extends UnitTestBase
 
     private void notifyClosed()
     {
+        _endpoint.onClosed(_transportConnection);
         final Callback callback = mock(Callback.class);
         _frameHandler.onClosed(new CloseStatus(CloseStatus.NORMAL), callback);
         verify(callback).succeeded();
