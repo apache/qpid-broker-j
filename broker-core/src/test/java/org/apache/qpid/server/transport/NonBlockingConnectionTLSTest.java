@@ -147,8 +147,13 @@ class NonBlockingConnectionTLSTest extends UnitTestBase
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"TLSv1.2", "TLSv1.3"})
-    void bufferedTlsInputRequestsContinuationAfterOutputDrains(final String protocol) throws Exception
+    @CsvSource({"TLSv1.2, false, 1", "TLSv1.2, false, 5", "TLSv1.2, false, -1",
+                "TLSv1.2, true, 1", "TLSv1.2, true, 5", "TLSv1.2, true, -1",
+                "TLSv1.3, false, 1", "TLSv1.3, false, 5", "TLSv1.3, false, -1",
+                "TLSv1.3, true, 1", "TLSv1.3, true, 5", "TLSv1.3, true, -1"})
+    void incompleteTlsInputWaitsForMoreNetworkData(final String protocol,
+                                                   final boolean blocked,
+                                                   final int prefixLength) throws Exception
     {
         try (final TlsConnection tls = new TlsConnection(protocol))
         {
@@ -156,14 +161,14 @@ class NonBlockingConnectionTLSTest extends UnitTestBase
             final byte[] inbound = new byte[]{31, 32, 33};
             final byte[] outbound = new byte[]{41, 42, 43};
             tls.wrapPeer(ByteBuffer.wrap(inbound));
-            tls._readAllowance = 5;
-            tls._writeAllowance = 0;
+            tls._readAllowance = prefixLength < 0 ? tls._fromPeer.position() - 1 : prefixLength;
+            tls._writeAllowance = blocked ? 0 : Integer.MAX_VALUE;
             tls.send(outbound);
             tls._connection.doWork();
 
             assertEquals(0, tls._received.size());
-            assertTrue(tls._connection.wantsWrite());
-            assertFalse(tls._connection.isStateChanged(), "Buffered TLS input must not spin behind a blocked write");
+            assertEquals(blocked, tls._connection.wantsWrite());
+            assertFalse(tls._connection.isStateChanged(), "An incomplete TLS record cannot make progress locally");
             tls._connection.doWork();
             assertFalse(tls._connection.isStateChanged());
             assertFalse(tls._connection.isPartialRead());
@@ -172,8 +177,7 @@ class NonBlockingConnectionTLSTest extends UnitTestBase
             tls._connection.doWork();
             assertFalse(tls._connection.wantsWrite());
             assertFalse(tls._connection.isPartialRead(), "No new socket bytes were supplied during the drain");
-            assertTrue(tls._connection.isStateChanged(),
-                    "Retained TLS input must request a continuation after draining");
+            tls.assertWaitingForInput();
 
             tls._readAllowance = Integer.MAX_VALUE;
             tls._connection.doWork();
@@ -182,6 +186,110 @@ class NonBlockingConnectionTLSTest extends UnitTestBase
             assertFalse(tls._connection.isStateChanged(), "Consuming the buffered record must end the continuation");
             tls.readAtPeer();
             assertArrayEquals(outbound, tls._peerReceived.toByteArray());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"TLSv1.2", "TLSv1.3"})
+    void completeRecordBeforeIncompleteRecordRequestsOnlyOneContinuation(final String protocol) throws Exception
+    {
+        try (final TlsConnection tls = new TlsConnection(protocol))
+        {
+            tls.finishHandshake();
+            final byte[] first = new byte[]{1, 2, 3};
+            final byte[] second = new byte[]{4, 5, 6};
+            for (int round = 0; round < 3; round++)
+            {
+                tls._received.reset();
+                tls.wrapPeer(ByteBuffer.wrap(first));
+                final int completeRecordLength = tls._fromPeer.position();
+                tls.wrapPeer(ByteBuffer.wrap(second));
+                tls._readAllowance = completeRecordLength + 5;
+
+                tls._connection.doWork();
+
+                assertArrayEquals(first, tls._received.toByteArray());
+                assertTrue(tls._connection.isStateChanged(), "New plaintext still requests a continuation");
+                tls.assertWaitingForInput();
+
+                tls._readAllowance = Integer.MAX_VALUE;
+                tls._connection.doWork();
+                assertArrayEquals(new byte[]{1, 2, 3, 4, 5, 6}, tls._received.toByteArray());
+                tls.assertWaitingForInput();
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({"TLSv1.2, 1", "TLSv1.2, 5", "TLSv1.2, 6",
+                "TLSv1.3, 1", "TLSv1.3, 5", "TLSv1.3, 6"})
+    void incompleteClientHelloWaitsForMoreNetworkData(final String protocol, final int prefixLength) throws Exception
+    {
+        try (final TlsConnection tls = new TlsConnection(protocol))
+        {
+            tls.wrapPeer(ByteBuffer.allocate(0));
+            tls._readAllowance = prefixLength;
+            tls._connection.doWork();
+            tls.assertWaitingForInput();
+
+            tls._readAllowance = Integer.MAX_VALUE;
+            tls.finishHandshake();
+            tls.wrapPeer(ByteBuffer.wrap(new byte[]{7, 8, 9}));
+            tls._connection.doWork();
+            assertArrayEquals(new byte[]{7, 8, 9}, tls._received.toByteArray());
+            tls.assertWaitingForInput();
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"TLSv1.2", "TLSv1.3"})
+    void incompleteRecordDoesNotBlockExplicitProtocolOutput(final String protocol) throws Exception
+    {
+        try (final TlsConnection tls = new TlsConnection(protocol))
+        {
+            tls.finishHandshake();
+            final byte[] inbound = new byte[]{1, 2, 3};
+            final byte[] outbound = new byte[]{4, 5, 6};
+            tls.wrapPeer(ByteBuffer.wrap(inbound));
+            tls._readAllowance = 5;
+            tls._connection.doWork();
+            tls.assertWaitingForInput();
+
+            when(tls._engine.processPendingIterator()).thenReturn(List.<Runnable>of(() -> tls.send(outbound)).iterator());
+            tls._engine.notifyWork();
+            tls._connection.doWork();
+            tls.readAtPeer();
+            assertArrayEquals(outbound, tls._peerReceived.toByteArray());
+            tls.assertWaitingForInput();
+
+            tls._readAllowance = Integer.MAX_VALUE;
+            tls._connection.doWork();
+            assertArrayEquals(inbound, tls._received.toByteArray());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"TLSv1.2", "TLSv1.3"})
+    void recordRecoveryPreservesPostHandshakeWork(final String protocol) throws Exception
+    {
+        try (final TlsConnection tls = new TlsConnection(protocol))
+        {
+            tls.finishHandshake();
+            tls.wrapPeer(ByteBuffer.wrap(new byte[]{1, 2, 3}));
+            tls._readAllowance = 5;
+            tls._connection.doWork();
+            tls.assertWaitingForInput();
+            tls._readAllowance = Integer.MAX_VALUE;
+            tls._connection.doWork();
+            assertArrayEquals(new byte[]{1, 2, 3}, tls._received.toByteArray());
+
+            // Renegotiation in TLS 1.2, and key update in TLS 1.3.
+            tls._peer.beginHandshake();
+            tls.finishHandshake();
+            tls.wrapPeer(ByteBuffer.wrap(new byte[]{4, 5, 6}));
+            tls._connection.doWork();
+            assertArrayEquals(new byte[]{1, 2, 3, 4, 5, 6}, tls._received.toByteArray());
+            tls.assertWaitingForInput();
         }
     }
 
@@ -194,6 +302,7 @@ class NonBlockingConnectionTLSTest extends UnitTestBase
         private final ByteBuffer _toPeer = ByteBuffer.allocate(4 * NETWORK_BUFFER_SIZE);
         private final ByteArrayOutputStream _received = new ByteArrayOutputStream();
         private final ByteArrayOutputStream _peerReceived = new ByteArrayOutputStream();
+        private final ProtocolEngine _engine = mock(ProtocolEngine.class);
         private final NonBlockingConnection _connection;
         private int _writeAllowance = Integer.MAX_VALUE;
         private int _readAllowance = Integer.MAX_VALUE;
@@ -229,7 +338,7 @@ class NonBlockingConnectionTLSTest extends UnitTestBase
                 }
                 return written;
             });
-            final ProtocolEngine engine = mock(ProtocolEngine.class);
+            final ProtocolEngine engine = _engine;
             when(engine.getAggregateTicker()).thenReturn(new AggregateTicker());
             when(engine.processPendingIterator()).thenAnswer(invocation -> Collections.emptyIterator());
             when(engine.hasWork()).thenAnswer(invocation -> _hasWork);
@@ -345,6 +454,20 @@ class NonBlockingConnectionTLSTest extends UnitTestBase
             try (final QpidByteBuffer buffer = QpidByteBuffer.wrap(bytes))
             {
                 _connection.send(buffer);
+            }
+        }
+
+        private void assertWaitingForInput()
+        {
+            final int withheld = _fromPeer.position();
+            for (int pass = 0; pass < 16; pass++)
+            {
+                assertFalse(_connection.doWork(), "Waiting for input must keep the connection open");
+                assertFalse(_connection.isStateChanged(), "A zero-read pass must not request another worker turn");
+                assertFalse(_connection.isPartialRead(), "The socket supplied no new bytes");
+                assertTrue(_connection.wantsRead(), "The selector must continue watching for input");
+                assertFalse(_connection.wantsWrite());
+                assertEquals(withheld, _fromPeer.position(), "The remainder must remain withheld");
             }
         }
 
