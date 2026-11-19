@@ -84,16 +84,17 @@ final class DailyTriggeringPolicy<E> extends TimeBasedFileNamingAndTriggeringPol
         }
 
         final String pattern = enclosingTBRP.getFileNamePattern();
+        final CompressionMode compressionMode = enclosingTBRP.getCompressionMode();
         final FileNamePattern archivePattern = new FileNamePattern(pattern, getContext());
-        _uncompressedPattern = new FileNamePattern(Compressor.computeFileNameStrWithoutCompSuffix(pattern,
-                enclosingTBRP.getCompressionMode()), getContext());
+        final String fileName = Compressor.computeFileNameStrWithoutCompSuffix(pattern, compressionMode);
+        _uncompressedPattern = new FileNamePattern(fileName, getContext());
         if (archivePattern.getIntegerTokenConverter() == null)
         {
             addError("Daily rolling requires an archive index token");
             return;
         }
-        archiveRemover = new SizeAndTimeBasedArchiveRemover(archivePattern, _uncompressedPattern,
-                (RollingCalendar) rc.clone());
+        final RollingCalendar rollingCalendar = (RollingCalendar) rc.clone();
+        archiveRemover = new SizeAndTimeBasedArchiveRemover(archivePattern, _uncompressedPattern, rollingCalendar);
         archiveRemover.setContext(getContext());
         _lengthCounter.reset();
         // Resolve the archive index when a rollover is needed, so a scan failure cannot stop log writes.
@@ -136,9 +137,9 @@ final class DailyTriggeringPolicy<E> extends TimeBasedFileNamingAndTriggeringPol
         }
         try
         {
-            _nextIndex = resolveIndex(now);
-            final int followingIndex = Math.incrementExact(_nextIndex);
-            elapsedPeriodsFileName = getCurrentPeriodsFileNameWithoutCompressionSuffix();
+            final int archiveIndex = resolveIndex(now);
+            final int followingIndex = Math.incrementExact(archiveIndex);
+            elapsedPeriodsFileName = _uncompressedPattern.convertMultipleArguments(dateInCurrentPeriod, archiveIndex);
             _nextIndex = followingIndex;
             if (newPeriod)
             {
@@ -189,7 +190,8 @@ final class DailyTriggeringPolicy<E> extends TimeBasedFileNamingAndTriggeringPol
         {
             try
             {
-                candidate = Math.max(candidate, findNextIndex(dateInCurrentPeriod));
+                final int scannedIndex = findNextIndex(dateInCurrentPeriod);
+                candidate = candidate == Integer.MAX_VALUE ? scannedIndex : Math.max(candidate, scannedIndex);
                 _scanRequired = false;
             }
             catch (final IOException | DirectoryIteratorException | NumberFormatException e)

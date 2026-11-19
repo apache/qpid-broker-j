@@ -404,6 +404,51 @@ class DailyTriggeringPolicyTest extends UnitTestBase
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
+    void testRetryAfterLastAvailableIndexOverflows(final boolean compressed) throws Exception
+    {
+        final int highIndex = Integer.MAX_VALUE - 1;
+        writeArchive(TODAY, highIndex, compressed, "high archive");
+        writeActive("previous", NOW);
+        try (final TestAppender appender = new TestAppender(true, compressed))
+        {
+            appender.append("first");
+            assertEquals("previousfirst", Files.readString(_activeFile));
+            assertEquals("high archive", readArchive(TODAY, highIndex, compressed));
+
+            Files.delete(archive(TODAY, highIndex, compressed));
+            appender._triggeringPolicy.setCurrentTime(NOW.plusMillis(30_000).toEpochMilli());
+            appender.append("after recovery");
+        }
+        assertEquals("after recovery", Files.readString(_activeFile));
+        assertEquals("previousfirst", readArchive(TODAY, 0, compressed));
+    }
+
+    @Test
+    void testRetryAfterSuccessfulRolloverExhaustsTheIndex() throws Exception
+    {
+        final int existingIndex = Integer.MAX_VALUE - 2;
+        final int rolledIndex = Integer.MAX_VALUE - 1;
+        writeArchive(TODAY, existingIndex, false, "high archive");
+        writeActive("previous", NOW);
+        try (final TestAppender appender = new TestAppender(true, false))
+        {
+            appender.append(FULL_FILE);
+            assertEquals("previous", readArchive(TODAY, rolledIndex, false));
+
+            appender.append("deferred");
+            assertEquals(FULL_FILE + "deferred", Files.readString(_activeFile));
+
+            Files.delete(archive(TODAY, existingIndex, false));
+            Files.delete(archive(TODAY, rolledIndex, false));
+            appender._triggeringPolicy.setCurrentTime(NOW.plusMillis(30_000).toEpochMilli());
+            appender.append("after recovery");
+        }
+        assertEquals("after recovery", Files.readString(_activeFile));
+        assertEquals(FULL_FILE + "deferred", readArchive(TODAY, 0, false));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
     void testUnknownArchivePreservesWritesAndRetriesRestartRollover(final boolean compressed) throws Exception
     {
         writeArchive(TODAY, 0, compressed, "existing archive");
