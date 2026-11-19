@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -152,7 +153,10 @@ class WebSocketProvider implements AcceptingTransport
         }
         else if (_transport == Transport.WSS)
         {
-            connector = new ServerConnector(_server, _sslContextFactory, httpConnectionFactory);
+            httpConnectionFactory.getHttpConfiguration().addCustomizer(new SecureRequestCustomizer());
+            final WebSocketSslConnectionFactory sslConnectionFactory =
+                    new WebSocketSslConnectionFactory(_sslContextFactory, httpConnectionFactory.getProtocol());
+            connector = new ServerConnector(_server, sslConnectionFactory, httpConnectionFactory);
             connector.addBean(new SslHandshakeListener()
             {
                 @Override

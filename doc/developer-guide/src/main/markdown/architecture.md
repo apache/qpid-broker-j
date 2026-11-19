@@ -256,8 +256,9 @@ to the TLS requirements.
 AMQP and WebSocket closing share the absolute `connection.closeResponseTimeout` deadline. The full configured
 timeout remains available for the AMQP Close exchange on both WS and WSS connections. As soon as the AMQP Close
 exchange completes, the transport drains queued AMQP output and sends a WebSocket Close with normal status code
-1000. Final writes and the WebSocket closing handshake are bounded by both the remaining shared deadline and
-`qpid.port.final_write_timeout`.
+1000. On WSS, the broker keeps TLS output open for the peer's WebSocket Close reply. Sending TLS `close_notify`
+earlier would require a TLS 1.2 peer to discard pending writes. Final writes and the WebSocket closing handshake
+are bounded by both the remaining shared deadline and `qpid.port.final_write_timeout`.
 
 At the shared deadline the transport disconnects even if the AMQP Close exchange, a write, a worker, or the peer's
 WebSocket Close response is still pending. A peer that never answers AMQP Close is disconnected without starting

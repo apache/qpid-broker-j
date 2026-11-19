@@ -259,6 +259,39 @@ public abstract class NativeCloseDeadlineTestBase extends UnitTestBase
         assertSame(original, tickers.get(0));
     }
 
+    @ParameterizedTest
+    @MethodSource("protocols")
+    protected void testSelectedReadIdleCannotPreemptCloseDeadline(final Protocol protocol) throws Exception
+    {
+        final AbstractAMQPConnection<?, ?> connection = (AbstractAMQPConnection<?, ?>) createConnection(protocol);
+        connection.initialiseHeartbeating(0L, 1000L);
+        final Ticker selected = getTickers().get(0);
+        final long idleTime = connection.getLastReadTime() + 1000L;
+        assertEquals(0, selected.getTimeToNextTick(idleTime));
+
+        connection.startCloseDeadline();
+        selected.tick(idleTime);
+
+        assertFalse(_network.doWork(), "An already selected read-idle tick closed the socket during AMQP close");
+        assertFalse(getTickers().contains(selected));
+        verify(_socket, never()).close();
+    }
+
+    @ParameterizedTest
+    @MethodSource("protocols")
+    protected void testHeartbeatingCannotRearmReadIdleDuringClose(final Protocol protocol) throws Exception
+    {
+        final AbstractAMQPConnection<?, ?> connection = (AbstractAMQPConnection<?, ?>) createConnection(protocol);
+        connection.initialiseHeartbeating(1000L, 1000L);
+        final Ticker writer = getTickers().stream().filter(ServerIdleWriteTimeoutTicker.class::isInstance)
+                .findFirst().orElseThrow();
+        connection.startCloseDeadline();
+        connection.initialiseHeartbeating(0L, 1000L);
+
+        assertTrue(getTickers().contains(writer));
+        assertFalse(getTickers().stream().anyMatch(ServerIdleReadTimeoutTicker.class::isInstance));
+    }
+
     private List<Ticker> getTickers() throws ReflectiveOperationException
     {
         final Field tickers = AggregateTicker.class.getDeclaredField("_tickers");

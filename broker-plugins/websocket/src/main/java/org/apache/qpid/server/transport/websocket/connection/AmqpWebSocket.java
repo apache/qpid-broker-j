@@ -161,11 +161,8 @@ public final class AmqpWebSocket implements Connection.Listener
         {
             LOGGER.warn("WebSocket error before connection initialization", failure);
         }
-        else if (failure instanceof ClosedChannelException &&
-                (!connection.isOpen() || _protocolEngine.isProtocolCloseComplete()))
+        else if (failure instanceof ClosedChannelException && connection.isCloseExpected())
         {
-            // AMQP can finish closing before transport shutdown starts. Jetty's own closed state alone
-            // cannot distinguish that expected EOF from an abrupt loss of an active AMQP connection.
             if (LOGGER.isDebugEnabled())
             {
                 LOGGER.debug("WebSocket connection {} closed after protocol or transport shutdown",
@@ -186,12 +183,12 @@ public final class AmqpWebSocket implements Connection.Listener
         if (connection == null)
         {
             completeClose();
+            callback.succeed();
         }
         else
         {
-            connection.webSocketCloseReceived();
+            connection.webSocketCloseReceived(callback);
         }
-        callback.succeed();
     }
 
     @Override

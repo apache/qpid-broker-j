@@ -20,13 +20,16 @@
  */
 package org.apache.qpid.server.transport.websocket.connection;
 
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
 
+import org.eclipse.jetty.websocket.api.Callback;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
 import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 
@@ -57,5 +60,21 @@ class ProtocolWorkJobTest extends WebSocketTestBase
         connection.doWork();
 
         verify(remainingWork).run();
+    }
+
+    @Test
+    void peerCloseBlocksDeliveriesBeforeTheNextProtocolWorkItem()
+    {
+        final MultiVersionProtocolEngine protocolEngine = mock();
+        final Runnable remainingWork = mock();
+        final WebSocketConnection connection = createConnection(protocolEngine);
+        when(protocolEngine.processPendingIterator()).thenReturn(List.of(() ->
+                connection.webSocketCloseReceived(Callback.NOOP), remainingWork).iterator());
+
+        connection.doWork();
+
+        final InOrder order = inOrder(protocolEngine, remainingWork);
+        order.verify(protocolEngine).setTransportBlockedForWriting(true);
+        order.verify(remainingWork).run();
     }
 }

@@ -28,8 +28,16 @@ public class ServerIdleReadTimeoutTicker implements Ticker
     private final TransportActivity _transport;
     private final int _readDelay;
     private final ServerNetworkConnection _connection;
+    private final Runnable _onReadIdle;
 
-    public ServerIdleReadTimeoutTicker(ServerNetworkConnection connection, TransportActivity transport, int readDelay)
+    public ServerIdleReadTimeoutTicker(final ServerNetworkConnection connection, final TransportActivity transport,
+                                       final int readDelay)
+    {
+        this(connection, transport, readDelay, transport::readerIdle);
+    }
+
+    ServerIdleReadTimeoutTicker(final ServerNetworkConnection connection, final TransportActivity transport,
+                                final int readDelay, final Runnable onReadIdle)
     {
         if (readDelay <= 0)
         {
@@ -39,6 +47,7 @@ public class ServerIdleReadTimeoutTicker implements Ticker
         _connection = connection;
         _transport = transport;
         _readDelay = readDelay;
+        _onReadIdle = onReadIdle;
     }
 
     @Override
@@ -49,12 +58,12 @@ public class ServerIdleReadTimeoutTicker implements Ticker
     }
 
     @Override
-    public int tick(long currentTime)
+    public int tick(final long currentTime)
     {
-        int timeToNextTick = getTimeToNextTick(currentTime);;
+        final int timeToNextTick = getTimeToNextTick(currentTime);
         if (timeToNextTick <= 0)
         {
-            _transport.readerIdle();
+            _onReadIdle.run();
         }
 
         return timeToNextTick;

@@ -21,6 +21,8 @@ package org.apache.qpid.tests.protocol.v1_0;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.net.InetSocketAddress;
+
 import org.apache.qpid.tests.protocol.AbstractFrameTransport;
 import org.apache.qpid.tests.utils.BrokerAdmin;
 
@@ -36,9 +38,13 @@ public class FrameTransport extends AbstractFrameTransport<Interaction>
 
     public FrameTransport(final BrokerAdmin brokerAdmin, final BrokerAdmin.PortType portType)
     {
-        super(brokerAdmin.getBrokerAddress(portType),
-              new FrameDecoder(portType == BrokerAdmin.PortType.AMQP),
-              new FrameEncoder());
+        this(brokerAdmin, portType, brokerAdmin.getBrokerAddress(portType));
+    }
+
+    protected FrameTransport(final BrokerAdmin brokerAdmin, final BrokerAdmin.PortType portType,
+                             final InetSocketAddress address)
+    {
+        super(address, new FrameDecoder(portType == BrokerAdmin.PortType.AMQP), new FrameEncoder());
         _portType = portType;
         _brokerAdmin = brokerAdmin;
     }

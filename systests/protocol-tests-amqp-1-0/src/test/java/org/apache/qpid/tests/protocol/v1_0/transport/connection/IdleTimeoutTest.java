@@ -23,10 +23,17 @@ package org.apache.qpid.tests.protocol.v1_0.transport.connection;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.tests.protocol.ChannelClosedResponse;
 import org.apache.qpid.tests.protocol.SpecificationTest;
@@ -40,9 +47,11 @@ import org.apache.qpid.tests.utils.ConfigItem;
 
 @BrokerSpecific(kind = BrokerAdmin.KIND_BROKER_J)
 @ConfigItem(name = AmqpPort.HEART_BEAT_DELAY, value = IdleTimeoutTest.IDLE_SECONDS)
+@ConfigItem(name = Connection.CLOSE_RESPONSE_TIMEOUT, value = IdleTimeoutTest.CLOSE_RESPONSE_TIMEOUT_MILLIS)
 public class IdleTimeoutTest extends BrokerAdminUsingTestBase
 {
     static final String IDLE_SECONDS = "1";
+    static final String CLOSE_RESPONSE_TIMEOUT_MILLIS = "4000";
     private static final int IDLE_TIMEOUT_MS = Integer.parseInt(IDLE_SECONDS) * 1000;
 
     @Test
@@ -64,6 +73,29 @@ public class IdleTimeoutTest extends BrokerAdminUsingTestBase
             interaction.consumeResponse().getLatestResponse(ChannelClosedResponse.class);
         }
     }
+
+    @Test
+    public void silentPeerKeepsTcpConnectionUntilCloseResponseDeadline() throws Exception
+    {
+        final BrokerAdmin admin = getBrokerAdmin();
+        assumeTrue(admin.isConnectionManagementSupported());
+        final String containerId = getFullTestName();
+        final long timeoutMillis = Long.parseLong(CLOSE_RESPONSE_TIMEOUT_MILLIS);
+        try (final FrameTransport transport = new FrameTransport(admin).connect())
+        {
+            final Interaction interaction = transport.newInteraction().openContainerId(containerId).negotiateOpen();
+            final long requested = System.nanoTime();
+            final CompletableFuture<Long> closedAt = admin.closeConnectionAsync(containerId)
+                    .thenApply(ignored -> System.nanoTime());
+            interaction.consumeResponse(Close.class);
+
+            final long elapsed = closedAt.get(timeoutMillis + 2000L, TimeUnit.MILLISECONDS) - requested;
+            assertTrue(elapsed >= TimeUnit.MILLISECONDS.toNanos(timeoutMillis),
+                    "The broker disconnected an idle TCP peer before its AMQP Close response was due");
+            interaction.consumeResponse(ChannelClosedResponse.class);
+        }
+    }
+
     @Test
     @SpecificationTest(section = "2.4.5",
             description = "If a peer needs to satisfy the need to send traffic to prevent idle timeout, and has "

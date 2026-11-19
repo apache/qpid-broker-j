@@ -219,6 +219,21 @@ class AmqpWebSocketTest extends UnitTestBase
         verify(_inputBuffer, never()).dispose();
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void closedChannelErrorUsesProtocolStateAtTransportClosure(final boolean closeComplete)
+    {
+        when(_protocolEngine.isProtocolCloseComplete()).thenReturn(closeComplete);
+        _endpoint.onClosed(_transportConnection);
+        when(_protocolEngine.isProtocolCloseComplete()).thenReturn(!closeComplete);
+        _logger.setLevel(Level.DEBUG);
+
+        final ClosedChannelException failure = new ClosedChannelException();
+        reportError(failure);
+
+        assertLog(closeComplete ? Level.DEBUG : Level.WARN, failure);
+    }
+
     @Test
     void closedChannelErrorBeforeConnectionInitializationWarns() throws Exception
     {

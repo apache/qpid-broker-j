@@ -47,6 +47,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
@@ -114,6 +115,82 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         assertTrue(connection.isForceClosing());
         verify(session).disconnect();
         verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false, false", "true, false", "true, true"})
+    void copyingABatchDoesNotBlockTheDeadlineScan(final boolean hasDeadline, final boolean expireDuringCopy)
+            throws Exception
+    {
+        final Session writerSession = mock();
+        final WebSocketConnection writer = createConnection(new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS),
+                                                            writerSession);
+        final MutableTicker writerDeadline = new MutableTicker(500);
+        if (hasDeadline)
+        {
+            writer.setCloseDeadline(writerDeadline);
+        }
+        final Session session = mock();
+        final WebSocketConnection expiring = createConnection(new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS), session);
+        _connectionScheduler.registerConnection(writer);
+        _connectionScheduler.registerConnection(expiring);
+        expiring.setCloseDeadline(new MutableTicker(0));
+
+        final CountDownLatch copying = new CountDownLatch(1);
+        final CountDownLatch releaseCopy = new CountDownLatch(1);
+        final QpidByteBuffer buffer = mock();
+        final QpidByteBuffer duplicate = mock();
+        final QpidByteBuffer queued = mock();
+        when(buffer.remaining()).thenReturn(1);
+        when(buffer.duplicate()).thenReturn(duplicate, queued);
+        when(duplicate.remaining()).thenReturn(1);
+        when(duplicate.get(any(byte[].class), eq(0), eq(1))).thenAnswer(invocation ->
+        {
+            copying.countDown();
+            await(releaseCopy, "Timed out waiting to release the batch copy");
+            return duplicate;
+        });
+        writer.send(buffer);
+        writer.flush();
+        writer.send(buffer);
+        writer.doWrite();
+        final FutureTask<Void> write = new FutureTask<>(_threadPool::runNext, null);
+        startDaemonThread(write, "batch-copy");
+        try
+        {
+            await(copying, "Writer did not reach the batch copy");
+            if (expireDuringCopy)
+            {
+                writerDeadline.setTimeToNextTick(0);
+            }
+            final FutureTask<Long> scan = new FutureTask<>(this::scheduleDueConnections);
+            startDaemonThread(scan, "deadline-scan");
+            scan.get(5L, TimeUnit.SECONDS);
+
+            verify(session).disconnect();
+            if (expireDuringCopy)
+            {
+                verify(writerSession).disconnect();
+                _threadPool.runAll();
+                verify(queued).dispose();
+                verify(duplicate, never()).dispose();
+            }
+            assertFalse(write.isDone());
+        }
+        finally
+        {
+            releaseCopy.countDown();
+            write.get(5L, TimeUnit.SECONDS);
+        }
+        writer.webSocketClosed(() -> { });
+        scheduleDueConnections();
+        _threadPool.runAll();
+        verify(duplicate).dispose();
+        verify(queued).dispose();
+        if (expireDuringCopy)
+        {
+            verify(writerSession, never()).sendBinary(any(ByteBuffer.class), any(Callback.class));
+        }
     }
 
     @ParameterizedTest

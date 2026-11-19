@@ -195,8 +195,9 @@ class WebSocketConnectionTest extends WebSocketTestBase
         verify(session).close(eq(StatusCode.NORMAL), isNull(), any(Callback.class));
     }
 
-    @Test
-    void writeFailureForcesDisconnectWithoutWebSocketClose()
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void writeFailureForcesDisconnectWithoutWebSocketClose(final boolean peerCloseReceived)
     {
         final Session session = mock(Session.class);
         final MutableTicker ticker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
@@ -212,6 +213,10 @@ class WebSocketConnectionTest extends WebSocketTestBase
 
         final ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.forClass(Callback.class);
         verify(session).sendBinary(any(ByteBuffer.class), callbackCaptor.capture());
+        if (peerCloseReceived)
+        {
+            connection.webSocketCloseReceived(Callback.NOOP);
+        }
         callbackCaptor.getValue().fail(new IOException("Write failed for test"));
 
         assertEquals(1_000L, scheduleDueConnections());

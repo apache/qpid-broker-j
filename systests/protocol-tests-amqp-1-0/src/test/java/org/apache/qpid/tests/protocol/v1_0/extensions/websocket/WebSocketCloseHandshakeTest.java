@@ -25,56 +25,52 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Close;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
 import org.apache.qpid.tests.utils.BrokerAdmin;
-import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.utils.BrokerSpecific;
 import org.apache.qpid.tests.utils.ConfigItem;
 
 @BrokerSpecific(kind = BrokerAdmin.KIND_BROKER_J)
+@ConfigItem(name = AmqpPort.HEART_BEAT_DELAY, value = "1")
 @ConfigItem(name = Connection.CLOSE_RESPONSE_TIMEOUT, value = "10000")
 @ConfigItem(name = AmqpPort.FINAL_WRITE_TIMEOUT, value = "10000")
-public class WebSocketCloseHandshakeTest extends BrokerAdminUsingTestBase
+public class WebSocketCloseHandshakeTest extends WebSocketCloseTestBase
 {
     private static final long AWAIT_TIMEOUT_SECONDS = 3L;
     private static final Duration CLOSE_COMPLETION_TIMEOUT = Duration.ofSeconds(5L);
 
-    @BeforeEach
-    public void setUp()
-    {
-        assumeTrue(getBrokerAdmin().isWebSocketSupported(), "Broker support for AMQP over WebSocket is required");
-        assumeTrue(getBrokerAdmin().isAnonymousSupported(), "Broker support for anonymous open is required");
-        assumeTrue(getBrokerAdmin().isConnectionManagementSupported(), "Broker connection management is required");
-    }
-
-    @Test
-    public void brokerInitiatedCloseExchangesWebSocketCloseFramesBeforeTcpTeardown() throws Exception
+    @ParameterizedTest
+    @EnumSource(value = Transport.class, names = {"WS", "WSS"})
+    public void brokerInitiatedCloseExchangesWebSocketCloseFramesBeforeTcpTeardown(final Transport transportType)
+            throws Exception
     {
         final String containerId = getFullTestName();
-        try (final WebSocketFrameTransport transport = new WebSocketFrameTransport(getBrokerAdmin())
-                .withholdWebSocketCloseResponse()
-                .connect())
+        try (final WebSocketFrameTransport transport = createTransport(transportType))
         {
+            transport.withholdWebSocketCloseResponse().connect();
             final Interaction interaction = transport.newInteraction();
             interaction.openContainerId(containerId).negotiateOpen();
 
-            assertTimeoutPreemptively(CLOSE_COMPLETION_TIMEOUT, () ->
+            final Duration replyDelay = Duration.ofMillis(2500L);
+            assertTimeoutPreemptively(CLOSE_COMPLETION_TIMEOUT.plus(replyDelay), () ->
             {
                 final CompletableFuture<Void> closeFuture = getBrokerAdmin().closeConnectionAsync(containerId);
                 interaction.consumeResponse(Close.class);
+                assertFalse(transport.awaitWebSocketCloseFrame(replyDelay.toMillis(), TimeUnit.MILLISECONDS),
+                        "Broker closed the WebSocket while the peer could still answer AMQP Close");
                 interaction.close().sync();
 
                 assertTrue(transport.awaitWebSocketCloseFrame(CLOSE_COMPLETION_TIMEOUT.toSeconds(), TimeUnit.SECONDS),

@@ -35,10 +35,15 @@ import static org.mockito.Mockito.when;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -51,14 +56,18 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.ExtensionStack;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.Negotiated;
+import org.eclipse.jetty.websocket.core.OutgoingEntry;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
@@ -76,6 +85,12 @@ class WebSocketTransportCloseTest extends WebSocketTestBase
     private org.eclipse.jetty.websocket.core.WebSocketConnection _jettyConnection;
     private WebSocketConnection _connection;
     private Callback _pendingWrite;
+    private boolean _receiveCloseBeforeSend;
+
+    private enum CloseWriteOutcome
+    {
+        FLUSHED, FAILED, DISCONNECTED, TIMED_OUT
+    }
 
     @BeforeEach
     void setUp()
@@ -95,7 +110,19 @@ class WebSocketTransportCloseTest extends WebSocketTestBase
                 new JettyWebSocketFrameHandler(container, endpoint, handlerFactory.getMetadata(endpoint.getClass()));
         final ExtensionStack extensions = new ExtensionStack(_components, Behavior.SERVER);
         extensions.negotiate(List.of(), List.of());
-        _coreSession = new WebSocketCoreSession(handler, Behavior.SERVER, Negotiated.from(extensions), _components);
+        _coreSession = new WebSocketCoreSession(handler, Behavior.SERVER, Negotiated.from(extensions), _components)
+        {
+            @Override
+            public void sendFrame(final OutgoingEntry entry)
+            {
+                if (_receiveCloseBeforeSend)
+                {
+                    _receiveCloseBeforeSend = false;
+                    receiveClose();
+                }
+                super.sendFrame(entry);
+            }
+        };
         _transport = mock();
         when(_transport.isOpen()).thenAnswer(invocation -> _transportOpen.get());
         when(_transport.getLocalSocketAddress()).thenReturn(new InetSocketAddress("127.0.0.1", 10000));
@@ -230,8 +257,25 @@ class WebSocketTransportCloseTest extends WebSocketTestBase
     @Test
     void transportClosureWithoutCloseFrameStillCompletesCleanup()
     {
-        closeTransport();
+        final Logger logger = (Logger) LoggerFactory.getLogger(AmqpWebSocket.class);
+        final Level originalLevel = logger.getLevel();
+        final Appender<ILoggingEvent> appender = mock();
+        logger.setLevel(Level.WARN);
+        logger.addAppender(appender);
+        try
+        {
+            closeTransport();
+        }
+        finally
+        {
+            logger.detachAppender(appender);
+            logger.setLevel(originalLevel);
+        }
 
+        final ArgumentCaptor<ILoggingEvent> event = ArgumentCaptor.captor();
+        verify(appender).doAppend(event.capture());
+        assertEquals(Level.WARN, event.getValue().getLevel());
+        assertEquals(ClosedChannelException.class.getName(), event.getValue().getThrowableProxy().getClassName());
         assertTrue(_connection.isClosed());
         scheduleDueConnections();
         _threadPool.runAll();
@@ -239,12 +283,94 @@ class WebSocketTransportCloseTest extends WebSocketTestBase
         assertEquals(Long.MAX_VALUE, scheduleDueConnections());
     }
 
+    @ParameterizedTest
+    @CsvSource({"false, true", "false, false", "true, true", "true, false"})
+    void peerCloseReplyOwnsTransportAfterConcurrentSubmission(final boolean binaryWrite, final boolean flushReply)
+    {
+        final MutableTicker deadline = new MutableTicker(500);
+        _connection.setCloseDeadline(deadline);
+        _receiveCloseBeforeSend = true;
+
+        if (binaryWrite)
+        {
+            send(_connection, new byte[] {1});
+        }
+        else
+        {
+            _connection.close();
+        }
+        _connection.doWrite();
+        _threadPool.runNext();
+
+        assertNotNull(_pendingWrite);
+        assertEquals(500L, scheduleDueConnections());
+        assertTrue(_transport.isOpen());
+        verify(_transport).write(any(Callback.class), any(ByteBuffer[].class));
+        if (flushReply)
+        {
+            _pendingWrite.succeeded();
+        }
+        else
+        {
+            deadline.setTimeToNextTick(0);
+            scheduleDueConnections();
+        }
+        assertFalse(_transport.isOpen());
+        scheduleDueConnections();
+        _threadPool.runAll();
+        verify(_protocolEngine).closed();
+    }
+
+    @ParameterizedTest
+    @EnumSource(CloseWriteOutcome.class)
+    void simultaneousCloseWaitsForAcceptedCloseWrite(final CloseWriteOutcome outcome)
+    {
+        final MutableTicker deadline = new MutableTicker(500);
+        _connection.setCloseDeadline(deadline);
+        _connection.close();
+        _connection.doWrite();
+        _threadPool.runNext();
+        assertNotNull(_pendingWrite);
+
+        final Runnable peerCloseComplete = mock();
+        receiveClose(Callback.from(peerCloseComplete, failure -> peerCloseComplete.run()));
+
+        assertTrue(_transport.isOpen(), "The accepted Close frame is still waiting for the socket");
+        verify(peerCloseComplete, never()).run();
+        verify(_transport, never()).shutdownOutput();
+        assertEquals(500L, scheduleDueConnections());
+        _threadPool.runAll();
+        verify(_protocolEngine, never()).closed();
+        switch (outcome)
+        {
+            case FLUSHED ->
+            {
+                _pendingWrite.succeeded();
+                verify(_transport).shutdownOutput();
+            }
+            case FAILED -> _pendingWrite.failed(new ClosedChannelException());
+            case DISCONNECTED -> closeTransport();
+            case TIMED_OUT -> deadline.setTimeToNextTick(0);
+        }
+        scheduleDueConnections();
+        assertFalse(_transport.isOpen());
+        _threadPool.runAll();
+        assertTrue(_connection.isClosed());
+        verify(peerCloseComplete).run();
+        verify(_protocolEngine).closed();
+    }
+
     private Callback receiveClose()
     {
-        final Frame close = new CloseStatus(CloseStatus.NORMAL).toFrame().setMask(new byte[] {1, 2, 3, 4});
         final Callback callback = mock();
-        _coreSession.onFrame(close, callback);
+        receiveClose(callback);
         return callback;
+    }
+
+    private void receiveClose(final Callback callback)
+    {
+        final Frame close = new CloseStatus(CloseStatus.NORMAL).toFrame().setMask(new byte[] {1, 2, 3, 4});
+        _coreSession.onFrame(close, callback);
     }
 
     private void closeTransport()

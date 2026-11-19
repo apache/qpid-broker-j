@@ -98,14 +98,20 @@ public class WebSocketConnectionScheduler extends Thread
         boolean tickSubmissionSucceeded = false;
         for (final WebSocketConnection connection : _activeConnections)
         {
-            connection.requestForceCloseIfDeadlineExpired();
-            if (connection.isClosed() || connection.isClosing())
+            final long timeToCloseDeadline = connection.isOpen()
+                    ? connection.getTimeToCloseDeadline(currentTime)
+                    : Long.MAX_VALUE;
+            if (timeToCloseDeadline == 0L)
+            {
+                connection.requestForceCloseIfDeadlineExpired();
+            }
+            if (!connection.isOpen())
             {
                 timeToNextTick = Math.min(timeToNextTick, processClosingConnection(connection, currentNanoTime));
                 continue;
             }
 
-            timeToNextTick = Math.min(timeToNextTick, connection.getTimeToCloseDeadline(currentTime));
+            timeToNextTick = Math.min(timeToNextTick, timeToCloseDeadline);
             final long timeToTick = connection.getTimeToNextTick(currentTime);
             if (timeToTick > 0L)
             {
