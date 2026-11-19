@@ -21,6 +21,8 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-24.04
+    env:
+      MAVEN_ARGS: '-Dbdb-repo-enabled=true'
     strategy:
       fail-fast: false
       matrix:
