@@ -24,19 +24,31 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.zip.GZIPInputStream;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.LoggingEvent;
+import ch.qos.logback.classic.util.LogbackMDCAdapter;
 import ch.qos.logback.core.encoder.Encoder;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.RollingPolicy;
+import ch.qos.logback.core.rolling.TimeBasedFileNamingAndTriggeringPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.TriggeringPolicy;
 import ch.qos.logback.core.rolling.helper.CompressionMode;
@@ -44,6 +56,9 @@ import ch.qos.logback.core.rolling.helper.CompressionMode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.MockedStatic;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,10 +123,10 @@ public class AppenderUtilsTest extends UnitTestBase
         assertEquals(CompressionMode.GZ, rollingPolicy.getCompressionMode(), "Unexpected compression mode");
 
         final TriggeringPolicy<?> triggeringPolicy = ((TimeBasedRollingPolicy<?>) rollingPolicy).getTimeBasedFileNamingAndTriggeringPolicy();
-        final boolean condition = triggeringPolicy instanceof AppenderUtils.DailyTriggeringPolicy;
+        final boolean condition = triggeringPolicy instanceof DailyTriggeringPolicy;
         assertTrue(condition, "Unexpected triggering policy");
         assertEquals(MAX_FILE_SIZE + " MB",
-                ((AppenderUtils.DailyTriggeringPolicy) triggeringPolicy).getMaxFileSize().toString(),
+                ((DailyTriggeringPolicy<?>) triggeringPolicy).getMaxFileSize().toString(),
                 "Unexpected triggering policy");
         assertEquals(LAYOUT, ((PatternLayoutEncoder) appender.getEncoder()).getPattern(), "Unexpected layout");
     }
@@ -149,6 +164,62 @@ public class AppenderUtilsTest extends UnitTestBase
         final boolean condition = encoder instanceof PatternLayoutEncoder;
         assertTrue(condition, "Unexpected encoder");
         assertEquals(LAYOUT, ((PatternLayoutEncoder)encoder).getPattern(), "Unexpected layout pattern");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false,false", "false,true", "true,false", "true,true"})
+    public void testDailyRollOnRestartThroughConfiguredAppender(final boolean compressed, final boolean scanDenied)
+            throws Exception
+    {
+        final Instant modified = Instant.now();
+        Files.writeString(_testLogFile.toPath(), "before restart");
+        Files.setLastModifiedTime(_testLogFile.toPath(), FileTime.from(modified));
+        when(_settings.getLayout()).thenReturn("%msg");
+        when(_settings.isCompressOldFiles()).thenReturn(compressed);
+        final LoggerContext context = new LoggerContext();
+        context.setMDCAdapter(new LogbackMDCAdapter());
+        context.start();
+        final RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
+        final LocalDate date = LocalDate.ofInstant(modified, ZoneId.systemDefault());
+        final Path archive = Path.of(_testLogFileName + "." + date + ".0" + (compressed ? ".gz" : ""));
+        final Path directory = _testLogFile.toPath().getParent();
+        try (final MockedStatic<Files> ignored = mockStatic(Files.class, invocation ->
+        {
+            if (scanDenied && "newDirectoryStream".equals(invocation.getMethod().getName()) &&
+                    invocation.getArguments().length == 1 && directory.equals(invocation.getArgument(0)))
+            {
+                throw new AccessDeniedException(directory.toString());
+            }
+            return invocation.callRealMethod();
+        }))
+        {
+            AppenderUtils.configureRollingFileAppender(_settings, context, appender);
+            ((TimeBasedFileNamingAndTriggeringPolicy<?>) appender.getTriggeringPolicy())
+                    .setCurrentTime(modified.toEpochMilli());
+            appender.start();
+            assertTrue(appender.isStarted());
+            appender.doAppend(new LoggingEvent(getClass().getName(), context.getLogger(getTestName()), Level.INFO,
+                    "after restart", null, null));
+            appender.stop();
+            if (compressed)
+            {
+                try (final GZIPInputStream input = new GZIPInputStream(Files.newInputStream(archive)))
+                {
+                    assertEquals("before restart", new String(input.readAllBytes(), StandardCharsets.UTF_8));
+                }
+            }
+            else
+            {
+                assertEquals("before restart", Files.readString(archive));
+            }
+            assertEquals("after restart", Files.readString(_testLogFile.toPath()));
+        }
+        finally
+        {
+            appender.stop();
+            context.stop();
+            Files.deleteIfExists(archive);
+        }
     }
 
     @Test
