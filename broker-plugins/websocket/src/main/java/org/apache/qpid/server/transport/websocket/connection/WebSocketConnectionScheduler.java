@@ -98,12 +98,20 @@ public class WebSocketConnectionScheduler extends Thread
         boolean tickSubmissionSucceeded = false;
         for (final WebSocketConnection connection : _activeConnections)
         {
-            if (connection.isClosed() || connection.isClosing())
+            final long timeToCloseDeadline = connection.isOpen()
+                    ? connection.getTimeToCloseDeadline(currentTime)
+                    : Long.MAX_VALUE;
+            if (timeToCloseDeadline == 0L)
+            {
+                connection.requestForceCloseIfDeadlineExpired();
+            }
+            if (!connection.isOpen())
             {
                 timeToNextTick = Math.min(timeToNextTick, processClosingConnection(connection, currentNanoTime));
                 continue;
             }
 
+            timeToNextTick = Math.min(timeToNextTick, timeToCloseDeadline);
             final long timeToTick = connection.getTimeToNextTick(currentTime);
             if (timeToTick > 0L)
             {
@@ -229,19 +237,20 @@ public class WebSocketConnectionScheduler extends Thread
                                             final long scanStartTimeNanos)
             throws InterruptedException
     {
-        final long scanDelayNanos = timeToNextTick == Long.MAX_VALUE ?
-                Long.MAX_VALUE :
-                TimeUnit.MILLISECONDS.toNanos(Math.max(0L, timeToNextTick));
+        final long scanDelayNanos = timeToNextTick == Long.MAX_VALUE
+                ? Long.MAX_VALUE
+                : TimeUnit.MILLISECONDS.toNanos(Math.max(0L, timeToNextTick));
         while (!_closed.get() && wakeupSequence == _wakeupSequence)
         {
             final long currentNanoTime = getNanoTime();
-            final long scanDelayRemaining = scanDelayNanos == Long.MAX_VALUE ?
-                    Long.MAX_VALUE :
-                    getRemainingTimeNanos(currentNanoTime, scanStartTimeNanos, scanDelayNanos);
+            final long scanDelayRemaining = scanDelayNanos == Long.MAX_VALUE
+                    ? Long.MAX_VALUE
+                    : getRemainingTimeNanos(currentNanoTime, scanStartTimeNanos, scanDelayNanos);
             final long currentTime = getCurrentTime();
-            final long tickCompletionDelay = _tickCompletionTime == Long.MAX_VALUE ?
-                    Long.MAX_VALUE :
-                    TimeUnit.MILLISECONDS.toNanos(_tickCompletionTime > currentTime ? _tickCompletionTime - currentTime : 0L);
+            final long tickCompletionDelay = _tickCompletionTime == Long.MAX_VALUE
+                    ? Long.MAX_VALUE
+                    : TimeUnit.MILLISECONDS.toNanos(_tickCompletionTime > currentTime
+                            ? _tickCompletionTime - currentTime : 0L);
             final long waitTime = Math.min(scanDelayRemaining, tickCompletionDelay);
             if (waitTime == Long.MAX_VALUE)
             {

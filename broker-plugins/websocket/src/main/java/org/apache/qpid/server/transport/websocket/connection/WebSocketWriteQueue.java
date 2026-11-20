@@ -35,7 +35,7 @@ final class WebSocketWriteQueue
     private long _bufferedSize;
     private QpidByteBuffer _writeBatchBoundary;
     private Deque<QpidByteBuffer> _additionalWriteBatchBoundaries;
-    private ByteBuffer _writeBuffer;
+    private WriteBatch _batch;
 
     WebSocketWriteQueue(final WebSocketSettings settings)
     {
@@ -75,15 +75,38 @@ final class WebSocketWriteQueue
         }
     }
 
-    ByteBuffer createBatch()
+    WriteBatch getWriteBatch()
     {
-        final int size = getBatchSize();
-        ensureWriteBufferCapacity(size);
-        final ByteBuffer data = _writeBuffer;
-        data.clear();
-        data.limit(size);
-        drainTo(data, size);
-        return data;
+        if (_batch == null)
+        {
+            _batch = new WriteBatch();
+        }
+        return _batch;
+    }
+
+    void reserveBatch(final WriteBatch batch)
+    {
+        while (!_buffers.isEmpty() && batch._size < _webSocketWriteBatchSize)
+        {
+            final QpidByteBuffer buffer = _buffers.element();
+            final int remaining = buffer.remaining();
+            final int length = Math.min(remaining, _webSocketWriteBatchSize - batch._size);
+            batch._size += length;
+            if (length < remaining)
+            {
+                batch._buffers.add(buffer.view(0, length));
+                buffer.position(buffer.position() + length);
+                break;
+            }
+            batch._buffers.add(buffer);
+            _buffers.remove();
+            if (buffer == _writeBatchBoundary)
+            {
+                advanceWriteBatchBoundary();
+                break;
+            }
+        }
+        _bufferedSize -= batch._size;
     }
 
     Deque<QpidByteBuffer> detachForCleanup()
@@ -91,63 +114,10 @@ final class WebSocketWriteQueue
         final Deque<QpidByteBuffer> buffers = _buffers;
         _buffers = null;
         _bufferedSize = 0L;
-        _writeBuffer = null;
+        _batch = null;
         _writeBatchBoundary = null;
         _additionalWriteBatchBoundaries = null;
         return buffers;
-    }
-
-    private int getBatchSize()
-    {
-        long maximumSize = Math.min(_bufferedSize, _webSocketWriteBatchSize);
-        if (_writeBatchBoundary != null)
-        {
-            long sizeToBoundary = 0L;
-            for (final QpidByteBuffer buffer : _buffers)
-            {
-                sizeToBoundary += buffer.remaining();
-                if (buffer == _writeBatchBoundary || sizeToBoundary >= maximumSize)
-                {
-                    break;
-                }
-            }
-            maximumSize = Math.min(maximumSize, sizeToBoundary);
-        }
-        return (int) maximumSize;
-    }
-
-    private void ensureWriteBufferCapacity(final int size)
-    {
-        if (_writeBuffer == null || _writeBuffer.capacity() < size)
-        {
-            final int capacity = _writeBuffer == null
-                    ? size
-                    : (int) Math.max(size, Math.min(_webSocketWriteBatchSize, 2L * _writeBuffer.capacity()));
-            _writeBuffer = ByteBuffer.allocate(capacity);
-        }
-    }
-
-    private void drainTo(final ByteBuffer data, final int size)
-    {
-        int offset = 0;
-        while (offset < size)
-        {
-            final QpidByteBuffer buffer = _buffers.element();
-            final int length = Math.min(buffer.remaining(), size - offset);
-            buffer.get(data.array(), offset, length);
-            offset += length;
-            if (!buffer.hasRemaining())
-            {
-                _buffers.remove();
-                final boolean boundaryReached = buffer == _writeBatchBoundary;
-                buffer.dispose();
-                if (boundaryReached)
-                {
-                    advanceWriteBatchBoundary();
-                }
-            }
-        }
-        _bufferedSize -= size;
     }
 
     private QpidByteBuffer getLastWriteBatchBoundary()
@@ -173,6 +143,43 @@ final class WebSocketWriteQueue
             {
                 _additionalWriteBatchBoundaries = null;
             }
+        }
+    }
+
+    final class WriteBatch
+    {
+        private final Deque<QpidByteBuffer> _buffers = new ArrayDeque<>(4);
+        private int _size;
+        private ByteBuffer _data;
+
+        ByteBuffer copy()
+        {
+            if (_data == null || _data.capacity() < _size)
+            {
+                final int capacity = _data == null
+                        ? _size :
+                        (int) Math.max(_size, Math.min(_webSocketWriteBatchSize, 2L * _data.capacity()));
+                _data = ByteBuffer.allocate(capacity);
+            }
+            _data.clear();
+            _data.limit(_size);
+            int offset = 0;
+            for (final QpidByteBuffer buffer : _buffers)
+            {
+                final int length = buffer.remaining();
+                buffer.get(_data.array(), offset, length);
+                offset += length;
+            }
+            return _data;
+        }
+
+        void release()
+        {
+            while (!_buffers.isEmpty())
+            {
+                _buffers.remove().dispose();
+            }
+            _size = 0;
         }
     }
 }

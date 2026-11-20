@@ -21,6 +21,7 @@
 package org.apache.qpid.server.transport.websocket.connection;
 
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.security.Principal;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.slf4j.Logger;
@@ -40,6 +42,7 @@ import org.apache.qpid.server.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.transport.SchedulingDelayNotificationListener;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
+import org.apache.qpid.server.transport.network.Ticker;
 
 class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
 {
@@ -47,7 +50,9 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
     {
         OPEN,
         CLOSE_REQUESTED,
+        CLOSE_WRITING,
         CLOSE_SENT,
+        CLOSE_RECEIVED,
         FORCE_CLOSING,
         CLOSED
     }
@@ -68,6 +73,7 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
     private final CleanupJob _cleanupJob;
 
     private Certificate _certificate;
+    private volatile Ticker _closeDeadline;
     private long _maxWriteIdleMillis;
     private long _maxReadIdleMillis;
     private long _closeStartTimeNanos;
@@ -75,6 +81,8 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
     private int _closeStatusCode = StatusCode.NORMAL;
     private boolean _forceCloseAttempted;
     private boolean _forceCloseFailureReported;
+    private boolean _closeWasExpected;
+    private Callback _peerCloseCallback;
     private volatile WebSocketConnectionState _webSocketConnectionState = WebSocketConnectionState.OPEN;
 
     WebSocketConnection(final Session connection,
@@ -101,6 +109,12 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
     long getTimeToNextTick(final long currentTime)
     {
         return _protocolEngine.getAggregateTicker().getTimeToNextTick(currentTime);
+    }
+
+    long getTimeToCloseDeadline(final long currentTime)
+    {
+        final Ticker deadline = _closeDeadline;
+        return deadline == null ? Long.MAX_VALUE : Math.max(0L, deadline.getTimeToNextTick(currentTime));
     }
 
     long getTickRetryDelay(final long currentTime)
@@ -140,6 +154,30 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
     public void flush()
     {
         _writeJob.flush();
+    }
+
+    @Override
+    public void setCloseDeadline(final Ticker deadline)
+    {
+        Objects.requireNonNull(deadline, "Close deadline must not be null");
+        synchronized (_writeQueue)
+        {
+            if (_closeDeadline != null)
+            {
+                return;
+            }
+            _closeDeadline = deadline;
+        }
+        _scheduler.wakeup();
+    }
+
+    @Override
+    public void abort()
+    {
+        if (requestForceClose())
+        {
+            _scheduler.wakeup();
+        }
     }
 
     @Override
@@ -256,6 +294,10 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
 
     public void doWrite()
     {
+        if (isOpen() && _protocolEngine.isProtocolCloseComplete())
+        {
+            close();
+        }
         _writeJob.schedule();
     }
 
@@ -273,8 +315,26 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
             {
                 return false;
             }
-            _webSocketConnectionState = WebSocketConnectionState.CLOSE_SENT;
+            _webSocketConnectionState = WebSocketConnectionState.CLOSE_WRITING;
             return true;
+        }
+    }
+
+    void completeCloseWrite()
+    {
+        final Callback callback;
+        synchronized (_writeQueue)
+        {
+            if (_webSocketConnectionState == WebSocketConnectionState.CLOSE_WRITING)
+            {
+                _webSocketConnectionState = WebSocketConnectionState.CLOSE_SENT;
+            }
+            callback = _peerCloseCallback;
+            _peerCloseCallback = null;
+        }
+        if (callback != null)
+        {
+            callback.succeed();
         }
     }
 
@@ -282,17 +342,29 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
     {
         synchronized (_writeQueue)
         {
-            if ((_webSocketConnectionState == WebSocketConnectionState.CLOSE_REQUESTED ||
-                    _webSocketConnectionState == WebSocketConnectionState.CLOSE_SENT) &&
-                    getRemainingCloseTime(_scheduler.getNanoTime()) == 0L)
+            if (!isClosed() && !isForceClosing() && getRemainingCloseTime(_scheduler.getNanoTime()) == 0L)
             {
-                return requestForceClose();
+                enterForceClosing();
+                return true;
             }
             return false;
         }
     }
 
-    boolean requestForceClose()
+    boolean requestForceCloseAfterWriteFailure(final Throwable failure)
+    {
+        synchronized (_writeQueue)
+        {
+            if (_webSocketConnectionState == WebSocketConnectionState.CLOSE_RECEIVED && _peerCloseCallback == null &&
+                    failure instanceof ClosedChannelException)
+            {
+                return false;
+            }
+            return requestForceClose();
+        }
+    }
+
+    private boolean requestForceClose()
     {
         synchronized (_writeQueue)
         {
@@ -322,6 +394,10 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
         final Iterator<Runnable> iterator = _protocolEngine.processPendingIterator();
         while (iterator.hasNext())
         {
+            if (!isOpen())
+            {
+                _protocolEngine.setTransportBlockedForWriting(true);
+            }
             iterator.next().run();
         }
     }
@@ -371,9 +447,45 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
         return _webSocketConnectionState == WebSocketConnectionState.CLOSED;
     }
 
+    boolean isCloseExpected()
+    {
+        synchronized (_writeQueue)
+        {
+            return isClosed() ? _closeWasExpected : !isOpen() || _protocolEngine.isProtocolCloseComplete();
+        }
+    }
+
     boolean isForceClosing()
     {
         return _webSocketConnectionState == WebSocketConnectionState.FORCE_CLOSING;
+    }
+
+    void webSocketCloseReceived(final Callback callback)
+    {
+        boolean deferCallback = false;
+        synchronized (_writeQueue)
+        {
+            if (!isClosed() && !isForceClosing() &&
+                    _webSocketConnectionState != WebSocketConnectionState.CLOSE_RECEIVED)
+            {
+                if (isOpen())
+                {
+                    _closeStartTimeNanos = _scheduler.getNanoTime();
+                }
+                if (_webSocketConnectionState == WebSocketConnectionState.CLOSE_WRITING && !_connection.isOpen())
+                {
+                    _peerCloseCallback = callback;
+                    deferCallback = true;
+                }
+                _webSocketConnectionState = WebSocketConnectionState.CLOSE_RECEIVED;
+                _writeJob.discardPendingWrites();
+            }
+        }
+        _scheduler.wakeup();
+        if (!deferCallback)
+        {
+            callback.succeed();
+        }
     }
 
     boolean webSocketClosed(final Runnable closeTask)
@@ -386,17 +498,25 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
                 return false;
             }
 
+            _closeWasExpected = isCloseExpected();
             _webSocketConnectionState = WebSocketConnectionState.CLOSED;
             _writeJob.closed();
             _cleanupJob.setCloseTask(closeTask);
         }
-        if (_scheduler.isShutdown())
+        try
         {
-            _cleanupJob.run();
+            completeCloseWrite();
         }
-        else
+        finally
         {
-            _scheduler.wakeup();
+            if (_scheduler.isShutdown())
+            {
+                _cleanupJob.run();
+            }
+            else
+            {
+                _scheduler.wakeup();
+            }
         }
         return true;
     }
@@ -432,6 +552,10 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
         {
             reportForceCloseFailure(e);
         }
+        finally
+        {
+            completeCloseWrite();
+        }
 
         synchronized (_writeQueue)
         {
@@ -445,8 +569,7 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
         {
             return Long.MAX_VALUE;
         }
-        if (_webSocketConnectionState == WebSocketConnectionState.CLOSE_REQUESTED ||
-                _webSocketConnectionState == WebSocketConnectionState.CLOSE_SENT)
+        if (!isForceClosing())
         {
             final long remaining = getRemainingCloseTime(currentNanoTime);
             if (remaining > 0L)
@@ -461,8 +584,15 @@ class WebSocketConnection implements ServerNetworkConnection, ByteBufferSender
 
     private long getRemainingCloseTime(final long currentNanoTime)
     {
-        return WebSocketConnectionScheduler
+        final long deadlineRemaining = TimeUnit.MILLISECONDS
+                .toNanos(getTimeToCloseDeadline(_scheduler.getCurrentTime()));
+        if (isOpen())
+        {
+            return deadlineRemaining;
+        }
+        final long remainingTimeNanos = WebSocketConnectionScheduler
                 .getRemainingTimeNanos(currentNanoTime, _closeStartTimeNanos, _scheduler.getCloseTimeoutNanos());
+        return Math.min(deadlineRemaining, remainingTimeNanos);
     }
 
     private void enterForceClosing()

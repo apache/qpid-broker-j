@@ -116,6 +116,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     private String _clientId;
     private volatile boolean _stopped;
     private boolean _closeDeadlineStarted;
+    private ServerIdleReadTimeoutTicker _readIdleTicker;
 
     private final AtomicLong _messagesIn = new AtomicLong();
     private final AtomicLong _messagesOut = new AtomicLong();
@@ -341,6 +342,11 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
             _network.setCloseDeadline(deadline);
             _aggregateTicker.addTicker(deadline);
             _closeDeadlineStarted = true;
+            if (_readIdleTicker != null)
+            {
+                _aggregateTicker.removeTicker(_readIdleTicker);
+                _readIdleTicker = null;
+            }
         }
         notifyWork();
     }
@@ -794,7 +800,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         });
     }
 
-    protected void initialiseHeartbeating(final long writerDelay, final long readerDelay)
+    protected synchronized void initialiseHeartbeating(final long writerDelay, final long readerDelay)
     {
         if (writerDelay > 0)
         {
@@ -802,10 +808,23 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
             _network.setMaxWriteIdleMillis(writerDelay);
         }
 
-        if (readerDelay > 0)
+        if (readerDelay > 0 && !_closeDeadlineStarted)
         {
-            _aggregateTicker.addTicker(new ServerIdleReadTimeoutTicker(_network, this, (int) readerDelay));
+            if (_readIdleTicker != null)
+            {
+                _aggregateTicker.removeTicker(_readIdleTicker);
+            }
+            _readIdleTicker = new ServerIdleReadTimeoutTicker(_network, this, (int) readerDelay, this::onReadIdle);
+            _aggregateTicker.addTicker(_readIdleTicker);
             _network.setMaxReadIdleMillis(readerDelay);
+        }
+    }
+
+    private synchronized void onReadIdle()
+    {
+        if (!_closeDeadlineStarted)
+        {
+            readerIdle();
         }
     }
 

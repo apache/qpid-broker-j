@@ -131,7 +131,7 @@ final class WriteJob implements Runnable
     {
         synchronized (_queue)
         {
-           if (_connection.requestForceCloseIfDeadlineExpired() || _discardPendingWrites ||
+            if (_connection.requestForceCloseIfDeadlineExpired() || _discardPendingWrites ||
                     _connection.isForceClosing() || _connection.isClosed())
             {
                 return false;
@@ -151,7 +151,7 @@ final class WriteJob implements Runnable
         }
     }
 
-    boolean failWrite(final boolean submissionFailed)
+    boolean failWrite(final Throwable failure, final boolean submissionFailed)
     {
         synchronized (_queue)
         {
@@ -160,7 +160,7 @@ final class WriteJob implements Runnable
                 _writeJobOutstanding = false;
             }
             _writePending = false;
-            return _connection.requestForceClose();
+            return _connection.requestForceCloseAfterWriteFailure(failure);
         }
     }
 
@@ -222,26 +222,38 @@ final class WriteJob implements Runnable
 
         final ByteBuffer data;
         final int closeStatusCode;
-        synchronized (_queue)
+        WebSocketWriteQueue.WriteBatch batch = null;
+        try
         {
-            if (_writePending || _connection.isForceClosing() || _connection.isClosed())
+            synchronized (_queue)
             {
-                return;
-            }
+                if (_writePending || _connection.isForceClosing() || _connection.isClosed())
+                {
+                    return;
+                }
 
-            if (_queue.hasBytes())
-            {
-                data = _queue.createBatch();
-                closeStatusCode = -1;
+                if (_queue.hasBytes())
+                {
+                    batch = _queue.getWriteBatch();
+                    _queue.reserveBatch(batch);
+                    closeStatusCode = -1;
+                }
+                else if (_connection.isCloseRequested())
+                {
+                    closeStatusCode = _connection.getCloseStatusCode();
+                }
+                else
+                {
+                    return;
+                }
             }
-            else if (_connection.isCloseRequested())
+            data = batch == null ? null : batch.copy();
+        }
+        finally
+        {
+            if (batch != null)
             {
-                data = null;
-                closeStatusCode = _connection.getCloseStatusCode();
-            }
-            else
-            {
-                return;
+                batch.release();
             }
         }
 

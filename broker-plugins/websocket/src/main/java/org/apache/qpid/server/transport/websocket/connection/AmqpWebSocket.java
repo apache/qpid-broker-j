@@ -27,6 +27,7 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Objects;
 
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
@@ -36,6 +37,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +46,7 @@ import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngineFactory;
 
 @WebSocket
-public final class AmqpWebSocket
+public final class AmqpWebSocket implements Connection.Listener
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AmqpWebSocket.class);
 
@@ -93,6 +96,14 @@ public final class AmqpWebSocket
         _protocolEngine.setNetworkConnection(_connection);
         _protocolEngine.setWorkListener(object -> _connection.scheduleWork());
         _connectionScheduler.registerConnection(_connection);
+
+        final WebSocketCoreSession coreSession = (WebSocketCoreSession) ((WebSocketSession) session).getCoreSession();
+        final Connection transport = coreSession.getConnection();
+        transport.addEventListener(this);
+        if (!transport.getEndPoint().isOpen())
+        {
+            onClosed(transport);
+        }
     }
 
     @OnWebSocketMessage
@@ -150,11 +161,8 @@ public final class AmqpWebSocket
         {
             LOGGER.warn("WebSocket error before connection initialization", failure);
         }
-        else if (failure instanceof ClosedChannelException &&
-                (!connection.isOpen() || _protocolEngine.isProtocolCloseComplete()))
+        else if (failure instanceof ClosedChannelException && connection.isCloseExpected())
         {
-            // AMQP can finish closing before transport shutdown starts. Jetty's own closed state alone
-            // cannot distinguish that expected EOF from an abrupt loss of an active AMQP connection.
             if (LOGGER.isDebugEnabled())
             {
                 LOGGER.debug("WebSocket connection {} closed after protocol or transport shutdown",
@@ -175,12 +183,22 @@ public final class AmqpWebSocket
         if (connection == null)
         {
             completeClose();
+            callback.succeed();
         }
         else
         {
+            connection.webSocketCloseReceived(callback);
+        }
+    }
+
+    @Override
+    public void onClosed(final Connection transport)
+    {
+        final WebSocketConnection connection = _connection;
+        if (connection != null)
+        {
             connection.webSocketClosed(this::completeClose);
         }
-        callback.succeed();
     }
 
     private void completeClose()
