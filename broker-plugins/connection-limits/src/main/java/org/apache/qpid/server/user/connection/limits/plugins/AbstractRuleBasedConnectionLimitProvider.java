@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.CustomRestHeaders;
@@ -106,6 +107,28 @@ public abstract class AbstractRuleBasedConnectionLimitProvider<C extends Abstrac
     public void resetCounters()
     {
         changeAttributes(Collections.emptyMap());
+    }
+
+    @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+        if (changedAttributes.contains(RULES))
+        {
+            final RuleBasedConnectionLimitProvider<?> updated =
+                    (RuleBasedConnectionLimitProvider<?>) proxyForValidation;
+            try
+            {
+                for (final ConnectionLimitRule rule : updated.getRules())
+                {
+                    Rule.newInstance(rule);
+                }
+            }
+            catch (RuntimeException e)
+            {
+                throw new IllegalConfigurationException("Invalid connection limit rules", e);
+            }
+        }
     }
 
     @Override
