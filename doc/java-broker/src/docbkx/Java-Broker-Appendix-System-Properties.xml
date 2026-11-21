@@ -92,6 +92,17 @@
             </para>
           </entry>
         </row>
+        <row xml:id="Java-Broker-Appendix-System-Properties-Certificate-Generator">
+          <entry>qpid.security.certificateGenerator</entry>
+          <entry>none</entry>
+          <entry>
+            <para>The type of the certificate generator used by <emphasis>Auto Generated Self Signed</emphasis>
+              keystores. It only needs to be set when more than one certificate generator is installed. When it
+              is set, the Broker fails to start if that generator is not installed or cannot be created, instead
+              of starting with certificate generation unavailable. See
+              <xref linkend="Java-Broker-Management-Managing-Keystores-Certificate-Generators"/>.</para>
+          </entry>
+        </row>
       </tbody>
     </tgroup>
   </table>
