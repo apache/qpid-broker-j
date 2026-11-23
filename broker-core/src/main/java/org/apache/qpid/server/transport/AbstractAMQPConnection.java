@@ -116,6 +116,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     private String _clientId;
     private volatile boolean _stopped;
     private boolean _closeDeadlineStarted;
+    private ServerIdleReadTimeoutTicker _webSocketReadIdleTicker;
 
     private final AtomicLong _messagesIn = new AtomicLong();
     private final AtomicLong _messagesOut = new AtomicLong();
@@ -341,6 +342,11 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
             _network.setCloseDeadline(deadline);
             _aggregateTicker.addTicker(deadline);
             _closeDeadlineStarted = true;
+            if (_webSocketReadIdleTicker != null)
+            {
+                _aggregateTicker.removeTicker(_webSocketReadIdleTicker);
+                _webSocketReadIdleTicker = null;
+            }
         }
         notifyWork();
     }
@@ -804,9 +810,51 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
         if (readerDelay > 0)
         {
-            _aggregateTicker.addTicker(new ServerIdleReadTimeoutTicker(_network, this, (int) readerDelay));
-            _network.setMaxReadIdleMillis(readerDelay);
+            if (_transport == Transport.WS || _transport == Transport.WSS)
+            {
+                initialiseWebSocketReadIdle(readerDelay);
+            }
+            else
+            {
+                _aggregateTicker.addTicker(new ServerIdleReadTimeoutTicker(_network, this, (int) readerDelay));
+                _network.setMaxReadIdleMillis(readerDelay);
+            }
         }
+    }
+
+    private synchronized void initialiseWebSocketReadIdle(final long readerDelay)
+    {
+        if (_closeDeadlineStarted)
+        {
+            return;
+        }
+        if (_webSocketReadIdleTicker != null)
+        {
+            _aggregateTicker.removeTicker(_webSocketReadIdleTicker);
+        }
+        _webSocketReadIdleTicker = new ServerIdleReadTimeoutTicker(_network, this, (int) readerDelay)
+        {
+            @Override
+            public int tick(final long currentTime)
+            {
+                final int timeToNextTick = getTimeToNextTick(currentTime);
+                synchronized (AbstractAMQPConnection.this)
+                {
+                    // An aggregate tick can still hold this ticker after its removal.
+                    if (_webSocketReadIdleTicker != this)
+                    {
+                        return Integer.MAX_VALUE;
+                    }
+                }
+                if (timeToNextTick <= 0)
+                {
+                    readerIdle();
+                }
+                return timeToNextTick;
+            }
+        };
+        _aggregateTicker.addTicker(_webSocketReadIdleTicker);
+        _network.setMaxReadIdleMillis(readerDelay);
     }
 
     protected abstract boolean isOrderlyClose();

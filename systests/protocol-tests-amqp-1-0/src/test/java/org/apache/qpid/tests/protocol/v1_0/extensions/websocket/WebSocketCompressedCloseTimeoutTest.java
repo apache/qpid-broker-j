@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,13 +51,6 @@ import org.apache.qpid.tests.utils.BrokerAdminUsingTestBase;
 import org.apache.qpid.tests.utils.BrokerSpecific;
 import org.apache.qpid.tests.utils.ConfigItem;
 
-/**
- * Verifies that a compressed connection is removed when a peer stops answering after message delivery begins.
- * The peer negotiates permessage-deflate, receives a delivery, and then withholds the AMQP CLOSE response.
- * The broker must force transport closure at the shared close deadline without waiting for a WebSocket handshake.
- * Half closure keeps the client's writable half open after the broker closes its output. Pending-write deadlines are
- * exercised separately by the scheduler tests, which deliberately leave a write-completion callback unfinished.
- */
 @BrokerSpecific(kind = BrokerAdmin.KIND_BROKER_J)
 @ConfigItem(name = Connection.CLOSE_RESPONSE_TIMEOUT,
             value = WebSocketCompressedCloseTimeoutTest.CLOSE_RESPONSE_TIMEOUT_MILLIS)
@@ -95,38 +89,37 @@ public class WebSocketCompressedCloseTimeoutTest extends BrokerAdminUsingTestBas
             assertThat(transport.getNegotiatedExtensions(), containsString("permessage-deflate"));
 
             final Interaction interaction = transport.newInteraction();
-            interaction.openContainerId(containerId).negotiateOpen()
-                       .begin().consumeResponse(Begin.class)
-                       .attachRole(Role.RECEIVER)
-                       .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
-                       .attach().consumeResponse(Attach.class)
-                       .flowIncomingWindow(UnsignedInteger.valueOf(QUEUED_MESSAGE_COUNT))
-                       .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
-                       .flowOutgoingWindow(UnsignedInteger.ZERO)
-                       .flowNextOutgoingId(UnsignedInteger.ZERO)
-                       .flowLinkCredit(UnsignedInteger.valueOf(QUEUED_MESSAGE_COUNT))
-                       .flowHandleFromLinkHandle()
-                       .flow();
+                interaction.openContainerId(containerId).negotiateOpen()
+                        .begin().consumeResponse(Begin.class)
+                        .attachRole(Role.RECEIVER)
+                        .attachSourceAddress(BrokerAdmin.TEST_QUEUE_NAME)
+                        .attach().consumeResponse(Attach.class)
+                        .flowIncomingWindow(UnsignedInteger.valueOf(QUEUED_MESSAGE_COUNT))
+                        .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
+                        .flowOutgoingWindow(UnsignedInteger.ZERO)
+                        .flowNextOutgoingId(UnsignedInteger.ZERO)
+                        .flowLinkCredit(UnsignedInteger.valueOf(QUEUED_MESSAGE_COUNT))
+                        .flowHandleFromLinkHandle()
+                        .flow();
 
             assertTrue(getBrokerAdmin().isConnectionRegistered(containerId),
-                       "Connection was not registered after the AMQP open");
+                    "Connection was not registered after the AMQP open");
 
             assertTimeoutPreemptively(Duration.ofSeconds(AWAIT_TIMEOUT_SECONDS), () ->
             {
                 interaction.consume(Transfer.class, Flow.class);
             }, "Broker did not deliver a message before close was requested");
 
-            // All close stages share one timeout, including any intervening deliveries or flow updates
             assertTimeoutPreemptively(CLOSE_COMPLETION_TIMEOUT, () ->
             {
                 final CompletableFuture<Void> closeFuture = getBrokerAdmin().closeConnectionAsync(containerId);
                 interaction.consume(Close.class, Transfer.class, Flow.class);
 
-                // Omit the peer's AMQP CLOSE response; expiry must force transport closure.
                 closeFuture.get();
 
-                assertTrue(transport.isChannelOutputOpen(),
-                        "Test peer terminated TCP instead of preserving the writable half");
+                transport.getChannelCloseFuture().sync();
+                assertFalse(transport.awaitWebSocketCloseFrame(100L, TimeUnit.MILLISECONDS),
+                        "Broker started WebSocket close before the AMQP Close exchange completed");
                 assertFalse(getBrokerAdmin().isConnectionRegistered(containerId),
                         "Connection remained registered after the shared close deadline expired");
             }, "Broker did not complete close within the shared deadline and scheduling allowance");

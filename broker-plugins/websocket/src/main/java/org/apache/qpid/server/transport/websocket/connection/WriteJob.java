@@ -22,8 +22,10 @@ package org.apache.qpid.server.transport.websocket.connection;
 
 import java.nio.ByteBuffer;
 import java.util.Deque;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +48,7 @@ final class WriteJob implements Runnable
     private boolean _discardPendingWrites;
     private boolean _writePending;
     private boolean _writeJobOutstanding;
+    private boolean _finalWriteAttemptPending;
 
     WriteJob(final WebSocketConnection connection,
              final Session session,
@@ -105,6 +108,22 @@ final class WriteJob implements Runnable
         }
     }
 
+    void allowFinalWriteAttempt()
+    {
+        synchronized (_queue)
+        {
+            _finalWriteAttemptPending = !_writePending;
+        }
+    }
+
+    boolean isFinalWriteAttemptPending()
+    {
+        synchronized (_queue)
+        {
+            return _finalWriteAttemptPending;
+        }
+    }
+
     @Override
     public void run()
     {
@@ -131,7 +150,7 @@ final class WriteJob implements Runnable
     {
         synchronized (_queue)
         {
-           if (_connection.requestForceCloseIfDeadlineExpired() || _discardPendingWrites ||
+            if (_connection.requestForceCloseIfDeadlineExpired() || _discardPendingWrites ||
                     _connection.isForceClosing() || _connection.isClosed())
             {
                 return false;
@@ -151,7 +170,7 @@ final class WriteJob implements Runnable
         }
     }
 
-    boolean failWrite(final boolean submissionFailed)
+    boolean failWrite(final Throwable failure, final boolean submissionFailed)
     {
         synchronized (_queue)
         {
@@ -160,7 +179,7 @@ final class WriteJob implements Runnable
                 _writeJobOutstanding = false;
             }
             _writePending = false;
-            return _connection.requestForceClose();
+            return _connection.requestForceCloseAfterWriteFailure(failure);
         }
     }
 
@@ -169,15 +188,19 @@ final class WriteJob implements Runnable
         synchronized (_queue)
         {
             _writePending = false;
-            discardPendingWrites();
+            discardPendingWrites(false);
         }
     }
 
-    void discardPendingWrites()
+    void discardPendingWrites(final boolean preserveFinalWriteAttempt)
     {
         synchronized (_queue)
         {
             _discardPendingWrites = true;
+            if (!preserveFinalWriteAttempt)
+            {
+                _finalWriteAttemptPending = false;
+            }
             final Deque<QpidByteBuffer> buffers = _queue.detachForCleanup();
             if (buffers != null)
             {
@@ -214,73 +237,106 @@ final class WriteJob implements Runnable
 
     private void runWritePump()
     {
-        if (_connection.requestForceCloseIfDeadlineExpired())
+        boolean finalWritePass = false;
+        try
         {
-            _scheduler.wakeup();
-            return;
-        }
+            while (true)
+            {
+                if (_connection.requestForceCloseIfDeadlineExpired())
+                {
+                    _scheduler.wakeup();
+                    return;
+                }
 
-        final ByteBuffer data;
-        final int closeStatusCode;
-        synchronized (_queue)
-        {
-            if (_writePending || _connection.isForceClosing() || _connection.isClosed())
-            {
-                return;
-            }
+                final ByteBuffer data;
+                final int closeStatusCode;
+                WebSocketWriteQueue.WriteBatch batch = null;
+                try
+                {
+                    synchronized (_queue)
+                    {
+                        if (_writePending || _connection.isForceClosing() || _connection.isClosed())
+                        {
+                            return;
+                        }
 
-            if (_queue.hasBytes())
-            {
-                data = _queue.createBatch();
-                closeStatusCode = -1;
-            }
-            else if (_connection.isCloseRequested())
-            {
-                data = null;
-                closeStatusCode = _connection.getCloseStatusCode();
-            }
-            else
-            {
-                return;
+                        if (_queue.hasBytes())
+                        {
+                            batch = _queue.getWriteBatch();
+                            _queue.reserveBatch(batch);
+                            closeStatusCode = -1;
+                        }
+                        else if (_connection.isCloseRequested())
+                        {
+                            closeStatusCode = _connection.getCloseStatusCode();
+                        }
+                        else
+                        {
+                            return;
+                        }
+                    }
+                    data = batch == null ? null : batch.copy();
+                }
+                finally
+                {
+                    if (batch != null)
+                    {
+                        batch.release();
+                    }
+                }
+
+                if (data == null)
+                {
+                    finalWritePass = isFinalWriteAttemptPending();
+                    submitClose(closeStatusCode);
+                    return;
+                }
+                if (!_connection.commitWriteBatch())
+                {
+                    wakeupIfForceClosing();
+                    return;
+                }
+
+                finalWritePass = _connection.isCloseRequested() && isFinalWriteAttemptPending();
+                if (!submitBinary(data, finalWritePass))
+                {
+                    return;
+                }
             }
         }
-
-        if (data != null)
+        finally
         {
-            submitBinary(data);
-        }
-        else
-        {
-            submitClose(closeStatusCode);
+            if (finalWritePass)
+            {
+                finishFinalWriteAttempt();
+            }
         }
     }
 
-    private void submitBinary(final ByteBuffer data)
+    private boolean submitBinary(final ByteBuffer data, final boolean finalWritePass)
     {
-        if (!_connection.commitWriteBatch())
+        final AtomicBoolean completedInline = finalWritePass ? new AtomicBoolean() : null;
+        final Callback callback = finalWritePass ? finalWriteCallback(completedInline) : _writeCallback;
+        final int size = data.remaining();
+        _session.sendBinary(data, callback);
+        if (LOGGER.isDebugEnabled())
         {
-            wakeupIfForceClosing();
-            return;
+            LOGGER.debug("Written {} byte(s)", size);
         }
+        return completedInline != null && completedInline.get();
+    }
 
-        try
+    private Callback finalWriteCallback(final AtomicBoolean completedInline)
+    {
+        final Thread submitter = Thread.currentThread();
+        return Callback.from(() ->
         {
-            final int size = data.remaining();
-            _session.sendBinary(data, _writeCallback);
-            if (LOGGER.isDebugEnabled())
+            if (Thread.currentThread() == submitter)
             {
-                LOGGER.debug("Written {} byte(s)", size);
+                completedInline.set(true);
             }
-        }
-        catch (final RuntimeException e)
-        {
-            _writeCallback.fail(e);
-        }
-        catch (final Error e)
-        {
-            _writeCallback.fail(e);
-            throw e;
-        }
+            _writeCallback.succeed();
+        }, _writeCallback::fail);
     }
 
     private void submitClose(final int closeStatusCode)
@@ -303,6 +359,20 @@ final class WriteJob implements Runnable
         {
             _closeCallback.fail(e);
             throw e;
+        }
+    }
+
+    private void finishFinalWriteAttempt()
+    {
+        final boolean wakeup;
+        synchronized (_queue)
+        {
+            wakeup = _finalWriteAttemptPending;
+            _finalWriteAttemptPending = false;
+        }
+        if (wakeup)
+        {
+            _scheduler.wakeup();
         }
     }
 

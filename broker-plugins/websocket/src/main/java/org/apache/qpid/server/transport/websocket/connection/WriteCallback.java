@@ -53,12 +53,12 @@ final class WriteCallback implements Callback
     @Override
     public void fail(final Throwable failure)
     {
-        reportWriteFailure(failure, _writeJob.failWrite(false));
+        reportWriteFailure(failure, _writeJob.failWrite(failure, false));
     }
 
     void submissionFailed(final Throwable failure)
     {
-        reportWriteFailure(failure, _writeJob.failWrite(true));
+        reportWriteFailure(failure, _writeJob.failWrite(failure, true));
     }
 
     private void reportWriteFailure(final Throwable failure, final boolean forceClose)

@@ -788,8 +788,8 @@ public class AMQPConnection_0_8Impl
     {
         runAsSubject(() ->
         {
-            getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " + _state, true));
-            getNetwork().close();
+            getNetwork().closeOnReadIdle(() -> getEventLogger().message(
+                    ConnectionMessages.IDLE_CLOSE("Current connection state: " + _state, true)));
             return null;
         });
     }

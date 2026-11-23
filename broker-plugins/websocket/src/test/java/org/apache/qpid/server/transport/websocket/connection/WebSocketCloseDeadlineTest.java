@@ -47,6 +47,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
@@ -80,7 +81,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         assertTrue(connection.isForceClosing());
         scheduleDueConnections();
         _threadPool.runAll();
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
         verify(session, never()).sendBinary(any(ByteBuffer.class), any(Callback.class));
         verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
         verify(duplicate).dispose();
@@ -89,7 +90,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         connection.close();
         scheduleDueConnections();
         _threadPool.runAll();
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
         verify(duplicate).dispose();
     }
 
@@ -112,8 +113,84 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         scheduleDueConnections();
 
         assertTrue(connection.isForceClosing());
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
         verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false, false", "true, false", "true, true"})
+    void copyingABatchDoesNotBlockTheDeadlineScan(final boolean hasDeadline, final boolean expireDuringCopy)
+            throws Exception
+    {
+        final Session writerSession = mock();
+        final WebSocketConnection writer = createConnection(new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS),
+                                                            writerSession);
+        final MutableTicker writerDeadline = new MutableTicker(500);
+        if (hasDeadline)
+        {
+            writer.setCloseDeadline(writerDeadline);
+        }
+        final Session session = mock();
+        final WebSocketConnection expiring = createConnection(new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS), session);
+        _connectionScheduler.registerConnection(writer);
+        _connectionScheduler.registerConnection(expiring);
+        expiring.setCloseDeadline(new MutableTicker(0));
+
+        final CountDownLatch copying = new CountDownLatch(1);
+        final CountDownLatch releaseCopy = new CountDownLatch(1);
+        final QpidByteBuffer buffer = mock();
+        final QpidByteBuffer duplicate = mock();
+        final QpidByteBuffer queued = mock();
+        when(buffer.remaining()).thenReturn(1);
+        when(buffer.duplicate()).thenReturn(duplicate, queued);
+        when(duplicate.remaining()).thenReturn(1);
+        when(duplicate.get(any(byte[].class), eq(0), eq(1))).thenAnswer(invocation ->
+        {
+            copying.countDown();
+            await(releaseCopy, "Timed out waiting to release the batch copy");
+            return duplicate;
+        });
+        writer.send(buffer);
+        writer.flush();
+        writer.send(buffer);
+        writer.doWrite();
+        final FutureTask<Void> write = new FutureTask<>(_threadPool::runNext, null);
+        startDaemonThread(write, "batch-copy");
+        try
+        {
+            await(copying, "Writer did not reach the batch copy");
+            if (expireDuringCopy)
+            {
+                writerDeadline.setTimeToNextTick(0);
+            }
+            final FutureTask<Long> scan = new FutureTask<>(this::scheduleDueConnections);
+            startDaemonThread(scan, "deadline-scan");
+            scan.get(5L, TimeUnit.SECONDS);
+
+            verify(endPointFor(session)).closeSocket();
+            if (expireDuringCopy)
+            {
+                verify(endPointFor(writerSession)).closeSocket();
+                _threadPool.runAll();
+                verify(queued).dispose();
+                verify(duplicate, never()).dispose();
+            }
+            assertFalse(write.isDone());
+        }
+        finally
+        {
+            releaseCopy.countDown();
+            write.get(5L, TimeUnit.SECONDS);
+        }
+        writer.webSocketClosed(() -> { });
+        scheduleDueConnections();
+        _threadPool.runAll();
+        verify(duplicate).dispose();
+        verify(queued).dispose();
+        if (expireDuringCopy)
+        {
+            verify(writerSession, never()).sendBinary(any(ByteBuffer.class), any(Callback.class));
+        }
     }
 
     @ParameterizedTest
@@ -138,7 +215,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         scheduleDueConnections();
         _threadPool.runAll();
 
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
         assertEquals(0, protocolTicker.getTickCount());
     }
 
@@ -172,7 +249,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         {
             verify(session).close(anyInt(), isNull(), callbackCaptor.capture());
         }
-        verify(session, never()).disconnect();
+        verify(endPointFor(session), never()).closeSocket();
 
         _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(250L));
         deadline.setTimeToNextTick(0);
@@ -181,7 +258,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         scheduleDueConnections();
         _threadPool.runAll();
 
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
         if (pendingWrite)
         {
             verify(session).sendBinary(any(ByteBuffer.class), any(Callback.class));
@@ -211,7 +288,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         deadline.setTimeToNextTick(1_000);
         scheduleDueConnections();
 
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
     }
 
     @Test
@@ -234,7 +311,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         deadline.setTimeToNextTick(0);
         scheduleDueConnections();
 
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
     }
 
     @Test
@@ -254,7 +331,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         scheduleDueConnections();
         _threadPool.runAll();
 
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
         verify(session, never()).sendBinary(any(ByteBuffer.class), any(Callback.class));
         verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
     }
@@ -274,7 +351,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         final Session session = mock(Session.class);
         final WebSocketConnection connection = createConnection(protocolEngine, session);
         final Runnable closeTask = mock(Runnable.class);
-        doAnswer(invocation -> connection.webSocketClosed(closeTask)).when(session).disconnect();
+        doAnswer(invocation -> connection.webSocketClosed(closeTask)).when(endPointFor(session)).close();
         final MutableTicker deadline = new MutableTicker(500);
         connection.setCloseDeadline(deadline);
         _connectionScheduler.registerConnection(connection);
@@ -295,14 +372,14 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
             _threadPool.runAll();
             assertTrue(connection.isOpen());
             verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
-            verify(session, never()).disconnect();
+            verify(endPointFor(session), never()).closeSocket();
 
             _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(50L));
             deadline.setTimeToNextTick(0);
             scheduleDueConnections();
             _threadPool.runAll();
 
-            verify(session).disconnect();
+            verify(endPointFor(session)).closeSocket();
             assertTrue(connection.isClosed());
             assertFalse(protocolWork.isDone());
             verify(closeTask, never()).run();
@@ -343,7 +420,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
 
             assertTrue(connection.isOpen());
             verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
-            verify(session, never()).disconnect();
+            verify(endPointFor(session), never()).closeSocket();
         }
 
         _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(1L));
@@ -352,7 +429,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         scheduleDueConnections();
         _threadPool.runAll();
 
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
         verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
         assertEquals(0, _threadPool.getQueueSize());
     }
@@ -403,7 +480,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
             assertTrue(connection.isCloseRequested());
             _threadPool.runAll();
             verify(session).close(eq(StatusCode.NORMAL), isNull(), any(Callback.class));
-            verify(session, never()).disconnect();
+            verify(endPointFor(session), never()).closeSocket();
         }
         finally
         {
@@ -444,7 +521,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         _threadPool.runAll();
 
         verify(session).close(eq(StatusCode.NORMAL), isNull(), any(Callback.class));
-        verify(session, never()).disconnect();
+        verify(endPointFor(session), never()).closeSocket();
     }
 
     @Test
@@ -472,7 +549,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         assertEquals(50L, scheduleDueConnections());
         assertTrue(connection.isOpen());
         verify(duplicate, never()).dispose();
-        verify(session, never()).disconnect();
+        verify(endPointFor(session), never()).closeSocket();
 
         deadline.setTimeToNextTick(0);
         scheduleDueConnections();
@@ -480,7 +557,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         writeCallback.getValue().succeed();
         _threadPool.runAll();
 
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
         verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
         verify(duplicate).dispose();
         assertEquals(0, _threadPool.getQueueSize());
@@ -503,7 +580,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         _threadPool.runAll();
 
         assertTrue(connection.isForceClosing());
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
         verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
         assertEquals(0, _threadPool.getQueueSize());
     }
@@ -527,7 +604,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         scheduleDueConnections();
         _threadPool.runAll();
 
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
         verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
         assertEquals(0, _threadPool.getQueueSize());
     }
@@ -549,7 +626,7 @@ class WebSocketCloseDeadlineTest extends WebSocketTestBase
         _threadPool.runAll();
 
         assertTrue(connection.isForceClosing());
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
         verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
         assertEquals(0, _threadPool.getQueueSize());
     }

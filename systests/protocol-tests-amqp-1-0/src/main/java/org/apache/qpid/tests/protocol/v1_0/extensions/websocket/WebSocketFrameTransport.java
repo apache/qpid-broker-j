@@ -21,6 +21,9 @@
 
 package org.apache.qpid.tests.protocol.v1_0.extensions.websocket;
 
+import static org.apache.qpid.tests.utils.BrokerAdmin.PortType.ANONYMOUS_AMQPWS;
+
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
@@ -52,6 +55,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketClientCompressionHandler;
+import io.netty.handler.ssl.SslContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +75,7 @@ public class WebSocketFrameTransport extends FrameTransport
             new WebSocketDeframingInputHandler(_firstBinaryWebSocketMessageSize, _largestBinaryWebSocketMessageSize);
     private final WebSocketClientHandler _webSocketClientHandler;
     private final boolean _compressionEnabled;
+    private final SslContext _tlsContext;
 
     public WebSocketFrameTransport(final BrokerAdmin brokerAdmin)
     {
@@ -79,20 +84,38 @@ public class WebSocketFrameTransport extends FrameTransport
 
     WebSocketFrameTransport(final BrokerAdmin brokerAdmin, final boolean compressionEnabled)
     {
-        super(brokerAdmin, BrokerAdmin.PortType.ANONYMOUS_AMQPWS);
+        this(brokerAdmin, brokerAdmin.getBrokerAddress(ANONYMOUS_AMQPWS), compressionEnabled, null);
+    }
+
+    WebSocketFrameTransport(final BrokerAdmin brokerAdmin,
+                            final InetSocketAddress address,
+                            final boolean compressionEnabled,
+                            final SslContext tlsContext)
+    {
+        super(brokerAdmin, ANONYMOUS_AMQPWS, address);
         _compressionEnabled = compressionEnabled;
-        final URI uri = URI.create(String.format("tcp://%s:%d/",
-                                                 getBrokerAddress().getHostString(),
-                                                 getBrokerAddress().getPort()));
-        _webSocketClientHandler = new WebSocketClientHandler(
-                WebSocketClientHandshakerFactory.newHandshaker(
-                        uri, WebSocketVersion.V13, "amqp", compressionEnabled, new DefaultHttpHeaders(),
-                        MAX_WEBSOCKET_FRAME_SIZE));
+        _tlsContext = tlsContext;
+        final String protocol = tlsContext == null ? "ws" : "wss";
+        final String hostname = address.getHostString();
+        final int port = address.getPort();
+        final URI uri = URI.create(String.format("%s://%s:%d/", protocol, hostname, port));
+        final WebSocketVersion version = WebSocketVersion.V13;
+        final DefaultHttpHeaders headers = new DefaultHttpHeaders();
+        final WebSocketClientHandshaker handshaker = WebSocketClientHandshakerFactory
+                .newHandshaker(uri, version, "amqp", compressionEnabled, headers, MAX_WEBSOCKET_FRAME_SIZE);
+        _webSocketClientHandler = new WebSocketClientHandler(handshaker);
     }
 
     @Override
     protected void buildInputOutputPipeline(final ChannelPipeline pipeline)
     {
+        if (_tlsContext != null)
+        {
+            final InetSocketAddress address = getBrokerAddress();
+            final String hostname = address.getHostString();
+            final int port = address.getPort();
+            pipeline.addLast(_tlsContext.newHandler(pipeline.channel().alloc(), hostname, port));
+        }
         pipeline.addLast(new HttpClientCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
         if (_compressionEnabled)
@@ -138,6 +161,21 @@ public class WebSocketFrameTransport extends FrameTransport
     ChannelFuture sendWebSocketCloseResponse()
     {
         return _webSocketClientHandler.sendWebSocketCloseResponse();
+    }
+
+    ChannelFuture getChannelCloseFuture()
+    {
+        return _webSocketClientHandler.getChannelCloseFuture();
+    }
+
+    void pauseReads(final int receiveBufferSize) throws InterruptedException
+    {
+        final Channel channel = _webSocketClientHandler._channel;
+        channel.eventLoop().submit(() ->
+        {
+            channel.config().setOption(ChannelOption.SO_RCVBUF, receiveBufferSize);
+            channel.config().setAutoRead(false);
+        }).sync();
     }
 
     int getWebSocketCloseStatusCode()
@@ -224,9 +262,8 @@ public class WebSocketFrameTransport extends FrameTransport
         @Override
         public void channelRead(final ChannelHandlerContext ctx, final Object msg)
         {
-            if (msg instanceof WebSocketFrame)
+            if (msg instanceof WebSocketFrame frame)
             {
-                final WebSocketFrame frame = (WebSocketFrame) msg;
                 if (frame instanceof BinaryWebSocketFrame)
                 {
                     _currentBinaryWebSocketMessageSize = frame.content().readableBytes();
@@ -308,6 +345,11 @@ public class WebSocketFrameTransport extends FrameTransport
                     : new CloseWebSocketFrame(statusCode, ""));
         }
 
+        ChannelFuture getChannelCloseFuture()
+        {
+            return _channel.closeFuture();
+        }
+
         int getWebSocketCloseStatusCode()
         {
             return _webSocketCloseStatusCode;
@@ -318,12 +360,7 @@ public class WebSocketFrameTransport extends FrameTransport
         {
             _handshakeFuture = ctx.newPromise();
             _channel = ctx.channel();
-            if (_withholdWebSocketCloseResponse)
-            {
-                // Keep the client output open when the broker closes its output. Otherwise Netty completes the TCP
-                // shutdown on behalf of the test peer and accidentally satisfies the server-side closing handshake
-                _channel.config().setOption(ChannelOption.ALLOW_HALF_CLOSURE, true);
-            }
+            _channel.config().setOption(ChannelOption.ALLOW_HALF_CLOSURE, false);
         }
 
         @Override

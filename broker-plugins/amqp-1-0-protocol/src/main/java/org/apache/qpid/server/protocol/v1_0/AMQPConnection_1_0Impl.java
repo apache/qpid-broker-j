@@ -1250,8 +1250,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
     {
         runAsSubject(() ->
         {
-            getEventLogger().message(ConnectionMessages.IDLE_CLOSE("", false));
-            getNetwork().close();
+            getNetwork().closeOnReadIdle(() -> getEventLogger().message(ConnectionMessages.IDLE_CLOSE("", false)));
             return null;
         });
     }

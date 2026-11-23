@@ -22,12 +22,17 @@ package org.apache.qpid.server.transport.websocket.connection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -47,16 +52,16 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.ThrowableProxy;
 import ch.qos.logback.core.read.ListAppender;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.api.exceptions.ProtocolException;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,11 +69,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.MockedStatic;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngineFactory;
+import org.apache.qpid.server.transport.websocket.connection.WebSocketServerConnector.WebSocketEndPoint;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 class AmqpWebSocketTest extends UnitTestBase
@@ -77,7 +84,7 @@ class AmqpWebSocketTest extends UnitTestBase
     private AmqpWebSocket _endpoint;
     private WebSocketConnection _connection;
     private JettyWebSocketFrameHandler _frameHandler;
-    private WebSocketCoreSession _coreSession;
+    private DeadlineWebSocketCoreSession _coreSession;
     private org.eclipse.jetty.websocket.core.WebSocketConnection _transportConnection;
     private MultiVersionProtocolEngine _protocolEngine;
     private QpidByteBuffer _inputBuffer;
@@ -102,7 +109,7 @@ class AmqpWebSocketTest extends UnitTestBase
                 handlerFactory.getMetadata(_endpoint.getClass()));
         _coreSession = mock();
         _transportConnection = mock();
-        final EndPoint transport = mock();
+        final WebSocketEndPoint transport = mock();
         when(transport.isOpen()).thenReturn(true);
         when(_transportConnection.getEndPoint()).thenReturn(transport);
         when(_coreSession.getConnection()).thenReturn(_transportConnection);
@@ -219,6 +226,21 @@ class AmqpWebSocketTest extends UnitTestBase
         verify(_inputBuffer, never()).dispose();
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void closedChannelErrorUsesProtocolStateAtTransportClosure(final boolean closeComplete)
+    {
+        when(_protocolEngine.isProtocolCloseComplete()).thenReturn(closeComplete);
+        _endpoint.onClosed(_transportConnection);
+        when(_protocolEngine.isProtocolCloseComplete()).thenReturn(!closeComplete);
+        _logger.setLevel(Level.DEBUG);
+
+        final ClosedChannelException failure = new ClosedChannelException();
+        reportError(failure);
+
+        assertLog(closeComplete ? Level.DEBUG : Level.WARN, failure);
+    }
+
     @Test
     void closedChannelErrorBeforeConnectionInitializationWarns() throws Exception
     {
@@ -229,6 +251,62 @@ class AmqpWebSocketTest extends UnitTestBase
 
         assertLog(Level.WARN, failure);
         verifyNoInteractions(_coreSession, _protocolEngine, _inputBuffer);
+    }
+
+    @Test
+    void unopenedEndpointLeavesReceiveBufferUnallocated()
+    {
+        final MultiVersionProtocolEngineFactory factory = mock();
+        try (final MockedStatic<QpidByteBuffer> buffers = mockStatic(QpidByteBuffer.class))
+        {
+            new AmqpWebSocket(factory, mock(), _connectionScheduler, new WebSocketSettings(1024), null);
+            buffers.verifyNoInteractions();
+        }
+        verifyNoInteractions(factory);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void failedOpenReleasesResourcesOnce(final boolean accepted) throws Exception
+    {
+        final MultiVersionProtocolEngineFactory factory = mock();
+        final MultiVersionProtocolEngine engine = mock();
+        when(factory.newProtocolEngine(any(SocketAddress.class))).thenReturn(accepted ? engine : null);
+        final WebSocketSettings settings = new WebSocketSettings(1024);
+        final AmqpWebSocket endpoint = new AmqpWebSocket(factory, mock(), _connectionScheduler, settings, null);
+        final QpidByteBuffer buffer = mock();
+        final WebSocketSession session = mock();
+        when(session.getRemoteSocketAddress()).thenReturn(new InetSocketAddress("127.0.0.1", 10001));
+        when(session.getCoreSession()).thenReturn(_coreSession);
+
+        final int expectedAllocations = accepted ? 1 : 0;
+        try (final MockedStatic<QpidByteBuffer> buffers = mockStatic(QpidByteBuffer.class))
+        {
+            buffers.when(() -> QpidByteBuffer.allocateDirect(settings.getBufferSize())).thenReturn(buffer);
+            if (accepted)
+            {
+                final IllegalStateException failure = new IllegalStateException("Engine setup failed");
+                doThrow(failure).when(engine).setNetworkConnection(any(WebSocketConnection.class));
+                assertSame(failure,
+                        assertThrows(IllegalStateException.class, () -> endpoint.onWebSocketConnect(session)));
+            }
+            else
+            {
+                endpoint.onWebSocketConnect(session);
+                verify(session).close(StatusCode.TRY_AGAIN_LATER, "Connection rejected",
+                        org.eclipse.jetty.websocket.api.Callback.NOOP);
+                verify(session, never()).getCoreSession();
+            }
+            buffers.verify(() -> QpidByteBuffer.allocateDirect(settings.getBufferSize()), times(expectedAllocations));
+        }
+
+        assertNull(getField(endpoint, "_connection"));
+        verify(buffer, times(expectedAllocations)).dispose();
+        verify(engine, times(expectedAllocations)).closed();
+        endpoint.onClosed(_transportConnection);
+        endpoint.onWebSocketClose(StatusCode.NORMAL, null, org.eclipse.jetty.websocket.api.Callback.NOOP);
+        verify(buffer, times(expectedAllocations)).dispose();
+        verify(engine, times(expectedAllocations)).closed();
     }
 
     @ParameterizedTest
