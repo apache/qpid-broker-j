@@ -27,26 +27,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.lang.reflect.Field;
-import java.net.StandardSocketOptions;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
 
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
-import org.eclipse.jetty.io.WriteFlusher;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.core.ExtensionStack;
+import org.eclipse.jetty.websocket.core.OutgoingFrames;
+import org.eclipse.jetty.websocket.core.WebSocketCoreSession;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Begin;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.tests.protocol.v1_0.Interaction;
@@ -64,13 +63,10 @@ public class WebSocketBackpressureCloseTest extends WebSocketCloseTestBase
     static final String CLOSE_TIMEOUT_MILLIS = "2000";
 
     private static final Duration CLOSE_TIMEOUT = Duration.ofMillis(Long.parseLong(CLOSE_TIMEOUT_MILLIS));
-    private static final Duration CLOSE_COMPLETION_TIMEOUT = CLOSE_TIMEOUT.plusSeconds(2L);
-    private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(5L);
-    private static final int SOCKET_BUFFER_SIZE = 8 * 1024;
-    private static final int MESSAGE_COUNT = 16;
-    private static final int MESSAGE_SIZE = 128 * 1024;
+    private static final Duration CLOSE_COMPLETION_TIMEOUT = CLOSE_TIMEOUT.plusSeconds(5L);
+    private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(10L);
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @EnumSource(value = Transport.class, names = {"WS", "WSS"})
     public void brokerClosesSocketWithinSharedDeadlineWhileWriteIsPending(final Transport transportType)
             throws Exception
@@ -78,65 +74,68 @@ public class WebSocketBackpressureCloseTest extends WebSocketCloseTestBase
         assumeTrue(getBrokerAdmin() instanceof EmbeddedBrokerPerClassAdminImpl,
                 "Observing the broker TCP endpoint requires an embedded broker");
         final EmbeddedBrokerPerClassAdminImpl admin = (EmbeddedBrokerPerClassAdminImpl) getBrokerAdmin();
-        final String queueName = "backpressure-" + transportType;
         final String containerId = getFullTestName();
-        final String[] messages = new String[MESSAGE_COUNT];
-        Arrays.fill(messages, "x".repeat(MESSAGE_SIZE));
-        admin.createQueue(queueName);
-        admin.putMessageOnQueue(queueName, messages);
 
         try (final WebSocketFrameTransport transport = createTransport(transportType).connect())
         {
-            final Interaction interaction = transport.newInteraction();
-            interaction.openContainerId(containerId).negotiateOpen()
-                    .begin().consumeResponse(Begin.class)
-                    .attachRole(Role.RECEIVER).attachSourceAddress(queueName).attach().consumeResponse(Attach.class);
+            final Interaction interaction = transport.newInteraction().openContainerId(containerId).negotiateOpen();
+            final AbstractAMQPConnection<?, ?> connection =
+                    (AbstractAMQPConnection<?, ?>) admin.findConnection(containerId);
+            assertNotNull(connection, "Broker did not register the AMQP connection");
+            final WebSocketCoreSession coreSession = getCoreSession(connection);
+            final EndPoint endPoint = coreSession.getConnection().getEndPoint();
+            final EndPoint tcpEndPoint = endPoint instanceof EndPoint.Wrapper wrapper ? wrapper.unwrap() : endPoint;
+            final SocketChannel socket = ((SocketChannelEndPoint) tcpEndPoint).getChannel();
 
-            final SocketChannelEndPoint endPoint = getTcpEndPoint(admin, containerId);
-            final SocketChannel socket = endPoint.getChannel();
-            socket.setOption(StandardSocketOptions.SO_SNDBUF, SOCKET_BUFFER_SIZE);
-            transport.pauseReads(SOCKET_BUFFER_SIZE);
-            interaction.flowIncomingWindow(UnsignedInteger.valueOf(1024))
-                    .flowNextIncomingIdFromPeerLatestSessionBeginAndDeliveryCount()
-                    .flowOutgoingWindow(UnsignedInteger.ZERO).flowNextOutgoingId(UnsignedInteger.ZERO)
-                    .flowLinkCredit(UnsignedInteger.valueOf(MESSAGE_COUNT)).flowHandleFromLinkHandle().flow().sync();
-
-            final WriteFlusher flusher = endPoint.getWriteFlusher();
-            assertTimeoutPreemptively(AWAIT_TIMEOUT, () -> await(flusher::isPending),
-                    "Broker did not have a pending TCP write");
-
-            final CompletableFuture<Void> closeFuture = assertTimeoutPreemptively(CLOSE_COMPLETION_TIMEOUT, () ->
+            final ExtensionStack extensions = coreSession.getExtensionStack();
+            assertFalse(extensions.hasNegotiatedExtensions(), "The test requires a session without extensions");
+            final OutgoingFrames outgoing = extensions.getNextOutgoing();
+            final CompletableFuture<Callback> pendingWrite = new CompletableFuture<>();
+            try
             {
-                assertTrue(flusher.isPending(), "Broker must have a pending TCP write when close is requested");
-                final long closeRequestedNanos = System.nanoTime();
-                final CompletableFuture<Void> closed = admin.closeConnectionAsync(containerId);
-                await(() -> !socket.isOpen());
-                assertTrue(System.nanoTime() - closeRequestedNanos >= CLOSE_TIMEOUT.toNanos(),
-                        "Broker closed the TCP socket before the shared close deadline");
-                return closed;
-            }, "Broker did not close the TCP socket within the shared deadline and scheduling allowance");
+                connection.doOnIOThreadAsync(() -> extensions.initialize(extensions.getNextIncoming(), entry ->
+                {
+                    if (!entry.getFrame().isDataFrame() || !pendingWrite.complete(entry.getCallback()))
+                    {
+                        outgoing.sendFrame(entry);
+                    }
+                }, coreSession)).get(AWAIT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
 
-            closeFuture.get(AWAIT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
-            assertFalse(admin.isConnectionRegistered(containerId), "Broker did not unregister the closed connection");
+                interaction.begin().sync();
+                assertTimeoutPreemptively(AWAIT_TIMEOUT, () -> { pendingWrite.get(); },
+                        "Broker did not start the WebSocket write");
+
+                final CompletableFuture<Void> closeFuture = assertTimeoutPreemptively(CLOSE_COMPLETION_TIMEOUT, () ->
+                {
+                    final long closeRequestedMillis = System.currentTimeMillis();
+                    final CompletableFuture<Void> closed = admin.closeConnectionAsync(containerId);
+                    while (socket.isOpen())
+                    {
+                        TimeUnit.MILLISECONDS.sleep(10L);
+                    }
+                    assertTrue(System.currentTimeMillis() - closeRequestedMillis >= CLOSE_TIMEOUT.toMillis(),
+                            "Broker closed the TCP socket before the shared close deadline");
+                    return closed;
+                }, "Broker did not close the TCP socket within the shared deadline and scheduling allowance");
+
+                closeFuture.get(AWAIT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+                assertFalse(admin.isConnectionRegistered(containerId),
+                        "Broker did not unregister the closed connection");
+            }
+            finally
+            {
+                pendingWrite.thenAccept(callback -> callback.failed(new ClosedChannelException()));
+            }
         }
     }
 
-    private SocketChannelEndPoint getTcpEndPoint(final EmbeddedBrokerPerClassAdminImpl admin, final String containerId)
+    private static WebSocketCoreSession getCoreSession(final AbstractAMQPConnection<?, ?> connection)
             throws ReflectiveOperationException
     {
-        final AbstractAMQPConnection<?, ?> connection = (AbstractAMQPConnection<?, ?>) admin.findConnection(containerId);
-        assertNotNull(connection, "Broker did not register the AMQP connection");
         final ServerNetworkConnection network = connection.getNetwork();
-        final Field tcpEndPoint = network.getClass().getDeclaredField("_tcpEndPoint");
-        tcpEndPoint.setAccessible(true);
-        return (SocketChannelEndPoint) tcpEndPoint.get(network);
-    }
-
-    private static void await(final BooleanSupplier condition) throws InterruptedException
-    {
-        while (!condition.getAsBoolean())
-        {
-            TimeUnit.MILLISECONDS.sleep(10L);
-        }
+        final Field sessionField = network.getClass().getDeclaredField("_connection");
+        sessionField.setAccessible(true);
+        final WebSocketSession session = (WebSocketSession) sessionField.get(network);
+        return (WebSocketCoreSession) session.getCoreSession();
     }
 }

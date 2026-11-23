@@ -168,16 +168,6 @@ public class WebSocketFrameTransport extends FrameTransport
         return _webSocketClientHandler.getChannelCloseFuture();
     }
 
-    void pauseReads(final int receiveBufferSize) throws InterruptedException
-    {
-        final Channel channel = _webSocketClientHandler._channel;
-        channel.eventLoop().submit(() ->
-        {
-            channel.config().setOption(ChannelOption.SO_RCVBUF, receiveBufferSize);
-            channel.config().setAutoRead(false);
-        }).sync();
-    }
-
     int getWebSocketCloseStatusCode()
     {
         return _webSocketClientHandler.getWebSocketCloseStatusCode();
