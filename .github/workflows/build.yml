@@ -43,14 +43,14 @@ jobs:
           distribution: 'temurin'
 
       - name: Licence Check
-        run: mvn -Papache-release,dependency-check clean apache-rat:check verify -DskipTests=true -Dgpg.skip -Denforcer.skip=true -Dmaven.javadoc.skip=true
+        run: mvn -Papache-release,dependency-check clean apache-rat:check verify -DskipTests=true -DskipITs=true  -Dgpg.skip -Denforcer.skip=true -Dmaven.javadoc.skip=true
 
       - name: Archive rat.txt On Failure
         if: failure()
         run: tar -czvf licence-check-${{ matrix.java }}.tar.gz **/target/rat.txt
 
       - name: Install
-        run: mvn clean install -DskipTests=true
+        run: mvn clean install -DskipITs=true -DskipTests=true
 
       - name: Unit Tests
         run: mvn test
