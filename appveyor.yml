@@ -11,14 +11,14 @@ environment:
 install:
   - ps: |
       Add-Type -AssemblyName System.IO.Compression.FileSystem
-      if (!(Test-Path -Path "C:\maven\apache-maven-3.10.1" )) {
+      if (!(Test-Path -Path "C:\maven\apache-maven-3.10.2" )) {
         (new-object System.Net.WebClient).DownloadFile(
-          'https://dlcdn.apache.org/maven/maven-3/3.10.1/binaries/apache-maven-3.10.1-bin.zip',
+          'https://dlcdn.apache.org/maven/maven-3/3.10.2/binaries/apache-maven-3.10.2-bin.zip',
           'C:\maven-bin.zip'
         )
         [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\maven-bin.zip", "C:\maven")
       }
-  - cmd: SET PATH=C:\maven\apache-maven-3.10.1\bin;%JAVA_HOME%\bin;%PATH%
+  - cmd: SET PATH=C:\maven\apache-maven-3.10.2\bin;%JAVA_HOME%\bin;%PATH%
 
 build_script:
   - mvn clean install -B -DskipTests=true -DskipITs=true
@@ -47,5 +47,5 @@ on_finish:
       }
 
 cache:
-  - 'C:\maven\apache-maven-3.10.1'
+  - 'C:\maven\apache-maven-3.10.2'
   - '%USERPROFILE%\.m2\repository\cached -> appveyor.yml'
