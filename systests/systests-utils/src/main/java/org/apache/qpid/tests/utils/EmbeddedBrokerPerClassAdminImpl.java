@@ -62,14 +62,18 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
+import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.ManageableMessage;
 import org.apache.qpid.server.model.NotFoundException;
 import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.security.FileKeyStore;
 import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
 import org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry.CloudFoundryOAuth2IdentityResolverService;
@@ -249,6 +253,23 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
             throw new IllegalStateException(String.format("Could not find port with name '%s' on the Broker", portType.name()));
         }
         return InetSocketAddress.createUnresolved("localhost", port);
+    }
+
+    public InetSocketAddress createTlsWebSocketPort(final String name, final String keyStoreUrl, final String password)
+    {
+        final Subject subject = new Subject(true, Set.of(_systemLauncher.getSystemPrincipal(),
+                new TaskPrincipal("createTlsWebSocketPort")), Set.of(), Set.of());
+        return SubjectExecutionContext.withSubjectUnchecked(subject, () ->
+        {
+            final KeyStore<?> keyStore = _broker.createChild(KeyStore.class, Map.of(KeyStore.NAME, name,
+                    FileKeyStore.STORE_URL, keyStoreUrl, FileKeyStore.PASSWORD, password));
+            final Port<?> plainPort = _broker.getChildByName(Port.class, PortType.ANONYMOUS_AMQPWS.name());
+            final Port<?> port = _broker.createChild(Port.class, Map.of(Port.NAME, name, Port.TYPE, "AMQP",
+                    Port.BINDING_ADDRESS, "localhost", Port.PORT, 0, Port.TRANSPORTS, Set.of(Transport.WSS),
+                    Port.PROTOCOLS, Set.of(Protocol.AMQP_1_0), Port.KEY_STORE, keyStore.getName(),
+                    Port.AUTHENTICATION_PROVIDER, plainPort.getAuthenticationProvider().getName()));
+            return new InetSocketAddress("localhost", port.getBoundPort());
+        });
     }
 
     @Override
@@ -521,7 +542,7 @@ public class EmbeddedBrokerPerClassAdminImpl implements BrokerAdmin
         return TYPE;
     }
 
-    private Connection<?> findConnection(final String clientId)
+    public Connection<?> findConnection(final String clientId)
     {
         Objects.requireNonNull(clientId, "Client ID must not be null");
         for (final Connection<?> connection : _currentVirtualHostNode.getVirtualHost().getConnections())

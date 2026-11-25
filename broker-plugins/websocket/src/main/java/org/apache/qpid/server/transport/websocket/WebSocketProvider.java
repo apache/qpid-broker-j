@@ -27,21 +27,23 @@ import java.util.function.LongSupplier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketCreator;
 import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +56,9 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.transport.AcceptingTransport;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngineFactory;
 import org.apache.qpid.server.transport.websocket.connection.AmqpWebSocket;
+import org.apache.qpid.server.transport.websocket.connection.WebSocketCloseMappings;
 import org.apache.qpid.server.transport.websocket.connection.WebSocketConnectionScheduler;
+import org.apache.qpid.server.transport.websocket.connection.WebSocketServerConnector;
 import org.apache.qpid.server.transport.websocket.connection.WebSocketSettings;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
@@ -148,11 +152,14 @@ class WebSocketProvider implements AcceptingTransport
 
         if (_transport == Transport.WS)
         {
-            connector = new ServerConnector(_server, httpConnectionFactory);
+            connector = new WebSocketServerConnector(_server, httpConnectionFactory);
         }
         else if (_transport == Transport.WSS)
         {
-            connector = new ServerConnector(_server, _sslContextFactory, httpConnectionFactory);
+            httpConnectionFactory.getHttpConfiguration().addCustomizer(new SecureRequestCustomizer());
+            final WebSocketSslConnectionFactory sslConnectionFactory =
+                    new WebSocketSslConnectionFactory(_sslContextFactory, httpConnectionFactory.getProtocol());
+            connector = new WebSocketServerConnector(_server, sslConnectionFactory, httpConnectionFactory);
             connector.addBean(new SslHandshakeListener()
             {
                 @Override
@@ -204,22 +211,19 @@ class WebSocketProvider implements AcceptingTransport
 
     private ServletContextHandler createServletContext(final JettyWebSocketCreator jettyWebSocketCreator)
     {
-        final JettyWebSocketServlet websocketServlet = new JettyWebSocketServlet()
-        {
-            @Override
-            public void configure(final JettyWebSocketServletFactory factory)
-            {
-                factory.setMaxBinaryMessageSize(0L);
-                factory.setCreator(jettyWebSocketCreator);
-            }
-        };
-
         final ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/");
-        servletContextHandler.addServlet(new ServletHolder(websocketServlet), "");
+        // The container's upgrade filter uses the close-aware mapping for all WebSocket upgrades.
+        servletContextHandler.addServlet(new ServletHolder(new HttpServlet()
+        {
+        }), "");
         servletContextHandler.setServer(_server);
 
-        WebSocketServerComponents.ensureWebSocketComponents(_server, servletContextHandler);
+        final WebSocketComponents components =
+                WebSocketServerComponents.ensureWebSocketComponents(_server, servletContextHandler);
+        final WebSocketMappings mappings = new WebSocketCloseMappings(components);
+        servletContextHandler.setAttribute(WebSocketMappings.WEBSOCKET_MAPPING_ATTRIBUTE, mappings);
+        servletContextHandler.addBean(mappings);
         JettyWebSocketServerContainer.ensureContainer(servletContextHandler.getServletContext())
                 .addMapping("/", jettyWebSocketCreator);
         return servletContextHandler;

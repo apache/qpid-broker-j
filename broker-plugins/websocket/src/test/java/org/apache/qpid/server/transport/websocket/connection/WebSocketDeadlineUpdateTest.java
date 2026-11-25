@@ -89,6 +89,20 @@ class WebSocketDeadlineUpdateTest extends WebSocketTestBase
     }
 
     @Test
+    void testSharedCloseDeadlineWakesWaitingScheduler() throws Exception
+    {
+        final MutableTicker ticker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(ticker);
+        _connectionScheduler.registerConnection(connection);
+        startScheduler();
+        _observedScheduler.awaitWait(timeoutMillis -> timeoutMillis == FAR_FUTURE_TICK_DELAY_MILLIS);
+
+        connection.setCloseDeadline(new MutableTicker(500));
+
+        _observedScheduler.awaitWait(timeoutMillis -> timeoutMillis == 500L);
+    }
+
+    @Test
     void testRegistrationWakesIdleScheduler() throws Exception
     {
         startScheduler();
@@ -354,7 +368,8 @@ class WebSocketDeadlineUpdateTest extends WebSocketTestBase
     void testStalledWriteDoesNotExtendCloseDeadline() throws Exception
     {
         final Session session = mock(Session.class);
-        final WebSocketConnection connection = createConnection(new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS), session);
+        final MutableTicker mutableTicker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(mutableTicker, session);
         final CountDownLatch disconnected = new CountDownLatch(1);
         final Runnable closeTask = mock(Runnable.class);
         doAnswer(invocation ->
@@ -362,7 +377,7 @@ class WebSocketDeadlineUpdateTest extends WebSocketTestBase
             connection.webSocketClosed(closeTask);
             disconnected.countDown();
             return null;
-        }).when(session).disconnect();
+        }).when(endPointFor(session)).closeSocket();
         startScheduler();
         _observedScheduler.awaitWait(timeoutMillis -> timeoutMillis == 0L);
 
@@ -385,7 +400,7 @@ class WebSocketDeadlineUpdateTest extends WebSocketTestBase
         connection.close();
         _connectionScheduler.registerConnection(connection);
         _observedScheduler.awaitWait(timeoutMillis -> timeoutMillis == 1_000L);
-        verify(session, never()).disconnect();
+        verify(endPointFor(session), never()).closeSocket();
         verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
         verify(duplicate, never()).dispose();
 
@@ -403,7 +418,7 @@ class WebSocketDeadlineUpdateTest extends WebSocketTestBase
         _threadPool.runAll();
         verify(session).sendBinary(any(ByteBuffer.class), any(Callback.class));
         verify(session, never()).close(anyInt(), isNull(), any(Callback.class));
-        verify(session).disconnect();
+        verify(endPointFor(session)).closeSocket();
         verify(duplicate).dispose();
         verify(closeTask).run();
         assertEquals(0, _threadPool.getQueueSize());
@@ -508,7 +523,7 @@ class WebSocketDeadlineUpdateTest extends WebSocketTestBase
             repeat.set(false);
             disconnected.countDown();
             return null;
-        }).when(session).disconnect();
+        }).when(endPointFor(session)).closeSocket();
         return createConnection(new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS), session);
     }
 

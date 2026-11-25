@@ -36,6 +36,12 @@ public interface ServerNetworkConnection extends NetworkConnection
         close();
     }
 
+    default void closeOnReadIdle(final Runnable logIdleClose)
+    {
+        logIdleClose.run();
+        close();
+    }
+
     String getTransportInfo();
 
     long getScheduledTime();

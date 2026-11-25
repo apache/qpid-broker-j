@@ -39,6 +39,7 @@ final class CleanupJob implements Runnable
 
     private Deque<QpidByteBuffer> _discardedBuffers;
     private Runnable _closeTask;
+    private boolean _endPointClosePending;
     private boolean _cleanupJobOutstanding;
     private boolean _cleanupJobRunning;
     private boolean _cleanupSubmissionFailed;
@@ -73,7 +74,17 @@ final class CleanupJob implements Runnable
     {
         synchronized (_transportLock)
         {
+            _endPointClosePending = false;
             _closeTask = closeTask;
+            _cleanupPending = true;
+        }
+    }
+
+    void requestEndPointClose()
+    {
+        synchronized (_transportLock)
+        {
+            _endPointClosePending = true;
             _cleanupPending = true;
         }
     }
@@ -176,6 +187,7 @@ final class CleanupJob implements Runnable
         {
             disposeBuffers(discardedBuffers);
 
+            closeEndPointIfPending();
             runCloseTaskIfReady();
         }
         finally
@@ -194,6 +206,19 @@ final class CleanupJob implements Runnable
                 buffer.dispose();
             }
         }
+    }
+
+    private void closeEndPointIfPending()
+    {
+        synchronized (_transportLock)
+        {
+            if (!_endPointClosePending)
+            {
+                return;
+            }
+            _endPointClosePending = false;
+        }
+        _connection.closeEndPoint();
     }
 
     private void runCloseTaskIfReady()
@@ -233,7 +258,7 @@ final class CleanupJob implements Runnable
         {
             _cleanupJobOutstanding = false;
             _cleanupJobRunning = false;
-            _cleanupPending = _discardedBuffers != null || _closeTask != null;
+            _cleanupPending = _discardedBuffers != null || _endPointClosePending || _closeTask != null;
             closedAndCleaned = _connection.isClosed() && !_cleanupPending;
             retryAfterShutdown = _scheduler.isShutdown() && _cleanupPending && !_cleanupDeferred;
         }

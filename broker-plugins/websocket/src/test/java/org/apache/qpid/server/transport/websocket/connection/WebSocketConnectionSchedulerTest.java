@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.transport.network.Ticker;
+import org.apache.qpid.server.transport.websocket.connection.WebSocketServerConnector.WebSocketEndPoint;
 
 class WebSocketConnectionSchedulerTest extends WebSocketTestBase
 {
@@ -344,8 +345,8 @@ class WebSocketConnectionSchedulerTest extends WebSocketTestBase
         when(protocolEngine.getAggregateTicker()).thenReturn(aggregateTicker);
 
         final InetSocketAddress address = new InetSocketAddress("localhost", 0);
-        return new BlockingConnection(_connectionScheduler, mock(Session.class), address, address,
-                protocolEngine, _threadPool);
+        return new BlockingConnection(_connectionScheduler, mock(), mock(), address, address, protocolEngine,
+                _threadPool);
     }
 
     private static final class BlockingConnection extends WebSocketConnection
@@ -356,12 +357,14 @@ class WebSocketConnectionSchedulerTest extends WebSocketTestBase
 
         private BlockingConnection(final WebSocketConnectionScheduler scheduler,
                                    final Session connection,
+                                   final WebSocketEndPoint tcpEndPoint,
                                    final InetSocketAddress localAddress,
                                    final InetSocketAddress remoteAddress,
                                    final MultiVersionProtocolEngine protocolEngine,
                                    final ThreadPool threadPool)
         {
-            super(connection, localAddress, remoteAddress, protocolEngine, threadPool, scheduler, SETTINGS);
+            super(connection, tcpEndPoint, localAddress, remoteAddress, protocolEngine, threadPool, scheduler,
+                  SETTINGS);
         }
 
         @Override

@@ -27,6 +27,8 @@ import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Objects;
 
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
@@ -36,14 +38,16 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngineFactory;
+import org.apache.qpid.server.transport.websocket.connection.WebSocketServerConnector.WebSocketEndPoint;
 
 @WebSocket
-public final class AmqpWebSocket
+public final class AmqpWebSocket implements Connection.Listener
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AmqpWebSocket.class);
 
@@ -52,10 +56,11 @@ public final class AmqpWebSocket
     private final WebSocketConnectionScheduler _connectionScheduler;
     private final WebSocketSettings _settings;
     private final X509Certificate[] _certificates;
-    private final WebSocketReceiver _receiver;
 
     private volatile MultiVersionProtocolEngine _protocolEngine;
     private volatile WebSocketConnection _connection;
+    private WebSocketReceiver _receiver;
+    private boolean _resourcesReleased;
 
     public AmqpWebSocket(final MultiVersionProtocolEngineFactory factory,
                          final ThreadPool threadPool,
@@ -68,41 +73,95 @@ public final class AmqpWebSocket
         _connectionScheduler = connectionScheduler;
         _settings = Objects.requireNonNull(settings, "WebSocket settings must not be null");
         _certificates = certificates;
-        _receiver = new WebSocketReceiver(settings);
     }
 
     @OnWebSocketOpen
-    @SuppressWarnings("unused")
     public void onWebSocketConnect(final Session session)
     {
+        Connection transport = null;
+        try
+        {
+            transport = initializeConnection(session);
+        }
+        finally
+        {
+            if (transport == null)
+            {
+                completeClose();
+            }
+        }
+        if (transport == null)
+        {
+            session.close(StatusCode.TRY_AGAIN_LATER, "Connection rejected", Callback.NOOP);
+        }
+        else if (!transport.getEndPoint().isOpen())
+        {
+            onClosed(transport);
+        }
+    }
+
+    private synchronized Connection initializeConnection(final Session session)
+    {
+        if (_resourcesReleased)
+        {
+            return null;
+        }
         final SocketAddress localAddress = session.getLocalSocketAddress();
         final SocketAddress remoteAddress = session.getRemoteSocketAddress();
         _protocolEngine = _factory.newProtocolEngine(remoteAddress);
+        if (_protocolEngine == null)
+        {
+            return null;
+        }
+        _receiver = new WebSocketReceiver(_settings);
 
-        // Let AMQP do normal idle-timeout handling. Closing sessions are governed by a separate absolute deadline
-        // below, so peer activity cannot postpone transport teardown.
         session.setIdleTimeout(Duration.ZERO);
 
-        _connection = new WebSocketConnection(session, localAddress, remoteAddress, _protocolEngine,
-                 _threadPool, _connectionScheduler, _settings);
+        final DeadlineWebSocketCoreSession coreSession =
+                (DeadlineWebSocketCoreSession) ((WebSocketSession) session).getCoreSession();
+        final Connection transport = coreSession.getConnection();
+        final EndPoint endPoint = transport.getEndPoint();
+        final EndPoint tcpEndPoint = endPoint instanceof EndPoint.Wrapper wrapper ? wrapper.unwrap() : endPoint;
+        final WebSocketConnection connection = new WebSocketConnection(session, (WebSocketEndPoint) tcpEndPoint,
+                localAddress, remoteAddress, _protocolEngine, _threadPool, _connectionScheduler, _settings);
 
         if (_certificates != null && _certificates.length > 0)
         {
-            _connection.setPeerCertificate(_certificates[0]);
+            connection.setPeerCertificate(_certificates[0]);
         }
-        _protocolEngine.setNetworkConnection(_connection);
-        _protocolEngine.setWorkListener(object -> _connection.scheduleWork());
-        _connectionScheduler.registerConnection(_connection);
+        _protocolEngine.setNetworkConnection(connection);
+        _protocolEngine.setWorkListener(object -> connection.scheduleWork());
+
+        transport.addEventListener(this);
+        try
+        {
+            _connectionScheduler.registerConnection(connection);
+        }
+        catch (final RuntimeException | Error failure)
+        {
+            _connectionScheduler.unregisterConnection(connection);
+            throw failure;
+        }
+
+        _connection = connection;
+        coreSession.setBrokerConnection(connection);
+        return transport;
     }
 
     @OnWebSocketMessage
-    @SuppressWarnings("unused")
     public void onWebSocketBinary(final ByteBuffer payload, final boolean last, final Callback callback)
     {
+        final WebSocketConnection connection = _connection;
+        if (connection == null)
+        {
+            callback.succeed();
+            return;
+        }
+
         final int length = payload.remaining();
         try
         {
-            _receiver.receiveBinary(payload, _connection, _protocolEngine);
+            _receiver.receiveBinary(payload, connection, _protocolEngine);
             callback.succeed();
 
             if (LOGGER.isDebugEnabled())
@@ -126,7 +185,6 @@ public final class AmqpWebSocket
     }
 
     @OnWebSocketMessage
-    @SuppressWarnings("unused")
     public void onWebSocketText(final Session session, final String text)
     {
         LOGGER.info("Unexpected websocket text message received, closing connection");
@@ -142,7 +200,6 @@ public final class AmqpWebSocket
     }
 
     @OnWebSocketError
-    @SuppressWarnings("unused")
     public void onWebSocketError(final Throwable failure)
     {
         final WebSocketConnection connection = _connection;
@@ -150,11 +207,8 @@ public final class AmqpWebSocket
         {
             LOGGER.warn("WebSocket error before connection initialization", failure);
         }
-        else if (failure instanceof ClosedChannelException &&
-                (!connection.isOpen() || _protocolEngine.isProtocolCloseComplete()))
+        else if (failure instanceof ClosedChannelException && connection.isCloseExpected())
         {
-            // AMQP can finish closing before transport shutdown starts. Jetty's own closed state alone
-            // cannot distinguish that expected EOF from an abrupt loss of an active AMQP connection.
             if (LOGGER.isDebugEnabled())
             {
                 LOGGER.debug("WebSocket connection {} closed after protocol or transport shutdown",
@@ -168,23 +222,47 @@ public final class AmqpWebSocket
     }
 
     @OnWebSocketClose
-    @SuppressWarnings("unused")
     public void onWebSocketClose(final int statusCode, final String reason, final Callback callback)
     {
-        final WebSocketConnection connection = _connection;
+        final WebSocketConnection connection;
+        synchronized (this)
+        {
+            connection = _connection;
+            if (connection == null)
+            {
+                completeClose();
+            }
+        }
         if (connection == null)
         {
-            completeClose();
+            callback.succeed();
         }
         else
         {
+            connection.webSocketCloseReceived(callback);
+        }
+    }
+
+    @Override
+    public void onClosed(final Connection transport)
+    {
+        final WebSocketConnection connection = _connection;
+        if (connection != null)
+        {
             connection.webSocketClosed(this::completeClose);
         }
-        callback.succeed();
     }
 
     private void completeClose()
     {
+        synchronized (this)
+        {
+            if (_resourcesReleased)
+            {
+                return;
+            }
+            _resourcesReleased = true;
+        }
         try
         {
             if (_protocolEngine != null)

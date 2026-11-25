@@ -33,9 +33,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jetty.websocket.api.Callback;
@@ -52,7 +54,8 @@ class WriteJobTest extends WebSocketTestBase
     void writeSubmissionsAreCoalescedWhileQueued()
     {
         final Session session = mock(Session.class);
-        final WebSocketConnection connection = createConnection(new MutableTicker(37_000), session);
+        final MutableTicker ticker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(ticker, session);
         try (final QpidByteBuffer buffer = QpidByteBuffer.wrap(new byte[] {1}))
         {
             connection.send(buffer);
@@ -88,7 +91,8 @@ class WriteJobTest extends WebSocketTestBase
             return null;
         }).when(session).sendBinary(any(ByteBuffer.class), any(Callback.class));
 
-        final WebSocketConnection connection = createConnection(new MutableTicker(37_000), session);
+        final MutableTicker ticker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(ticker, session);
         send(connection, new byte[] {1});
         connection.flush();
         connection.flush();
@@ -100,21 +104,60 @@ class WriteJobTest extends WebSocketTestBase
         connection.flush();
         send(connection, new byte[] {4});
         send(connection, new byte[] {5});
+        connection.flush();
+        final byte[] split = new byte[WRITE_BATCH_SIZE + 1];
+        split[0] = 6;
+        split[WRITE_BATCH_SIZE] = 7;
+        send(connection, split);
+        connection.flush();
+        send(connection, new byte[] {8});
 
         _threadPool.runAll();
 
-        assertEquals(4, messages.size());
+        assertEquals(7, messages.size());
         assertArrayEquals(new byte[] {1}, messages.get(0));
         assertArrayEquals(new byte[] {2}, messages.get(1));
         assertArrayEquals(new byte[] {3}, messages.get(2));
         assertArrayEquals(new byte[] {4, 5}, messages.get(3));
+        assertArrayEquals(Arrays.copyOf(split, WRITE_BATCH_SIZE), messages.get(4));
+        assertArrayEquals(new byte[] {7}, messages.get(5));
+        assertArrayEquals(new byte[] {8}, messages.get(6));
+    }
+
+    @Test
+    void copyFailureReleasesEveryReservedBuffer()
+    {
+        final Session session = mock();
+        final MutableTicker mutableTicker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(mutableTicker, session);
+        _connectionScheduler.registerConnection(connection);
+        final QpidByteBuffer message = mock();
+        final QpidByteBuffer first = mock();
+        final QpidByteBuffer second = mock();
+        when(message.remaining()).thenReturn(1);
+        when(message.duplicate()).thenReturn(first, second);
+        when(first.remaining()).thenReturn(1);
+        when(second.remaining()).thenReturn(1);
+        when(first.get(any(byte[].class), eq(0), eq(1))).thenThrow(new IllegalStateException("Copy failed"));
+        connection.send(message);
+        connection.send(message);
+        connection.doWrite();
+        _threadPool.runAll();
+        scheduleDueConnections();
+        _threadPool.runAll();
+
+        verify(first).dispose();
+        verify(second).dispose();
+        verify(session, never()).sendBinary(any(ByteBuffer.class), any(Callback.class));
+        verify(endPointFor(session)).closeSocket();
     }
 
     @Test
     void writeStorageIsReusedOnlyAfterCompletion()
     {
         final Session session = mock(Session.class);
-        final WebSocketConnection connection = createConnection(new MutableTicker(37_000), session);
+        final MutableTicker ticker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(ticker, session);
         send(connection, new byte[] {1, 2, 3, 4});
         connection.doWrite();
         _threadPool.runAll();
@@ -147,7 +190,8 @@ class WriteJobTest extends WebSocketTestBase
     void closedConnectionDoesNotAlterPendingWriteStorage()
     {
         final Session session = mock(Session.class);
-        final WebSocketConnection connection = createConnection(new MutableTicker(37_000), session);
+        final MutableTicker ticker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(ticker, session);
         send(connection, new byte[] {1, 2, 3, 4});
         connection.doWrite();
         _threadPool.runAll();
@@ -171,7 +215,8 @@ class WriteJobTest extends WebSocketTestBase
     void rejectedWriteSubmissionForcesConnectionClose()
     {
         final Session session = mock(Session.class);
-        final WebSocketConnection connection = createConnection(new MutableTicker(37_000), session);
+        final MutableTicker ticker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(ticker, session);
         try (final QpidByteBuffer buffer = QpidByteBuffer.wrap(new byte[] {1}))
         {
             connection.send(buffer);
@@ -183,8 +228,8 @@ class WriteJobTest extends WebSocketTestBase
 
         assertTrue(connection.isForceClosing());
         assertEquals(0, _threadPool.getQueueSize());
-        assertEquals(1_000L, scheduleDueConnections());
-        verify(session).disconnect();
+        assertEquals(Long.MAX_VALUE, scheduleDueConnections());
+        verify(endPointFor(session)).closeSocket();
     }
 
     @Test
@@ -193,7 +238,8 @@ class WriteJobTest extends WebSocketTestBase
         final byte[] expected = new byte[WRITE_BATCH_SIZE + 1];
         expected[WRITE_BATCH_SIZE] = 1;
         final Session session = mock(Session.class);
-        final WebSocketConnection connection = createConnection(new MutableTicker(37_000), session);
+        final MutableTicker ticker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(ticker, session);
         try (final QpidByteBuffer buffer = QpidByteBuffer.wrap(expected))
         {
             connection.send(buffer);
@@ -237,7 +283,8 @@ class WriteJobTest extends WebSocketTestBase
             return null;
         }).when(session).sendBinary(any(ByteBuffer.class), any(Callback.class));
 
-        final WebSocketConnection connection = createConnection(new MutableTicker(37_000), session);
+        final MutableTicker ticker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
+        final WebSocketConnection connection = createConnection(ticker, session);
         try (final QpidByteBuffer buffer = QpidByteBuffer.wrap(new byte[WRITE_BATCH_SIZE + 1]))
         {
             connection.send(buffer);

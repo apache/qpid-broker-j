@@ -32,8 +32,16 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.io.Serial;
 import java.lang.reflect.Field;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
@@ -41,12 +49,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.websocket.api.Session;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.transport.websocket.connection.WebSocketServerConnector.WebSocketEndPoint;
 
 class CleanupJobTest extends WebSocketTestBase
 {
@@ -197,9 +207,9 @@ class CleanupJobTest extends WebSocketTestBase
 
             final FutureTask<Long> scan = new FutureTask<>(this::scheduleDueConnections);
             startDaemonThread(scan, "cleanup-deadline-scan");
-            assertEquals(1_000L, scan.get(5L, TimeUnit.SECONDS).longValue());
-            verify(session).disconnect();
-            assertEquals(0, _threadPool.getQueueSize());
+            assertEquals(Long.MAX_VALUE, scan.get(5L, TimeUnit.SECONDS).longValue());
+            verify(endPointFor(session)).closeSocket();
+            assertEquals(1, _threadPool.getQueueSize());
         }
         finally
         {
@@ -228,7 +238,7 @@ class CleanupJobTest extends WebSocketTestBase
         _connectionScheduler.registerConnection(connection);
         connection.close();
         _nanoTime.addAndGet(TimeUnit.SECONDS.toNanos(1L));
-        assertEquals(1_000L, scheduleDueConnections());
+        assertEquals(Long.MAX_VALUE, scheduleDueConnections());
 
         final FutureTask<Void> cleanup = new FutureTask<>(() ->
         {
@@ -247,9 +257,9 @@ class CleanupJobTest extends WebSocketTestBase
 
             final FutureTask<Long> scan = new FutureTask<>(this::scheduleDueConnections);
             startDaemonThread(scan, "disposal-deadline-scan");
-            assertEquals(1_000L, scan.get(5L, TimeUnit.SECONDS).longValue());
-            verify(session).disconnect();
-            assertEquals(0, _threadPool.getQueueSize());
+            assertEquals(Long.MAX_VALUE, scan.get(5L, TimeUnit.SECONDS).longValue());
+            verify(endPointFor(session)).closeSocket();
+            assertEquals(1, _threadPool.getQueueSize());
         }
         finally
         {
@@ -260,12 +270,115 @@ class CleanupJobTest extends WebSocketTestBase
     }
 
     @Test
+    void tcpDeadlinesAreEnforcedWhileEndPointCleanupWaits() throws Exception
+    {
+        final CountDownLatch cleanupStarted = new CountDownLatch(1);
+        final CountDownLatch releaseCleanup = new CountDownLatch(1);
+        final Runnable firstCloseTask = mock();
+        final Runnable secondCloseTask = mock();
+        _connectionScheduler = spy(_connectionScheduler);
+
+        try (final ServerSocketChannel listener = ServerSocketChannel.open();
+             final Selector selector = Selector.open();
+             final Socket firstPeer = new Socket();
+             final Socket secondPeer = new Socket())
+        {
+            listener.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
+            firstPeer.connect(listener.getLocalAddress());
+            secondPeer.connect(listener.getLocalAddress());
+            firstPeer.setSoTimeout(5_000);
+            secondPeer.setSoTimeout(5_000);
+            try (final SocketChannel firstSocket = listener.accept();
+                 final SocketChannel secondSocket = listener.accept())
+            {
+                final ManagedSelector managedSelector = mock();
+                when(managedSelector.getSelector()).thenReturn(selector);
+                final WebSocketEndPoint firstEndPoint = createEndPoint(firstSocket, managedSelector, selector);
+                final WebSocketEndPoint secondEndPoint = createEndPoint(secondSocket, managedSelector, selector);
+                selector.selectNow();
+                final WebSocketConnection first = createConnection(new MutableTicker(37_000), firstEndPoint);
+                final WebSocketConnection second = createConnection(new MutableTicker(37_000), secondEndPoint);
+                final MutableTicker firstDeadline = new MutableTicker(0);
+                final MutableTicker secondDeadline = new MutableTicker(100);
+                first.setCloseDeadline(firstDeadline);
+                second.setCloseDeadline(secondDeadline);
+                _connectionScheduler.registerConnection(first);
+                _connectionScheduler.registerConnection(second);
+                // Hold the first worker at the endpoint close, where Jetty can wait for TLS I/O.
+                doAnswer(invocation ->
+                {
+                    cleanupStarted.countDown();
+                    await(releaseCleanup, "Timed out waiting to release endpoint cleanup");
+                    invocation.callRealMethod();
+                    first.webSocketClosed(firstCloseTask);
+                    return null;
+                }).when(firstEndPoint).close();
+                doAnswer(invocation ->
+                {
+                    invocation.callRealMethod();
+                    second.webSocketClosed(secondCloseTask);
+                    return null;
+                }).when(secondEndPoint).close();
+
+                final FutureTask<Long> firstScan = new FutureTask<>(this::scheduleDueConnections);
+                startDaemonThread(firstScan, "first-close-deadline");
+                try
+                {
+                    assertEquals(100L, firstScan.get(5L, TimeUnit.SECONDS).longValue());
+                    assertFalse(firstSocket.isOpen());
+                    assertTrue(secondSocket.isOpen());
+
+                    final FutureTask<Void> cleanup = new FutureTask<>(() ->
+                    {
+                        _threadPool.runNext();
+                        return null;
+                    });
+                    startDaemonThread(cleanup, "endpoint-cleanup");
+                    try
+                    {
+                        await(cleanupStarted, "Timed out waiting for endpoint cleanup");
+                        assertPeerDisconnected(firstPeer, selector);
+
+                        secondDeadline.setTimeToNextTick(0);
+                        _currentTime.addAndGet(100L);
+                        _nanoTime.addAndGet(TimeUnit.MILLISECONDS.toNanos(100L));
+                        final FutureTask<Long> secondScan = new FutureTask<>(this::scheduleDueConnections);
+                        startDaemonThread(secondScan, "second-close-deadline");
+                        assertEquals(Long.MAX_VALUE, secondScan.get(5L, TimeUnit.SECONDS).longValue());
+                        assertFalse(secondSocket.isOpen());
+                        assertPeerDisconnected(secondPeer, selector);
+                        assertFalse(cleanup.isDone());
+                        verify(firstCloseTask, never()).run();
+                        verify(secondCloseTask, never()).run();
+                    }
+                    finally
+                    {
+                        releaseCleanup.countDown();
+                        cleanup.get(5L, TimeUnit.SECONDS);
+                    }
+                }
+                finally
+                {
+                    releaseCleanup.countDown();
+                }
+                _threadPool.runAll();
+                verify(firstEndPoint).close();
+                verify(secondEndPoint).close();
+                verify(firstCloseTask).run();
+                verify(secondCloseTask).run();
+                verify(_connectionScheduler).unregisterConnection(first);
+                verify(_connectionScheduler).unregisterConnection(second);
+            }
+        }
+    }
+
+    @Test
     void rejectedCleanupDoesNotPreventDisconnectAndRetriesWithBackoff()
     {
         final Session session = mock(Session.class);
         final WebSocketConnection connection = createConnection(new MutableTicker(37_000), session);
         final Runnable closeTask = mock(Runnable.class);
-        doAnswer(invocation -> connection.webSocketClosed(closeTask)).when(session).disconnect();
+        doAnswer(invocation -> connection.webSocketClosed(closeTask)).when(endPointFor(session)).close();
         final QpidByteBuffer buffer = mock(QpidByteBuffer.class);
         final QpidByteBuffer duplicate = mock(QpidByteBuffer.class);
         when(buffer.remaining()).thenReturn(1);
@@ -277,8 +390,9 @@ class CleanupJobTest extends WebSocketTestBase
         _threadPool.rejectNext();
 
         assertEquals(1_000L, scheduleDueConnections());
-        verify(session).disconnect();
-        assertTrue(connection.isClosed());
+        verify(endPointFor(session)).closeSocket();
+        assertTrue(connection.isForceClosing());
+        verify(endPointFor(session), never()).close();
         for (int i = 0; i < SUBMISSION_COUNT; i++)
         {
             assertEquals(1_000L, scheduleDueConnections());
@@ -297,6 +411,9 @@ class CleanupJobTest extends WebSocketTestBase
         }
         assertEquals(1, _threadPool.getQueueSize());
         _threadPool.runAll();
+        assertTrue(connection.isClosed());
+        verify(endPointFor(session)).closeSocket();
+        verify(endPointFor(session)).close();
         verify(duplicate).dispose();
         verify(closeTask).run();
         assertEquals(Long.MAX_VALUE, scheduleDueConnections());
@@ -388,6 +505,32 @@ class CleanupJobTest extends WebSocketTestBase
     }
 
     @Test
+    void endpointCloseRequestedDuringSchedulerShutdownCompletesCleanup()
+    {
+        final Session session = mock();
+        final WebSocketConnection connection = createConnection(new MutableTicker(37_000), session);
+        final WebSocketEndPoint endPoint = endPointFor(session);
+        final Runnable closeTask = mock();
+        doAnswer(invocation -> connection.webSocketClosed(closeTask)).when(endPoint).close();
+        doAnswer(invocation ->
+        {
+            _threadPool.rejectNext();
+            _connectionScheduler.shutdown();
+            return null;
+        }).when(endPoint).closeSocket();
+
+        _connectionScheduler.registerConnection(connection);
+        connection.abort();
+        scheduleDueConnections();
+
+        assertTrue(connection.isClosed());
+        verify(endPoint).closeSocket();
+        verify(endPoint).close();
+        verify(closeTask).run();
+        assertEquals(0, _threadPool.getQueueSize());
+    }
+
+    @Test
     void closeAfterSchedulerShutdownCompletesCleanup()
     {
         final WebSocketConnection connection = createConnection(new MutableTicker(37_000));
@@ -425,6 +568,22 @@ class CleanupJobTest extends WebSocketTestBase
         startDaemonThread(protocolWork, "protocol-after-cleanup-failure");
         protocolWork.get(5L, TimeUnit.SECONDS);
         verify(closeTask).run();
+    }
+
+    private WebSocketEndPoint createEndPoint(final SocketChannel socket, final ManagedSelector managedSelector,
+                                             final Selector selector) throws IOException
+    {
+        socket.configureBlocking(false);
+        final SelectionKey key = socket.register(selector, 0);
+        return spy(new WebSocketEndPoint(socket, managedSelector, key, null));
+    }
+
+    private void assertPeerDisconnected(final Socket peer, final Selector selector) throws Exception
+    {
+        final FutureTask<Integer> selected = new FutureTask<>(selector::select);
+        startDaemonThread(selected, "tcp-selector-wakeup");
+        assertEquals(0, selected.get(5L, TimeUnit.SECONDS).intValue());
+        assertEquals(-1, peer.getInputStream().read());
     }
 
     private static void awaitBlockedOrFinished(final Thread thread)

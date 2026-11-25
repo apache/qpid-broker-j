@@ -24,6 +24,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.InetSocketAddress;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -42,6 +44,7 @@ import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.transport.network.Ticker;
+import org.apache.qpid.server.transport.websocket.connection.WebSocketServerConnector.WebSocketEndPoint;
 import org.apache.qpid.test.utils.UnitTestBase;
 
 abstract class WebSocketTestBase extends UnitTestBase
@@ -52,6 +55,8 @@ abstract class WebSocketTestBase extends UnitTestBase
     protected static final WebSocketSettings SETTINGS = new WebSocketSettings(WRITE_BATCH_SIZE);
     // longer than the test's wait, so timer expiry cannot hide a missed wakeup
     protected static final int FAR_FUTURE_TICK_DELAY_MILLIS = 37_000;
+
+    private final Map<Session, WebSocketEndPoint> _endPoints = new IdentityHashMap<>();
 
     protected TestThreadPool _threadPool;
     protected WebSocketConnectionScheduler _connectionScheduler;
@@ -91,9 +96,14 @@ abstract class WebSocketTestBase extends UnitTestBase
         final MultiVersionProtocolEngine protocolEngine = mock(MultiVersionProtocolEngine.class);
         when(protocolEngine.getAggregateTicker()).thenReturn(aggregateTicker);
 
-        final InetSocketAddress address = new InetSocketAddress("localhost", 0);
-        return new WebSocketConnection(session, address, address, protocolEngine, _threadPool, _connectionScheduler,
-                SETTINGS);
+        return createConnection(protocolEngine, session);
+    }
+
+    protected WebSocketConnection createConnection(final Ticker ticker, final WebSocketEndPoint endPoint)
+    {
+        final Session session = mock();
+        _endPoints.put(session, endPoint);
+        return createConnection(ticker, session);
     }
 
     protected void send(final WebSocketConnection connection, final byte[] data)
@@ -113,8 +123,13 @@ abstract class WebSocketTestBase extends UnitTestBase
                                                    final Session session)
     {
         final InetSocketAddress address = new InetSocketAddress("localhost", 0);
-        return new WebSocketConnection(session, address, address, protocolEngine, _threadPool, _connectionScheduler,
-                SETTINGS);
+        return new WebSocketConnection(session, endPointFor(session), address, address, protocolEngine, _threadPool,
+                _connectionScheduler, SETTINGS);
+    }
+
+    protected WebSocketEndPoint endPointFor(final Session session)
+    {
+        return _endPoints.computeIfAbsent(session, ignored -> mock(WebSocketEndPoint.class));
     }
 
     protected Thread startDaemonThread(final FutureTask<?> task, final String name)

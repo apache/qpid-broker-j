@@ -184,9 +184,9 @@ public class AMQPConnection_0_10Impl extends AbstractAMQPConnection<AMQPConnecti
     {
         runAsSubject(() ->
         {
-            _connection.getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " +
-                    _connection.getConnectionDelegate().getState(), true));
-            getNetwork().close();
+            getNetwork().closeOnReadIdle(() -> _connection.getEventLogger().message(
+                    ConnectionMessages.IDLE_CLOSE("Current connection state: " +
+                                                 _connection.getConnectionDelegate().getState(), true)));
             return null;
         });
 

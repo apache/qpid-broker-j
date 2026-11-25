@@ -38,13 +38,20 @@ final class CloseCallback implements Callback
     }
 
     @Override
+    public void succeed()
+    {
+        _connection.completeCloseWrite();
+    }
+
+    @Override
     public void fail(final Throwable failure)
     {
-        if (_connection.requestForceClose())
+        if (_connection.requestForceCloseAfterWriteFailure(failure))
         {
             LOGGER.debug("Failed to send WebSocket CLOSE for connection {}; forcing transport closure",
                     _connection.getRemoteAddress(), failure);
             _scheduler.wakeup();
         }
+        _connection.completeCloseWrite();
     }
 }
