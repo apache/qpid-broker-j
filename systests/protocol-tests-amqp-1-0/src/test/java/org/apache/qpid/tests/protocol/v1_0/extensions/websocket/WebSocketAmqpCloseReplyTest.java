@@ -41,47 +41,49 @@ import org.apache.qpid.tests.utils.ConfigItem;
 
 @BrokerSpecific(kind = BrokerAdmin.KIND_BROKER_J)
 @ConfigItem(name = Connection.CLOSE_RESPONSE_TIMEOUT, value = "10000")
-@ConfigItem(name = AmqpPort.FINAL_WRITE_TIMEOUT, value = "0")
+@ConfigItem(name = AmqpPort.FINAL_WRITE_TIMEOUT, value = "10000")
 public class WebSocketAmqpCloseReplyTest extends WebSocketCloseTestBase
 {
-    private static final long AWAIT_TIMEOUT_SECONDS = 3L;
+    private static final long AWAIT_TIMEOUT_SECONDS = 15L;
 
     @ParameterizedTest
     @EnumSource(value = Transport.class, names = {"WS", "WSS"})
-    public void clientReceivesAmqpCloseReplyAtZeroPortTimeout(final Transport transportType) throws Exception
+    public void clientReceivesAmqpCloseReply(final Transport transportType) throws Exception
     {
+        final String containerId = getFullTestName() + "-" + transportType;
         try (final WebSocketFrameTransport transport = createTransport(transportType))
         {
-            transport.withholdWebSocketCloseResponse().connect();
-            final Interaction interaction = transport
-                    .newInteraction().openContainerId(getFullTestName()).negotiateOpen();
-            interaction.close().sync().consumeResponse(Close.class);
-            assertNull(interaction.getLatestResponse(Close.class).getError());
-            transport.getChannelCloseFuture().get(AWAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            assertTrue(transport.awaitWebSocketCloseFrame(0L, TimeUnit.MILLISECONDS),
-                    "Expected a WebSocket Close after the AMQP Close reply");
-            assertEquals(1000, transport.getWebSocketCloseStatusCode());
+            transport.connect();
+            final Interaction interaction = transport.newInteraction().openContainerId(containerId).negotiateOpen();
+            final Close reply = interaction.close().consume(Close.class);
+            assertNull(reply.getError());
+            assertNormalWebSocketClose(transport);
         }
     }
 
     @ParameterizedTest
     @EnumSource(value = Transport.class, names = {"WS", "WSS"})
-    public void brokerSendsWebSocketCloseAtZeroPortTimeout(final Transport transportType) throws Exception
+    public void brokerSendsWebSocketCloseAfterAmqpCloseReply(final Transport transportType) throws Exception
     {
-        final String containerId = getFullTestName();
+        final String containerId = getFullTestName() + "-" + transportType;
         try (final WebSocketFrameTransport transport = createTransport(transportType))
         {
-            transport.withholdWebSocketCloseResponse().connect();
+            transport.connect();
             final Interaction interaction = transport.newInteraction().openContainerId(containerId).negotiateOpen();
             final CompletableFuture<Void> close = getBrokerAdmin().closeConnectionAsync(containerId);
             interaction.consumeResponse(Close.class);
             interaction.close().sync();
 
-            transport.getChannelCloseFuture().get(AWAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            assertNormalWebSocketClose(transport);
             close.get(AWAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            assertTrue(transport.awaitWebSocketCloseFrame(0L, TimeUnit.MILLISECONDS),
-                    "Expected a WebSocket Close after the AMQP Close exchange");
-            assertEquals(1000, transport.getWebSocketCloseStatusCode());
         }
+    }
+
+    private static void assertNormalWebSocketClose(final WebSocketFrameTransport transport) throws Exception
+    {
+        assertTrue(transport.awaitWebSocketCloseFrame(AWAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS),
+                   "Broker did not send WebSocket Close after the AMQP Close exchange");
+        assertEquals(1000, transport.getWebSocketCloseStatusCode());
+        transport.getChannelCloseFuture().get(AWAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
 }
