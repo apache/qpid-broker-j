@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -39,14 +40,20 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import org.apache.qpid.server.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 
 class WriteJobTest extends WebSocketTestBase
 {
@@ -272,9 +279,12 @@ class WriteJobTest extends WebSocketTestBase
         verify(session).close(eq(StatusCode.NORMAL), isNull(), any(Callback.class));
     }
 
-    @Test
-    void synchronousWriteCompletionSchedulesRemainingOutput()
+    @ParameterizedTest
+    @ValueSource(longs = {0L, AmqpPort.DEFAULT_FINAL_WRITE_TIMEOUT})
+    void synchronousFinalWritesPrecedeNormalClose(final long closeTimeoutMillis)
     {
+        _connectionScheduler = new WebSocketConnectionScheduler(getTestName(), _currentTime::get, _nanoTime::get,
+                TimeUnit.MILLISECONDS.toNanos(closeTimeoutMillis));
         final Session session = mock(Session.class);
         doAnswer(invocation ->
         {
@@ -283,19 +293,17 @@ class WriteJobTest extends WebSocketTestBase
             return null;
         }).when(session).sendBinary(any(ByteBuffer.class), any(Callback.class));
 
-        final MutableTicker ticker = new MutableTicker(FAR_FUTURE_TICK_DELAY_MILLIS);
-        final WebSocketConnection connection = createConnection(ticker, session);
-        try (final QpidByteBuffer buffer = QpidByteBuffer.wrap(new byte[WRITE_BATCH_SIZE + 1]))
-        {
-            connection.send(buffer);
-        }
-        connection.close();
+        final MultiVersionProtocolEngine protocolEngine = mock();
+        when(protocolEngine.isProtocolCloseComplete()).thenReturn(true);
+        final WebSocketConnection connection = createConnection(protocolEngine, session);
+        send(connection, new byte[WRITE_BATCH_SIZE + 1]);
 
         connection.doWrite();
         _threadPool.runAll();
 
-        verify(session, times(2)).sendBinary(any(ByteBuffer.class), any(Callback.class));
-        verify(session).close(eq(StatusCode.NORMAL), isNull(), any(Callback.class));
+        final InOrder writes = inOrder(session);
+        writes.verify(session, times(2)).sendBinary(any(ByteBuffer.class), any(Callback.class));
+        writes.verify(session).close(eq(StatusCode.NORMAL), isNull(), any(Callback.class));
         assertEquals(0, _threadPool.getQueueSize());
     }
 }
