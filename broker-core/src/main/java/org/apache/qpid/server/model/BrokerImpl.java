@@ -36,7 +36,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -135,6 +134,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     private double _sparsityFraction;
     private long _lastDisposalCounter;
     private ScheduledFuture<?> _assignTargetSizeSchedulingFuture;
+    private ScheduledFuture<?> _directMemoryCheckFuture;
     private volatile ScheduledFuture<?> _statisticsReportingFuture;
     private long _housekeepingCheckPeriod;
 
@@ -467,20 +467,12 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private void scheduleDirectMemoryCheck()
     {
-        if (_compactMemoryInterval > 0)
+        synchronized (_houseKeepingTaskExecutor)
         {
-            try
+            if (_compactMemoryInterval > 0 && !_houseKeepingTaskExecutor.isShutdown())
             {
-                _houseKeepingTaskExecutor.schedule(this::checkDirectMemoryUsage,
-                                                   _compactMemoryInterval,
-                                                   TimeUnit.MILLISECONDS);
-            }
-            catch (RejectedExecutionException e)
-            {
-                if (!_houseKeepingTaskExecutor.isShutdown())
-                {
-                    LOGGER.warn("Failed to schedule direct memory check", e);
-                }
+                _directMemoryCheckFuture = scheduleTask(_compactMemoryInterval, TimeUnit.MILLISECONDS,
+                                                        this::checkDirectMemoryUsage);
             }
         }
     }
@@ -1064,9 +1056,18 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private void shutdownHouseKeeping()
     {
-        if(_houseKeepingTaskExecutor != null)
+        if (_houseKeepingTaskExecutor != null)
         {
-            _houseKeepingTaskExecutor.shutdown();
+            synchronized (_houseKeepingTaskExecutor)
+            {
+                final ScheduledFuture<?> check = _directMemoryCheckFuture;
+                _directMemoryCheckFuture = null;
+                if (check instanceof Runnable task && _houseKeepingTaskExecutor.remove(task))
+                {
+                    check.cancel(false);
+                }
+                _houseKeepingTaskExecutor.shutdown();
+            }
 
             try
             {
