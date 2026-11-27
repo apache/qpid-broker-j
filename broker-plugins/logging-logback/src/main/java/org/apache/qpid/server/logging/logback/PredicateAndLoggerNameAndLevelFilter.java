@@ -35,7 +35,7 @@ class PredicateAndLoggerNameAndLevelFilter extends LoggerNameAndLevelFilter
         boolean evaluate(final ILoggingEvent event);
     }
 
-    PredicateAndLoggerNameAndLevelFilter(String loggerName, Level level, final Predicate predicate)
+    PredicateAndLoggerNameAndLevelFilter(final String loggerName, final Level level, final Predicate predicate)
     {
         super(loggerName, level);
         _filter = createFilter(loggerName);
@@ -43,7 +43,7 @@ class PredicateAndLoggerNameAndLevelFilter extends LoggerNameAndLevelFilter
     }
 
     @Override
-    public FilterReply decide(ILoggingEvent event)
+    public FilterReply decide(final ILoggingEvent event)
     {
         return _filter.decide(event);
     }
@@ -58,21 +58,11 @@ class PredicateAndLoggerNameAndLevelFilter extends LoggerNameAndLevelFilter
             public FilterReply decide(final ILoggingEvent event)
             {
                 final FilterReply result = filter.decide(event);
-                if (result == FilterReply.ACCEPT)
+                if (result != FilterReply.NEUTRAL && !_predicate.evaluate(event))
                 {
-                    if (_predicate.evaluate(event))
-                    {
-                        return FilterReply.ACCEPT;
-                    }
-                    else
-                    {
-                        return FilterReply.NEUTRAL;
-                    }
+                    return FilterReply.NEUTRAL;
                 }
-                else
-                {
-                    return result;
-                }
+                return result;
             }
         };
     }
