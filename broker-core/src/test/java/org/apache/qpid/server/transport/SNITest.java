@@ -43,10 +43,11 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
@@ -65,15 +66,14 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.security.FileKeyStore;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.transport.network.security.ssl.SSLUtil;
-import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.test.utils.UnitTestBase;
-import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 import org.apache.qpid.test.utils.tls.AltNameType;
 import org.apache.qpid.test.utils.tls.AlternativeName;
 import org.apache.qpid.test.utils.tls.KeyCertificatePair;
 import org.apache.qpid.test.utils.tls.PrivateKeyEntry;
 import org.apache.qpid.test.utils.tls.TlsResource;
 import org.apache.qpid.test.utils.tls.TlsResourceBuilder;
+import org.apache.qpid.test.utils.tls.TlsResourceExtension;
 
 @ExtendWith({ TlsResourceExtension.class })
 public class SNITest extends UnitTestBase
@@ -87,8 +87,10 @@ public class SNITest extends UnitTestBase
     private SystemLauncher _systemLauncher;
     private Broker<?> _broker;
     private int _boundPort;
-    private File _brokerWork;
     private String _keyStorePassword;
+
+    @TempDir
+    private File _brokerWork;
 
     @BeforeAll
     public void setUp(final TlsResource tls) throws Exception
@@ -109,17 +111,20 @@ public class SNITest extends UnitTestBase
         _keyStorePassword = tls.getSecret();
     }
 
-    @AfterAll
+    @AfterEach
     public void tearDown() throws Exception
     {
-        if (_systemLauncher != null)
+        try
         {
-            _systemLauncher.shutdown();
+            if (_systemLauncher != null)
+            {
+                _systemLauncher.shutdown();
+            }
         }
-
-        if (_brokerWork != null)
+        finally
         {
-            _brokerWork.delete();
+            _systemLauncher = null;
+            _broker = null;
         }
     }
 
@@ -214,7 +219,6 @@ public class SNITest extends UnitTestBase
                                  final String defaultAlias) throws Exception
     {
         final File initialConfiguration = createInitialContext();
-        _brokerWork = TestFileUtils.createTestDirectory("qpid-work", true);
 
         final Map<String, String> context = Map.of("qpid.work_dir", _brokerWork.toString());
         final Map<String,Object> attributes = Map.of(SystemConfig.INITIAL_CONFIGURATION_LOCATION, initialConfiguration.getAbsolutePath(),
@@ -258,9 +262,9 @@ public class SNITest extends UnitTestBase
         final Map<String,Object> initialConfig = Map.of(ConfiguredObject.NAME, "test",
                 Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
 
-        final ObjectMapper mapper = new ObjectMapper();
-        final String config = mapper.writeValueAsString(initialConfig);
-        return TestFileUtils.createTempFile(this, ".initial-config.json", config);
+        final File initialConfiguration = new File(_brokerWork, SystemConfig.DEFAULT_INITIAL_CONFIG_NAME);
+        new ObjectMapper().writeValue(initialConfiguration, initialConfig);
+        return initialConfiguration;
     }
 
     private static final class TestSNIHostName extends SNIServerName
