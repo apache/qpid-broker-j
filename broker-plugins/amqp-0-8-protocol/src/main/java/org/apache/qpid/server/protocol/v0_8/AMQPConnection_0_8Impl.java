@@ -1073,7 +1073,7 @@ public class AMQPConnection_0_8Impl
         }
         catch (ConnectionLimitException e)
         {
-            LOGGER.debug("User connection limit exceeded", e);
+            LOGGER.debug("Connection rejected by connection limiter: {}", e.getMessage(), e);
             sendConnectionClose(ErrorCodes.RESOURCE_ERROR, e.getMessage(), 0);
         }
     }

@@ -209,9 +209,20 @@
             <literal>qpid.broker.connectionLimiter.frequencyPeriodInMillis</literal>.
         </para>
         <para>
-            The Broker logs rejected connections when an user breaks the limit. But the Broker could also log
-            the accepted connections with current counter value. The full logging could be turn on with
-            <literal>CONFIG</literal> command.
+            The Broker logs connection limit rule violations using
+            <link linkend="Java-Broker-Appendix-Operation-Logging-Message-RL-1002">RL-1002</link>.
+            Rejections caused by initializing or errored providers use
+            <link linkend="Java-Broker-Appendix-Operation-Logging-Message-RL-1004">RL-1004</link> and
+            <link linkend="Java-Broker-Appendix-Operation-Logging-Message-RL-1005">RL-1005</link>, respectively,
+            as described in
+            <xref linkend="Java-Broker-Security-ConnectionLimitProviders-Lifecycle"/>.
+            Filters used to count all rejections must include all three event identifiers. The lifecycle messages
+            use the <literal>qpid.message.resourcelimit.rejected_initializing</literal> and
+            <literal>qpid.message.resourcelimit.rejected_errored</literal> log hierarchies, respectively.
+        </para>
+        <para>
+            The Broker can also log accepted connections with the current counter value. Enable this additional
+            logging with the <literal>CONFIG</literal> command.
         </para>
         <programlisting>
             CONFIG log_all=true default_frequency_period=60000
@@ -244,5 +255,50 @@
             ]]>
             </programlisting>
         </example>
+    </section>
+    <section role="h3" xml:id="Java-Broker-Security-ConnectionLimitProviders-Lifecycle">
+        <title>Provider Lifecycle</title>
+        <para>
+            Outside management mode, new connections are rejected if an applicable Connection Limit Provider is
+            <literal>UNINITIALIZED</literal> (initializing) or <literal>ERRORED</literal>, even when no connection
+            limit has been exceeded. An unavailable broker-level provider affects all Virtual Hosts on the Broker;
+            an unavailable Virtual Host-level provider affects only its Virtual Host.
+        </para>
+        <para>
+            Each rejected connection attempt generates one lifecycle rejection message, not an additional
+            <literal>RL-1002</literal> message. These messages describe rejected connection attempts, not provider
+            state transitions.
+        </para>
+        <para>
+            A Virtual Host can become <literal>ACTIVE</literal> before a broker-level provider finishes
+            initializing, so the Virtual Host's state alone does not guarantee that new connections will be
+            admitted. When the provider becomes <literal>ACTIVE</literal>, its rules are automatically applied
+            to new connection attempts. Existing connections are not disconnected because a provider is
+            initializing or errored.
+        </para>
+        <para>
+            When a Virtual Host is stopped and then restarted, its connection limits are rebuilt from the current
+            broker-level and Virtual Host-level provider configuration. Changes to broker-level rules made while
+            the Virtual Host was stopped therefore take effect on restart; previously cached limits are not reused.
+            Subsequent provider changes and file reloads continue to update the limits after restart.
+        </para>
+    </section>
+    <section role="h3" xml:id="Java-Broker-Security-ConnectionLimitProviders-UpdatingRules">
+        <title>Updating and Reloading Rules</title>
+        <para>
+            Changes to rules stored in the Broker's or Virtual Host's configuration are validated before they are
+            applied. If a rule change is invalid, the management update fails and the previous rules remain
+            enforced. Correct the invalid rules and submit the update again.
+        </para>
+        <para>
+            If the <literal>reload</literal> operation on an active <literal>ConnectionLimitFile</literal> provider
+            fails, it reports an error and the last successfully compiled rules remain enforced. Correct the CLT
+            source and retry the reload; a failed reload does not silently remove connection limits.
+        </para>
+        <para>
+            Retaining existing rules in this way applies to an active provider that has already loaded a valid
+            rule set. Startup and activation failures follow the behavior described in
+            <xref linkend="Java-Broker-Security-ConnectionLimitProviders-Lifecycle"/>.
+        </para>
     </section>
 </section>

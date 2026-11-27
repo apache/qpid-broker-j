@@ -938,7 +938,7 @@ public class AMQPConnection_1_0Impl extends AbstractAMQPConnection<AMQPConnectio
         }
         catch (ConnectionLimitException e)
         {
-            LOGGER.debug("User connection limit exceeded", e);
+            LOGGER.debug("Connection rejected by connection limiter: {}", e.getMessage(), e);
             closeConnection(AmqpError.RESOURCE_LIMIT_EXCEEDED, e.getMessage());
         }
     }

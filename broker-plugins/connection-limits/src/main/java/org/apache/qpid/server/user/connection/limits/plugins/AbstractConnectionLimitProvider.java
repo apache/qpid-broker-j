@@ -96,9 +96,10 @@ public abstract class AbstractConnectionLimitProvider<X extends AbstractConnecti
     @SuppressWarnings("unused")
     CompletableFuture<Void> activate()
     {
+        final State initialState = getState();
         final boolean isManagementMode = getModel().getAncestor(SystemConfig.class, this).isManagementMode();
         final RuleSetCreator creator;
-        if (State.ERRORED == getState())
+        if (State.ERRORED == initialState)
         {
             creator = null;
             _creator.set(null);
@@ -126,6 +127,10 @@ public abstract class AbstractConnectionLimitProvider<X extends AbstractConnecti
             }
             else
             {
+                if (initialState != State.ERRORED)
+                {
+                    notifyStateChanged(initialState, State.ERRORED);
+                }
                 throw e;
             }
         }
@@ -159,7 +164,6 @@ public abstract class AbstractConnectionLimitProvider<X extends AbstractConnecti
         }
         catch (RuntimeException e)
         {
-            _creator.set(null);
             throw new IllegalConfigurationException(FAILED_CREATE_NEW_PROVIDER, e);
         }
     }

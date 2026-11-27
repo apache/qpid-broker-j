@@ -309,7 +309,7 @@ public class ServerConnectionDelegate extends MethodDelegate<ServerConnection> i
             }
             catch (ConnectionLimitException e)
             {
-                LOGGER.debug("User connection limit exceeded", e);
+                LOGGER.debug("Connection rejected by connection limiter: {}", e.getMessage(), e);
                 sconn.setState(ServerConnection.State.CLOSING);
                 sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, e.getMessage());
             }
