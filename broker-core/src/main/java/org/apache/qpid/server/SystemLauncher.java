@@ -58,6 +58,7 @@ import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.SystemConfigFactory;
 import org.apache.qpid.server.security.SubjectExecutionContext;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
+import org.apache.qpid.server.security.certificate.CertificateGenerators;
 import org.apache.qpid.server.util.urlstreamhandler.classpath.Handler;
 
 public class SystemLauncher
@@ -222,6 +223,7 @@ public class SystemLauncher
     private void startupImpl(Map<String,Object> systemConfigAttributes) throws Exception
     {
         populateSystemPropertiesFromDefaults((String) systemConfigAttributes.get(SystemConfig.INITIAL_SYSTEM_PROPERTIES_LOCATION));
+        CertificateGenerators.initialise();
 
         String storeType = (String) systemConfigAttributes.get(SystemConfig.TYPE);
 

@@ -88,6 +88,23 @@
 
         <dependency>
             <groupId>org.apache.qpid</groupId>
+            <artifactId>qpid-broker-plugins-certificate-generator-bouncycastle</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- used by KeyStoreHandler, and the certificate generator plugin expects the deployment to supply it -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.qpid</groupId>
             <artifactId>qpid-broker-plugins-derby-store</artifactId>
             <optional>true</optional>
             <scope>test</scope>
